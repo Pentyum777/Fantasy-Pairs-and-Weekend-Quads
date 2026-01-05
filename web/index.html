@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+  <meta name="description" content="A new Flutter project." />
+
+  <title>Flutter Web App</title>
+
+  <!-- Load MSAL.js FIRST -->
+  <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+
+  <!-- Load your JS bridge SECOND -->
+  <script src="msal_bridge.js"></script>
+
+  <!-- Flutter web bootstrap -->
+  <base href="/" />
+  <meta name="flutter-web-renderer" content="html" />
+  <meta name="flutter-web-auto-detect" content="false" />
+</head>
+
+<body>
+  <!-- Flutter engine -->
+  <script src="flutter.js" defer></script>
+
+  <!-- REQUIRED for Flutter 3.27+ -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
