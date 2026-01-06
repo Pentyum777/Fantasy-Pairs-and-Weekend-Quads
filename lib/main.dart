@@ -29,15 +29,15 @@ class _MyAppState extends State<MyApp> {
   bool isLoggedIn = false;
   bool isLoadingPlayers = false;
 
-  late PlayerRepository playerRepo;
-  late FixtureRepository fixtureRepo;
-  final fantasyService = FantasyScoreService();
+  late final PlayerRepository playerRepo;
+  late final FixtureRepository fixtureRepo;
+  final FantasyScoreService fantasyService = FantasyScoreService();
 
   int punterCount = 11;
   int? selectedRound;
   GameType? selectedGameType;
 
-  late List<PunterSelection> punterSelections;
+  List<PunterSelection> punterSelections = [];
 
   @override
   void initState() {
@@ -53,6 +53,8 @@ class _MyAppState extends State<MyApp> {
       "Files.Read.All",
     ]);
 
+    if (!mounted) return;
+
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login failed. Please try again.")),
@@ -67,20 +69,24 @@ class _MyAppState extends State<MyApp> {
 
     try {
       final playerBytes = await rootBundle.load("assets/afl_players_2026.xlsx");
-      playerRepo.loadFromExcel(playerBytes.buffer.asUint8List());
-
       final fixtureBytes =
           await rootBundle.load("assets/afl_fixtures_2026.xlsx");
-      fixtureRepo.loadFromExcel(fixtureBytes.buffer.asUint8List());
 
-      print("Fixtures loaded: ${fixtureRepo.fixtures.length}");
+      if (!mounted) return;
+
+      playerRepo.loadFromExcel(playerBytes.buffer.asUint8List());
+      fixtureRepo.loadFromExcel(fixtureBytes.buffer.asUint8List());
     } catch (e, st) {
-      print("ERROR LOADING ASSETS: $e");
-      print(st);
+      debugPrint("ERROR LOADING ASSETS: $e");
+      debugPrint(st.toString());
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error loading assets: $e")),
       );
     }
+
+    if (!mounted) return;
 
     setState(() {
       isLoadingPlayers = false;
@@ -88,24 +94,25 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _refreshFantasyScores() async {
-    if (selectedRound == null) return;
+    final round = selectedRound;
+    if (round == null) return;
 
-    final fixtures = fixtureRepo.fixturesForRound(selectedRound!);
+    final fixtures = fixtureRepo.fixturesForRound(round);
 
     final urls = fixtures
         .map((f) => f.source)
-        .where((u) => u.isNotEmpty)
-        .toList();
+        .where((u) => u.isNotEmpty);
 
     final allScores = <String, int>{};
 
-    for (var url in urls) {
+    for (final url in urls) {
       final scores = await fantasyService.fetchScores(url);
       allScores.addAll(scores);
     }
 
-    playerRepo.applyFantasyScores(allScores);
+    if (!mounted) return;
 
+    playerRepo.applyFantasyScores(allScores);
     setState(() {});
   }
 
@@ -168,21 +175,25 @@ class _MyAppState extends State<MyApp> {
 
   Widget _buildGameUI() {
     final gameType = selectedGameType!;
-    final List<AflPlayer> gamePlayers = _playersForFixture(gameType);
+    final gamePlayers = _playersForFixture(gameType);
 
-    final int playersPerPunter =
+    final playersPerPunter =
         gameType == GameType.weekendQuads ? 4 : 2;
 
-    // Initialize punter selections
-    punterSelections = List.generate(
-      punterCount,
-      (_) => PunterSelection(playersPerPunter),
-    );
+    if (punterSelections.length != punterCount ||
+        (punterSelections.isNotEmpty &&
+            punterSelections.first.players.length != playersPerPunter)) {
+      punterSelections = List.generate(
+        punterCount,
+        (_) => PunterSelection(playersPerPunter),
+      );
+    }
+
+    final fixtures = _fixturesForGameType(gameType);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Punter count dropdown
         Padding(
           padding: const EdgeInsets.only(left: 16, top: 12, bottom: 8),
           child: Row(
@@ -194,15 +205,18 @@ class _MyAppState extends State<MyApp> {
               const SizedBox(width: 12),
               DropdownButton<int>(
                 value: punterCount,
-                items: List.generate(21, (i) => i + 5).map((n) {
-                  return DropdownMenuItem(
-                    value: n,
-                    child: Text("$n"),
-                  );
-                }).toList(),
+                items: List.generate(21, (i) => i + 5)
+                    .map(
+                      (n) => DropdownMenuItem(
+                        value: n,
+                        child: Text("$n"),
+                      ),
+                    )
+                    .toList(),
                 onChanged: (n) {
+                  if (n == null) return;
                   setState(() {
-                    punterCount = n!;
+                    punterCount = n;
                     punterSelections = List.generate(
                       punterCount,
                       (_) => PunterSelection(playersPerPunter),
@@ -214,7 +228,6 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
 
-        // Refresh button
         Padding(
           padding: const EdgeInsets.only(left: 16, bottom: 8),
           child: ElevatedButton(
@@ -223,7 +236,8 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
 
-        // Selection table
+        _buildFixtureTable(fixtures),
+
         Expanded(
           child: PunterSelectionTable(
             punterCount: punterCount,
@@ -237,57 +251,173 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  List<AflPlayer> _playersForFixture(GameType type) {
-    if (selectedRound == null) return [];
+  List<AflFixture> _fixturesForGameType(GameType type) {
+    final round = selectedRound;
+    if (round == null) return [];
 
-    final roundFixtures = fixtureRepo.fixtures
-        .where((f) => f.round == selectedRound)
-        .toList();
-
-    if (roundFixtures.isEmpty) return [];
-
-    List<AflFixture> selectedFixtures = [];
+    final roundFixtures =
+        fixtureRepo.fixtures.where((f) => f.round == round).toList();
 
     switch (type) {
       case GameType.thursdayPairs:
-        selectedFixtures = roundFixtures
+        return roundFixtures
             .where((f) => f.date.weekday == DateTime.thursday)
             .toList();
-        break;
+
       case GameType.fridayPairs:
-        selectedFixtures = roundFixtures
+        return roundFixtures
             .where((f) => f.date.weekday == DateTime.friday)
             .toList();
-        break;
+
       case GameType.saturdayPairs:
-        selectedFixtures = roundFixtures
+        return roundFixtures
             .where((f) => f.date.weekday == DateTime.saturday)
             .toList();
-        break;
+
       case GameType.sundayPairs:
-        selectedFixtures = roundFixtures
+        return roundFixtures
             .where((f) => f.date.weekday == DateTime.sunday)
             .toList();
-        break;
+
       case GameType.mondayPairs:
-        selectedFixtures = roundFixtures
+        return roundFixtures
             .where((f) => f.date.weekday == DateTime.monday)
             .toList();
-        break;
+
       case GameType.weekendQuads:
-        selectedFixtures = roundFixtures.where((f) =>
+        return roundFixtures
+            .where(
+              (f) =>
+                  f.date.weekday == DateTime.friday ||
+                  f.date.weekday == DateTime.saturday ||
+                  f.date.weekday == DateTime.sunday ||
+                  f.date.weekday == DateTime.monday,
+            )
+            .toList();
+    }
+  }
+
+  Widget _buildFixtureTable(List<AflFixture> fixtures) {
+    if (fixtures.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text(
+          "No fixtures found for this game type.",
+          style: TextStyle(fontSize: 16),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Table(
+        border: TableBorder.all(color: Colors.grey),
+        columnWidths: const {
+          0: FlexColumnWidth(2),
+          1: FlexColumnWidth(2),
+          2: FlexColumnWidth(2),
+          3: FlexColumnWidth(3),
+        },
+        children: [
+          const TableRow(
+            decoration: BoxDecoration(color: Color(0xFFE0E0E0)),
+            children: [
+              Padding(
+                padding: EdgeInsets.all(8),
+                child: Text(
+                  "Date",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(8),
+                child: Text(
+                  "Home",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(8),
+                child: Text(
+                  "Away",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(8),
+                child: Text(
+                  "Venue",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+
+          ...fixtures.map(
+            (f) => TableRow(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Text("${f.date.toLocal()}".split(' ')[0]),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Text(f.homeTeam),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Text(f.awayTeam),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Text(f.venue),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<AflPlayer> _playersForFixture(GameType type) {
+    final round = selectedRound;
+    if (round == null) return [];
+
+    final roundFixtures =
+        fixtureRepo.fixtures.where((f) => f.round == round).toList();
+
+    if (roundFixtures.isEmpty) return [];
+
+    final selectedFixtures = switch (type) {
+      GameType.thursdayPairs =>
+          roundFixtures.where((f) => f.date.weekday == DateTime.thursday),
+
+      GameType.fridayPairs =>
+          roundFixtures.where((f) => f.date.weekday == DateTime.friday),
+
+      GameType.saturdayPairs =>
+          roundFixtures.where((f) => f.date.weekday == DateTime.saturday),
+
+      GameType.sundayPairs =>
+          roundFixtures.where((f) => f.date.weekday == DateTime.sunday),
+
+      GameType.mondayPairs =>
+          roundFixtures.where((f) => f.date.weekday == DateTime.monday),
+
+      GameType.weekendQuads => roundFixtures.where(
+        (f) =>
             f.date.weekday == DateTime.friday ||
             f.date.weekday == DateTime.saturday ||
             f.date.weekday == DateTime.sunday ||
-            f.date.weekday == DateTime.monday).toList();
-        break;
-    }
+            f.date.weekday == DateTime.monday,
+      ),
+    };
 
-    final clubs = <String>{};
-    for (var f in selectedFixtures) {
-      clubs.add(f.homeTeam);
-      clubs.add(f.awayTeam);
-    }
+    final clubs = <String>{
+      for (final f in selectedFixtures) f.homeTeam,
+      for (final f in selectedFixtures) f.awayTeam,
+    };
 
     return playerRepo.players.where((p) => clubs.contains(p.club)).toList();
   }

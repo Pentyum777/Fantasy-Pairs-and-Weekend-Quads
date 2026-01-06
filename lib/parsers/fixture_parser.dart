@@ -62,7 +62,9 @@ List<AflFixture> parseAflFixtures2026(Uint8List bytes) {
   for (var i = 1; i < sheet.rows.length; i++) {
     final row = sheet.rows[i];
 
-    final round = parseRound(safeCellValue(row[0]?.value));
+    final roundLabel = safeCellValue(row[0]?.value);
+    final round = parseRound(roundLabel);
+
     final rawDate = safeCellValue(row[1]?.value);
     final home = safeCellValue(row[2]?.value);
     final away = safeCellValue(row[3]?.value);
@@ -78,6 +80,7 @@ List<AflFixture> parseAflFixtures2026(Uint8List bytes) {
 
     fixtures.add(
       AflFixture(
+        roundLabel: roundLabel,   // ✅ REQUIRED FIELD ADDED
         round: round,
         date: date,
         homeTeam: home,

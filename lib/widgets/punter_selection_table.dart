@@ -7,7 +7,7 @@ class PunterSelectionTable extends StatelessWidget {
   final int playersPerPunter;
   final List<AflPlayer> availablePlayers;
   final List<PunterSelection> selections;
-  final Function() onChanged;
+  final VoidCallback onChanged;
 
   const PunterSelectionTable({
     super.key,
@@ -26,14 +26,14 @@ class PunterSelectionTable extends StatelessWidget {
           flex: 3,
           child: DataTable(
             headingRowHeight: 28,
-            dataRowHeight: 28,
+            dataRowMinHeight: 28,   // ✔ replaces deprecated dataRowHeight
+            dataRowMaxHeight: 28,   // ✔ replaces deprecated dataRowHeight
             columnSpacing: 10,
             horizontalMargin: 4,
             columns: _buildColumns(),
             rows: _buildRows(context),
           ),
         ),
-
         Expanded(
           flex: 1,
           child: _buildLeaderboard(),
@@ -43,27 +43,35 @@ class PunterSelectionTable extends StatelessWidget {
   }
 
   List<DataColumn> _buildColumns() {
-    List<DataColumn> cols = [
+    final cols = <DataColumn>[
       const DataColumn(
         label: Text("Punter", style: TextStyle(fontSize: 11)),
       ),
     ];
 
     for (int i = 0; i < playersPerPunter; i++) {
-      cols.add(DataColumn(
-        label: Text("P${i + 1}", style: const TextStyle(fontSize: 11)),
-      ));
-      cols.add(const DataColumn(
-        label: Text("Player", style: TextStyle(fontSize: 11)),
-      ));
-      cols.add(const DataColumn(
-        label: Text("S", style: TextStyle(fontSize: 11)),
-      ));
+      cols.add(
+        DataColumn(
+          label: Text("P${i + 1}", style: const TextStyle(fontSize: 11)),
+        ),
+      );
+      cols.add(
+        const DataColumn(
+          label: Text("Player", style: TextStyle(fontSize: 11)),
+        ),
+      );
+      cols.add(
+        const DataColumn(
+          label: Text("S", style: TextStyle(fontSize: 11)),
+        ),
+      );
     }
 
-    cols.add(const DataColumn(
-      label: Text("TOTAL", style: TextStyle(fontSize: 11)),
-    ));
+    cols.add(
+      const DataColumn(
+        label: Text("TOTAL", style: TextStyle(fontSize: 11)),
+      ),
+    );
 
     return cols;
   }
@@ -71,8 +79,9 @@ class PunterSelectionTable extends StatelessWidget {
   List<DataRow> _buildRows(BuildContext context) {
     return List.generate(punterCount, (index) {
       final punter = selections[index];
-      List<DataCell> cells = [];
+      final cells = <DataCell>[];
 
+      // Name field
       cells.add(
         DataCell(
           SizedBox(
@@ -102,24 +111,32 @@ class PunterSelectionTable extends StatelessWidget {
         final score = selected?.liveScore ?? 0;
         totalScore += score;
 
-        cells.add(DataCell(Text("${slot + 1}", style: const TextStyle(fontSize: 11))));
+        // Slot number
+        cells.add(
+          DataCell(
+            Text("${slot + 1}", style: const TextStyle(fontSize: 11)),
+          ),
+        );
 
-        // 🔥 MINIMUM-WIDTH AUTOCOMPLETE FIELD
+        // Player autocomplete
         cells.add(
           DataCell(
             SizedBox(
-              width: 110,   // <<< REDUCED WIDTH
+              width: 110,
               height: 24,
               child: Autocomplete<AflPlayer>(
                 initialValue: TextEditingValue(
-                  text: selected != null ? selected.name : "",
+                  text: selected?.name ?? "",
                 ),
-                optionsBuilder: (TextEditingValue value) {
+                optionsBuilder: (value) {
                   if (value.text.isEmpty) {
                     return const Iterable<AflPlayer>.empty();
                   }
-                  return availablePlayers.where((p) =>
-                      p.name.toLowerCase().contains(value.text.toLowerCase()));
+                  return availablePlayers.where(
+                    (p) => p.name.toLowerCase().contains(
+                          value.text.toLowerCase(),
+                        ),
+                  );
                 },
                 displayStringForOption: (p) => p.name,
                 onSelected: (p) {
@@ -134,8 +151,8 @@ class PunterSelectionTable extends StatelessWidget {
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 3, vertical: 3),
-                      hintText: "",
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 3, vertical: 3),
                     ),
                   );
                 },
@@ -144,28 +161,40 @@ class PunterSelectionTable extends StatelessWidget {
           ),
         );
 
-        cells.add(DataCell(Text("$score", style: const TextStyle(fontSize: 11))));
+        // Score
+        cells.add(
+          DataCell(
+            Text("$score", style: const TextStyle(fontSize: 11)),
+          ),
+        );
       }
 
-      cells.add(DataCell(Text("$totalScore", style: const TextStyle(fontSize: 11))));
+      // Total score
+      cells.add(
+        DataCell(
+          Text("$totalScore", style: const TextStyle(fontSize: 11)),
+        ),
+      );
 
       return DataRow(cells: cells);
     });
   }
 
   Widget _buildLeaderboard() {
-    List<MapEntry<String, int>> totals = [];
+    final totals = <MapEntry<String, int>>[];
 
     for (int i = 0; i < punterCount; i++) {
       final punter = selections[i];
-      int total = punter.players
+      final total = punter.players
           .map((p) => p?.liveScore ?? 0)
           .fold(0, (a, b) => a + b);
 
-      totals.add(MapEntry(
-        punter.name.isEmpty ? "P${i + 1}" : punter.name,
-        total,
-      ));
+      totals.add(
+        MapEntry(
+          punter.name.isEmpty ? "P${i + 1}" : punter.name,
+          total,
+        ),
+      );
     }
 
     totals.sort((a, b) => b.value.compareTo(a.value));

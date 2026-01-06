@@ -1,79 +1,57 @@
-// This file is ONLY used on Flutter Web.
-// It provides MSAL.js authentication via JavaScript interop.
+@JS()
+library msal_web;
 
 import 'dart:async';
-import 'dart:js';
+import 'package:js/js.dart';
 
-late JsObject msalInstance;
+@JS('msal.PublicClientApplication')
+class PublicClientApplication {
+  external PublicClientApplication(dynamic config);
+  external Future<dynamic> loginPopup(dynamic request);
+  external Future<dynamic> acquireTokenSilent(dynamic request);
+}
 
-/// MUST be called once at app startup
-void initMsal() {
-  final msalConfig = JsObject.jsify({
-    'auth': {
-      'clientId': '28dcac5c-ef2d-4dd8-a724-d0a6ef0e0523',
-      'redirectUri': 'http://localhost:57777',
-    }
+@JS()
+@anonymous
+class MsalConfig {
+  external factory MsalConfig({
+    required dynamic auth,
+    dynamic cache,
   });
+}
 
-  msalInstance =
-      JsObject(context['msal']['PublicClientApplication'], [msalConfig]);
+@JS()
+@anonymous
+class AuthConfig {
+  external factory AuthConfig({
+    required String clientId,
+    required String authority,
+    required String redirectUri,
+  });
+}
+
+late PublicClientApplication _msal;
+
+void initMsal() {
+  final config = MsalConfig(
+    auth: AuthConfig(
+      clientId: "YOUR_CLIENT_ID_HERE",
+      authority: "https://login.microsoftonline.com/common",
+      redirectUri: "http://localhost:8080",
+    ),
+  );
+
+  _msal = PublicClientApplication(config);
 }
 
 Future<String?> acquireTokenWithMsal(List<String> scopes) async {
   try {
-    final request = JsObject.jsify({
-      'scopes': scopes,
-      'clientId': '28dcac5c-ef2d-4dd8-a724-d0a6ef0e0523',
+    final result = await _msal.loginPopup({
+      "scopes": scopes,
     });
 
-    // Try silent login first
-    try {
-      final silentPromise =
-          msalInstance.callMethod('acquireTokenSilent', [request]);
-
-      final silentResult = await _promiseToFuture(silentPromise);
-
-      return silentResult['accessToken'];
-    } catch (_) {
-      // Silent failed — continue to popup
-    }
-
-    // Popup login
-    final loginPromise =
-        msalInstance.callMethod('loginPopup', [request]);
-
-    final loginResult = await _promiseToFuture(loginPromise);
-
-    // Set active account
-    final account = loginResult['account'];
-    if (account != null) {
-      msalInstance.callMethod('setActiveAccount', [account]);
-    }
-
-    // Acquire token
-    final tokenPromise =
-        msalInstance.callMethod('acquireTokenPopup', [request]);
-
-    final tokenResult = await _promiseToFuture(tokenPromise);
-
-    return tokenResult['accessToken'];
+    return result?['accessToken'] as String?;
   } catch (e) {
-    print("MSAL Web Error: $e");
     return null;
   }
-}
-
-/// Converts a JS Promise into a Dart Future (compatible with all Flutter Web SDKs)
-Future<dynamic> _promiseToFuture(dynamic jsPromise) {
-  final completer = Completer<dynamic>();
-
-  jsPromise.callMethod('then', [
-    (result) => completer.complete(result),
-  ]);
-
-  jsPromise.callMethod('catch', [
-    (error) => completer.completeError(error),
-  ]);
-
-  return completer.future;
 }

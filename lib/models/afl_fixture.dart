@@ -1,13 +1,15 @@
 class AflFixture {
-  final int round;
+  final String roundLabel; // e.g. "OPENING ROUND" or "Round 1"
+  final int round;         // numeric round used in selectors
   final DateTime date;
   final String homeTeam;
   final String awayTeam;
   final String venue;
-  final String time;
-  final String source; // AFL.com.au URL for fantasy data
+  final String time;       // raw time string from the sheet, e.g. "7.30pm"
+  final String source;     // GAME DATA SOURCE (URL)
 
   AflFixture({
+    required this.roundLabel,
     required this.round,
     required this.date,
     required this.homeTeam,
