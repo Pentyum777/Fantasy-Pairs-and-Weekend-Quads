@@ -1,10 +1,33 @@
-import 'afl_player.dart';
+import 'player_pick.dart';
 
 class PunterSelection {
-  String name;
-  final List<AflPlayer?> players;
+  final int punterNumber;
+  final List<PlayerPick> picks;
 
-  PunterSelection(int count)
-      : name = "",
-        players = List.generate(count, (_) => null);
+  String punterName;
+  int liveScore;
+
+  PunterSelection({
+    required this.punterNumber,
+    required this.picks,
+    this.punterName = "",
+    this.liveScore = 0,
+  });
+
+  // Championship placeholder constructor
+  factory PunterSelection.placeholder({
+    required String name,
+    required int totalScore,
+  }) {
+    return PunterSelection(
+      punterNumber: -1,   // not used for Championship
+      picks: const [],    // Championship doesn't use picks
+      punterName: name,
+      liveScore: totalScore,
+    );
+  }
+
+  int get totalScore {
+    return picks.fold(0, (sum, p) => sum + (p.score));
+  }
 }

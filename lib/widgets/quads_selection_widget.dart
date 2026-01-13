@@ -1,108 +1,32 @@
 import 'package:flutter/material.dart';
 import '../models/afl_player.dart';
-import '../theme/club_colors.dart';
 
-class QuadsSelectionWidget extends StatefulWidget {
+class QuadsSelectionWidget extends StatelessWidget {
   final List<AflPlayer> players;
-  final Function(AflPlayer?, AflPlayer?, AflPlayer?, AflPlayer?) onChanged;
 
   const QuadsSelectionWidget({
     super.key,
     required this.players,
-    required this.onChanged,
   });
 
   @override
-  State<QuadsSelectionWidget> createState() => _QuadsSelectionWidgetState();
-}
-
-class _QuadsSelectionWidgetState extends State<QuadsSelectionWidget> {
-  AflPlayer? pick1;
-  AflPlayer? pick2;
-  AflPlayer? pick3;
-  AflPlayer? pick4;
-
-  void _notifyParent() {
-    widget.onChanged(pick1, pick2, pick3, pick4);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _buildPickColumn(
-          label: "Pick 1",
-          selected: pick1,
-          onChanged: (p) {
-            setState(() => pick1 = p);
-            _notifyParent();
-          },
-        ),
-        const SizedBox(width: 20),
-        _buildPickColumn(
-          label: "Pick 2",
-          selected: pick2,
-          onChanged: (p) {
-            setState(() => pick2 = p);
-            _notifyParent();
-          },
-        ),
-        const SizedBox(width: 20),
-        _buildPickColumn(
-          label: "Pick 3",
-          selected: pick3,
-          onChanged: (p) {
-            setState(() => pick3 = p);
-            _notifyParent();
-          },
-        ),
-        const SizedBox(width: 20),
-        _buildPickColumn(
-          label: "Pick 4",
-          selected: pick4,
-          onChanged: (p) {
-            setState(() => pick4 = p);
-            _notifyParent();
-          },
-        ),
-      ],
-    );
-  }
+    final sorted = List<AflPlayer>.from(players)
+      ..sort(
+        (a, b) => a.shortName.toLowerCase().compareTo(
+              b.shortName.toLowerCase(),
+            ),
+      );
 
-  Widget _buildPickColumn({
-    required String label,
-    required AflPlayer? selected,
-    required Function(AflPlayer?) onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Container(
-          width: 200,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400),
-            borderRadius: BorderRadius.circular(6),
-            color: selected != null
-                ? ClubColors.forClub(selected.club)
-                : Colors.transparent,
-          ),
-          child: DropdownButton<AflPlayer>(
-            isExpanded: true,
-            value: selected,
-            hint: const Text("Select Player"),
-            items: widget.players.map((p) {
-              return DropdownMenuItem(
-                value: p,
-                child: Text(p.fullName),
-              );
-            }).toList(),
-            onChanged: onChanged,
-          ),
-        ),
-      ],
+    return ListView.builder(
+      itemCount: sorted.length,
+      itemBuilder: (context, index) {
+        final p = sorted[index];
+        return ListTile(
+          title: Text(p.shortName),
+          subtitle: Text(p.club),
+        );
+      },
     );
   }
 }

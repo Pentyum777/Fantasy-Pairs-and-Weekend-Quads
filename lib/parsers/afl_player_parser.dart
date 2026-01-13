@@ -1,55 +1,27 @@
-import 'dart:typed_data';
-import 'package:excel/excel.dart';
 import '../models/afl_player.dart';
 
-/// Parses the AFL Players 2026 Excel file into a list of AflPlayer objects.
-/// Expected columns:
-///   A: Full Name
-///   B: Club
-///   C: Guernsey Number
-///   D: Season
-List<AflPlayer> parseAflPlayers2026(Uint8List bytes) {
-  final excel = Excel.decodeBytes(bytes);
-  final sheet = excel.tables.values.first;
+class AflPlayerParser {
+  /// Expects [json] to be a List<dynamic> of player maps.
+  static List<AflPlayer> parse(dynamic json) {
+    if (json is! List) return [];
 
-  final List<AflPlayer> players = [];
+    return json.map<AflPlayer>((raw) {
+      final map = raw as Map<String, dynamic>;
 
-  // Skip header row (rowIndex = 0)
-  for (var rowIndex = 1; rowIndex < sheet.rows.length; rowIndex++) {
-    final row = sheet.rows[rowIndex];
-
-    if (row.isEmpty) continue;
-
-    final fullName = _readCell(row, 0);
-    final club = _readCell(row, 1);
-    final guernseyStr = _readCell(row, 2);
-    final seasonStr = _readCell(row, 3);
-
-    // Skip invalid rows
-    if (fullName.isEmpty || club.isEmpty || guernseyStr.isEmpty) {
-      continue;
-    }
-
-    final guernseyNumber = int.tryParse(guernseyStr) ?? 0;
-    final season = int.tryParse(seasonStr) ?? 2026;
-
-    players.add(
-      AflPlayer(
-        fullName: fullName,
-        club: club,
-        guernseyNumber: guernseyNumber,
-        season: season,
-      ),
-    );
+      return AflPlayer(
+        id: (map['id'] ?? '').toString(),
+        name: map['name'] ?? map['fullName'] ?? '',
+        club: map['club'] ?? '',
+        guernseyNumber: map['guernseyNumber'] is int
+            ? map['guernseyNumber'] as int
+            : int.tryParse(map['guernseyNumber']?.toString() ?? '') ?? 0,
+        season: map['season'] is int
+            ? map['season'] as int
+            : int.tryParse(map['season']?.toString() ?? '') ?? 2026,
+        fantasyScore: map['fantasyScore'] is int
+            ? map['fantasyScore'] as int
+            : int.tryParse(map['fantasyScore']?.toString() ?? '') ?? 0,
+      );
+    }).toList();
   }
-
-  return players;
-}
-
-/// Safely reads a cell from a row and returns a string.
-String _readCell(List<Data?> row, int index) {
-  if (index >= row.length) return "";
-  final cell = row[index];
-  if (cell == null) return "";
-  return cell.value.toString().trim();
 }

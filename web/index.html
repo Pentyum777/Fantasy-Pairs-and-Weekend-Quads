@@ -7,11 +7,11 @@
 
   <title>Flutter Web App</title>
 
-  <!-- Load MSAL.js FIRST -->
+  <!-- Load MSAL.js -->
   <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
 
-  <!-- Load your JS bridge SECOND -->
-  <script src="msal_bridge.js"></script>
+  <!-- Load your MSAL integration -->
+  <script src="msal.js"></script>
 
   <!-- Flutter web bootstrap -->
   <base href="/" />
@@ -20,10 +20,6 @@
 </head>
 
 <body>
-  <!-- Flutter engine -->
-  <script src="flutter.js" defer></script>
-
-  <!-- REQUIRED for Flutter 3.27+ -->
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="main.dart.js" type="application/javascript"></script>
 </body>
 </html>

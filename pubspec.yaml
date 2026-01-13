@@ -1,30 +1,44 @@
 name: my_app
-description: AFL Pairs & Quads Selector
+description: AFL Pairs App
 publish_to: "none"
 
-version: 1.0.0+1
-
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.2.0 <4.0.0"
 
 dependencies:
+  excel: ^2.0.1
+  
   flutter:
     sdk: flutter
 
-  excel: ^2.1.0
+  # State management
+  provider: ^6.1.1
+
+  # DropdownSearch widget
+  dropdown_search: ^5.0.6
+
+  # HTTP for fetching match stats / fantasy scores
   http: ^1.1.0
-  js: ^0.6.7
-  universal_html: ^2.2.4
-  collection: ^1.18.0
+
+  # JSON utilities
+  js: ^0.7.1   # Compatible with Dart 3.2.6
+
+  # Flutter material icons
+  flutter_svg: ^2.0.9
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^3.0.1
 
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/afl_players_2026.xlsx
+    - assets/logos/
+    - assets/logos_resized/
     - assets/afl_fixtures_2026.xlsx
+    - assets/afl_fixtures_2026_pre_season.xlsx
+    - assets/afl_players_2026.xlsx
+    - assets/afl_fixtures_2025_round_24.xlsx
+    - assets/afl_players_2026.json
