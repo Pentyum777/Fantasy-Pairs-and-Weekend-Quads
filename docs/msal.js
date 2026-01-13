@@ -8,7 +8,7 @@ if (!window.__msalInitialized) {
         auth: {
             clientId: "c75121a5-552e-46c6-a357-2e5029b56131",
             authority: "https://login.microsoftonline.com/common",
-            redirectUri: "https://Pentyum777.github.io/Fantasy-Pairs-and-Weekend-Quads/"
+            redirectUri: window.location.origin
         },
         cache: {
             cacheLocation: "localStorage",
