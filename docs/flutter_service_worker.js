@@ -3,15 +3,15 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"msal.js": "71a05c24202cbdd3a16c2e1cf5e66f9d",
+const RESOURCES = {"msal.js": "029e023ad30c28a1bc49813f37d4342f",
 "flutter.js": "7d69e653079438abfbb24b82a655b0a4",
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-maskable-192.png": "c457ef57daa1d16f64b27b786ec2ea3c",
 "manifest.json": "ace26d0c71a6ddf01f5f72671a426a89",
-"index.html": "6e2a32a2e7f99687dffa35c7fe5938c5",
-"/": "6e2a32a2e7f99687dffa35c7fe5938c5",
+"index.html": "af435720abdd299eff34e9c04a6fb994",
+"/": "af435720abdd299eff34e9c04a6fb994",
 "assets/shaders/ink_sparkle.frag": "4096b5150bac93c41cbc9b45276bd90f",
 "assets/AssetManifest.bin.json": "f4240e9f8395f7398eb0d14f356a02fa",
 "assets/assets/afl_fixtures_2025_round_24.xlsx": "60c937b2f2f2603ad741222e7a019a73",
