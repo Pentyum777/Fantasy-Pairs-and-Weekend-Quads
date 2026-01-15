@@ -550,24 +550,28 @@ class _GameViewScreenState extends State<GameViewScreen> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // PUNTER CONTROLS
-  // ---------------------------------------------------------------------------
   Widget _buildPunterControls(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          "Punters Playing",
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(width: 8),
-        DropdownButton<int>(
+  final theme = Theme.of(context);
+
+  return Row(
+    children: [
+      Text(
+        "Punters Playing",
+        style: theme.textTheme.bodyMedium, // smaller label
+      ),
+      const SizedBox(width: 8),
+
+      // Compact dropdown
+      DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
           value: _visiblePunterCount,
+          isDense: true,
+          style: theme.textTheme.bodyMedium,
           items: List.generate(25, (i) => i + 1)
               .map(
                 (v) => DropdownMenuItem<int>(
                   value: v,
-                  child: Text("$v"),
+                  child: Text("$v", style: theme.textTheme.bodyMedium),
                 ),
               )
               .toList(),
@@ -578,24 +582,28 @@ class _GameViewScreenState extends State<GameViewScreen> {
                 }
               : null,
         ),
-        const SizedBox(width: 16),
-        ElevatedButton(
-          onPressed:
-              widget.userRoleService.isAdmin ? _resetSelections : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red.shade600,
-            foregroundColor: Colors.white,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          ),
-          child: const Text(
-            "Reset Selections",
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
+      ),
+
+      const SizedBox(width: 16),
+
+      // Compact reset button
+      ElevatedButton(
+        onPressed: widget.userRoleService.isAdmin ? _resetSelections : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red.shade600,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          visualDensity: VisualDensity.compact,
+          minimumSize: const Size(0, 32),
         ),
-      ],
-    );
-  }
+        child: const Text(
+          "Reset Selections",
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+      ),
+    ],
+  );
+}
 
   // ---------------------------------------------------------------------------
   // FIXTURE FILTERING

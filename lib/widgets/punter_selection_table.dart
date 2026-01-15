@@ -637,89 +637,90 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       child: Row(
         children: [
           Expanded(
-            child: DropdownSearch<AflPlayer>(
-              enabled: !widget.isCompleted,
-              selectedItem: selectedPlayer,
-              items: filteredPlayers,
-              itemAsString: (p) => p.shortName,
-              dropdownDecoratorProps: DropDownDecoratorProps(
-                dropdownSearchDecoration: InputDecoration(
-                  isDense: true,
-                  border: InputBorder.none,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                  suffixIcon: selectedPlayer == null
-                      ? const Icon(Icons.arrow_drop_down)
-                      : null,
-                ),
-              ),
-              dropdownBuilder: (context, player) {
-                if (player == null) {
-                  return Text(
-                    hintText,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  );
-                }
-                final colours = _getTeamColoursForPlayer(player);
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: colours["bg"]?.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    player.shortName,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colours["fg"],
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                );
-              },
-              popupProps: PopupProps.menu(
-                showSearchBox: true,
-                fit: FlexFit.loose,
-                searchFieldProps: TextFieldProps(
-                  decoration: const InputDecoration(
-                    hintText: "Search players...",
-                    isDense: true,
-                    contentPadding: EdgeInsets.all(8),
-                  ),
-                ),
-                itemBuilder: (context, player, isSelected) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 6),
-                    color: isSelected
-                        ? cs.surfaceVariant.withOpacity(0.4)
-                        : Colors.transparent,
-                    child: Text(
-                      player.shortName,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurface,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                },
-              ),
-              onChanged: (value) {
-                owner.picks[colIndex].player = value;
-                owner.picks[colIndex].score = value?.fantasyScore ?? 0;
-                widget.onChanged?.call();
-                setState(() {
-                  _saveSnapshot();
-                });
-                _scrollToCurrentPick();
-              },
-            ),
+  child: DropdownSearch<AflPlayer>(
+    enabled: !widget.isCompleted,
+    selectedItem: selectedPlayer,
+    items: filteredPlayers,
+    itemAsString: (p) => p.shortName,
+
+    // HIDE ARROW WHEN SELECTED
+    dropdownDecoratorProps: DropDownDecoratorProps(
+      dropdownSearchDecoration: InputDecoration(
+        isDense: true,
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        suffixIcon: selectedPlayer == null
+            ? const Icon(Icons.arrow_drop_down)
+            : null,
+      ),
+    ),
+
+    dropdownBuilder: (context, player) {
+      if (player == null) {
+        return Text(
+          hintText,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant,
           ),
+        );
+      }
+      final colours = _getTeamColoursForPlayer(player);
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: colours["bg"]?.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          player.shortName,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colours["fg"],
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    },
+
+    popupProps: PopupProps.menu(
+      showSearchBox: true,
+      fit: FlexFit.loose,
+      searchFieldProps: TextFieldProps(
+        decoration: const InputDecoration(
+          hintText: "Search players...",
+          isDense: true,
+          contentPadding: EdgeInsets.all(8),
+        ),
+      ),
+      itemBuilder: (context, player, isSelected) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          color: isSelected
+              ? cs.surfaceVariant.withOpacity(0.4)
+              : Colors.transparent,
+          child: Text(
+            player.shortName,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurface,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+      },
+    ),
+
+    onChanged: (value) {
+      owner.picks[colIndex].player = value;
+      owner.picks[colIndex].score = value?.fantasyScore ?? 0;
+      widget.onChanged?.call();
+      setState(() {
+        _saveSnapshot();
+      });
+      _scrollToCurrentPick();
+    },
+  ),
+),
 
           // SCORE DISPLAY
           if (selectedPlayer != null)
