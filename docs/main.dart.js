@@ -88897,7 +88897,7 @@ case"West Coast Eagles":return"WCE"
 case"Western Bulldogs":return"WBD"
 default:return a}},
 QD(a){var s=this.ao_(a)
-return A.eL(A.aAw(A.aBP("logos/"+s+".png",new A.anX(s),B.lB)),28,28)},
+return A.eL(A.aAw(A.aBP("assets/logos/"+s+".png",new A.anX(s),B.lB)),28,28)},
 aee(){var s,r,q,p,o,n=this,m=n.a
 if(m.z.a===B.ze)return
 s=m.d==="weekend_quads"?4:2
@@ -89501,7 +89501,7 @@ $S:0}
 A.aqA.prototype={
 $1(a){var s=this.a.r
 if(s.f.length===0)return
-s.iC(this.b*32,B.dY,B.e0)},
+s.iC(this.b*34,B.dY,B.e0)},
 $S:3}
 A.aqy.prototype={
 $1(a){return a.b==null},
@@ -89549,7 +89549,7 @@ n=f.gmX()
 m=i.p3.z
 e=m==null?g:m.nH(e,B.bJ)
 p.push(A.bz(B.fa,A.bz(g,A.bN(""+n,g,g,g,e,g,g),B.k,g,g,new A.c0(q,g,g,o,g,g,B.Z),g,g,g,B.mJ,g,g,g),B.k,g,g,g,g,g,g,B.EG,g,g,60))
-return A.bz(g,A.el(p,B.a3,B.M,B.U),B.k,g,g,new A.c0(s,g,new A.d7(B.m,B.m,new A.aP(r,0.5,B.q,-1),B.m),g,g,g,B.Z),g,32,g,g,g,g,g)},
+return A.bz(g,A.el(p,B.a3,B.M,B.U),B.k,g,g,new A.c0(s,g,new A.d7(B.m,B.m,new A.aP(r,0.5,B.q,-1),B.m),g,g,g,B.Z),g,34,g,g,g,g,g)},
 $S:115}
 A.aqB.prototype={
 $0(){},
