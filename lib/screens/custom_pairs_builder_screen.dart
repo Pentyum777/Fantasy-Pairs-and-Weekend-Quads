@@ -231,7 +231,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
   }
 
   Widget _teamLogo(String clubCode) {
-    final assetPath = 'assets/logos/$clubCode.png';
+    final assetPath = 'logos/$clubCode.png';
 
     return SizedBox(
       width: 32,

@@ -46,7 +46,7 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
           child: SizedBox(
             height: 40,
             child: Image.asset(
-              'assets/logos/$selectedTeam.png',   // <-- FIXED
+              'logos/$selectedTeam.png',   // <-- FIXED
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 40),
             ),
