@@ -31,8 +31,14 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^3.0.1
 
-flutter:
+fflutter:
   uses-material-design: true
 
   assets:
-    - assets/
+    - assets/logos/
+    - assets/logos_resized/
+    - assets/afl_players_2026.json
+    - assets/afl_fixtures_2026.xlsx
+    - assets/afl_fixtures_2026_pre_season.xlsx
+    - assets/afl_players_2026.xlsx
+    - assets/afl_fixtures_2025_round_24.xlsx
