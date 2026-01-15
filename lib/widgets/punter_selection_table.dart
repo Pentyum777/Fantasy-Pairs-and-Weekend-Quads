@@ -17,10 +17,7 @@ class PunterSelectionTable extends StatefulWidget {
   final List<PunterSelection> selections;
   final bool isCompleted;
 
-  /// Nullable callback — allowed to be null in read‑only mode
   final void Function()? onChanged;
-
-  /// Read‑only mode flag
   final bool readOnly;
 
   const PunterSelectionTable({
@@ -40,35 +37,31 @@ class PunterSelectionTable extends StatefulWidget {
 
 class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
-  // LAYOUT CONSTANTS (tightened)
+  // LAYOUT CONSTANTS
   // ---------------------------------------------------------------------------
   static const double rowHeight = 34.0;
   static const double headerHeight = 38.0;
 
-  double punterColWidth = 90.0;     // reduced from 110
-  double pickColWidth = 155.0;      // reduced from 150
-  static const double totalColWidth = 60.0;
+  double punterColWidth = 80.0;
+  double pickColWidth = 175.0;
+  static const double totalColWidth = 40.0;
 
   // ---------------------------------------------------------------------------
   // CONTROLLERS
   // ---------------------------------------------------------------------------
   final Map<int, TextEditingController> _controllers = {};
   final ScrollController _verticalScrollController = ScrollController();
-
-  /// Shared horizontal scroll controller (fixes header/body sync)
   final ScrollController _horizontalScrollController = ScrollController();
-
-  /// Focus nodes for placeholder clearing
   final Map<int, FocusNode> _punterFocusNodes = {};
 
   // ---------------------------------------------------------------------------
-  // HISTORY (unchanged)
+  // HISTORY
   // ---------------------------------------------------------------------------
   List<_TableSnapshot> _history = [];
   int _historyIndex = -1;
 
   // ---------------------------------------------------------------------------
-  // INTERNAL PLAYER LIST (JSON-loaded)
+  // PLAYER LIST
   // ---------------------------------------------------------------------------
   List<AflPlayer> _players = [];
   bool _loadingPlayers = true;
@@ -78,7 +71,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     super.initState();
     _initControllers();
     _initFocusNodes();
-    _loadPlayers();        // JSON loading preserved
+    _loadPlayers();
     _saveSnapshot();
   }
 
@@ -100,7 +93,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   // ---------------------------------------------------------------------------
-  // INIT FOCUS NODES (for placeholder clearing)
+  // INIT FOCUS NODES
   // ---------------------------------------------------------------------------
   void _initFocusNodes() {
     for (final row in widget.selections) {
@@ -109,15 +102,15 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   // ---------------------------------------------------------------------------
-  // RESPONSIVE: detect mobile vs desktop
+  // RESPONSIVE
   // ---------------------------------------------------------------------------
   bool get _isMobile {
     final width = MediaQuery.of(context).size.width;
-    return width < 700; // threshold for hiding resize handles
+    return width < 700;
   }
 
   // ---------------------------------------------------------------------------
-  // CLUB NAME → CLUB CODE MAPPING (unchanged)
+  // CLUB CODE MAP
   // ---------------------------------------------------------------------------
   static const Map<String, String> _clubCodeMap = {
     "Adelaide Crows": "ADE",
@@ -141,7 +134,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   };
 
   // ---------------------------------------------------------------------------
-  // LOAD PLAYERS FROM JSON ARRAY (preserved)
+  // LOAD PLAYERS
   // ---------------------------------------------------------------------------
   Future<void> _loadPlayers() async {
     try {
@@ -197,15 +190,14 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
   // PICK LABELS
   // ---------------------------------------------------------------------------
-  List<String> _pickLabels() {
-    return List.generate(_roundCount, (i) => 'P${i + 1}');
-  }
+  List<String> _pickLabels() =>
+      List.generate(_roundCount, (i) => 'P${i + 1}');
 
   int get _punterCount => widget.visiblePunterCount;
   int get _roundCount => widget.playersPerPunter;
 
   // ---------------------------------------------------------------------------
-  // HEADER ROW (refactored padding + scroll sync)
+  // HEADER ROW
   // ---------------------------------------------------------------------------
   Widget _buildHeaderRow(ThemeData theme) {
     final cs = theme.colorScheme;
@@ -224,22 +216,22 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       ),
       child: Row(
         children: [
-          _headerCell(theme, "Punter", punterColWidth),
+          _headerCell(theme, "Punter", punterColWidth, alignCenter: true),
           if (!_isMobile) _resizeHandlePunter(() {}),
 
           for (final label in labels) ...[
-            _headerCell(theme, label, pickColWidth),
+            _headerCell(theme, label, pickColWidth, alignCenter: true),
             if (!_isMobile) _resizeHandle(() {}),
           ],
 
-          _headerCell(theme, "Total", totalColWidth, alignCenter: true),
+          _headerCell(theme, "T", totalColWidth, alignCenter: true),
         ],
       ),
     );
   }
 
   // ---------------------------------------------------------------------------
-  // HEADER CELL (reduced padding)
+  // HEADER CELL
   // ---------------------------------------------------------------------------
   Widget _headerCell(
     ThemeData theme,
@@ -250,7 +242,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     return Container(
       width: width,
       alignment: alignCenter ? Alignment.center : Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
         text,
         style: theme.textTheme.labelMedium?.copyWith(
@@ -263,7 +255,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   // ---------------------------------------------------------------------------
-  // RESIZE HANDLES (desktop only)
+  // RESIZE HANDLES
   // ---------------------------------------------------------------------------
   Widget _resizeHandle(VoidCallback onDrag) {
     if (_isMobile) return const SizedBox(width: 0);
@@ -274,15 +266,12 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
         onDrag.call();
         setState(() {
           pickColWidth += details.delta.dx;
-          if (pickColWidth < 90) pickColWidth = 90;
+          if (pickColWidth < 120) pickColWidth = 120;
         });
       },
       child: MouseRegion(
         cursor: SystemMouseCursors.resizeColumn,
-        child: Container(
-          width: 3,
-          color: Colors.transparent,
-        ),
+        child: Container(width: 3, color: Colors.transparent),
       ),
     );
   }
@@ -296,22 +285,19 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
         onDrag.call();
         setState(() {
           punterColWidth += details.delta.dx;
-          if (punterColWidth < 70) punterColWidth = 70;
+          if (punterColWidth < 60) punterColWidth = 60;
         });
       },
       child: MouseRegion(
         cursor: SystemMouseCursors.resizeColumn,
-        child: Container(
-          width: 3,
-          color: Colors.transparent,
-        ),
+        child: Container(width: 3, color: Colors.transparent),
       ),
     );
   }
-    // ---------------------------------------------------------------------------
-  // SNAKE DRAFT MAPPING (unchanged)
-  // ---------------------------------------------------------------------------
 
+  // ---------------------------------------------------------------------------
+  // SNAKE DRAFT MAPPING
+  // ---------------------------------------------------------------------------
   int _globalPickNumberForCell({
     required int rowIndex,
     required int colIndex,
@@ -345,7 +331,6 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
   // CURRENT PICK
   // ---------------------------------------------------------------------------
-
   (int rowIndex, int colIndex)? _findCurrentPick() {
     final totalPicks = _punterCount * _roundCount;
 
@@ -397,46 +382,44 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   // ---------------------------------------------------------------------------
-  // UNIQUENESS AND CLEANUP (unchanged)
+  // GLOBAL UNIQUENESS
   // ---------------------------------------------------------------------------
+  void _cleanInvalidSelectionsGlobal() {
+    final seen = <String>{};
 
-  Set<String> _allSelectedPlayerIdsExcept(PunterSelection row) {
-    final ids = <String>{};
-    for (final r in widget.selections) {
-      if (identical(r, row)) continue;
-      for (final pick in r.picks) {
-        if (pick.player != null) ids.add(pick.player!.id);
-      }
-    }
-    return ids;
-  }
-
-  void _cleanInvalidSelections() {
     for (final row in widget.selections) {
-      final globalTaken = _allSelectedPlayerIdsExcept(row);
       for (final pick in row.picks) {
-        if (pick.player != null && globalTaken.contains(pick.player!.id)) {
+        final p = pick.player;
+        if (p == null) continue;
+
+        if (seen.contains(p.id)) {
           pick.player = null;
           pick.score = 0;
+        } else {
+          seen.add(p.id);
         }
       }
     }
   }
 
-  bool _rowHasInvalidPicks(PunterSelection row) {
-    if (row.picks.any((p) => p.player == null)) return true;
+  bool _hasAnyGlobalDuplicate() {
+    final ids = <String>[];
 
-    final ids = row.picks.map((p) => p.player!.id).toList();
-    return ids.toSet().length != ids.length;
+    for (final row in widget.selections) {
+      for (final pick in row.picks) {
+        if (pick.player != null) ids.add(pick.player!.id);
+      }
+    }
+
+    return ids.length != ids.toSet().length;
   }
 
   // ---------------------------------------------------------------------------
   // BUILD
   // ---------------------------------------------------------------------------
-
   @override
   Widget build(BuildContext context) {
-    _cleanInvalidSelections();
+    _cleanInvalidSelectionsGlobal();
 
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -492,7 +475,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                         itemBuilder: (context, index) {
                           final row = visible[index];
                           final isStriped = index.isOdd;
-                          final invalid = _rowHasInvalidPicks(row);
+                          final invalid = _hasAnyGlobalDuplicate();
 
                           Color bg;
                           if (invalid) {
@@ -540,11 +523,9 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       },
     );
   }
-
   // ---------------------------------------------------------------------------
-  // PUNTER CELL (refactored)
+  // PUNTER CELL
   // ---------------------------------------------------------------------------
-
   Widget _punterCell(BuildContext context, PunterSelection row) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -554,12 +535,13 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
 
     return Container(
       width: punterColWidth,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      alignment: Alignment.center,
       child: TextField(
         enabled: !widget.isCompleted,
         controller: controller,
         focusNode: focusNode,
+        textAlign: TextAlign.center,
         onChanged: (value) {
           row.punterName = value;
           widget.onChanged?.call();
@@ -580,9 +562,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   // ---------------------------------------------------------------------------
-  // PICK CELL (refactored with score display)
+  // PICK CELL (GLOBAL UNIQUENESS)
   // ---------------------------------------------------------------------------
-
   Widget _pickCell(
     BuildContext context,
     PunterSelection visualRow,
@@ -608,12 +589,19 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
 
     final owner = widget.selections[visualRowIndex];
 
-    final globalPickNumber = _globalPickNumberForCell(
-      rowIndex: visualRowIndex,
-      colIndex: colIndex,
-    );
+    // Build global taken set, excluding this exact pick
+    final globalTaken = <String>{};
+    for (final row in widget.selections) {
+      for (int i = 0; i < row.picks.length; i++) {
+        final p = row.picks[i].player;
+        if (p == null) continue;
 
-    final globalTaken = _allSelectedPlayerIdsExcept(owner);
+        if (identical(row, owner) && i == colIndex) continue;
+
+        globalTaken.add(p.id);
+      }
+    }
+
     final selectedPlayer = owner.picks[colIndex].player;
 
     // Filter JSON players by clubs in availablePlayers
@@ -623,10 +611,16 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       final isAllowedClub = allowedClubs.contains(p.club);
       final isTaken = globalTaken.contains(p.id);
       final isCurrent = p == selectedPlayer;
+
       return isAllowedClub && (!isTaken || isCurrent);
     }).toList();
 
-    final isCurrent = _isCurrentPick(visualRow, pick);
+    final isCurrentPick = _isCurrentPick(visualRow, pick);
+
+    final globalPickNumber = _globalPickNumberForCell(
+      rowIndex: visualRowIndex,
+      colIndex: colIndex,
+    );
 
     final hintText = selectedPlayer == null
         ? "P$globalPickNumber"
@@ -634,10 +628,10 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
 
     return Container(
       width: pickColWidth,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
-        color: isCurrent ? cs.primary.withOpacity(0.08) : Colors.transparent,
+        color: isCurrentPick ? cs.primary.withOpacity(0.08) : Colors.transparent,
       ),
       child: Row(
         children: [
@@ -658,7 +652,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                 }
                 final colours = _getTeamColoursForPlayer(player);
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: colours["bg"]?.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(4),
@@ -685,8 +680,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                 ),
                 itemBuilder: (context, player, isSelected) {
                   return Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 6),
                     color: isSelected
                         ? cs.surfaceVariant.withOpacity(0.4)
                         : Colors.transparent,
@@ -722,7 +717,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
             ),
           ),
 
-          // SCORE DISPLAY (right-aligned number)
+          // SCORE DISPLAY
           if (selectedPlayer != null)
             Padding(
               padding: const EdgeInsets.only(left: 4),
@@ -739,19 +734,18 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     );
   }
     // ---------------------------------------------------------------------------
-  // TOTAL CELL (tightened)
+  // TOTAL CELL
   // ---------------------------------------------------------------------------
-
   Widget _totalCell(BuildContext context, PunterSelection row) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
     return Container(
       width: totalColWidth,
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.only(right: 6),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
           color: cs.primary.withOpacity(0.06),
           borderRadius: BorderRadius.circular(4),
@@ -770,7 +764,6 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
   // TEAM COLOURS
   // ---------------------------------------------------------------------------
-
   Map<String, Color> _getTeamColoursForPlayer(AflPlayer? player) {
     if (player == null || player.club.isEmpty) {
       return {
@@ -789,9 +782,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   // ---------------------------------------------------------------------------
-  // HISTORY SNAPSHOT MODEL (improved restoration)
+  // HISTORY SNAPSHOT MODEL
   // ---------------------------------------------------------------------------
-
   void _saveSnapshot() {
     _history = _history.sublist(0, _historyIndex + 1);
     _history.add(_TableSnapshot.fromSelections(widget.selections));
@@ -811,9 +803,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
 }
 
 // -----------------------------------------------------------------------------
-// SNAPSHOT MODEL (now restores player objects, not just scores)
+// SNAPSHOT MODEL
 // -----------------------------------------------------------------------------
-
 class _TableSnapshot {
   final List<String> punterNames;
   final List<List<_PickSnapshot>> picks;
@@ -860,10 +851,10 @@ class _TableSnapshot {
             pick.player = null;
             pick.score = 0;
           } else {
-            // Restore the actual player object from the JSON-loaded list
-            final restored = allPlayers.where((p) => p.id == snapPick.playerId);
-pick.player = restored.isNotEmpty ? restored.first : null;
-pick.score = snapPick.score;
+            final restored =
+                allPlayers.where((p) => p.id == snapPick.playerId);
+            pick.player = restored.isNotEmpty ? restored.first : null;
+            pick.score = snapPick.score;
           }
         }
       }

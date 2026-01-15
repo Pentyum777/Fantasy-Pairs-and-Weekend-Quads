@@ -36,9 +36,9 @@ class LeaderboardTable extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: Column(
           children: [
-            // Header
+            // HEADER
             Container(
-              height: 40,
+              height: 38,
               decoration: BoxDecoration(
                 color: cs.surfaceVariant,
                 border: Border(
@@ -50,38 +50,37 @@ class LeaderboardTable extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  _headerCell(theme, "Rank", 50, alignCenter: true),
-                  _headerCell(theme, "Punter", 140),
-                  _headerCell(theme, "Total", 60, alignCenter: true),
+                  _headerCell(theme, "P", 36, alignCenter: true),
+                  _headerCell(theme, "Punter", 80, alignCenter: false),
+                  _headerCell(theme, "T", 40, alignCenter: true),
                 ],
               ),
             ),
 
-            // Rows
+            // ROWS
             Expanded(
               child: ListView.builder(
                 itemCount: sorted.length,
                 itemBuilder: (context, index) {
                   final p = sorted[index];
-
                   final isWinner = p.isPrizeWinner;
 
-return Container(
-  color: isWinner
-      ? Colors.orange.withOpacity(0.25)
-      : Colors.transparent,
-  child: buildSharedTableRow(
-    context: context,
-    index: index,
-    rowHeight: rowHeight,
-    isInvalid: false,
-    leftCell: _rankCell(context, index),
-    middleCells: [
-      _punterNameCell(context, p),
-    ],
-    rightCell: _scoreCell(context, p),
-  ),
-);
+                  return Container(
+                    color: isWinner
+                        ? Colors.orange.withOpacity(0.25)
+                        : Colors.transparent,
+                    child: buildSharedTableRow(
+                      context: context,
+                      index: index,
+                      rowHeight: rowHeight,
+                      isInvalid: false,
+                      leftCell: _rankCell(context, index),
+                      middleCells: [
+                        _punterNameCell(context, p),
+                      ],
+                      rightCell: _scoreCell(context, p),
+                    ),
+                  );
                 },
               ),
             ),
@@ -91,12 +90,19 @@ return Container(
     );
   }
 
-  Widget _headerCell(ThemeData theme, String text, double width,
-      {bool alignCenter = false}) {
+  // ---------------------------------------------------------------------------
+  // HEADER CELL
+  // ---------------------------------------------------------------------------
+  Widget _headerCell(
+    ThemeData theme,
+    String text,
+    double width, {
+    bool alignCenter = false,
+  }) {
     return Container(
       width: width,
       alignment: alignCenter ? Alignment.center : Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
         text,
         style: theme.textTheme.labelMedium?.copyWith(
@@ -108,11 +114,14 @@ return Container(
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // POSITION CELL (P)
+  // ---------------------------------------------------------------------------
   Widget _rankCell(BuildContext context, int index) {
     return Container(
-      width: 50,
+      width: 36,
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
         "${index + 1}",
         style: Theme.of(context).textTheme.bodyMedium,
@@ -120,11 +129,14 @@ return Container(
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // PUNTER NAME CELL
+  // ---------------------------------------------------------------------------
   Widget _punterNameCell(BuildContext context, PunterSelection p) {
     return Container(
-      width: 140,
+      width: 80,
       alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
         p.punterName,
         overflow: TextOverflow.ellipsis,
@@ -133,11 +145,14 @@ return Container(
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // SCORE CELL (T)
+  // ---------------------------------------------------------------------------
   Widget _scoreCell(BuildContext context, PunterSelection p) {
     return Container(
-      width: 60,
+      width: 40,
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
         p.totalScore.toString(),
         style: Theme.of(context)
