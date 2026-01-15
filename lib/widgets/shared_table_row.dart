@@ -35,12 +35,18 @@ Widget buildSharedTableRow({
         ),
       ),
     ),
-    child: Row(
-      children: [
-        leftCell,
-        ...middleCells,
-        rightCell,
-      ],
+
+    // ⭐ FIX: Constrain width so the row cannot expand wider than the parent
+    child: SizedBox(
+      width: double.infinity,   // forces row to respect parent width
+      height: rowHeight,
+      child: Row(
+        children: [
+          leftCell,
+          ...middleCells,
+          rightCell,
+        ],
+      ),
     ),
   );
 }

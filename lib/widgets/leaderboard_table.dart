@@ -39,7 +39,7 @@ class LeaderboardTable extends StatelessWidget {
           children: [
             // HEADER
             Container(
-              height: 38,
+              height: 26,
               decoration: BoxDecoration(
                 color: cs.surfaceVariant,
                 border: Border(
@@ -103,10 +103,10 @@ class LeaderboardTable extends StatelessWidget {
     return Container(
       width: width,
       alignment: alignCenter ? Alignment.center : Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
       child: Text(
         text,
-        style: theme.textTheme.labelMedium?.copyWith(
+        style: theme.textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
           letterSpacing: 0.1,
         ),

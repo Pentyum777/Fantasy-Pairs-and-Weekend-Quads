@@ -40,7 +40,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // LAYOUT CONSTANTS
   // ---------------------------------------------------------------------------
   static const double rowHeight = 34.0;
-  static const double headerHeight = 38.0;
+  static const double headerHeight = 26.0;
 
   double punterColWidth = 80.0;
   double pickColWidth = 185.0; // widened
@@ -242,10 +242,10 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     return Container(
       width: width,
       alignment: alignCenter ? Alignment.center : Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
       child: Text(
         text,
-        style: theme.textTheme.labelMedium?.copyWith(
+        style: theme.textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
           letterSpacing: 0.1,
         ),
