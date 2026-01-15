@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+  <meta name="description" content="A new Flutter project." />
+
+  <title>Flutter Web App</title>
+
+  <!-- Load MSAL.js -->
+  <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+
+  <!-- Load your MSAL integration -->
+  <script src="msal.js"></script>
+
+  <!-- Flutter web bootstrap -->
+  <base href="/my_app/">
+  <meta name="flutter-web-renderer" content="html" />
+  <meta name="flutter-web-auto-detect" content="false" />
+</head>
+
+<body>
+  <script src="main.dart.js" type="application/javascript"></script>
+</body>
+</html>
