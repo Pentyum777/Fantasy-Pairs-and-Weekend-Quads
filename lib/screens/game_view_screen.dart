@@ -203,7 +203,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     _updateStatsAndPunterScores(_currentStatsByPlayerId.values.toList());
   }
-  // ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
   // BUILD
   // ---------------------------------------------------------------------------
   @override
@@ -236,14 +236,15 @@ class _GameViewScreenState extends State<GameViewScreen> {
         children: [
           // FIXTURE SCROLLER
           SizedBox(
-            height: 110,
+            height: 95,
             child: fixtures.isEmpty
                 ? const Center(child: Text("No fixtures"))
                 : ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 8),
                     itemCount: fixtures.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
                     itemBuilder: (context, i) {
                       final f = fixtures[i];
                       final selected = f == _selectedFixture;
@@ -307,15 +308,17 @@ class _GameViewScreenState extends State<GameViewScreen> {
                         },
                         child: AnimatedScale(
                           scale: selected ? 1.03 : 1.0,
-                          duration: const Duration(milliseconds: 150),
+                          duration:
+                              const Duration(milliseconds: 150),
                           child: Container(
-                            width: 140,
-                            height: 85,
+                            width: 115,
+                            height: 80,
                             decoration: BoxDecoration(
                               color: Theme.of(context)
                                   .colorScheme
                                   .surfaceVariant,
-                              borderRadius: BorderRadius.circular(22),
+                              borderRadius:
+                                  BorderRadius.circular(8),
                               border: selected
                                   ? Border.all(
                                       color: Theme.of(context)
@@ -327,9 +330,11 @@ class _GameViewScreenState extends State<GameViewScreen> {
                               boxShadow: selected
                                   ? [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.12),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
+                                        color: Colors.black
+                                            .withOpacity(0.10),
+                                        blurRadius: 4,
+                                        offset:
+                                            const Offset(0, 2),
                                       )
                                     ]
                                   : [],
@@ -344,32 +349,46 @@ class _GameViewScreenState extends State<GameViewScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    _teamLogoSmall(f.homeTeam),
+                                    _teamLogoSmallSized(
+                                        f.homeTeam, 26),
                                     Flexible(
                                       child: FittedBox(
                                         fit: BoxFit.scaleDown,
                                         child: RichText(
                                           text: TextSpan(
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.black,
+                                            style:
+                                                const TextStyle(
+                                              fontSize: 14,
+                                              color:
+                                                  Colors.black,
                                             ),
                                             children: [
                                               TextSpan(
-                                                text: "$homeScore",
-                                                style: TextStyle(
-                                                  fontWeight: homeWinning
-                                                      ? FontWeight.bold
-                                                      : FontWeight.normal,
+                                                text:
+                                                    "$homeScore",
+                                                style:
+                                                    TextStyle(
+                                                  fontWeight:
+                                                      homeWinning
+                                                          ? FontWeight
+                                                              .bold
+                                                          : FontWeight
+                                                              .normal,
                                                 ),
                                               ),
-                                              const TextSpan(text: " – "),
+                                              const TextSpan(
+                                                  text: " – "),
                                               TextSpan(
-                                                text: "$awayScore",
-                                                style: TextStyle(
-                                                  fontWeight: awayWinning
-                                                      ? FontWeight.bold
-                                                      : FontWeight.normal,
+                                                text:
+                                                    "$awayScore",
+                                                style:
+                                                    TextStyle(
+                                                  fontWeight:
+                                                      awayWinning
+                                                          ? FontWeight
+                                                              .bold
+                                                          : FontWeight
+                                                              .normal,
                                                 ),
                                               ),
                                             ],
@@ -377,7 +396,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
                                         ),
                                       ),
                                     ),
-                                    _teamLogoSmall(f.awayTeam),
+                                    _teamLogoSmallSized(
+                                        f.awayTeam, 26),
                                   ],
                                 ),
                                 Text(
@@ -385,10 +405,11 @@ class _GameViewScreenState extends State<GameViewScreen> {
                                       ? timeText
                                       : "$quarterText • $timeText",
                                   style: const TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 11,
                                     color: Colors.grey,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
+                                  overflow:
+                                      TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
@@ -411,31 +432,42 @@ class _GameViewScreenState extends State<GameViewScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       children: [
                         _buildPunterControls(context),
                         const SizedBox(height: 8),
 
                         Expanded(
                           child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.stretch,
                             children: [
                               Expanded(
                                 flex: 3,
                                 child: PunterSelectionTable(
-                                  visiblePunterCount: _visiblePunterCount,
+                                  visiblePunterCount:
+                                      _visiblePunterCount,
                                   playersPerPunter:
-                                      widget.gameType == "weekend_quads"
+                                      widget.gameType ==
+                                              "weekend_quads"
                                           ? 4
                                           : 2,
                                   availablePlayers: players,
-                                  selections: widget.selections,
-                                  isCompleted: _isCompleted,
-                                  readOnly: widget.userRoleService.isReadOnly,
-                                  onChanged: widget.userRoleService.isAdmin
+                                  selections:
+                                      widget.selections,
+                                  isCompleted:
+                                      _isCompleted,
+                                  readOnly: widget
+                                      .userRoleService
+                                      .isReadOnly,
+                                  onChanged: widget
+                                          .userRoleService
+                                          .isAdmin
                                       ? () {
                                           _updateStatsAndPunterScores(
-                                            _currentStatsByPlayerId.values
+                                            _currentStatsByPlayerId
+                                                .values
                                                 .toList(),
                                           );
                                           setState(() {});
@@ -469,6 +501,17 @@ class _GameViewScreenState extends State<GameViewScreen> {
       ),
     );
   }
+    // ---------------------------------------------------------------------------
+  // TEAM LOGO SIZED WRAPPER (HELPER)
+  // ---------------------------------------------------------------------------
+  Widget _teamLogoSmallSized(String team, double size) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: _teamLogoSmall(team),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // PUNTER CONTROLS
   // ---------------------------------------------------------------------------
@@ -504,7 +547,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red.shade600,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 8),
           ),
           child: const Text(
             "Reset Selections",
