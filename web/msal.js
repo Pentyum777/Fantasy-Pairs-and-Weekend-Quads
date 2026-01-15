@@ -1,25 +1,43 @@
-// Prevent double‑initialization during Flutter Web hot reload
+// Prevent double-initialization during Flutter Web hot reload
 if (!window.__msalInitialized) {
     window.__msalInitialized = true;
 
-    console.log("MSAL: Initializing...");
+    console.log("MSAL: Initializing (Redirect + PKCE)...");
 
     const msalConfig = {
         auth: {
             clientId: "c75121a5-552e-46c6-a357-2e5029b56131",
             authority: "https://login.microsoftonline.com/common",
-            redirectUri: 'https://pentyum777.github.io/Fantasy-Pairs-and-Weekend-Quads/'
+            redirectUri: "https://pentyum777.github.io/Fantasy-Pairs-and-Weekend-Quads/"
         },
         cache: {
             cacheLocation: "localStorage",
-            storeAuthStateInCookie: true
+            storeAuthStateInCookie: true   // Helps Safari
         }
     };
 
     const msalInstance = new msal.PublicClientApplication(msalConfig);
     let activeAccount = null;
 
-    // Restore account
+    // Handle redirect result (required for iOS)
+    msalInstance.handleRedirectPromise().then((result) => {
+        if (result) {
+            console.log("MSAL: Redirect login success", result);
+
+            msalInstance.setActiveAccount(result.account);
+            activeAccount = result.account;
+
+            if (result.accessToken) {
+                dispatchToken(result.accessToken);
+            }
+        } else {
+            console.log("MSAL: No redirect result");
+        }
+    }).catch((err) => {
+        console.error("MSAL Redirect Error:", err);
+    });
+
+    // Restore active account if available
     const restored = msalInstance.getActiveAccount();
     if (restored) {
         activeAccount = restored;
@@ -40,31 +58,24 @@ if (!window.__msalInitialized) {
         }));
     }
 
+    // LOGIN (Redirect-based, iOS compatible)
     window.msalLogin = async function (scopesJson) {
         console.log(">>> msalLogin called with:", scopesJson);
 
         const scopes = JSON.parse(scopesJson);
 
         try {
-            const result = await msalInstance.loginPopup({ scopes });
-
-            msalInstance.setActiveAccount(result.account);
-            activeAccount = result.account;
-
-            console.log("MSAL: Login success", result);
-
-            if (result.accessToken) {
-                dispatchToken(result.accessToken);
-            }
-
-            return result.accessToken || null;
+            console.log("MSAL: Starting redirect login...");
+            await msalInstance.loginRedirect({ scopes });
+            return null; // Redirect will take over
 
         } catch (err) {
-            console.error("MSAL Login Error:", err);
+            console.error("MSAL Login Redirect Error:", err);
             return null;
         }
     };
 
+    // TOKEN ACQUISITION
     window.msalGetToken = async function (scopesJson) {
         console.log(">>> msalGetToken called with:", scopesJson);
 
@@ -90,10 +101,11 @@ if (!window.__msalInitialized) {
             return result.accessToken || null;
 
         } catch (err) {
-            console.warn("MSAL: Silent token failed, falling back to popup", err);
-            return await window.msalLogin(scopesJson);
+            console.warn("MSAL: Silent token failed, redirecting to login", err);
+            await msalInstance.loginRedirect({ scopes });
+            return null;
         }
     };
 
-    console.log("MSAL: Initialization complete.");
+    console.log("MSAL: Initialization complete (Redirect Mode).");
 }
