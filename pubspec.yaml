@@ -7,7 +7,7 @@ environment:
 
 dependencies:
   excel: ^2.0.1
-  
+
   flutter:
     sdk: flutter
 
@@ -35,10 +35,4 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/logos/
-    - assets/logos_resized/
-    - assets/afl_fixtures_2026.xlsx
-    - assets/afl_fixtures_2026_pre_season.xlsx
-    - assets/afl_players_2026.xlsx
-    - assets/afl_fixtures_2025_round_24.xlsx
-    - assets/afl_players_2026.json
+    - assets/
