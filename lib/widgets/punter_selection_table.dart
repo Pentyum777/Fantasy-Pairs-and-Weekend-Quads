@@ -43,7 +43,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   static const double headerHeight = 38.0;
 
   double punterColWidth = 80.0;
-  double pickColWidth = 175.0;
+  double pickColWidth = 185.0; // UPDATED
   static const double totalColWidth = 40.0;
 
   // ---------------------------------------------------------------------------
@@ -110,30 +110,6 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   // ---------------------------------------------------------------------------
-  // CLUB CODE MAP
-  // ---------------------------------------------------------------------------
-  static const Map<String, String> _clubCodeMap = {
-    "Adelaide Crows": "ADE",
-    "Brisbane": "BRI",
-    "Carlton": "CARL",
-    "Collingwood": "COLL",
-    "Essendon": "ESS",
-    "Fremantle": "FRE",
-    "Geelong": "GEEL",
-    "Gold Coast Suns": "GC",
-    "Greater Western Sydney": "GWS",
-    "Hawthorn": "HAW",
-    "Melbourne": "MELB",
-    "North Melbourne": "NM",
-    "Port Adelaide": "PORT",
-    "Richmond": "RICH",
-    "St Kilda": "STK",
-    "Sydney Swans": "SYD",
-    "West Coast Eagles": "WCE",
-    "Western Bulldogs": "WB",
-  };
-
-  // ---------------------------------------------------------------------------
   // LOAD PLAYERS
   // ---------------------------------------------------------------------------
   Future<void> _loadPlayers() async {
@@ -151,7 +127,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
         if (rawName.isEmpty) continue;
 
         final clubRaw = (raw['club'] ?? '').toString().trim();
-        final clubCode = _clubCodeMap[clubRaw] ?? clubRaw;
+        final clubCode = clubRaw;
 
         final numberRaw = raw['guernseyNumber'] ?? raw['number'] ?? 0;
         final guernsey = int.tryParse(numberRaw.toString()) ?? 0;
@@ -217,6 +193,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       child: Row(
         children: [
           _headerCell(theme, "Punter", punterColWidth, alignCenter: true),
+
           if (!_isMobile) _resizeHandlePunter(() {}),
 
           for (final label in labels) ...[
@@ -229,8 +206,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       ),
     );
   }
-
-  // ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
   // HEADER CELL
   // ---------------------------------------------------------------------------
   Widget _headerCell(
@@ -329,7 +305,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   // ---------------------------------------------------------------------------
-  // CURRENT PICK
+  // CURRENT PICK LOGIC
   // ---------------------------------------------------------------------------
   (int rowIndex, int colIndex)? _findCurrentPick() {
     final totalPicks = _punterCount * _roundCount;
@@ -362,23 +338,6 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     final pickIndex = pick.pickNumber - 1;
 
     return current.$1 == visualRowIndex && current.$2 == pickIndex;
-  }
-
-  void _scrollToCurrentPick() {
-    final current = _findCurrentPick();
-    if (current == null) return;
-
-    final rowIndex = current.$1;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_verticalScrollController.hasClients) return;
-      final targetOffset = rowIndex * rowHeight;
-      _verticalScrollController.animateTo(
-        targetOffset,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
-    });
   }
 
   // ---------------------------------------------------------------------------
@@ -461,7 +420,6 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                 ),
 
                 Divider(height: 1, thickness: 1, color: cs.outlineVariant),
-
                 // BODY
                 Expanded(
                   child: SingleChildScrollView(
@@ -523,8 +481,9 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       },
     );
   }
+
   // ---------------------------------------------------------------------------
-  // PUNTER CELL
+  // PUNTER CELL  (LEFT‑ALIGNED ROWS)
   // ---------------------------------------------------------------------------
   Widget _punterCell(BuildContext context, PunterSelection row) {
     final theme = Theme.of(context);
@@ -536,12 +495,12 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     return Container(
       width: punterColWidth,
       padding: const EdgeInsets.symmetric(horizontal: 2),
-      alignment: Alignment.center,
+      alignment: Alignment.centerLeft,
       child: TextField(
         enabled: !widget.isCompleted,
         controller: controller,
         focusNode: focusNode,
-        textAlign: TextAlign.center,
+        textAlign: TextAlign.left,
         onChanged: (value) {
           row.punterName = value;
           widget.onChanged?.call();
@@ -562,7 +521,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   // ---------------------------------------------------------------------------
-  // PICK CELL (GLOBAL UNIQUENESS)
+  // PICK CELL (GLOBAL UNIQUENESS + HIDE ARROW WHEN SELECTED)
   // ---------------------------------------------------------------------------
   Widget _pickCell(
     BuildContext context,
@@ -641,6 +600,22 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
               selectedItem: selectedPlayer,
               items: filteredPlayers,
               itemAsString: (p) => p.shortName,
+
+              // ---------------------------------------------------------------
+              // HIDE ARROW WHEN SELECTED
+              // ---------------------------------------------------------------
+              dropdownDecoratorProps: DropDownDecoratorProps(
+                dropdownSearchDecoration: InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  suffixIcon: selectedPlayer == null
+                      ? const Icon(Icons.arrow_drop_down)
+                      : null,
+                ),
+              ),
+
               dropdownBuilder: (context, player) {
                 if (player == null) {
                   return Text(
@@ -668,6 +643,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                   ),
                 );
               },
+
               popupProps: PopupProps.menu(
                 showSearchBox: true,
                 fit: FlexFit.loose,
@@ -697,14 +673,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                   );
                 },
               ),
-              dropdownDecoratorProps: const DropDownDecoratorProps(
-                dropdownSearchDecoration: InputDecoration(
-                  isDense: true,
-                  border: InputBorder.none,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                ),
-              ),
+
               onChanged: (value) {
                 owner.picks[colIndex].player = value;
                 owner.picks[colIndex].score = value?.fantasyScore ?? 0;
@@ -712,7 +681,6 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                 setState(() {
                   _saveSnapshot();
                 });
-                _scrollToCurrentPick();
               },
             ),
           ),
@@ -862,6 +830,9 @@ class _TableSnapshot {
   }
 }
 
+// -----------------------------------------------------------------------------
+// PICK SNAPSHOT
+// -----------------------------------------------------------------------------
 class _PickSnapshot {
   final String? playerId;
   final int score;

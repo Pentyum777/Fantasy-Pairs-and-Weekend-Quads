@@ -21,6 +21,7 @@ class LeaderboardTable extends StatelessWidget {
       ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
 
     return Container(
+      width: 32 + 70 + 36, // total compact width
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(8),
@@ -50,9 +51,9 @@ class LeaderboardTable extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  _headerCell(theme, "P", 36, alignCenter: true),
-                  _headerCell(theme, "Punter", 80, alignCenter: false),
-                  _headerCell(theme, "T", 40, alignCenter: true),
+                  _headerCell(theme, "P", 32, alignCenter: true),
+                  _headerCell(theme, "Punter", 70, alignCenter: true),
+                  _headerCell(theme, "T", 36, alignCenter: true),
                 ],
               ),
             ),
@@ -119,7 +120,7 @@ class LeaderboardTable extends StatelessWidget {
   // ---------------------------------------------------------------------------
   Widget _rankCell(BuildContext context, int index) {
     return Container(
-      width: 36,
+      width: 32,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
@@ -130,11 +131,11 @@ class LeaderboardTable extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // PUNTER NAME CELL
+  // PUNTER NAME CELL (LEFT‑ALIGNED)
   // ---------------------------------------------------------------------------
   Widget _punterNameCell(BuildContext context, PunterSelection p) {
     return Container(
-      width: 80,
+      width: 70,
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
@@ -150,7 +151,7 @@ class LeaderboardTable extends StatelessWidget {
   // ---------------------------------------------------------------------------
   Widget _scoreCell(BuildContext context, PunterSelection p) {
     return Container(
-      width: 40,
+      width: 36,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
