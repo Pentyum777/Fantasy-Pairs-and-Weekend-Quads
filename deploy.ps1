@@ -1,4 +1,4 @@
-Write-Host "=== Fantasy Pairs Deployment Script (Merge Strategy, Correct Base Href) ===" -ForegroundColor Cyan
+Write-Host "=== Fantasy Pairs Deployment Script (Correct Base Href + Merge Strategy) ===" -ForegroundColor Cyan
 
 # --- 1. Ensure no rebase or merge is active ---
 git rebase --abort 2>$null
@@ -42,7 +42,7 @@ Write-Host "Fetching dependencies..." -ForegroundColor Yellow
 flutter pub get
 
 Write-Host "Building Flutter web release with correct base href..." -ForegroundColor Yellow
-flutter build web --release --base-href /
+flutter build web --release --base-href /Fantasy-Pairs-and-Weekend-Quads/
 
 # --- 6. Replace docs folder ---
 Write-Host "Refreshing docs folder..." -ForegroundColor Yellow
