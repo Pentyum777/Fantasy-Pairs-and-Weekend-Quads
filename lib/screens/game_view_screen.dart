@@ -158,53 +158,57 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // CLUB NAME → LOGO CODE MAPPING
+  // TEAM NAME NORMALIZATION + CLUB CODE MAPPING
   // ---------------------------------------------------------------------------
+  String normalizeTeam(String name) {
+    return name
+        .trim()
+        .toLowerCase()
+        .replaceAll("football club", "")
+        .replaceAll("fc", "")
+        .replaceAll("power", "")
+        .replaceAll("giants", "")
+        .replaceAll("lions", "")
+        .replaceAll("suns", "")
+        .replaceAll("eagles", "")
+        .replaceAll("saints", "")
+        .replaceAll("kangaroos", "")
+        .replaceAll("bulldogs", "")
+        .replaceAll("crows", "")
+        .trim();
+  }
+
   String mapClubToCode(String club) {
-    switch (club) {
-      case "Adelaide Crows":
-        return "ADE";
-      case "Brisbane":
-        return "BRL";
-      case "Carlton":
-        return "CAR";
-      case "Collingwood":
-        return "COL";
-      case "Essendon":
-        return "ESS";
-      case "Fremantle":
-        return "FRE";
-      case "Geelong":
-        return "GEE";
-      case "Gold Coast Suns":
-        return "GCS";
-      case "Greater Western Sydney":
-        return "GWS";
-      case "Hawthorn":
-        return "HAW";
-      case "Melbourne":
-        return "MEL";
-      case "North Melbourne":
-        return "NTH";
-      case "Port Adelaide":
-        return "PTA";
-      case "Richmond":
-        return "RIC";
-      case "St Kilda":
-        return "STK";
-      case "Sydney Swans":
-        return "SYD";
-      case "West Coast Eagles":
-        return "WCE";
-      case "Western Bulldogs":
-        return "WBD";
-      default:
-        return club;
+    final normalized = club.trim().toLowerCase();
+
+    if (normalized.contains("adelaide")) return "ADE";
+    if (normalized.contains("brisbane")) return "BRL";
+    if (normalized.contains("carlton")) return "CAR";
+    if (normalized.contains("collingwood")) return "COL";
+    if (normalized.contains("essendon")) return "ESS";
+    if (normalized.contains("fremantle")) return "FRE";
+    if (normalized.contains("geelong")) return "GEE";
+    if (normalized.contains("gold coast")) return "GCS";
+    if (normalized.contains("gws") || normalized.contains("giants")) return "GWS";
+    if (normalized.contains("hawthorn")) return "HAW";
+    if (normalized.contains("melbourne")) return "MEL";
+    if (normalized.contains("north") || normalized.contains("kangaroos")) {
+      return "NTH";
     }
+    if (normalized.contains("port")) return "PTA";
+    if (normalized.contains("richmond")) return "RIC";
+    if (normalized.contains("st k")) return "STK";
+    if (normalized.contains("sydney")) return "SYD";
+    if (normalized.contains("west coast")) return "WCE";
+    if (normalized.contains("bulldogs") || normalized.contains("western")) {
+      return "WBD";
+    }
+
+    return club;
   }
 
   // ---------------------------------------------------------------------------
-  // TEAM LOGO (SMALL 28PX VERSION) — NOW TAKES FULL CLUB NAME
+  // TEAM LOGO (SMALL 28PX VERSION) — FULL CLUB NAME → CODE → ASSET
   // ---------------------------------------------------------------------------
   Widget _teamLogoSmall(String clubName) {
     final code = mapClubToCode(clubName);
@@ -250,7 +254,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     _updateStatsAndPunterScores(_currentStatsByPlayerId.values.toList());
   }
-    // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // BUILD
   // ---------------------------------------------------------------------------
   @override
@@ -318,16 +322,21 @@ class _GameViewScreenState extends State<GameViewScreen> {
                             final awayTeam = f.awayTeam;
 
                             final rowsA = stats
-                                .where((s) => s.team == homeTeam)
+                                .where((s) =>
+                                    normalizeTeam(s.team) ==
+                                    normalizeTeam(homeTeam))
                                 .map(_mapStats)
                                 .toList();
 
                             final rowsB = stats
-                                .where((s) => s.team == awayTeam)
+                                .where((s) =>
+                                    normalizeTeam(s.team) ==
+                                    normalizeTeam(awayTeam))
                                 .map(_mapStats)
                                 .toList();
 
-                            final bool noStats = stats.isEmpty;
+                            final bool noStats = stats.isEmpty ||
+                                (rowsA.isEmpty && rowsB.isEmpty);
 
                             const columns = [
                               "Player",
@@ -355,7 +364,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
                               ),
                             );
 
-                            // Update punter scores even if stats are empty
                             _updateStatsAndPunterScores(stats);
                           }
                         },
