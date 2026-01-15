@@ -422,80 +422,68 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
           const Divider(height: 1),
 
-          // MAIN CONTENT
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        _buildPunterControls(context),
-                        const SizedBox(height: 8),
+// MAIN CONTENT
+Expanded(
+  child: Row(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Expanded(
+        flex: 5,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPunterControls(context),
+              const SizedBox(height: 8),
 
-                        Expanded(
-                          child: Row(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: PunterSelectionTable(
-                                  visiblePunterCount:
-                                      _visiblePunterCount,
-                                  playersPerPunter:
-                                      widget.gameType ==
-                                              "weekend_quads"
-                                          ? 4
-                                          : 2,
-                                  availablePlayers: players,
-                                  selections:
-                                      widget.selections,
-                                  isCompleted:
-                                      _isCompleted,
-                                  readOnly: widget
-                                      .userRoleService
-                                      .isReadOnly,
-                                  onChanged: widget
-                                          .userRoleService
-                                          .isAdmin
-                                      ? () {
-                                          _updateStatsAndPunterScores(
-                                            _currentStatsByPlayerId
-                                                .values
-                                                .toList(),
-                                          );
-                                          setState(() {});
-                                        }
-                                      : null,
-                                ),
-                              ),
-
-                              const SizedBox(width: 12),
-
-                              Expanded(
-                                flex: 1,
-                                child: LeaderboardTable(
-                                  punters: widget.selections
-                                      .take(_visiblePunterCount)
-                                      .toList(),
-                                  rowHeight: 34,
-                                ),
-                              ),
-                            ],
-                          ),
+              Expanded(
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: PunterSelectionTable(
+                          visiblePunterCount: _visiblePunterCount,
+                          playersPerPunter:
+                              widget.gameType == "weekend_quads" ? 4 : 2,
+                          availablePlayers: players,
+                          selections: widget.selections,
+                          isCompleted: _isCompleted,
+                          readOnly: widget.userRoleService.isReadOnly,
+                          onChanged: widget.userRoleService.isAdmin
+                              ? () {
+                                  _updateStatsAndPunterScores(
+                                    _currentStatsByPlayerId.values.toList(),
+                                  );
+                                  setState(() {});
+                                }
+                              : null,
                         ),
-                      ],
-                    ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        flex: 1,
+                        child: LeaderboardTable(
+                          punters: widget.selections
+                              .take(_visiblePunterCount)
+                              .toList(),
+                          rowHeight: 34,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  ),
           ),
         ],
       ),
