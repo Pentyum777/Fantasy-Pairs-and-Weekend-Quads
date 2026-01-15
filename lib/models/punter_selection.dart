@@ -7,11 +7,15 @@ class PunterSelection {
   String punterName;
   int liveScore;
 
+  // ⭐ NEW FIELD — used by Friday Pairs
+  bool isPrizeWinner;
+
   PunterSelection({
     required this.punterNumber,
     required this.picks,
     this.punterName = "",
     this.liveScore = 0,
+    this.isPrizeWinner = false, // default
   });
 
   // Championship placeholder constructor
@@ -24,6 +28,7 @@ class PunterSelection {
       picks: const [],    // Championship doesn't use picks
       punterName: name,
       liveScore: totalScore,
+      isPrizeWinner: false,
     );
   }
 

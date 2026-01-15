@@ -64,17 +64,24 @@ class LeaderboardTable extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final p = sorted[index];
 
-                  return buildSharedTableRow(
-                    context: context,
-                    index: index,
-                    rowHeight: rowHeight,
-                    isInvalid: false,
-                    leftCell: _rankCell(context, index),
-                    middleCells: [
-                      _punterNameCell(context, p),
-                    ],
-                    rightCell: _scoreCell(context, p),
-                  );
+                  final isWinner = p.isPrizeWinner;
+
+return Container(
+  color: isWinner
+      ? Colors.orange.withOpacity(0.25)
+      : Colors.transparent,
+  child: buildSharedTableRow(
+    context: context,
+    index: index,
+    rowHeight: rowHeight,
+    isInvalid: false,
+    leftCell: _rankCell(context, index),
+    middleCells: [
+      _punterNameCell(context, p),
+    ],
+    rightCell: _scoreCell(context, p),
+  ),
+);
                 },
               ),
             ),

@@ -7,6 +7,7 @@ import '../services/punter_score_service.dart';
 import '../services/championship_service.dart';
 import '../services/round_completion_service.dart';
 import '../services/user_role_service.dart';
+import '../services/friday_pairs_service.dart';
 
 import '../models/afl_fixture.dart';
 import '../models/afl_player.dart';
@@ -26,10 +27,8 @@ class GameViewScreen extends StatefulWidget {
   final PlayerRepository playerRepo;
   final PunterScoreService fantasyService;
   final ChampionshipService championshipService;
-
   final RoundCompletionService roundCompletionService;
   final UserRoleService userRoleService;
-
   final List<int>? selectedFixtureIds;
   final List<AflPlayer>? overridePlayers;
 
@@ -61,6 +60,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   Map<String, AflPlayerMatchStats> _currentStatsByPlayerId = {};
 
+  final FridayPairsService _fridayPairsService = FridayPairsService();
+  bool _fridayWinnerSelected = false;
+
   @override
   void initState() {
     super.initState();
@@ -82,7 +84,31 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // INDEPENDENT ROUND COMPLETION CHECK
+  // FRIDAY PAIRS TRIGGER
+  // ---------------------------------------------------------------------------
+  void _handleFridayPairsTrigger(AflFixture fixture) {
+  if (widget.gameType != "friday_pairs") return;
+  if (_fridayWinnerSelected) return;
+
+  // A match is considered "in progress" if:
+  // - It is NOT complete
+  // - The time string is non-empty (clock is running)
+  final isLive = !fixture.complete && fixture.time.isNotEmpty;
+
+  if (isLive) {
+    final winner = _fridayPairsService.selectRandomBottomHalf(widget.selections);
+
+    setState(() {
+      for (final s in widget.selections) {
+        s.isPrizeWinner = (s.punterName == winner.punterName);
+      }
+      _fridayWinnerSelected = true;
+    });
+  }
+}
+
+  // ---------------------------------------------------------------------------
+  // ROUND COMPLETION CHECK
   // ---------------------------------------------------------------------------
   void _checkRoundCompletion() {
     final fixtures = widget.fixtureRepo.fixturesForRound(widget.round);
@@ -133,141 +159,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // MONTH NAME HELPER
-  // ---------------------------------------------------------------------------
-  String _monthName(int m) {
-    const names = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December"
-    ];
-    return names[m - 1];
-  }
-
-  // ---------------------------------------------------------------------------
-  // WEEKEND QUADS → CHAMPIONSHIP
-  // ---------------------------------------------------------------------------
-  void _checkAndCompleteWeekendQuadsRound() {
-    if (widget.gameType != "weekend_quads") return;
-    if (_isCompleted) return;
-
-    final fixtures = widget.fixtureRepo.fixturesForRound(widget.round);
-    final allComplete = fixtures.isNotEmpty && fixtures.every((f) => f.complete);
-
-    if (!allComplete) return;
-
-    setState(() => _isCompleted = true);
-
-    final firstFixture = fixtures.firstWhere(
-      (f) => f.date != null,
-      orElse: () => fixtures.first,
-    );
-
-    final month = firstFixture.date == null
-        ? "Unknown"
-        : _monthName(firstFixture.date!.month);
-
-    widget.championshipService.addRound(month, widget.selections);
-
-    debugPrint("🏆 Weekend Quads round completed and recorded for $month");
-  }
-
-  // ---------------------------------------------------------------------------
-  // GAME TYPE LABELS
-  // ---------------------------------------------------------------------------
-  String _gameTypeLabel() {
-    switch (widget.gameType) {
-      case "thursday_pairs":
-        return "Thursday Pairs";
-      case "friday_pairs":
-        return "Friday Pairs";
-      case "saturday_pairs":
-        return "Saturday Pairs";
-      case "sunday_pairs":
-        return "Sunday Pairs";
-      case "monday_pairs":
-        return "Monday Pairs";
-      case "weekend_quads":
-        return "Weekend Quads";
-      case "custom_pairs":
-        return "Custom Pairs";
-      default:
-        return widget.gameType;
-    }
-  }
-
-  String _appBarTitle() {
-    return "Round ${widget.round} • ${_gameTypeLabel()}";
-  }
-
-  // ---------------------------------------------------------------------------
-  // FIXTURE FILTERING
-  // ---------------------------------------------------------------------------
-  List<AflFixture> _fixturesForGameType() {
-    final all = widget.fixtureRepo.fixturesForRound(widget.round);
-
-    bool isDay(AflFixture f, int weekday) {
-      final d = f.date;
-      if (d == null) return false;
-      return d.weekday == weekday;
-    }
-
-    switch (widget.gameType) {
-      case "thursday_pairs":
-        return all.where((f) => isDay(f, DateTime.thursday)).toList();
-      case "friday_pairs":
-        return all.where((f) => isDay(f, DateTime.friday)).toList();
-      case "saturday_pairs":
-        return all.where((f) => isDay(f, DateTime.saturday)).toList();
-      case "sunday_pairs":
-        return all.where((f) => isDay(f, DateTime.sunday)).toList();
-      case "monday_pairs":
-        return all.where((f) => isDay(f, DateTime.monday)).toList();
-      case "weekend_quads":
-        return all.where((f) {
-          final d = f.date;
-          if (d == null) return false;
-          return d.weekday == DateTime.friday ||
-              d.weekday == DateTime.saturday ||
-              d.weekday == DateTime.sunday ||
-              d.weekday == DateTime.monday;
-        }).toList();
-      case "custom_pairs":
-        return all;
-      default:
-        return all;
-    }
-  }
-
-  List<AflPlayer> _playersForFixture(AflFixture fixture) {
-    final clubs = {fixture.homeTeam, fixture.awayTeam};
-
-    return widget.playerRepo.players
-        .where((p) => clubs.contains(p.club))
-        .toList();
-  }
-
-  String _quarterLabel(AflFixture f) {
-    if (f.complete) return "FT";
-    return "";
-  }
-
-  String _formatTimeRemaining(AflFixture f) {
-    if (f.complete) return "FT";
-    if (f.time.isNotEmpty) return f.time;
-    return "--:--";
-  }
-
-  // ---------------------------------------------------------------------------
   // TEAM LOGO
   // ---------------------------------------------------------------------------
   Widget _teamLogo(String clubCode) {
@@ -306,6 +197,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
         punter.picks[i].player = null;
         punter.picks[i].score = 0;
       }
+      punter.isPrizeWinner = false;
     }
 
     setState(() => _isCompleted = false);
@@ -357,6 +249,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
                     itemBuilder: (context, i) {
                       final f = fixtures[i];
                       final selected = f == _selectedFixture;
+
+                      // 🔥 Friday Pairs trigger
+                      _handleFridayPairsTrigger(f);
 
                       final homeScore = f.homeScore ?? 0;
                       final awayScore = f.awayScore ?? 0;
@@ -655,4 +550,138 @@ class _GameViewScreenState extends State<GameViewScreen> {
     };
   }
 
-}  
+  // ---------------------------------------------------------------------------
+  // GAME TYPE LABELS
+  // ---------------------------------------------------------------------------
+  String _gameTypeLabel() {
+    switch (widget.gameType) {
+      case "thursday_pairs":
+        return "Thursday Pairs";
+      case "friday_pairs":
+        return "Friday Pairs";
+      case "saturday_pairs":
+        return "Saturday Pairs";
+      case "sunday_pairs":
+        return "Sunday Pairs";
+      case "monday_pairs":
+        return "Monday Pairs";
+      case "weekend_quads":
+        return "Weekend Quads";
+      case "custom_pairs":
+        return "Custom Pairs";
+      default:
+        return widget.gameType;
+    }
+  }
+
+  String _appBarTitle() {
+    return "Round ${widget.round} • ${_gameTypeLabel()}";
+  }
+
+  // ---------------------------------------------------------------------------
+  // FIXTURE FILTERING
+  // ---------------------------------------------------------------------------
+  List<AflFixture> _fixturesForGameType() {
+    final all = widget.fixtureRepo.fixturesForRound(widget.round);
+
+    bool isDay(AflFixture f, int weekday) {
+      final d = f.date;
+      if (d == null) return false;
+      return d.weekday == weekday;
+    }
+
+    switch (widget.gameType) {
+      case "thursday_pairs":
+        return all.where((f) => isDay(f, DateTime.thursday)).toList();
+      case "friday_pairs":
+        return all.where((f) => isDay(f, DateTime.friday)).toList();
+      case "saturday_pairs":
+        return all.where((f) => isDay(f, DateTime.saturday)).toList();
+      case "sunday_pairs":
+        return all.where((f) => isDay(f, DateTime.sunday)).toList();
+      case "monday_pairs":
+        return all.where((f) => isDay(f, DateTime.monday)).toList();
+      case "weekend_quads":
+        return all.where((f) {
+          final d = f.date;
+          if (d == null) return false;
+          return d.weekday == DateTime.friday ||
+              d.weekday == DateTime.saturday ||
+              d.weekday == DateTime.sunday ||
+              d.weekday == DateTime.monday;
+        }).toList();
+      case "custom_pairs":
+        return all;
+      default:
+        return all;
+    }
+  }
+
+  List<AflPlayer> _playersForFixture(AflFixture fixture) {
+    final clubs = {fixture.homeTeam, fixture.awayTeam};
+
+    return widget.playerRepo.players
+        .where((p) => clubs.contains(p.club))
+        .toList();
+  }
+
+  String _quarterLabel(AflFixture f) {
+    if (f.complete) return "FT";
+    return "";
+  }
+
+  String _formatTimeRemaining(AflFixture f) {
+    if (f.complete) return "FT";
+    if (f.time.isNotEmpty) return f.time;
+    return "--:--";
+  }
+
+  // ---------------------------------------------------------------------------
+  // WEEKEND QUADS → CHAMPIONSHIP
+  //
+    void _checkAndCompleteWeekendQuadsRound() {
+    if (widget.gameType != "weekend_quads") return;
+    if (_isCompleted) return;
+
+    final fixtures = widget.fixtureRepo.fixturesForRound(widget.round);
+    final allComplete = fixtures.isNotEmpty && fixtures.every((f) => f.complete);
+
+    if (!allComplete) return;
+
+    setState(() => _isCompleted = true);
+
+    final firstFixture = fixtures.firstWhere(
+      (f) => f.date != null,
+      orElse: () => fixtures.first,
+    );
+
+    final month = firstFixture.date == null
+        ? "Unknown"
+        : _monthName(firstFixture.date!.month);
+
+    widget.championshipService.addRound(month, widget.selections);
+
+    debugPrint("🏆 Weekend Quads round completed and recorded for $month");
+  }
+
+  // ---------------------------------------------------------------------------
+  // MONTH NAME HELPER
+  // ---------------------------------------------------------------------------
+  String _monthName(int m) {
+    const names = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ];
+    return names[m - 1];
+  }
+}
