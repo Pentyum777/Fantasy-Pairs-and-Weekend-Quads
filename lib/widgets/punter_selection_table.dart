@@ -643,7 +643,6 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     items: filteredPlayers,
     itemAsString: (p) => p.shortName,
 
-    // HIDE ARROW WHEN SELECTED
     dropdownDecoratorProps: DropDownDecoratorProps(
       dropdownSearchDecoration: InputDecoration(
         isDense: true,
@@ -651,7 +650,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         suffixIcon: selectedPlayer == null
             ? const Icon(Icons.arrow_drop_down)
-            : null,
+            : null, // HIDE ARROW
       ),
     ),
 
@@ -692,22 +691,6 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
           contentPadding: EdgeInsets.all(8),
         ),
       ),
-      itemBuilder: (context, player, isSelected) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          color: isSelected
-              ? cs.surfaceVariant.withOpacity(0.4)
-              : Colors.transparent,
-          child: Text(
-            player.shortName,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: cs.onSurface,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        );
-      },
     ),
 
     onChanged: (value) {
