@@ -88738,7 +88738,7 @@ for(s=J.am(a);s.u();){r=s.gE(s)
 p.n(0,r.a.a,r)}q.w=p
 for(p=J.am(q.a.e);p.u();){s=p.gE(p)
 q.a.w.aif(q.w,s)}q.a9(new A.anR())},
-QC(a){return A.eG(A.aAm(A.aBE("/logos/"+a+".png",new A.anQ(a),B.lA)),36,36)},
+QC(a){return A.eG(A.aAm(A.aBE("logos/"+a+".png",new A.anQ(a),B.lA)),36,36)},
 aee(){var s,r,q,p,o,n=this,m=n.a
 if(m.z.a===B.zd)return
 s=m.d==="weekend_quads"?4:2
