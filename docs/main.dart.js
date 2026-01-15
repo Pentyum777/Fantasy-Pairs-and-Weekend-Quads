@@ -88529,7 +88529,7 @@ r=B.I7[A.AE(s)-1]
 q=A.uw(s)>12?A.uw(s)-12:A.uw(s)
 p=A.uw(s)>=12?"PM":"AM"
 return"Game "+o+" \u2013 "+r+" "+(""+q+":"+B.c.mM(B.e.k(A.aca(s)),2,"0")+" "+p)},
-Mq(a){return A.eG(A.aAm(A.aBE("assets/logos/"+a+".png",new A.alW(a),B.lA)),32,32)}}
+Mq(a){return A.eG(A.aAm(A.aBE("logos/"+a+".png",new A.alW(a),B.lA)),32,32)}}
 A.am0.prototype={
 $2(a,b){var s,r,q,p,o,n,m,l,k=null,j=this.b[b],i=j.x
 if(i==null)i=b
