@@ -42,7 +42,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
   // LAYOUT CONSTANTS (tightened)
   // ---------------------------------------------------------------------------
-  static const double rowHeight = 32.0;
+  static const double rowHeight = 34.0;
   static const double headerHeight = 38.0;
 
   double punterColWidth = 90.0;     // reduced from 110
