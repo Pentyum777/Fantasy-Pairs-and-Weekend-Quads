@@ -1,8 +1,8 @@
 Write-Host "=== Fantasy Pairs Deployment Script (Correct Base Href + Merge Strategy) ===" -ForegroundColor Cyan
 
 # --- 1. Ensure no rebase or merge is active ---
-git rebase --abort 2>$null
-git merge --abort 2>$null
+try { git rebase --abort | Out-Null } catch {}
+try { git merge --abort  | Out-Null } catch {}
 
 # --- 2. Auto-commit any unstaged changes ---
 if ((git status --porcelain) -ne "") {
@@ -47,11 +47,11 @@ flutter build web --release --base-href /Fantasy-Pairs-and-Weekend-Quads/
 # --- 6. Replace docs folder ---
 Write-Host "Refreshing docs folder..." -ForegroundColor Yellow
 Remove-Item -Recurse -Force docs -ErrorAction SilentlyContinue
-Copy-Item -Recurse build/web docs
+New-Item -ItemType Directory -Path docs | Out-Null
+Copy-Item -Recurse -Force build/web/* docs/
 
 # --- 7. Commit deployment ---
 Write-Host "Committing deployment..." -ForegroundColor Yellow
-git add web/index.html
 git add docs
 git commit -m "Automated deploy: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" 2>$null
 
