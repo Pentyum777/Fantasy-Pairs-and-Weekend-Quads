@@ -162,7 +162,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   // TEAM LOGO
   // ---------------------------------------------------------------------------
   Widget _teamLogo(String clubCode) {
-    final assetPath = '/logos/$clubCode.png';
+    final assetPath = 'logos/$clubCode.png';
 
     return SizedBox(
       width: 36,
