@@ -16,7 +16,8 @@ import '../models/afl_player_match_stats.dart';
 
 import '../widgets/punter_selection_table.dart';
 import '../widgets/leaderboard_table.dart';
-import '../widgets/side_by_side_game_tables.dart';
+import '../widgets/stats_overlay.dart';
+
 import '../parsers/match_stats_parser.dart';
 
 class GameViewScreen extends StatefulWidget {
@@ -87,25 +88,23 @@ class _GameViewScreenState extends State<GameViewScreen> {
   // FRIDAY PAIRS TRIGGER
   // ---------------------------------------------------------------------------
   void _handleFridayPairsTrigger(AflFixture fixture) {
-  if (widget.gameType != "friday_pairs") return;
-  if (_fridayWinnerSelected) return;
+    if (widget.gameType != "friday_pairs") return;
+    if (_fridayWinnerSelected) return;
 
-  // A match is considered "in progress" if:
-  // - It is NOT complete
-  // - The time string is non-empty (clock is running)
-  final isLive = !fixture.complete && fixture.time.isNotEmpty;
+    final isLive = !fixture.complete && fixture.time.isNotEmpty;
 
-  if (isLive) {
-    final winner = _fridayPairsService.selectRandomBottomHalf(widget.selections);
+    if (isLive) {
+      final winner =
+          _fridayPairsService.selectRandomBottomHalf(widget.selections);
 
-    setState(() {
-      for (final s in widget.selections) {
-        s.isPrizeWinner = (s.punterName == winner.punterName);
-      }
-      _fridayWinnerSelected = true;
-    });
+      setState(() {
+        for (final s in widget.selections) {
+          s.isPrizeWinner = (s.punterName == winner.punterName);
+        }
+        _fridayWinnerSelected = true;
+      });
+    }
   }
-}
 
   // ---------------------------------------------------------------------------
   // ROUND COMPLETION CHECK
@@ -159,14 +158,14 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // TEAM LOGO
+  // TEAM LOGO (SMALL 28PX VERSION)
   // ---------------------------------------------------------------------------
-  Widget _teamLogo(String clubCode) {
+  Widget _teamLogoSmall(String clubCode) {
     final assetPath = 'logos/$clubCode.png';
 
     return SizedBox(
-      width: 36,
-      height: 36,
+      width: 28,
+      height: 28,
       child: ClipOval(
         child: Image.asset(
           assetPath,
@@ -175,7 +174,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
             return Center(
               child: Text(
                 clubCode,
-                style: const TextStyle(fontSize: 10),
+                style: const TextStyle(fontSize: 9),
               ),
             );
           },
@@ -204,7 +203,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     _updateStatsAndPunterScores(_currentStatsByPlayerId.values.toList());
   }
-
   // ---------------------------------------------------------------------------
   // BUILD
   // ---------------------------------------------------------------------------
@@ -250,7 +248,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
                       final f = fixtures[i];
                       final selected = f == _selectedFixture;
 
-                      // 🔥 Friday Pairs trigger
                       _handleFridayPairsTrigger(f);
 
                       final homeScore = f.homeScore ?? 0;
@@ -268,86 +265,132 @@ class _GameViewScreenState extends State<GameViewScreen> {
                           if (f.matchId != null) {
                             final stats = await MatchStatsParser
                                 .fetchMatchStats(f.matchId!);
+
+                            final homeTeam = f.homeTeam;
+                            final awayTeam = f.awayTeam;
+
+                            final rowsA = stats
+                                .where((s) => s.team == homeTeam)
+                                .map(_mapStats)
+                                .toList();
+
+                            final rowsB = stats
+                                .where((s) => s.team == awayTeam)
+                                .map(_mapStats)
+                                .toList();
+
+                            const columns = [
+                              "Player",
+                              "AF",
+                              "K",
+                              "HB",
+                              "D",
+                              "M",
+                              "T",
+                              "G",
+                              "B",
+                            ];
+
+                            showDialog(
+                              context: context,
+                              builder: (_) => StatsOverlay(
+                                leftTitle: homeTeam,
+                                rightTitle: awayTeam,
+                                leftRows: rowsA,
+                                rightRows: rowsB,
+                                columns: columns,
+                              ),
+                            );
+
                             _updateStatsAndPunterScores(stats);
                           }
                         },
-                        child: SizedBox(
-                          width: 160,
-                          height: 100,
-                          child: Card(
-                            elevation: selected ? 6 : 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              side: selected
-                                  ? BorderSide(
+                        child: AnimatedScale(
+                          scale: selected ? 1.03 : 1.0,
+                          duration: const Duration(milliseconds: 150),
+                          child: Container(
+                            width: 140,
+                            height: 85,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceVariant,
+                              borderRadius: BorderRadius.circular(22),
+                              border: selected
+                                  ? Border.all(
                                       color: Theme.of(context)
                                           .colorScheme
                                           .primary,
                                       width: 2,
                                     )
-                                  : BorderSide.none,
+                                  : null,
+                              boxShadow: selected
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.12),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      )
+                                    ]
+                                  : [],
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 6,
-                                horizontal: 8,
-                              ),
-                              child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      _teamLogo(f.homeTeam),
-                                      Flexible(
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: RichText(
-                                            text: TextSpan(
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                color: Colors.black,
-                                              ),
-                                              children: [
-                                                TextSpan(
-                                                  text: "$homeScore",
-                                                  style: TextStyle(
-                                                    fontWeight: homeWinning
-                                                        ? FontWeight.bold
-                                                        : FontWeight.normal,
-                                                  ),
-                                                ),
-                                                const TextSpan(text: "–"),
-                                                TextSpan(
-                                                  text: "$awayScore",
-                                                  style: TextStyle(
-                                                    fontWeight: awayWinning
-                                                        ? FontWeight.bold
-                                                        : FontWeight.normal,
-                                                  ),
-                                                ),
-                                              ],
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 4, horizontal: 6),
+                            child: Column(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    _teamLogoSmall(f.homeTeam),
+                                    Flexible(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: RichText(
+                                          text: TextSpan(
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.black,
                                             ),
+                                            children: [
+                                              TextSpan(
+                                                text: "$homeScore",
+                                                style: TextStyle(
+                                                  fontWeight: homeWinning
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                ),
+                                              ),
+                                              const TextSpan(text: " – "),
+                                              TextSpan(
+                                                text: "$awayScore",
+                                                style: TextStyle(
+                                                  fontWeight: awayWinning
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ),
-                                      _teamLogo(f.awayTeam),
-                                    ],
-                                  ),
-                                  Text(
-                                    quarterText.isEmpty
-                                        ? timeText
-                                        : "$quarterText • $timeText",
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
+                                    _teamLogoSmall(f.awayTeam),
+                                  ],
+                                ),
+                                Text(
+                                  quarterText.isEmpty
+                                      ? timeText
+                                      : "$quarterText • $timeText",
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
                                   ),
-                                ],
-                              ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -363,9 +406,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // LEFT SIDE
                 Expanded(
-                  flex: 4,
+                  flex: 5,
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
@@ -378,7 +420,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              // Punter Table
                               Expanded(
                                 flex: 3,
                                 child: PunterSelectionTable(
@@ -405,7 +446,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
                               const SizedBox(width: 12),
 
-                              // Leaderboard
                               Expanded(
                                 flex: 1,
                                 child: LeaderboardTable(
@@ -422,22 +462,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
                     ),
                   ),
                 ),
-
-                const SizedBox(width: 12),
-
-                // RIGHT SIDE: Stats Panel
-                SizedBox(
-                  width: 300,
-                  child: Container(
-                    color: Theme.of(context).colorScheme.surfaceVariant,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: _selectedFixture == null
-                          ? const Center(child: Text("No stats available."))
-                          : _buildStatsPanel(_selectedFixture!),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -445,7 +469,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
       ),
     );
   }
-
   // ---------------------------------------------------------------------------
   // PUNTER CONTROLS
   // ---------------------------------------------------------------------------
@@ -493,92 +516,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // STATS PANEL
-  // ---------------------------------------------------------------------------
-  Widget _buildStatsPanel(AflFixture fixture) {
-    if (fixture.matchId == null) {
-      return const Center(child: Text("No stats available."));
-    }
-
-    final stats = _currentStatsByPlayerId.values.toList();
-    if (stats.isEmpty) {
-      return const Center(child: Text("No stats available."));
-    }
-
-    final homeTeam = fixture.homeTeam;
-    final awayTeam = fixture.awayTeam;
-
-    final rowsA =
-        stats.where((s) => s.team == homeTeam).map(_mapStats).toList();
-    final rowsB =
-        stats.where((s) => s.team == awayTeam).map(_mapStats).toList();
-
-    if (rowsA.isEmpty && rowsB.isEmpty) {
-      return const Center(child: Text("No stats available for this match."));
-    }
-
-    return SideBySideGameTables(
-      leftTitle: homeTeam,
-      rightTitle: awayTeam,
-      leftRows: rowsA,
-      rightRows: rowsB,
-      columns: const [
-        "Player",
-        "AF",
-        "K",
-        "HB",
-        "D",
-        "M",
-        "T",
-        "G",
-        "B",
-      ],
-    );
-  }
-
-  Map<String, dynamic> _mapStats(AflPlayerMatchStats s) {
-    return {
-      "Player": s.player.name,
-      "AF": s.fantasyPoints,
-      "K": s.kicks,
-      "HB": s.handballs,
-      "D": s.disposals,
-      "M": s.marks,
-      "T": s.tackles,
-      "G": s.goals,
-      "B": s.behinds,
-    };
-  }
-
-  // ---------------------------------------------------------------------------
-  // GAME TYPE LABELS
-  // ---------------------------------------------------------------------------
-  String _gameTypeLabel() {
-    switch (widget.gameType) {
-      case "thursday_pairs":
-        return "Thursday Pairs";
-      case "friday_pairs":
-        return "Friday Pairs";
-      case "saturday_pairs":
-        return "Saturday Pairs";
-      case "sunday_pairs":
-        return "Sunday Pairs";
-      case "monday_pairs":
-        return "Monday Pairs";
-      case "weekend_quads":
-        return "Weekend Quads";
-      case "custom_pairs":
-        return "Custom Pairs";
-      default:
-        return widget.gameType;
-    }
-  }
-
-  String _appBarTitle() {
-    return "Round ${widget.round} • ${_gameTypeLabel()}";
-  }
-
-  // ---------------------------------------------------------------------------
   // FIXTURE FILTERING
   // ---------------------------------------------------------------------------
   List<AflFixture> _fixturesForGameType() {
@@ -617,6 +554,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // PLAYER FILTERING FOR SELECTED FIXTURE
+  // ---------------------------------------------------------------------------
   List<AflPlayer> _playersForFixture(AflFixture fixture) {
     final clubs = {fixture.homeTeam, fixture.awayTeam};
 
@@ -625,6 +565,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
         .toList();
   }
 
+  // ---------------------------------------------------------------------------
+  // TIME + QUARTER HELPERS
+  // ---------------------------------------------------------------------------
   String _quarterLabel(AflFixture f) {
     if (f.complete) return "FT";
     return "";
@@ -638,13 +581,14 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   // ---------------------------------------------------------------------------
   // WEEKEND QUADS → CHAMPIONSHIP
-  //
-    void _checkAndCompleteWeekendQuadsRound() {
+  // ---------------------------------------------------------------------------
+  void _checkAndCompleteWeekendQuadsRound() {
     if (widget.gameType != "weekend_quads") return;
     if (_isCompleted) return;
 
     final fixtures = widget.fixtureRepo.fixturesForRound(widget.round);
-    final allComplete = fixtures.isNotEmpty && fixtures.every((f) => f.complete);
+    final allComplete =
+        fixtures.isNotEmpty && fixtures.every((f) => f.complete);
 
     if (!allComplete) return;
 
@@ -683,5 +627,50 @@ class _GameViewScreenState extends State<GameViewScreen> {
       "December"
     ];
     return names[m - 1];
+  }
+
+  // ---------------------------------------------------------------------------
+  // GAME TYPE LABELS + APP BAR TITLE
+  // ---------------------------------------------------------------------------
+  String _gameTypeLabel() {
+    switch (widget.gameType) {
+      case "thursday_pairs":
+        return "Thursday Pairs";
+      case "friday_pairs":
+        return "Friday Pairs";
+      case "saturday_pairs":
+        return "Saturday Pairs";
+      case "sunday_pairs":
+        return "Sunday Pairs";
+      case "monday_pairs":
+        return "Monday Pairs";
+      case "weekend_quads":
+        return "Weekend Quads";
+      case "custom_pairs":
+        return "Custom Pairs";
+      default:
+        return widget.gameType;
+    }
+  }
+
+  String _appBarTitle() {
+    return "Round ${widget.round} • ${_gameTypeLabel()}";
+  }
+
+  // ---------------------------------------------------------------------------
+  // MAP STATS → TABLE ROW (OPTION A)
+  // ---------------------------------------------------------------------------
+  Map<String, dynamic> _mapStats(AflPlayerMatchStats s) {
+    return {
+      "Player": s.player.name,
+      "AF": s.fantasyPoints,
+      "K": s.kicks,
+      "HB": s.handballs,
+      "D": s.disposals,
+      "M": s.marks,
+      "T": s.tackles,
+      "G": s.goals,
+      "B": s.behinds,
+    };
   }
 }

@@ -30,10 +30,108 @@ class SideBySideGameTables extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // ORIGINAL TABLE BUILDER (unchanged)
+  // ---------------------------------------------------------------------------
   Widget _buildTable(
     BuildContext context,
     String title,
     List<Map<String, dynamic>> rows,
+  ) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          // Title header
+          Container(
+            height: headerHeight,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            alignment: Alignment.centerLeft,
+            color: cs.surfaceVariant,
+            child: Text(
+              title,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+
+          const Divider(height: 1),
+
+          // Column labels
+          Container(
+            height: headerHeight,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            color: cs.surfaceVariant,
+            child: Row(
+              children: columns
+                  .map(
+                    (c) => Expanded(
+                      child: Text(
+                        c,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+
+          const Divider(height: 1),
+
+          // Data rows
+          ...rows.asMap().entries.map((entry) {
+            final index = entry.key;
+            final row = entry.value;
+            final isStriped = index.isOdd;
+
+            return Container(
+              height: rowHeight,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              color: isStriped
+                  ? cs.surfaceVariant.withAlpha(76)
+                  : cs.surface,
+              child: Row(
+                children: columns
+                    .map(
+                      (c) => Expanded(
+                        child: Text(
+                          "${row[c]}",
+                          style: theme.textTheme.bodySmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // NEW: SINGLE TABLE BUILDER FOR THE RESPONSIVE OVERLAY
+  // ---------------------------------------------------------------------------
+  static Widget buildSingleTable(
+    BuildContext context,
+    String title,
+    List<Map<String, dynamic>> rows,
+    List<String> columns,
   ) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
