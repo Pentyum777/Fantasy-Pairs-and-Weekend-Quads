@@ -158,10 +158,57 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // TEAM LOGO (SMALL 28PX VERSION)
+  // CLUB NAME → LOGO CODE MAPPING
   // ---------------------------------------------------------------------------
-  Widget _teamLogoSmall(String clubCode) {
-    final assetPath = 'logos/$clubCode.png';
+  String mapClubToCode(String club) {
+    switch (club) {
+      case "Adelaide Crows":
+        return "ADE";
+      case "Brisbane":
+        return "BRL";
+      case "Carlton":
+        return "CAR";
+      case "Collingwood":
+        return "COL";
+      case "Essendon":
+        return "ESS";
+      case "Fremantle":
+        return "FRE";
+      case "Geelong":
+        return "GEE";
+      case "Gold Coast Suns":
+        return "GCS";
+      case "Greater Western Sydney":
+        return "GWS";
+      case "Hawthorn":
+        return "HAW";
+      case "Melbourne":
+        return "MEL";
+      case "North Melbourne":
+        return "NTH";
+      case "Port Adelaide":
+        return "PTA";
+      case "Richmond":
+        return "RIC";
+      case "St Kilda":
+        return "STK";
+      case "Sydney Swans":
+        return "SYD";
+      case "West Coast Eagles":
+        return "WCE";
+      case "Western Bulldogs":
+        return "WBD";
+      default:
+        return club;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // TEAM LOGO (SMALL 28PX VERSION) — NOW TAKES FULL CLUB NAME
+  // ---------------------------------------------------------------------------
+  Widget _teamLogoSmall(String clubName) {
+    final code = mapClubToCode(clubName);
+    final assetPath = 'logos/$code.png';
 
     return SizedBox(
       width: 28,
@@ -173,7 +220,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
           errorBuilder: (_, __, ___) {
             return Center(
               child: Text(
-                clubCode,
+                code,
                 style: const TextStyle(fontSize: 9),
               ),
             );
@@ -241,8 +288,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
                 ? const Center(child: Text("No fixtures"))
                 : ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     itemCount: fixtures.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 8),
                     itemBuilder: (context, i) {
@@ -280,6 +327,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
                                 .map(_mapStats)
                                 .toList();
 
+                            final bool noStats = stats.isEmpty;
+
                             const columns = [
                               "Player",
                               "AF",
@@ -297,19 +346,22 @@ class _GameViewScreenState extends State<GameViewScreen> {
                               builder: (_) => StatsOverlay(
                                 leftTitle: homeTeam,
                                 rightTitle: awayTeam,
-                                leftRows: rowsA,
-                                rightRows: rowsB,
-                                columns: columns,
+                                leftRows: noStats ? [] : rowsA,
+                                rightRows: noStats ? [] : rowsB,
+                                columns: noStats ? [] : columns,
+                                noStatsMessage: noStats
+                                    ? "No stats available yet"
+                                    : null,
                               ),
                             );
 
+                            // Update punter scores even if stats are empty
                             _updateStatsAndPunterScores(stats);
                           }
                         },
                         child: AnimatedScale(
                           scale: selected ? 1.03 : 1.0,
-                          duration:
-                              const Duration(milliseconds: 150),
+                          duration: const Duration(milliseconds: 150),
                           child: Container(
                             width: 115,
                             height: 80,
@@ -317,8 +369,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
                               color: Theme.of(context)
                                   .colorScheme
                                   .surfaceVariant,
-                              borderRadius:
-                                  BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(8),
                               border: selected
                                   ? Border.all(
                                       color: Theme.of(context)
@@ -330,11 +381,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
                               boxShadow: selected
                                   ? [
                                       BoxShadow(
-                                        color: Colors.black
-                                            .withOpacity(0.10),
+                                        color: Colors.black.withOpacity(0.10),
                                         blurRadius: 4,
-                                        offset:
-                                            const Offset(0, 2),
+                                        offset: const Offset(0, 2),
                                       )
                                     ]
                                   : [],
@@ -349,46 +398,32 @@ class _GameViewScreenState extends State<GameViewScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    _teamLogoSmallSized(
-                                        f.homeTeam, 26),
+                                    _teamLogoSmallSized(f.homeTeam, 26),
                                     Flexible(
                                       child: FittedBox(
                                         fit: BoxFit.scaleDown,
                                         child: RichText(
                                           text: TextSpan(
-                                            style:
-                                                const TextStyle(
+                                            style: const TextStyle(
                                               fontSize: 14,
-                                              color:
-                                                  Colors.black,
+                                              color: Colors.black,
                                             ),
                                             children: [
                                               TextSpan(
-                                                text:
-                                                    "$homeScore",
-                                                style:
-                                                    TextStyle(
-                                                  fontWeight:
-                                                      homeWinning
-                                                          ? FontWeight
-                                                              .bold
-                                                          : FontWeight
-                                                              .normal,
+                                                text: "$homeScore",
+                                                style: TextStyle(
+                                                  fontWeight: homeWinning
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
                                                 ),
                                               ),
-                                              const TextSpan(
-                                                  text: " – "),
+                                              const TextSpan(text: " – "),
                                               TextSpan(
-                                                text:
-                                                    "$awayScore",
-                                                style:
-                                                    TextStyle(
-                                                  fontWeight:
-                                                      awayWinning
-                                                          ? FontWeight
-                                                              .bold
-                                                          : FontWeight
-                                                              .normal,
+                                                text: "$awayScore",
+                                                style: TextStyle(
+                                                  fontWeight: awayWinning
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
                                                 ),
                                               ),
                                             ],
@@ -396,8 +431,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
                                         ),
                                       ),
                                     ),
-                                    _teamLogoSmallSized(
-                                        f.awayTeam, 26),
+                                    _teamLogoSmallSized(f.awayTeam, 26),
                                   ],
                                 ),
                                 Text(
@@ -408,8 +442,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
                                     fontSize: 11,
                                     color: Colors.grey,
                                   ),
-                                  overflow:
-                                      TextOverflow.ellipsis,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
@@ -422,74 +455,77 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
           const Divider(height: 1),
 
-// MAIN CONTENT
-Expanded(
-  child: Row(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Expanded(
-        flex: 5,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildPunterControls(context),
-              const SizedBox(height: 8),
-
-              Expanded(
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: PunterSelectionTable(
-                          visiblePunterCount: _visiblePunterCount,
-                          playersPerPunter:
-                              widget.gameType == "weekend_quads" ? 4 : 2,
-                          availablePlayers: players,
-                          selections: widget.selections,
-                          isCompleted: _isCompleted,
-                          readOnly: widget.userRoleService.isReadOnly,
-                          onChanged: widget.userRoleService.isAdmin
-                              ? () {
-                                  _updateStatsAndPunterScores(
-                                    _currentStatsByPlayerId.values.toList(),
-                                  );
-                                  setState(() {});
-                                }
-                              : null,
+          // MAIN CONTENT
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildPunterControls(context),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: PunterSelectionTable(
+                                    visiblePunterCount: _visiblePunterCount,
+                                    playersPerPunter:
+                                        widget.gameType == "weekend_quads"
+                                            ? 4
+                                            : 2,
+                                    availablePlayers: players,
+                                    selections: widget.selections,
+                                    isCompleted: _isCompleted,
+                                    readOnly:
+                                        widget.userRoleService.isReadOnly,
+                                    onChanged:
+                                        widget.userRoleService.isAdmin
+                                            ? () {
+                                                _updateStatsAndPunterScores(
+                                                  _currentStatsByPlayerId.values
+                                                      .toList(),
+                                                );
+                                                setState(() {});
+                                              }
+                                            : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 1,
+                                  child: LeaderboardTable(
+                                    punters: widget.selections
+                                        .take(_visiblePunterCount)
+                                        .toList(),
+                                    rowHeight: 34,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-
-                      const SizedBox(width: 12),
-
-                      Expanded(
-                        flex: 1,
-                        child: LeaderboardTable(
-                          punters: widget.selections
-                              .take(_visiblePunterCount)
-                              .toList(),
-                          rowHeight: 34,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ],
-  ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-    // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
   // TEAM LOGO SIZED WRAPPER (HELPER)
   // ---------------------------------------------------------------------------
   Widget _teamLogoSmallSized(String team, double size) {
@@ -535,8 +571,8 @@ Expanded(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red.shade600,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 8),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
           child: const Text(
             "Reset Selections",
@@ -546,8 +582,7 @@ Expanded(
       ],
     );
   }
-
-  // ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
   // FIXTURE FILTERING
   // ---------------------------------------------------------------------------
   List<AflFixture> _fixturesForGameType() {
@@ -690,7 +725,7 @@ Expanded(
   }
 
   // ---------------------------------------------------------------------------
-  // MAP STATS → TABLE ROW (OPTION A)
+  // MAP STATS → TABLE ROW
   // ---------------------------------------------------------------------------
   Map<String, dynamic> _mapStats(AflPlayerMatchStats s) {
     return {

@@ -8,6 +8,9 @@ class StatsOverlay extends StatelessWidget {
   final List<Map<String, dynamic>> rightRows;
   final List<String> columns;
 
+  /// NEW: optional message when no stats exist
+  final String? noStatsMessage;
+
   const StatsOverlay({
     super.key,
     required this.leftTitle,
@@ -15,6 +18,7 @@ class StatsOverlay extends StatelessWidget {
     required this.leftRows,
     required this.rightRows,
     required this.columns,
+    this.noStatsMessage,
   });
 
   @override
@@ -54,51 +58,65 @@ class StatsOverlay extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // Scrollable content
-              Expanded(
-                child: SingleChildScrollView(
-                  child: isWide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: SideBySideGameTables.buildSingleTable(
+              // NEW: Empty-state message
+              if (noStatsMessage != null)
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      noStatsMessage!,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                )
+              else
+                // Scrollable content
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: isWide
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: SideBySideGameTables.buildSingleTable(
+                                  context,
+                                  leftTitle,
+                                  leftRows,
+                                  columns,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: SideBySideGameTables.buildSingleTable(
+                                  context,
+                                  rightTitle,
+                                  rightRows,
+                                  columns,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              SideBySideGameTables.buildSingleTable(
                                 context,
                                 leftTitle,
                                 leftRows,
                                 columns,
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: SideBySideGameTables.buildSingleTable(
+                              const SizedBox(height: 16),
+                              SideBySideGameTables.buildSingleTable(
                                 context,
                                 rightTitle,
                                 rightRows,
                                 columns,
                               ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            SideBySideGameTables.buildSingleTable(
-                              context,
-                              leftTitle,
-                              leftRows,
-                              columns,
-                            ),
-                            const SizedBox(height: 16),
-                            SideBySideGameTables.buildSingleTable(
-                              context,
-                              rightTitle,
-                              rightRows,
-                              columns,
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
