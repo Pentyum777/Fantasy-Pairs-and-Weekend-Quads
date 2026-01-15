@@ -1,28 +1,62 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
-  <meta name="description" content="A new Flutter project." />
+Write-Host "=== Fantasy Pairs Deployment Script (Merge Strategy, Correct Base Href) ===" -ForegroundColor Cyan
 
-  <title>Flutter Web App</title>
+# --- 1. Ensure no rebase or merge is active ---
+git rebase --abort 2>$null
+git merge --abort 2>$null
 
-  <!-- Load MSAL.js -->
-  <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+# --- 2. Auto-commit any unstaged changes ---
+if ((git status --porcelain) -ne "") {
+    Write-Host "Staging and committing local changes..." -ForegroundColor Yellow
+    git add .
+    git commit -m "Auto-save before deploy"
+}
 
-  <!-- Load your MSAL integration -->
-  <script src="msal.js"></script>
+# --- 3. Pull using merge (remote wins cleanly) ---
+Write-Host "Pulling latest changes (merge, no rebase)..." -ForegroundColor Yellow
+git pull --no-rebase
 
-  <!-- Flutter web bootstrap -->
-  <meta name='flutter-service-worker' content='false'>
-  <base href="$FLUTTER_BASE_HREF">
-  <meta name="flutter-web-renderer" content="html" />
-  <meta name="flutter-web-auto-detect" content="false" />
-</head>
+# --- 4. Ensure index.html contains required tags ---
+$indexPath = "web/index.html"
+$indexContent = Get-Content $indexPath -Raw
 
-<body>
-  <script src="main.dart.js" type="application/javascript"></script>
-</body>
-</html>
+# Ensure base placeholder exists
+if ($indexContent -notmatch '<base href="\$FLUTTER_BASE_HREF">') {
+    Write-Host "Restoring <base href=""`$FLUTTER_BASE_HREF""> placeholder..." -ForegroundColor Yellow
+    $indexContent = $indexContent -replace '<base href=".*?">', '<base href="$FLUTTER_BASE_HREF">'
+}
 
+# Ensure service worker is disabled
+if ($indexContent -notmatch 'flutter-service-worker') {
+    Write-Host "Injecting service worker disable flag..." -ForegroundColor Yellow
+    $indexContent = $indexContent -replace '<base href="\$FLUTTER_BASE_HREF">',
+        "<meta name='flutter-service-worker' content='false'>`n  <base href=""`$FLUTTER_BASE_HREF"">"
+}
 
+Set-Content -Path $indexPath -Value $indexContent
+
+# --- 5. Clean + rebuild Flutter ---
+Write-Host "Cleaning Flutter build..." -ForegroundColor Yellow
+flutter clean
+
+Write-Host "Fetching dependencies..." -ForegroundColor Yellow
+flutter pub get
+
+Write-Host "Building Flutter web release with correct base href..." -ForegroundColor Yellow
+flutter build web --release --base-href /
+
+# --- 6. Replace docs folder ---
+Write-Host "Refreshing docs folder..." -ForegroundColor Yellow
+Remove-Item -Recurse -Force docs -ErrorAction SilentlyContinue
+Copy-Item -Recurse build/web docs
+
+# --- 7. Commit deployment ---
+Write-Host "Committing deployment..." -ForegroundColor Yellow
+git add web/index.html
+git add docs
+git commit -m "Automated deploy: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" 2>$null
+
+# --- 8. Push to GitHub ---
+Write-Host "Pushing to GitHub..." -ForegroundColor Yellow
+git push
+
+Write-Host "=== Deployment Complete ===" -ForegroundColor Green
