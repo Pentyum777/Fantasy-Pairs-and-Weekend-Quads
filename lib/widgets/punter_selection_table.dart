@@ -46,7 +46,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   static const double headerHeight = 38.0;
 
   double punterColWidth = 90.0;     // reduced from 110
-  double pickColWidth = 160.0;      // reduced from 150
+  double pickColWidth = 155.0;      // reduced from 150
   static const double totalColWidth = 60.0;
 
   // ---------------------------------------------------------------------------
