@@ -13,7 +13,7 @@ class AflClubCodes {
     if (aflCodes.contains(c)) return c.toUpperCase();
 
     // Full name → AFL code
-   if (c.contains("adelaide") && c.contains("crows")) return "ADE";
+if (c.contains("adelaide") && c.contains("crows")) return "ADE";
 if (c.contains("brisbane")) return "BRI";
 if (c.contains("carlton")) return "CARL";
 if (c.contains("collingwood")) return "COLL";
