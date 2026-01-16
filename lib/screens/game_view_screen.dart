@@ -191,20 +191,20 @@ class _GameViewScreenState extends State<GameViewScreen> {
   String mapClubToCode(String club) {
     final normalized = club.trim().toLowerCase();
 
-    if (normalized.contains("adelaide crowws")) return "ADE";
-    if (normalized.contains("brisbane lions")) return "BRL";
-    if (normalized.contains("carlton")) return "CAR";
-    if (normalized.contains("collingwood")) return "COL";
+    if (normalized.contains("adelaide crows")) return "ADE";
+    if (normalized.contains("brisbane lions")) return "BRI";
+    if (normalized.contains("carlton")) return "CARL";
+    if (normalized.contains("collingwood")) return "COLL";
     if (normalized.contains("essendon")) return "ESS";
     if (normalized.contains("fremantle")) return "FRE";
-    if (normalized.contains("geelong cats")) return "GEE";
-    if (normalized.contains("gold coast suns")) return "GCS";
+    if (normalized.contains("geelong cats")) return "GEEL";
+    if (normalized.contains("gold coast suns")) return "GC";
     if (normalized.contains("gws giants") || normalized.contains("giants")) return "GWS";
     if (normalized.contains("hawthorn")) return "HAW";
     if (normalized.contains("melbourne")) return "MEL";
-    if (normalized.contains("north melbourne")) return "NTH";
-    if (normalized.contains("port adelaide")) return "PTA";
-    if (normalized.contains("richmond")) return "RIC";
+    if (normalized.contains("north melbourne")) return "NM";
+    if (normalized.contains("port adelaide")) return "PORT";
+    if (normalized.contains("richmond")) return "RICH";
     if (normalized.contains("st kilda")) return "STK";
     if (normalized.contains("sydney swans")) return "SYD";
     if (normalized.contains("west coast eagles")) return "WCE";
