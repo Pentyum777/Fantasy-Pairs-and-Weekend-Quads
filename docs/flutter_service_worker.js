@@ -3,9 +3,9 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "39ca54a133910d22967207ae5a5564e6",
-"assets/AssetManifest.bin.json": "0cd0bc2afb279dfead45a5f7423f9209",
-"assets/AssetManifest.json": "1b16333c9ba39113dd9ef93ea1d9823e",
+const RESOURCES = {"assets/AssetManifest.bin": "ccfdba33cefd36cb32b8e3adbecacdaa",
+"assets/AssetManifest.bin.json": "2ffb9d6e05a20d47be127ac567344944",
+"assets/AssetManifest.json": "cf08ddf4cc1a11cb47c955340de3b896",
 "assets/assets/afl_fixtures_2025_round_24.xlsx": "60c937b2f2f2603ad741222e7a019a73",
 "assets/assets/afl_fixtures_2026.xlsx": "2e2dde45670aef0c3b1b32f1d711bbcf",
 "assets/assets/afl_fixtures_2026_pre_season.xlsx": "8d23a9bf3b1886be3403a7111e556616",
@@ -24,7 +24,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "39ca54a133910d22967207ae5a5564e6
 "assets/assets/logos/MELB.png": "9f360259f4cf06ce34ddcbb8ba00fd1c",
 "assets/assets/logos/NM.png": "71fddf414973c7245dfdec2c58780f67",
 "assets/assets/logos/PORT.png": "b56569459326c94903b9277dcf3eb7ca",
-"assets/assets/logos/RIC.png": "4da89a6bacc73b73fe772a28e3be6bdc",
+"assets/assets/logos/RICH.png": "4da89a6bacc73b73fe772a28e3be6bdc",
 "assets/assets/logos/STK.png": "3efc3828dc17812021e99e5107c3190b",
 "assets/assets/logos/SYD.png": "0a5c1a3e03198ddd4951aa2422922dd6",
 "assets/assets/logos/WB.png": "873715efc04a06c2cdc679a34be132d5",
@@ -47,9 +47,9 @@ const RESOURCES = {"assets/AssetManifest.bin": "39ca54a133910d22967207ae5a5564e6
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "icons/Icon-maskable-192.png": "c457ef57daa1d16f64b27b786ec2ea3c",
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
-"index.html": "af226c323f4bf7a907e0220d7c19960d",
-"/": "af226c323f4bf7a907e0220d7c19960d",
-"main.dart.js": "a64de638d0baf28fb5080b5aae801d84",
+"index.html": "0dcb3dbaec03d4a251606cfe4947c86e",
+"/": "0dcb3dbaec03d4a251606cfe4947c86e",
+"main.dart.js": "e62ff0f708196e791cf00bc96eccb55e",
 "manifest.json": "18b05de58f5aeed2ffa6be1246cc43f1",
 "msal.js": "048932bbbfef32d16327437ca5db5d6b",
 "version.json": "b0d2ea9d293a4ff4175362a67375b4a4"};
