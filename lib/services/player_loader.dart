@@ -5,23 +5,23 @@ import '../models/afl_player.dart';
 class PlayerLoader {
   static const Map<String, String> _clubCodeMap = {
     "Adelaide Crows": "ADE",
-    "Brisbane": "BRI",
-    "Carlton": "CARL",
-    "Collingwood": "COLL",
+    "Brisbane Lions": "BRL",
+    "Carlton": "CAR",
+    "Collingwood": "COL",
     "Essendon": "ESS",
     "Fremantle": "FRE",
     "Geelong": "GEE",
-    "Gold Coast Suns": "GC",
-    "Greater Western Sydney": "GWS",
+    "Gold Coast Suns": "GCS",
+    "GWS Giants": "GWS",
     "Hawthorn": "HAW",
-    "Melbourne": "MELB",
-    "North Melbourne": "NM",
-    "Port Adelaide": "PORT",
-    "Richmond": "RICH",
+    "Melbourne": "MEL",
+    "North Melbourne": "NTH",
+    "Port Adelaide": "PTA",
+    "Richmond": "RIC",
     "St Kilda": "STK",
     "Sydney Swans": "SYD",
     "West Coast Eagles": "WCE",
-    "Western Bulldogs": "WB",
+    "Western Bulldogs": "WBD",
   };
 
   static Future<List<AflPlayer>> loadPlayers2026() async {

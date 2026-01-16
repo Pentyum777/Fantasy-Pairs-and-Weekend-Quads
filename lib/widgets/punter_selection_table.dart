@@ -114,14 +114,14 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
   static const Map<String, String> _clubCodeMap = {
     "Adelaide Crows": "ADE",
-    "Brisbane": "BRL",
+    "Brisbane Lions": "BRL",
     "Carlton": "CAR",
     "Collingwood": "COL",
     "Essendon": "ESS",
     "Fremantle": "FRE",
-    "Geelong": "GEE",
+    "Geelong Cats": "GEE",
     "Gold Coast Suns": "GCS",
-    "Greater Western Sydney": "GWS",
+    "GWS Giants": "GWS",
     "Hawthorn": "HAW",
     "Melbourne": "MEL",
     "North Melbourne": "NTH",

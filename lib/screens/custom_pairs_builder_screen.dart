@@ -46,35 +46,25 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
   // AFL CLUB NORMALISATION MAP
   // ---------------------------------------------------------------------------
   static const Map<String, String> _clubCodeMap = {
-  "Adelaide": "ADE",
   "Adelaide Crows": "ADE",
-  "Brisbane": "BRI",
-  "Brisbane Lions": "BRI",
-  "Carlton": "CARL",
-  "Collingwood": "COLL",
+  "Brisbane Lions": "BRL",
+  "Carlton": "CAR",
+  "Collingwood": "COL",
   "Essendon": "ESS",
   "Fremantle": "FRE",
-  "Geelong": "GEEL",
-  "Gold Coast": "GC",
-  "Gold Coast Suns": "GC",
-  "GWS": "GWS",
-  "Greater Western Sydney": "GWS",
+  "Geelong Cats": "GEE",
+  "Gold Coast Suns": "GCS",
+  "GWS Giants": "GWS",
   "Hawthorn": "HAW",
-  "Melbourne": "MELB",
-  "North Melbourne": "NM",
-  "Port Adelaide": "PORT",
-  "Port": "PORT",
-  "Power": "PORT",
-  "Richmond": "RICH",
+  "Melbourne": "MEL",
+  "North Melbourne": "NTH",
+  "Port Adelaide": "PTA",
+  "Richmond": "RIC",
   "St Kilda": "STK",
-  "Sydney": "SYD",
   "Sydney Swans": "SYD",   // ⭐ ADD THIS
-  "West Coast": "WCE",
   "West Coast Eagles": "WCE",
-  "Eagles": "WCE",
-  "Western Bulldogs": "WB",
-  "Bulldogs": "WB",
-};
+  "Western Bulldogs": "WBD",
+  };
 
   String _normalizeClubCode(String raw) {
     return _clubCodeMap[raw] ?? raw.toUpperCase();
