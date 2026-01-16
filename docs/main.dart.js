@@ -28174,7 +28174,7 @@ throw A.c(A.aPI("Invalid "+a+": "+s.a,s.b,J.azX(s)))}else if(t.bE.b(q)){r=q
 throw A.c(A.bS("Invalid "+a+' "'+b+'": '+J.aK3(r),J.azX(r),J.aK5(r)))}else throw p}},
 a0v(a){var s=B.c.dm(a).toLowerCase()
 if(B.y5.p(0,s))return s.toUpperCase()
-if(B.c.p(s,"adelaide"))return"ADE"
+if(B.c.p(s,"adelaide")&&B.c.p(s,"crows"))return"ADE"
 if(B.c.p(s,"brisbane"))return"BRI"
 if(B.c.p(s,"carlton"))return"CARL"
 if(B.c.p(s,"collingwood"))return"COLL"
@@ -88598,7 +88598,7 @@ q=A.uy(s)>12?A.uy(s)-12:A.uy(s)
 p=A.uy(s)>=12?"PM":"AM"
 return"Game "+o+" \u2013 "+r+" "+(""+q+":"+B.c.mN(B.e.k(A.ack(s)),2,"0")+" "+p)},
 Qz(a){var s=A.a0v(a)
-return A.eC(A.aAu(A.aBO("logos/"+s+".png",new A.am5(s),B.lz)),32,32)}}
+return A.eC(A.aAu(A.aBO("assets/logos/"+s+".png",new A.am5(s),B.lz)),32,32)}}
 A.ama.prototype={
 $2(a,b){var s,r,q,p,o,n,m,l,k=null,j=this.b[b],i=j.x
 if(i==null)i=B.e.k(b)
