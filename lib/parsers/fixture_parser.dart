@@ -1,32 +1,25 @@
-import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:excel/excel.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:http/http.dart' as http;
 
 import '../models/afl_fixture.dart';
 
 class FixtureRepository {
   final List<AflFixture> fixtures = [];
 
+  // ---------------------------------------------------------------------------
+  // LOAD FIXTURES
+  // ---------------------------------------------------------------------------
   Future<void> loadFixtures() async {
-    // Load main fixture file
     final bytesMain = await rootBundle.load('assets/afl_fixtures_2026.xlsx');
     loadFromExcel(bytesMain.buffer.asUint8List());
 
-    // Fetch match scores for all real matches (<9000)
-    for (final f in fixtures) {
-      if (f.matchId != null && f.matchId! < 9000) {
-        await fetchMatchScore(f);
-      }
-    }
+    // AFL.com.au score fetching will be added later.
   }
 
   // ---------------------------------------------------------------------------
   // EXCEL PARSING
   // ---------------------------------------------------------------------------
-
   void loadFromExcel(Uint8List bytes) {
     final excel = Excel.decodeBytes(bytes);
     if (excel.tables.isEmpty) return;
@@ -53,7 +46,8 @@ class FixtureRepository {
     final idxVenue = headerIndex["VENUE"];
     final idxTime = headerIndex["TIME"];
     final idxSource = headerIndex["GAME DATA SOURCE"];
-    final idxMatchId = headerIndex["MATCH_ID"];
+    final idxMatchId = headerIndex["MATCH ID"];
+    final idxIsPreseason = headerIndex["ISPRESEASON"];
 
     if (idxRound == null ||
         idxDate == null ||
@@ -69,13 +63,12 @@ class FixtureRepository {
     for (int r = 1; r < sheet.rows.length; r++) {
       final row = sheet.rows[r];
 
-      // Guard against malformed rows
       if (row.length < headerRow.length) {
         print("⚠️ Skipping malformed row $r (not enough columns)");
         continue;
       }
 
-      final roundLabel = _cellString(row, idxRound);
+      String roundLabel = _cellString(row, idxRound);
       if (roundLabel.isEmpty) continue;
 
       final dateText = _cellString(row, idxDate);
@@ -85,8 +78,15 @@ class FixtureRepository {
       final time = idxTime != null ? _cellString(row, idxTime) : "";
       final source = idxSource != null ? _cellString(row, idxSource) : "";
 
-      int? matchId =
-          idxMatchId != null ? int.tryParse(_cellString(row, idxMatchId)) : null;
+      // NEW: matchId is now STRING
+      final String? matchId =
+          idxMatchId != null ? _cellString(row, idxMatchId) : null;
+
+      // NEW: preseason flag
+      final String preseasonRaw =
+          idxIsPreseason != null ? _cellString(row, idxIsPreseason) : "";
+      final bool isPreseason =
+          preseasonRaw.toUpperCase() == "TRUE" || preseasonRaw == "1";
 
       if (homeTeam.isEmpty || awayTeam.isEmpty) {
         print("⚠️ Skipping row $r (missing home/away team)");
@@ -118,43 +118,15 @@ class FixtureRepository {
           time: time,
           source: source,
           matchId: matchId,
+          isPreseason: isPreseason,
         ),
       );
     }
   }
 
   // ---------------------------------------------------------------------------
-  // FETCH MATCH SCORES FROM SQUIGGLE
-  // ---------------------------------------------------------------------------
-
-  Future<void> fetchMatchScore(AflFixture f) async {
-    if (f.matchId == null) return;
-
-    final url = "https://api.squiggle.com.au/?q=match;id=${f.matchId}";
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode != 200) return;
-
-    final json = jsonDecode(response.body);
-    if (json["match"] == null || json["match"].isEmpty) return;
-
-    final m = json["match"][0];
-
-    f.homeGoals = m["hgoals"];
-    f.homeBehinds = m["hbehinds"];
-    f.homeScore = m["hscore"];
-
-    f.awayGoals = m["agoals"];
-    f.awayBehinds = m["abehinds"];
-    f.awayScore = m["ascore"];
-
-    f.complete = m["complete"];
-  }
-
-  // ---------------------------------------------------------------------------
   // HELPERS
   // ---------------------------------------------------------------------------
-
   String _cellString(List<Data?> row, int index) {
     if (index < 0 || index >= row.length) return "";
     final cell = row[index];
@@ -167,7 +139,6 @@ class FixtureRepository {
 
     if (trimmed == "OPENING ROUND") return 0;
 
-    // Extract first number found
     final digitMatch = RegExp(r'(\d+)').firstMatch(trimmed);
     if (digitMatch != null) {
       return int.tryParse(digitMatch.group(1)!) ?? 0;
@@ -233,7 +204,6 @@ class FixtureRepository {
   // ---------------------------------------------------------------------------
   // QUERY HELPERS
   // ---------------------------------------------------------------------------
-
   List<AflFixture> fixturesForRound(int round) {
     return fixtures.where((f) => f.round == round).toList();
   }

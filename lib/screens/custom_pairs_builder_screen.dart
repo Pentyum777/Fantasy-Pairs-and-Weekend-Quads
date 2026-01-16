@@ -39,7 +39,8 @@ class CustomPairsBuilderScreen extends StatefulWidget {
 }
 
 class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
-  final Set<int> _selectedFixtureIds = {};
+  /// FIXED: matchId is now a String, so the selection set must also be String
+  final Set<String> _selectedFixtureIds = {};
 
   @override
   Widget build(BuildContext context) {
@@ -68,8 +69,11 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                     itemCount: fixtures.length,
                     itemBuilder: (context, index) {
                       final f = fixtures[index];
-                      final fixtureId = f.matchId ?? index;
+
+                      /// FIXED: fixtureId is always a String
+                      final fixtureId = f.matchId ?? index.toString();
                       final selected = _selectedFixtureIds.contains(fixtureId);
+
                       final label = _buildFixtureLabel(index, f.date);
 
                       return Container(
@@ -160,7 +164,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
 
   void _startCustomPairs(BuildContext context, List<AflFixture> fixtures) {
     final selectedFixtures = fixtures.where((f) {
-      final id = f.matchId ?? fixtures.indexOf(f);
+      final id = f.matchId ?? fixtures.indexOf(f).toString();
       return _selectedFixtureIds.contains(id);
     }).toList();
 

@@ -1,11 +1,11 @@
 class AflFixture {
-  /// Round label as provided by Squiggle (e.g. "Round 1", "Finals Week 2")
+  /// Round label (e.g. "Round 1", "Opening Round", "Pre-Season")
   final String roundLabel;
 
-  /// Numeric round number (Squiggle provides this directly)
+  /// Numeric round number (0 = Opening Round, 1..24 = normal rounds)
   final int round;
 
-  /// Parsed match date (nullable because Squiggle sometimes omits it)
+  /// Parsed match date (nullable for TBC/TBA)
   final DateTime? date;
 
   /// Home and away team codes (e.g. "CARL", "COLL")
@@ -15,16 +15,19 @@ class AflFixture {
   /// Venue name (e.g. "MCG", "Marvel Stadium")
   final String venue;
 
-  /// Time zone string from Squiggle (e.g. "AEDT")
+  /// Raw time text from Excel (e.g. "7.30pm")
   final String time;
 
-  /// Always "squiggle" in your new pipeline
+  /// Source URL (AFL.com.au match page)
   final String source;
 
-  /// Squiggle match ID — also used for AFL Match Centre live stats
-  final int? matchId;
+  /// AFL Match ID (CD_M… string)
+  final String? matchId;
 
-  /// Live or final scores
+  /// Whether this is a pre-season match
+  final bool isPreseason;
+
+  /// Live or final scores (populated later)
   int? homeGoals;
   int? homeBehinds;
   int? homeScore;
@@ -33,7 +36,7 @@ class AflFixture {
   int? awayBehinds;
   int? awayScore;
 
-  /// Whether the match is complete (Squiggle uses 100 for complete)
+  /// Whether the match is complete
   bool complete;
 
   AflFixture({
@@ -46,6 +49,7 @@ class AflFixture {
     required this.time,
     required this.source,
     required this.matchId,
+    required this.isPreseason,
     this.homeGoals,
     this.homeBehinds,
     this.homeScore,
@@ -55,7 +59,7 @@ class AflFixture {
     this.complete = false,
   });
 
-  /// Safe fallback fixture used when a matchId lookup fails
+  /// Safe fallback fixture used when a lookup fails
   static AflFixture empty() => AflFixture(
         roundLabel: "",
         round: 0,
@@ -66,6 +70,7 @@ class AflFixture {
         time: "",
         source: "empty",
         matchId: null,
+        isPreseason: false,
         homeGoals: null,
         homeBehinds: null,
         homeScore: null,

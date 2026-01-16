@@ -18,7 +18,7 @@ class PreseasonFixtureParser {
       final row = rows[i];
 
       // Guard against malformed rows
-      if (row.length < 4) {
+      if (row.length < 8) {
         print("⚠️ Skipping malformed preseason row $i (not enough columns)");
         continue;
       }
@@ -42,14 +42,10 @@ class PreseasonFixtureParser {
         continue;
       }
 
-      // Match ID (auto-generate if missing)
-      int matchId;
-      final rawMatchId = _cellString(row, 7);
-      if (rawMatchId.isNotEmpty) {
-        matchId = int.tryParse(rawMatchId) ?? (9000 + fixtures.length + 1);
-      } else {
-        matchId = 9000 + fixtures.length + 1;
-      }
+      // NEW: matchId is now STRING (CD_M…)
+      final String? matchId = _cellString(row, 7).isNotEmpty
+          ? _cellString(row, 7)
+          : null;
 
       // Parse date/time
       final dateTime = _parseDateTime(dateStr, timeStr);
@@ -65,6 +61,7 @@ class PreseasonFixtureParser {
           time: timeStr,
           matchId: matchId,
           source: "PreSeason",
+          isPreseason: true, // REQUIRED in new model
         ),
       );
     }
@@ -94,7 +91,8 @@ class PreseasonFixtureParser {
         final date = excelEpoch.add(Duration(days: numeric.floor()));
 
         if (timeStr.isNotEmpty) {
-          final parsed = DateTime.tryParse("${date.toIso8601String().split('T')[0]} $timeStr");
+          final parsed = DateTime.tryParse(
+              "${date.toIso8601String().split('T')[0]} $timeStr");
           return parsed ?? date;
         }
 

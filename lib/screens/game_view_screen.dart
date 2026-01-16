@@ -30,7 +30,10 @@ class GameViewScreen extends StatefulWidget {
   final ChampionshipService championshipService;
   final RoundCompletionService roundCompletionService;
   final UserRoleService userRoleService;
-  final List<int>? selectedFixtureIds;
+
+  // UPDATED: String IDs instead of int
+  final List<String>? selectedFixtureIds;
+
   final List<AflPlayer>? overridePlayers;
 
   const GameViewScreen({
@@ -120,43 +123,51 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // LIVE SCORES + STATS REFRESH
-  // ---------------------------------------------------------------------------
-  Future<void> _refreshLiveScoresAndStats() async {
-    try {
-      await widget.fixtureRepo.refreshLiveScoresForRound(widget.round);
+// LIVE SCORES + STATS REFRESH
+// ---------------------------------------------------------------------------
+Future<void> _refreshLiveScoresAndStats() async {
+  try {
+    await widget.fixtureRepo.refreshLiveScoresForRound(widget.round);
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      _checkRoundCompletion();
+    _checkRoundCompletion();
 
-      if (_selectedFixture?.matchId != null) {
-        final stats =
-            await MatchStatsParser.fetchMatchStats(_selectedFixture!.matchId!);
-        _updateStatsAndPunterScores(stats);
-      } else {
-        setState(() {});
-      }
+    // matchId is stored as String, but MatchStatsParser expects an int
+    final String? rawMatchId = _selectedFixture?.matchId;
+    final int? matchId =
+        rawMatchId != null ? int.tryParse(rawMatchId.trim()) : null;
 
-      _checkAndCompleteWeekendQuadsRound();
-    } catch (_) {}
-  }
-
-  void _updateStatsAndPunterScores(List<AflPlayerMatchStats> stats) {
-    _currentStatsByPlayerId = {
-      for (final s in stats) s.player.id: s,
-    };
-
-    for (final selection in widget.selections) {
-      selection.liveScore = widget.fantasyService.calculatePunterScore(
-        selection: selection,
-        liveStatsByPlayerId: _currentStatsByPlayerId,
-      );
+    if (matchId != null) {
+      final stats = await MatchStatsParser.fetchMatchStats(matchId);
+      _updateStatsAndPunterScores(stats);
+    } else {
+      // No fixture selected or invalid matchId → still trigger UI refresh
+      setState(() {});
     }
 
-    setState(() {});
+    _checkAndCompleteWeekendQuadsRound();
+  } catch (_) {
+    // Silently ignore errors (your existing behaviour)
   }
-    // ---------------------------------------------------------------------------
+}
+
+void _updateStatsAndPunterScores(List<AflPlayerMatchStats> stats) {
+  _currentStatsByPlayerId = {
+    for (final s in stats) s.player.id: s,
+  };
+
+  for (final selection in widget.selections) {
+    selection.liveScore = widget.fantasyService.calculatePunterScore(
+      selection: selection,
+      liveStatsByPlayerId: _currentStatsByPlayerId,
+    );
+  }
+
+  setState(() {});
+}
+
+  // ---------------------------------------------------------------------------
   // TEAM NAME NORMALIZATION + CLUB CODE MAPPING
   // ---------------------------------------------------------------------------
   String normalizeTeam(String name) {
@@ -265,7 +276,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
     var fixtures = allFixtures;
     if (widget.selectedFixtureIds != null) {
       fixtures = allFixtures.where((f) {
-        final id = f.matchId ?? allFixtures.indexOf(f);
+        final id = f.matchId ?? allFixtures.indexOf(f).toString();
         return widget.selectedFixtureIds!.contains(id);
       }).toList();
     }
@@ -290,184 +301,182 @@ class _GameViewScreenState extends State<GameViewScreen> {
       body: Column(
         children: [
           // FIXTURE SCROLLER
-          SizedBox(
-            height: 95,
-            child: fixtures.isEmpty
-                ? const Center(child: Text("No fixtures"))
-                : ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 8),
-                    itemCount: fixtures.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) {
-                      final f = fixtures[i];
-                      final selected = f == _selectedFixture;
+SizedBox(
+  height: 95,
+  child: fixtures.isEmpty
+      ? const Center(child: Text("No fixtures"))
+      : ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          itemCount: fixtures.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (context, i) {
+            final f = fixtures[i];
+            final selected = f == _selectedFixture;
 
-                      _handleFridayPairsTrigger(f);
+            _handleFridayPairsTrigger(f);
 
-                      final homeScore = f.homeScore ?? 0;
-                      final awayScore = f.awayScore ?? 0;
-                      final homeWinning = homeScore > awayScore;
-                      final awayWinning = awayScore > homeScore;
+            final homeScore = f.homeScore ?? 0;
+            final awayScore = f.awayScore ?? 0;
+            final homeWinning = homeScore > awayScore;
+            final awayWinning = awayScore > homeScore;
 
-                      final quarterText = _quarterLabel(f);
-                      final timeText = _formatTimeRemaining(f);
+            final quarterText = _quarterLabel(f);
+            final timeText = _formatTimeRemaining(f);
 
-                      return GestureDetector(
-                        onTap: () async {
-                          setState(() => _selectedFixture = f);
+            return GestureDetector(
+              onTap: () async {
+                setState(() => _selectedFixture = f);
 
-                          if (f.matchId != null) {
-                            final stats =
-                                await MatchStatsParser.fetchMatchStats(
-                                    f.matchId!);
+                // matchId is String?, parser expects int
+                final String? rawId = f.matchId;
+                final int? matchId =
+                    rawId != null ? int.tryParse(rawId.trim()) : null;
 
-                            final homeTeam = f.homeTeam;
-                            final awayTeam = f.awayTeam;
+                if (matchId != null) {
+                  final stats =
+                      await MatchStatsParser.fetchMatchStats(matchId);
 
-                            final rowsA = stats
-                                .where((s) =>
-                                    normalizeTeam(s.team) ==
-                                    normalizeTeam(homeTeam))
-                                .map(_mapStats)
-                                .toList();
+                  final homeTeam = f.homeTeam;
+                  final awayTeam = f.awayTeam;
 
-                            final rowsB = stats
-                                .where((s) =>
-                                    normalizeTeam(s.team) ==
-                                    normalizeTeam(awayTeam))
-                                .map(_mapStats)
-                                .toList();
+                  final rowsA = stats
+                      .where((s) =>
+                          normalizeTeam(s.team) == normalizeTeam(homeTeam))
+                      .map(_mapStats)
+                      .toList();
 
-                            final bool noStats =
-                                stats.isEmpty || (rowsA.isEmpty && rowsB.isEmpty);
+                  final rowsB = stats
+                      .where((s) =>
+                          normalizeTeam(s.team) == normalizeTeam(awayTeam))
+                      .map(_mapStats)
+                      .toList();
 
-                            const columns = [
-                              "Player",
-                              "AF",
-                              "K",
-                              "HB",
-                              "D",
-                              "M",
-                              "T",
-                              "G",
-                              "B",
-                            ];
+                  final bool noStats =
+                      stats.isEmpty && rowsA.isEmpty && rowsB.isEmpty;
 
-                            showDialog(
-                              context: context,
-                              builder: (_) => StatsOverlay(
-                                leftTitle: homeTeam,
-                                rightTitle: awayTeam,
-                                leftRows: noStats ? [] : rowsA,
-                                rightRows: noStats ? [] : rowsB,
-                                columns: noStats ? [] : columns,
-                                noStatsMessage: noStats
-                                    ? "No stats available yet"
-                                    : null,
-                              ),
-                            );
+                  const columns = [
+                    "Player",
+                    "AF",
+                    "K",
+                    "HB",
+                    "D",
+                    "M",
+                    "T",
+                    "G",
+                    "B",
+                  ];
 
-                            _updateStatsAndPunterScores(stats);
-                          }
-                        },
-                        child: AnimatedScale(
-                          scale: selected ? 1.03 : 1.0,
-                          duration: const Duration(milliseconds: 150),
-                          child: Container(
-                            width: 115,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceVariant,
-                              borderRadius: BorderRadius.circular(8),
-                              border: selected
-                                  ? Border.all(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
-                                      width: 2,
-                                    )
-                                  : null,
-                              boxShadow: selected
-                                  ? [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.10),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      )
-                                    ]
-                                  : [],
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 4, horizontal: 6),
-                            child: Column(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                  showDialog(
+                    context: context,
+                    builder: (_) => StatsOverlay(
+                      leftTitle: homeTeam,
+                      rightTitle: awayTeam,
+                      leftRows: noStats ? [] : rowsA,
+                      rightRows: noStats ? [] : rowsB,
+                      columns: noStats ? [] : columns,
+                      noStatsMessage:
+                          noStats ? "No stats available yet" : null,
+                    ),
+                  );
+
+                  _updateStatsAndPunterScores(stats);
+                }
+              },
+              child: AnimatedScale(
+                scale: selected ? 1.03 : 1.0,
+                duration: const Duration(milliseconds: 150),
+                child: Container(
+                  width: 115,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                    border: selected
+                        ? Border.all(
+                            color:
+                                Theme.of(context).colorScheme.primary,
+                            width: 2,
+                          )
+                        : null,
+                    boxShadow: selected
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.10),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            )
+                          ]
+                        : [],
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 4, horizontal: 6),
+                  child: Column(
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                        children: [
+                          _teamLogoSmallSized(f.homeTeam, 26),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                  ),
                                   children: [
-                                    _teamLogoSmallSized(f.homeTeam, 26),
-                                    Flexible(
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: RichText(
-                                          text: TextSpan(
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.black,
-                                            ),
-                                            children: [
-                                              TextSpan(
-                                                text: "$homeScore",
-                                                style: TextStyle(
-                                                  fontWeight: homeWinning
-                                                      ? FontWeight.bold
-                                                      : FontWeight.normal,
-                                                ),
-                                              ),
-                                              const TextSpan(text: " – "),
-                                              TextSpan(
-                                                text: "$awayScore",
-                                                style: TextStyle(
-                                                  fontWeight: awayWinning
-                                                      ? FontWeight.bold
-                                                      : FontWeight.normal,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                                    TextSpan(
+                                      text: "$homeScore",
+                                      style: TextStyle(
+                                        fontWeight: homeWinning
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
                                       ),
                                     ),
-                                    _teamLogoSmallSized(f.awayTeam, 26),
+                                    const TextSpan(text: " – "),
+                                    TextSpan(
+                                      text: "$awayScore",
+                                      style: TextStyle(
+                                        fontWeight: awayWinning
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
                                   ],
                                 ),
-                                Text(
-                                  quarterText.isEmpty
-                                      ? timeText
-                                      : "$quarterText • $timeText",
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                              ),
                             ),
                           ),
+                          _teamLogoSmallSized(f.awayTeam, 26),
+                        ],
+                      ),
+                      Text(
+                        quarterText.isEmpty
+                            ? timeText
+                            : "$quarterText • $timeText",
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
                         ),
-                      );
-                    },
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-          ),
+                ),
+              ),
+            );
+          },
+        ),
+),
 
-          const Divider(height: 1),
-                    // MAIN CONTENT
+const Divider(height: 1),
+
+          // MAIN CONTENT
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -551,59 +560,58 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Widget _buildPunterControls(BuildContext context) {
-  final theme = Theme.of(context);
+    final theme = Theme.of(context);
 
-  return Row(
-    children: [
-      Text(
-        "Punters Playing",
-        style: theme.textTheme.bodyMedium, // smaller label
-      ),
-      const SizedBox(width: 8),
-
-      // Compact dropdown
-      DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
-          value: _visiblePunterCount,
-          isDense: true,
+    return Row(
+      children: [
+        Text(
+          "Punters Playing",
           style: theme.textTheme.bodyMedium,
-          items: List.generate(25, (i) => i + 1)
-              .map(
-                (v) => DropdownMenuItem<int>(
-                  value: v,
-                  child: Text("$v", style: theme.textTheme.bodyMedium),
-                ),
-              )
-              .toList(),
-          onChanged: widget.userRoleService.isAdmin
-              ? (value) {
-                  if (value == null) return;
-                  setState(() => _visiblePunterCount = value);
-                }
-              : null,
         ),
-      ),
+        const SizedBox(width: 8),
 
-      const SizedBox(width: 16),
+        DropdownButtonHideUnderline(
+          child: DropdownButton<int>(
+            value: _visiblePunterCount,
+            isDense: true,
+            style: theme.textTheme.bodyMedium,
+            items: List.generate(25, (i) => i + 1)
+                .map(
+                  (v) => DropdownMenuItem<int>(
+                    value: v,
+                    child: Text("$v", style: theme.textTheme.bodyMedium),
+                  ),
+                )
+                .toList(),
+            onChanged: widget.userRoleService.isAdmin
+                ? (value) {
+                    if (value == null) return;
+                    setState(() => _visiblePunterCount = value);
+                  }
+                : null,
+          ),
+        ),
 
-      // Compact reset button
-      ElevatedButton(
-        onPressed: widget.userRoleService.isAdmin ? _resetSelections : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red.shade600,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          visualDensity: VisualDensity.compact,
-          minimumSize: const Size(0, 32),
+        const SizedBox(width: 16),
+
+        ElevatedButton(
+          onPressed: widget.userRoleService.isAdmin ? _resetSelections : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red.shade600,
+            foregroundColor: Colors.white,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            visualDensity: VisualDensity.compact,
+            minimumSize: const Size(0, 32),
+          ),
+          child: const Text(
+            "Reset Selections",
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
         ),
-        child: const Text(
-          "Reset Selections",
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-        ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // FIXTURE FILTERING
@@ -733,8 +741,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   String _appBarTitle() {
-    return "Round ${widget.round} • ${_gameTypeLabel()}";
-  }
+    return "Round ${widget.round} • ${_gameTypeLabel()}"
+;  }
 
   // ---------------------------------------------------------------------------
   // MAP STATS → TABLE ROW

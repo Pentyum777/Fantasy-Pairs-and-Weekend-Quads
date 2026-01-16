@@ -1,9 +1,7 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:excel/excel.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:http/http.dart' as http;
 import 'player_repository.dart';
 import '../models/afl_fixture.dart';
 
@@ -17,22 +15,20 @@ class FixtureRepository {
     final bytesMain = await rootBundle.load('assets/afl_fixtures_2026.xlsx');
     loadFromExcel(bytesMain.buffer.asUint8List());
 
-    for (final f in fixtures) {
-      if (f.matchId != null && f.matchId! < 9000) {
-        await fetchMatchScore(f);
-      }
-    }
+    // No Squiggle calls anymore.
+    // AFL.com.au score fetching will be added later.
   }
 
   // ---------------------------------------------------------------------------
-  // REFRESH LIVE SCORES FOR A ROUND
+  // REFRESH LIVE SCORES FOR A ROUND (placeholder for AFL.com.au)
   // ---------------------------------------------------------------------------
   Future<void> refreshLiveScoresForRound(int round) async {
     final roundFixtures = fixturesForRound(round);
 
+    // Placeholder: AFL.com.au score ingestion will go here.
     for (final f in roundFixtures) {
-      if (f.matchId != null && f.matchId! < 9000) {
-        await fetchMatchScore(f);
+      if (f.matchId != null && f.matchId!.isNotEmpty) {
+        // await fetchAflScore(f);  <-- coming soon
       }
     }
   }
@@ -41,141 +37,123 @@ class FixtureRepository {
   // EXCEL PARSING
   // ---------------------------------------------------------------------------
   void loadFromExcel(Uint8List bytes) {
-  final excel = Excel.decodeBytes(bytes);
-  if (excel.tables.isEmpty) return;
+    final excel = Excel.decodeBytes(bytes);
+    if (excel.tables.isEmpty) return;
 
-  final sheet = excel.tables[excel.tables.keys.first];
-  if (sheet == null || sheet.rows.length <= 1) return;
+    final sheet = excel.tables[excel.tables.keys.first];
+    if (sheet == null || sheet.rows.length <= 1) return;
 
-  final headerRow = sheet.rows.first;
+    final headerRow = sheet.rows.first;
 
-  final Map<String, int> headerIndex = {};
-  for (int i = 0; i < headerRow.length; i++) {
-    final cell = headerRow[i];
-    final value = cell?.value?.toString().trim();
-    if (value != null && value.isNotEmpty) {
-      headerIndex[value.toUpperCase()] = i;
-    }
-  }
-
-  final idxRound = headerIndex["ROUND"];
-  final idxDate = headerIndex["DATE"];
-  final idxHome = headerIndex["HOME TEAM"];
-  final idxAway = headerIndex["AWAY TEAM"];
-  final idxVenue = headerIndex["VENUE"];
-  final idxTime = headerIndex["TIME"];
-  final idxSource = headerIndex["GAME DATA SOURCE"];
-  final idxMatchId = headerIndex["MATCH_ID"];
-
-  if (idxRound == null ||
-      idxDate == null ||
-      idxHome == null ||
-      idxAway == null ||
-      idxVenue == null) {
-    print("❌ Missing required columns in fixture sheet");
-    return;
-  }
-
-  const int defaultYear = 2026;
-
-  for (int r = 1; r < sheet.rows.length; r++) {
-    final row = sheet.rows[r];
-
-    if (row.length < headerRow.length) {
-      print("⚠️ Skipping malformed row $r (not enough columns)");
-      continue;
-    }
-
-    String roundLabel = _cellString(row, idxRound).trim();
-    if (roundLabel.isEmpty) continue;
-
-    final upper = roundLabel.toUpperCase();
-    if (upper == "OPENING ROUND" || upper == "OR") {
-      roundLabel = "0";
-    }
-
-    final dateText = _cellString(row, idxDate);
-
-    // ------------------------------------------------------------
-    // NORMALIZE FIXTURE CLUB NAMES HERE
-    // ------------------------------------------------------------
-    final rawHome = _cellString(row, idxHome);
-    final rawAway = _cellString(row, idxAway);
-
-    final homeTeam = PlayerRepository.normalizeClubStatic(rawHome);
-    final awayTeam = PlayerRepository.normalizeClubStatic(rawAway);
-    // ------------------------------------------------------------
-
-    final venue = _cellString(row, idxVenue);
-    final timeText = idxTime != null ? _cellString(row, idxTime) : "";
-    final source = idxSource != null ? _cellString(row, idxSource) : "";
-
-    int? matchId =
-        idxMatchId != null ? int.tryParse(_cellString(row, idxMatchId)) : null;
-
-    if (homeTeam.isEmpty || awayTeam.isEmpty) {
-      print("⚠️ Skipping row $r (missing home/away team)");
-      continue;
-    }
-
-    final upperDate = dateText.toUpperCase();
-    final bool isTbcDate = dateText.trim().isEmpty ||
-        upperDate.contains("TBC") ||
-        upperDate.contains("TBA") ||
-        upperDate.contains("TBD");
-
-    DateTime? parsedDate;
-    if (!isTbcDate) {
-      parsedDate = _parseDateWithoutYear(dateText, defaultYear);
-
-      if (parsedDate != null && timeText.isNotEmpty) {
-        parsedDate = _combineDateAndTime(parsedDate, timeText);
+    final Map<String, int> headerIndex = {};
+    for (int i = 0; i < headerRow.length; i++) {
+      final cell = headerRow[i];
+      final value = cell?.value?.toString().trim();
+      if (value != null && value.isNotEmpty) {
+        headerIndex[value.toUpperCase()] = i;
       }
     }
 
-    final int roundNumber = _parseRound(roundLabel);
+    final idxRound = headerIndex["ROUND"];
+    final idxDate = headerIndex["DATE"];
+    final idxHome = headerIndex["HOME TEAM"];
+    final idxAway = headerIndex["AWAY TEAM"];
+    final idxVenue = headerIndex["VENUE"];
+    final idxTime = headerIndex["TIME"];
+    final idxSource = headerIndex["GAME DATA SOURCE"];
+    final idxMatchId = headerIndex["MATCH ID"];
+    final idxIsPreseason = headerIndex["ISPRESEASON"];
 
-    fixtures.add(
-      AflFixture(
-        roundLabel: roundLabel,
-        round: roundNumber,
-        date: parsedDate,
-        homeTeam: homeTeam,
-        awayTeam: awayTeam,
-        venue: venue,
-        time: timeText,
-        source: source,
-        matchId: matchId,
-      ),
-    );
-  }
-}
+    if (idxRound == null ||
+        idxDate == null ||
+        idxHome == null ||
+        idxAway == null ||
+        idxVenue == null) {
+      print("❌ Missing required columns in fixture sheet");
+      return;
+    }
 
-  // ---------------------------------------------------------------------------
-  // FETCH MATCH SCORES FROM SQUIGGLE
-  // ---------------------------------------------------------------------------
-  Future<void> fetchMatchScore(AflFixture f) async {
-    if (f.matchId == null) return;
+    const int defaultYear = 2026;
 
-    final url = "https://api.squiggle.com.au/?q=match;id=${f.matchId}";
-    final response = await http.get(Uri.parse(url));
+    for (int r = 1; r < sheet.rows.length; r++) {
+      final row = sheet.rows[r];
 
-    if (response.statusCode != 200) return;
+      if (row.length < headerRow.length) {
+        print("⚠️ Skipping malformed row $r (not enough columns)");
+        continue;
+      }
 
-    final json = jsonDecode(response.body);
-    if (json["match"] == null || json["match"].isEmpty) return;
+      String roundLabel = _cellString(row, idxRound).trim();
+      if (roundLabel.isEmpty) continue;
 
-    final m = json["match"][0];
+      final upper = roundLabel.toUpperCase();
+      if (upper == "OPENING ROUND" || upper == "OR") {
+        roundLabel = "0";
+      }
 
-    f.homeGoals = m["hgoals"];
-    f.homeBehinds = m["hbehinds"];
-    f.homeScore = m["hscore"];
+      final dateText = _cellString(row, idxDate);
 
-    f.awayGoals = m["agoals"];
-    f.awayBehinds = m["abehinds"];
-    f.awayScore = m["ascore"];
+      // ------------------------------------------------------------
+      // NORMALIZE FIXTURE CLUB NAMES
+      // ------------------------------------------------------------
+      final rawHome = _cellString(row, idxHome);
+      final rawAway = _cellString(row, idxAway);
 
-    f.complete = m["complete"];
+      final homeTeam = PlayerRepository.normalizeClubStatic(rawHome);
+      final awayTeam = PlayerRepository.normalizeClubStatic(rawAway);
+      // ------------------------------------------------------------
+
+      final venue = _cellString(row, idxVenue);
+      final timeText = idxTime != null ? _cellString(row, idxTime) : "";
+      final source = idxSource != null ? _cellString(row, idxSource) : "";
+
+      // NEW: matchId is now a STRING (CD_M…)
+      final String? matchId =
+          idxMatchId != null ? _cellString(row, idxMatchId) : null;
+
+      // NEW: preseason flag
+      final String preseasonRaw =
+          idxIsPreseason != null ? _cellString(row, idxIsPreseason) : "";
+      final bool isPreseason =
+          preseasonRaw.toUpperCase() == "TRUE" || preseasonRaw == "1";
+
+      if (homeTeam.isEmpty || awayTeam.isEmpty) {
+        print("⚠️ Skipping row $r (missing home/away team)");
+        continue;
+      }
+
+      final upperDate = dateText.toUpperCase();
+      final bool isTbcDate = dateText.trim().isEmpty ||
+          upperDate.contains("TBC") ||
+          upperDate.contains("TBA") ||
+          upperDate.contains("TBD");
+
+      DateTime? parsedDate;
+      if (!isTbcDate) {
+        parsedDate = _parseDateWithoutYear(dateText, defaultYear);
+
+        if (parsedDate != null && timeText.isNotEmpty) {
+          parsedDate = _combineDateAndTime(parsedDate, timeText);
+        }
+      }
+
+      final int roundNumber = _parseRound(roundLabel);
+
+      fixtures.add(
+        AflFixture(
+          roundLabel: roundLabel,
+          round: roundNumber,
+          date: parsedDate,
+          homeTeam: homeTeam,
+          awayTeam: awayTeam,
+          venue: venue,
+          time: timeText,
+          source: source,
+          matchId: matchId, // now STRING
+          isPreseason: isPreseason,
+        ),
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -213,7 +191,6 @@ class FixtureRepository {
     return DateTime(year, month, day);
   }
 
-  // NEW: merge date + time
   DateTime _combineDateAndTime(DateTime date, String timeText) {
     final parts = timeText.split(RegExp(r'[:\s]'));
     if (parts.length < 3) return date;
