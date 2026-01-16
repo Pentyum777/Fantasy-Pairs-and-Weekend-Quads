@@ -11,6 +11,7 @@ import '../services/championship_service.dart';
 import '../services/round_completion_service.dart';
 import '../services/user_role_service.dart';
 
+import '../utils/afl_club_codes.dart';
 import 'game_view_screen.dart';
 
 class CustomPairsBuilderScreen extends StatefulWidget {
@@ -39,35 +40,14 @@ class CustomPairsBuilderScreen extends StatefulWidget {
 }
 
 class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
-  /// FIXED: matchId is now a String, so the selection set must also be String
+  /// matchId is now a String, so the selection set must also be String
   final Set<String> _selectedFixtureIds = {};
 
   // ---------------------------------------------------------------------------
-  // AFL CLUB NORMALISATION MAP
+  // TEAM CODE NORMALISATION (shared AFL-standard)
   // ---------------------------------------------------------------------------
-  static const Map<String, String> _clubCodeMap = {
-  "Adelaide Crows": "ADE",
-  "Brisbane Lions": "BRI",
-  "Carlton": "CARL",
-  "Collingwood": "COLL",
-  "Essendon": "ESS",
-  "Fremantle": "FRE",
-  "Geelong Cats": "GEEL",
-  "Gold Coast Suns": "GC",
-  "GWS Giants": "GWS",
-  "Hawthorn": "HAW",
-  "Melbourne": "MEL",
-  "North Melbourne": "NM",
-  "Port Adelaide": "PORT",
-  "Richmond": "RICH",
-  "St Kilda": "STK",
-  "Sydney Swans": "SYD",
-  "West Coast Eagles": "WCE",
-  "Western Bulldogs": "WBD",
-  };
-
   String _normalizeClubCode(String raw) {
-    return _clubCodeMap[raw] ?? raw.toUpperCase();
+    return AflClubCodes.normalize(raw);
   }
 
   // ---------------------------------------------------------------------------
@@ -100,7 +80,6 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                     itemBuilder: (context, index) {
                       final f = fixtures[index];
 
-                      /// FIXED: fixtureId is always a String
                       final fixtureId = f.matchId ?? index.toString();
                       final selected = _selectedFixtureIds.contains(fixtureId);
 
@@ -198,16 +177,19 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
       return _selectedFixtureIds.contains(id);
     }).toList();
 
+    // Collect AFL-standard club codes
     final clubs = <String>{};
     for (final f in selectedFixtures) {
       clubs.add(f.homeTeam);
       clubs.add(f.awayTeam);
     }
 
+    // Filter players by AFL-standard club codes
     final players = widget.playerRepo.players
         .where((p) => clubs.contains(p.club))
         .toList();
 
+    // Build 25 punters with empty picks
     final selections = List.generate(
       25,
       (i) => PunterSelection(
@@ -265,7 +247,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // UPDATED TEAM LOGO WIDGET WITH NORMALISED CODES
+  // TEAM LOGO WIDGET (AFL-standard codes)
   // ---------------------------------------------------------------------------
   Widget _teamLogo(String clubCode) {
     final code = _normalizeClubCode(clubCode);

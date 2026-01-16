@@ -189,30 +189,37 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   String mapClubToCode(String club) {
-    final normalized = club.trim().toLowerCase();
+  final c = club.trim().toLowerCase();
 
-    if (normalized.contains("adelaide crows")) return "ADE";
-    if (normalized.contains("brisbane lions")) return "BRI";
-    if (normalized.contains("carlton")) return "CARL";
-    if (normalized.contains("collingwood")) return "COLL";
-    if (normalized.contains("essendon")) return "ESS";
-    if (normalized.contains("fremantle")) return "FRE";
-    if (normalized.contains("geelong cats")) return "GEEL";
-    if (normalized.contains("gold coast suns")) return "GC";
-    if (normalized.contains("gws giants") || normalized.contains("giants")) return "GWS";
-    if (normalized.contains("hawthorn")) return "HAW";
-    if (normalized.contains("melbourne")) return "MEL";
-    if (normalized.contains("north melbourne")) return "NM";
-    if (normalized.contains("port adelaide")) return "PORT";
-    if (normalized.contains("richmond")) return "RICH";
-    if (normalized.contains("st kilda")) return "STK";
-    if (normalized.contains("sydney swans")) return "SYD";
-    if (normalized.contains("west coast eagles")) return "WCE";
-    if (normalized.contains("western bulldogs")) return "WBD";
-    
+  // Already an AFL-standard code?
+  const aflCodes = {
+    "ade","bri","carl","coll","ess","fre","geel","gc","gws",
+    "haw","melb","nm","port","rich","stk","syd","wce","wb"
+  };
+  if (aflCodes.contains(c)) return c.toUpperCase();
 
-    return club;
-  }
+  // Full name → AFL code
+  if (c.contains("adelaide")) return "ADE";
+  if (c.contains("brisbane")) return "BRI";
+  if (c.contains("carlton")) return "CARL";
+  if (c.contains("collingwood")) return "COLL";
+  if (c.contains("essendon")) return "ESS";
+  if (c.contains("fremantle")) return "FRE";
+  if (c.contains("geelong")) return "GEEL";
+  if (c.contains("gold coast")) return "GC";
+  if (c.contains("gws") || c.contains("giants")) return "GWS";
+  if (c.contains("hawthorn")) return "HAW";
+  if (c.contains("melbourne")) return "MELB";
+  if (c.contains("north melbourne")) return "NM";
+  if (c.contains("port adelaide")) return "PORT";
+  if (c.contains("richmond")) return "RICH";
+  if (c.contains("st kilda")) return "STK";
+  if (c.contains("sydney")) return "SYD";
+  if (c.contains("west coast")) return "WCE";
+  if (c.contains("western") || c.contains("bulldogs")) return "WB";
+
+  return club.toUpperCase();
+}
 
   // ---------------------------------------------------------------------------
   // TEAM LOGO (SMALL 28PX VERSION)

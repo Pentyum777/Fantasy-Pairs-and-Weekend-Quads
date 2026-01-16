@@ -1,9 +1,9 @@
 import 'dart:typed_data';
-
 import 'package:excel/excel.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'player_repository.dart';
+
 import '../models/afl_fixture.dart';
+import '../utils/afl_club_codes.dart';
 
 class FixtureRepository {
   final List<AflFixture> fixtures = [];
@@ -14,9 +14,6 @@ class FixtureRepository {
   Future<void> loadFixtures() async {
     final bytesMain = await rootBundle.load('assets/afl_fixtures_2026.xlsx');
     loadFromExcel(bytesMain.buffer.asUint8List());
-
-    // No Squiggle calls anymore.
-    // AFL.com.au score fetching will be added later.
   }
 
   // ---------------------------------------------------------------------------
@@ -25,10 +22,9 @@ class FixtureRepository {
   Future<void> refreshLiveScoresForRound(int round) async {
     final roundFixtures = fixturesForRound(round);
 
-    // Placeholder: AFL.com.au score ingestion will go here.
     for (final f in roundFixtures) {
       if (f.matchId != null && f.matchId!.isNotEmpty) {
-        // await fetchAflScore(f);  <-- coming soon
+        // AFL.com.au ingestion coming soon
       }
     }
   }
@@ -94,24 +90,22 @@ class FixtureRepository {
       final dateText = _cellString(row, idxDate);
 
       // ------------------------------------------------------------
-      // NORMALIZE FIXTURE CLUB NAMES
+      // NORMALIZE FIXTURE CLUB NAMES (AFL-standard codes)
       // ------------------------------------------------------------
       final rawHome = _cellString(row, idxHome);
       final rawAway = _cellString(row, idxAway);
 
-      final homeTeam = PlayerRepository.normalizeClubStatic(rawHome);
-      final awayTeam = PlayerRepository.normalizeClubStatic(rawAway);
+      final homeTeam = AflClubCodes.normalize(rawHome);
+      final awayTeam = AflClubCodes.normalize(rawAway);
       // ------------------------------------------------------------
 
       final venue = _cellString(row, idxVenue);
       final timeText = idxTime != null ? _cellString(row, idxTime) : "";
       final source = idxSource != null ? _cellString(row, idxSource) : "";
 
-      // NEW: matchId is now a STRING (CD_M…)
       final String? matchId =
           idxMatchId != null ? _cellString(row, idxMatchId) : null;
 
-      // NEW: preseason flag
       final String preseasonRaw =
           idxIsPreseason != null ? _cellString(row, idxIsPreseason) : "";
       final bool isPreseason =
@@ -149,7 +143,7 @@ class FixtureRepository {
           venue: venue,
           time: timeText,
           source: source,
-          matchId: matchId, // now STRING
+          matchId: matchId,
           isPreseason: isPreseason,
         ),
       );
@@ -157,7 +151,7 @@ class FixtureRepository {
   }
 
   // ---------------------------------------------------------------------------
-  // HELPERS
+  // HELPERS (MUST BE INSIDE THE CLASS)
   // ---------------------------------------------------------------------------
   String _cellString(List<Data?> row, int index) {
     if (index < 0 || index >= row.length) return "";
@@ -168,7 +162,6 @@ class FixtureRepository {
 
   int _parseRound(String roundLabel) {
     final trimmed = roundLabel.trim().toUpperCase();
-
     if (trimmed == "0") return 0;
 
     final digitMatch = RegExp(r'(\d+)').firstMatch(trimmed);
@@ -256,18 +249,14 @@ class FixtureRepository {
   // ---------------------------------------------------------------------------
   // QUERY HELPERS
   // ---------------------------------------------------------------------------
-
-  /// Main-season fixtures only (round 0–24)
   List<AflFixture> fixturesForRound(int round) {
     return fixtures.where((f) => !f.isPreseason && f.round == round).toList();
   }
 
-  /// Pre‑Season fixtures (PS)
   List<AflFixture> preseasonFixtures() {
     return fixtures.where((f) => f.isPreseason).toList();
   }
 
-  /// All main-season rounds (0–24)
   List<int> allSeasonRounds() {
     final rounds = fixtures
         .where((f) => !f.isPreseason)
@@ -276,72 +265,5 @@ class FixtureRepository {
         .toList();
     rounds.sort();
     return rounds;
-  }
-
-  // ---------------------------------------------------------------------------
-  // CHAMPIONSHIP HELPERS
-  // ---------------------------------------------------------------------------
-  Map<String, List<int>> weekendQuadRoundsByMonth() {
-    final Map<String, List<int>> result = {};
-
-    for (final f in fixtures) {
-      if (f.date == null) continue;
-
-      final weekday = f.date!.weekday;
-      final isWeekendQuadDay = weekday == DateTime.friday ||
-          weekday == DateTime.saturday ||
-          weekday == DateTime.sunday ||
-          weekday == DateTime.monday;
-
-      if (!isWeekendQuadDay) continue;
-
-      final monthName = _monthName(f.date!.month);
-
-      result.putIfAbsent(monthName, () => []);
-      if (!result[monthName]!.contains(f.round)) {
-        result[monthName]!.add(f.round);
-      }
-    }
-
-    return result;
-  }
-
-  List<int> allWeekendQuadRounds() {
-    final set = <int>{};
-
-    for (final f in fixtures) {
-      if (f.date == null) continue;
-
-      final weekday = f.date!.weekday;
-      final isWeekendQuadDay = weekday == DateTime.friday ||
-          weekday == DateTime.saturday ||
-          weekday == DateTime.sunday ||
-          weekday == DateTime.monday;
-
-      if (isWeekendQuadDay) {
-        set.add(f.round);
-      }
-    }
-
-    return set.toList()..sort();
-  }
-
-  String _monthName(int month) {
-    const names = [
-      "",
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December"
-    ];
-    return names[month];
   }
 }
