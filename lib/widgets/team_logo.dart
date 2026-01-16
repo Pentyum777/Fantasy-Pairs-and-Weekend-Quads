@@ -1,5 +1,3 @@
-// lib/widgets/team_logo.dart
-
 import 'package:flutter/material.dart';
 import '../utils/afl_club_codes.dart';
 
@@ -22,7 +20,10 @@ class TeamLogo extends StatelessWidget {
           assetPath,
           fit: BoxFit.contain,
           errorBuilder: (_, __, ___) => Center(
-            child: Text(code, style: TextStyle(fontSize: size * 0.3)),
+            child: Text(
+              code,
+              style: TextStyle(fontSize: size * 0.3),
+            ),
           ),
         ),
       ),
