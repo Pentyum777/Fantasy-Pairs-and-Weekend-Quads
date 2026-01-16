@@ -45,8 +45,8 @@ class TeamColoursByClub {
       "fg": Color(0xFFfbbf15),
     },
     "MELB": {
-      "bg": Color(0xFFcc2031),
-      "fg": Color(0xFF0f1131),
+      "fg": Color(0xFFcc2031),
+      "bg": Color(0xFF0f1131),
     },
     "NM": {
       "bg": Color(0xFF013b9f),
@@ -69,8 +69,9 @@ class TeamColoursByClub {
       "fg": Color(0xFFed171f),
     },
     "WCE": {
-      "bg": Color(0xFF062ee2),
-      "fg": Color(0xFFFFD700),
+      "bg": Color(0xFFFFD700),
+      "fg": Color(0xFF062ee2),
+      
     },
     "WB": {
       "bg": Color(0xFF014896),
