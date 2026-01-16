@@ -80,6 +80,9 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                     itemBuilder: (context, index) {
                       final f = fixtures[index];
 
+                      // 🔍 DIAGNOSTIC PRINT ADDED HERE
+                      print("FIXTURE TEAMS: '${f.homeTeam}' vs '${f.awayTeam}'");
+
                       final fixtureId = f.matchId ?? index.toString();
                       final selected = _selectedFixtureIds.contains(fixtureId);
 
@@ -251,9 +254,9 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
   // ---------------------------------------------------------------------------
   Widget _teamLogo(String clubCode) {
     final code = _normalizeClubCode(clubCode);
-    final assetPath = 'assets/logos/$code.png';
+    final assetPath = 'logos/$code.png';
 
-print("LOOKING FOR LOGO: assets/logos/$code.png");
+    print("LOOKING FOR LOGO: $assetPath");
 
     return SizedBox(
       width: 32,
