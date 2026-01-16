@@ -256,7 +256,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
     final code = _normalizeClubCode(clubCode);
     final assetPath = 'logos/$code.png';
 
-    print("LOOKING FOR LOGO: $assetPath");
+    print("TEAM RAW='$clubCode' → NORMALISED='$code' → PATH='logos/$code.png'");
 
     return SizedBox(
       width: 32,
