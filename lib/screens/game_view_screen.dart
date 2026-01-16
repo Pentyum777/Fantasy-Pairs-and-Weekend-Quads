@@ -187,7 +187,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     _updateStatsAndPunterScores(_currentStatsByPlayerId.values.toList());
   }
-    // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
   // BUILD
   // ---------------------------------------------------------------------------
   @override
@@ -209,31 +210,17 @@ class _GameViewScreenState extends State<GameViewScreen> {
     }
 
     // -----------------------------------------------------------------------
-    // FIXTURE-DRIVEN ALLOWED CLUBS FOR DROPDOWNS
+    // FILTER PLAYERS BY CLUBS IN CURRENT FIXTURES (Pairs/Quads requirement)
     // -----------------------------------------------------------------------
-    final Set<String> allowedClubs;
-    if (widget.gameType == "weekend_quads") {
-      // All fixtures for round except Thursday
-      final allRoundFixtures =
-          widget.fixtureRepo.fixturesForRound(widget.round);
-      final nonThursday = allRoundFixtures.where((f) {
-        final d = f.date;
-        if (d == null) return false;
-        return d.weekday != DateTime.thursday;
-      });
-      allowedClubs = nonThursday
-          .expand((f) => [f.homeTeam, f.awayTeam])
-          .toSet();
-    } else {
-      // Pairs: all teams across all fixtures for this game type
-      allowedClubs = fixtures
-          .expand((f) => [f.homeTeam, f.awayTeam])
-          .toSet();
-    }
+    final Set<String> clubsInGame = fixtures
+        .expand((f) => [f.homeTeam, f.awayTeam])
+        .where((c) => c.isNotEmpty)
+        .toSet();
 
-    final filteredPlayers = widget.playerRepo.players
-        .where((p) => allowedClubs.contains(p.club))
-        .toList();
+    final List<AflPlayer> filteredPlayersForGame =
+        (widget.overridePlayers ?? widget.playerRepo.players)
+            .where((p) => clubsInGame.contains(p.club))
+            .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -353,7 +340,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
                               boxShadow: selected
                                   ? [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.10),
+                                        color:
+                                            Colors.black.withOpacity(0.10),
                                         blurRadius: 4,
                                         offset: const Offset(0, 2),
                                       )
@@ -429,113 +417,81 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
           // MAIN CONTENT
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isSmallScreen =
-                    constraints.maxHeight < 650 || constraints.maxWidth < 900;
-
-                Widget buildTables({required bool stacked}) {
-                  final tables = Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildPunterControls(context),
-                      const SizedBox(height: 8),
-                      if (stacked)
-                        Column(
-                          children: [
-                            PunterSelectionTable(
-                              visiblePunterCount: _visiblePunterCount,
-                              playersPerPunter:
-                                  widget.gameType == "weekend_quads" ? 4 : 2,
-                              availablePlayers: filteredPlayers,
-                              selections: widget.selections,
-                              isCompleted: _isCompleted,
-                              readOnly: widget.userRoleService.isReadOnly,
-                              onChanged: widget.userRoleService.isAdmin
-                                  ? () {
-                                      _updateStatsAndPunterScores(
-                                        _currentStatsByPlayerId.values
-                                            .toList(),
-                                      );
-                                      setState(() {});
-                                    }
-                                  : null,
-                            ),
-                            const SizedBox(height: 12),
-                            LeaderboardTable(
-                              punters: widget.selections
-                                  .take(_visiblePunterCount)
-                                  .toList(),
-                              rowHeight: 34,
-                            ),
-                          ],
-                        )
-                      else
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildPunterControls(context),
+                        const SizedBox(height: 8),
                         Expanded(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: PunterSelectionTable(
-                                  visiblePunterCount: _visiblePunterCount,
-                                  playersPerPunter:
-                                      widget.gameType == "weekend_quads"
-                                          ? 4
-                                          : 2,
-                                  availablePlayers: filteredPlayers,
-                                  selections: widget.selections,
-                                  isCompleted: _isCompleted,
-                                  readOnly:
-                                      widget.userRoleService.isReadOnly,
-                                  onChanged: widget.userRoleService.isAdmin
-                                      ? () {
-                                          _updateStatsAndPunterScores(
-                                            _currentStatsByPlayerId.values
-                                                .toList(),
-                                          );
-                                          setState(() {});
-                                        }
-                                      : null,
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: PunterSelectionTable(
+                                    visiblePunterCount: _visiblePunterCount,
+                                    playersPerPunter:
+                                        widget.gameType == "weekend_quads"
+                                            ? 4
+                                            : 2,
+                                    // ✅ Now filtered to clubs in fixtures
+                                    availablePlayers: filteredPlayersForGame,
+                                    selections: widget.selections,
+                                    isCompleted: _isCompleted,
+                                    readOnly:
+                                        widget.userRoleService.isReadOnly,
+                                    onChanged:
+                                        widget.userRoleService.isAdmin
+                                            ? () {
+                                                _updateStatsAndPunterScores(
+                                                  _currentStatsByPlayerId
+                                                      .values
+                                                      .toList(),
+                                                );
+                                                setState(() {});
+                                              }
+                                            : null,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 12),
-                                child: LeaderboardTable(
-                                  punters: widget.selections
-                                      .take(_visiblePunterCount)
-                                      .toList(),
-                                  rowHeight: 34,
+                                const SizedBox(width: 12),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.only(left: 12),
+                                  child: LeaderboardTable(
+                                    punters: widget.selections
+                                        .take(_visiblePunterCount)
+                                        .toList(),
+                                    rowHeight: 34,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                    ],
-                  );
-
-                  if (isSmallScreen) {
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.all(12),
-                      child: tables,
-                    );
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: tables,
-                  );
-                }
-
-                return buildTables(stacked: isSmallScreen);
-              },
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // REMOVED: _teamLogoSmallSized — no longer needed
+  // ---------------------------------------------------------------------------
+
   Widget _buildPunterControls(BuildContext context) {
     final theme = Theme.of(context);
 
@@ -576,7 +532,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red.shade600,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             visualDensity: VisualDensity.compact,
             minimumSize: const Size(0, 32),
           ),
@@ -593,8 +550,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
   // FIXTURE FILTERING
   // ---------------------------------------------------------------------------
   List<AflFixture> _fixturesForGameType() {
-    // If selectedFixtureIds is provided (e.g. Pre-Season/custom),
-    // start from all fixtures; otherwise, use round fixtures.
+    // If selectedFixtureIds is provided (PS/custom mode),
+    // we must NOT filter by round; we start from all fixtures.
     final all = widget.selectedFixtureIds != null
         ? widget.fixtureRepo.fixtures
         : widget.fixtureRepo.fixturesForRound(widget.round);

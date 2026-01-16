@@ -249,8 +249,9 @@ class FixtureRepository {
   // ---------------------------------------------------------------------------
   // QUERY HELPERS
   // ---------------------------------------------------------------------------
+  // ✅ Pre‑season is now treated like any other round.
   List<AflFixture> fixturesForRound(int round) {
-    return fixtures.where((f) => !f.isPreseason && f.round == round).toList();
+    return fixtures.where((f) => f.round == round).toList();
   }
 
   List<AflFixture> preseasonFixtures() {

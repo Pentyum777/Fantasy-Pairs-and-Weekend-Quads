@@ -498,7 +498,6 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   child: Row(
     children: [
       _punterCell(context, row),
-
       if (!_isMobile) _resizeHandlePunter(() {}),
 
       for (final pick in row.picks) ...[
@@ -584,34 +583,32 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     }
 
     final visualRowIndex = visualRow.punterNumber - 1;
-    final colIndex = pick.pickNumber - 1;
+final colIndex = pick.pickNumber - 1;
 
-    final owner = widget.selections[visualRowIndex];
+final owner = widget.selections[visualRowIndex];
 
-    // Build global taken set, excluding this exact pick
-    final globalTaken = <String>{};
-    for (final row in widget.selections) {
-      for (int i = 0; i < row.picks.length; i++) {
-        final p = row.picks[i].player;
-        if (p == null) continue;
+// Build global taken set, excluding this exact pick
+final globalTaken = <String>{};
+for (final row in widget.selections) {
+  for (int i = 0; i < row.picks.length; i++) {
+    final p = row.picks[i].player;
+    if (p == null) continue;
 
-        if (identical(row, owner) && i == colIndex) continue;
+    if (identical(row, owner) && i == colIndex) continue;
 
-        globalTaken.add(p.id);
-      }
-    }
+    globalTaken.add(p.id);
+  }
+}
 
-    final selectedPlayer = owner.picks[colIndex].player;
+final selectedPlayer = owner.picks[colIndex].player;
 
-    // Fixture-driven allowed clubs: passed in via availablePlayers
-    final allowedClubs = widget.availablePlayers.map((p) => p.club).toSet();
-
-    final filteredPlayers = _players.where((p) {
-      final isAllowedClub = allowedClubs.contains(p.club);
-      final isTaken = globalTaken.contains(p.id);
-      final isCurrent = p == selectedPlayer;
-      return isAllowedClub && (!isTaken || isCurrent);
-    }).toList();
+// ✅ Base list is now the players passed in from GameViewScreen,
+// already filtered to clubs in the fixtures.
+final filteredPlayers = widget.availablePlayers.where((p) {
+  final isTaken = globalTaken.contains(p.id);
+  final isCurrent = p == selectedPlayer;
+  return !isTaken || isCurrent;
+}).toList();
 
     final isCurrentPick = _isCurrentPick(visualRow, pick);
 

@@ -39,7 +39,6 @@ class GameTypeSelectionScreen extends StatefulWidget {
 }
 
 class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
-  late List<PunterSelection> preseasonPairsSelections;
   late List<PunterSelection> thursdayPairsSelections;
   late List<PunterSelection> fridayPairsSelections;
   late List<PunterSelection> saturdayPairsSelections;
@@ -52,8 +51,6 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
   @override
   void initState() {
     super.initState();
-
-    preseasonPairsSelections = _createEmptySelections(2);
 
     thursdayPairsSelections = _createEmptySelections(2);
     fridayPairsSelections = _createEmptySelections(2);
@@ -116,38 +113,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       return;
     }
 
-    // -----------------------------------------------------------------------
-    // PRE-SEASON PAIRS
-    // -----------------------------------------------------------------------
-    if (type == "preseason_pairs") {
-      final preseason = widget.fixtureRepo.preseasonFixtures();
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => GameViewScreen(
-            round: -1, // special round
-            gameType: "preseason_pairs",
-            selections: preseasonPairsSelections,
-            fixtureRepo: widget.fixtureRepo,
-            playerRepo: widget.playerRepo,
-            fantasyService: widget.fantasyService,
-            championshipService: championshipService,
-            roundCompletionService: widget.roundCompletionService,
-            userRoleService: widget.userRoleService,
-            selectedFixtureIds: preseason
-                .where((f) => f.matchId != null && f.matchId!.isNotEmpty)
-                .map((f) => f.matchId!)
-                .toList(),
-          ),
-        ),
-      );
-      return;
-    }
-
-    // -----------------------------------------------------------------------
-    // NORMAL GAME TYPES
-    // -----------------------------------------------------------------------
+    // Normal game types
     late List<PunterSelection> selections;
 
     switch (type) {
@@ -194,7 +160,6 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     final gameTypes = [
-      "preseason_pairs",
       "thursday_pairs",
       "friday_pairs",
       "saturday_pairs",
@@ -207,8 +172,6 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
 
     String shortLabel(String type) {
       switch (type) {
-        case "preseason_pairs":
-          return "Pre‑Season Pairs";
         case "thursday_pairs":
           return "Thursday Pairs";
         case "friday_pairs":
