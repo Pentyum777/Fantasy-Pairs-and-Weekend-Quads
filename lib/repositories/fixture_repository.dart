@@ -70,8 +70,12 @@ class FixtureRepository {
       // ROUND LABEL NORMALIZATION
       // -----------------------------
       String roundLabel = _cellString(row, idxRound).trim();
-      if (roundLabel.isEmpty) continue;
+      if (roundLabel.isEmpty) {
+        print("⚠️ Row $r has empty ROUND label, skipping");
+        continue;
+      }
 
+      final originalRoundLabel = roundLabel;
       final upper = roundLabel.toUpperCase();
 
       // Pre-Season → PS
@@ -128,6 +132,13 @@ class FixtureRepository {
       // -----------------------------
       final int roundNumber = _parseRound(roundLabel);
 
+      // 🔍 Debug print for this row
+      print(
+        "ROW $r | RAW_ROUND='$originalRoundLabel' → NORM_ROUND='$roundLabel' → round=$roundNumber | "
+        "DATE='$dateText' → $parsedDate | HOME='$homeTeam' AWAY='$awayTeam' | "
+        "matchId='${matchId ?? ""}' isPreseason=$isPreseason",
+      );
+
       fixtures.add(
         AflFixture(
           roundLabel: roundLabel,
@@ -143,6 +154,8 @@ class FixtureRepository {
         ),
       );
     }
+
+    print("✅ Finished loading fixtures. Total loaded: ${fixtures.length}");
   }
 
   // ---------------------------------------------------------------------------
