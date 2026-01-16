@@ -1,4 +1,4 @@
-Write-Host "=== Fantasy Pairs Deployment Script (Correct Base Href + Merge Strategy) ===" -ForegroundColor Cyan
+Write-Host "=== Fantasy Pairs Deployment Script (Base Href + Cache Busting) ===" -ForegroundColor Cyan
 
 # --- 1. Ensure no rebase or merge is active ---
 try { git rebase --abort | Out-Null } catch {}
@@ -41,8 +41,46 @@ flutter clean
 Write-Host "Fetching dependencies..." -ForegroundColor Yellow
 flutter pub get
 
-Write-Host "Building Flutter web release with correct base href..." -ForegroundColor Yellow
+Write-Host "Building Flutter web release..." -ForegroundColor Yellow
 flutter build web --release --base-href /Fantasy-Pairs-and-Weekend-Quads/
+
+# --- 5.5 Purge old docs/assets to prevent stale caching ---
+Write-Host "Purging old docs/assets folder..." -ForegroundColor Yellow
+if (Test-Path "docs/assets") {
+    Remove-Item -Recurse -Force "docs/assets"
+    Write-Host "Old docs/assets removed."
+} else {
+    Write-Host "No old docs/assets folder found."
+}
+
+# --- 5.6 Add cache-busting version hash ---
+Write-Host "Applying cache-busting version hash..." -ForegroundColor Yellow
+
+$version = (Get-Date -Format "yyyyMMddHHmmss")
+$webPath = "build/web"
+
+$filesToHash = @(
+    "main.dart.js",
+    "flutter.js",
+    "AssetManifest.json",
+    "FontManifest.json",
+    "NOTICES"
+)
+
+foreach ($file in $filesToHash) {
+    $fullPath = Join-Path $webPath $file
+    if (Test-Path $fullPath) {
+        $newName = "$file?v=$version"
+        Rename-Item -Path $fullPath -NewName $newName
+
+        # Update references inside index.html
+        (Get-Content "$webPath/index.html") `
+            -replace [regex]::Escape($file), $newName `
+            | Set-Content "$webPath/index.html"
+    }
+}
+
+Write-Host "Version hash applied: $version" -ForegroundColor Green
 
 # --- 6. Replace docs folder ---
 Write-Host "Refreshing docs folder..." -ForegroundColor Yellow

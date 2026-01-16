@@ -31,7 +31,7 @@ class SideBySideGameTables extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // ORIGINAL TABLE BUILDER (unchanged)
+  // SHARED TABLE BUILDER
   // ---------------------------------------------------------------------------
   Widget _buildTable(
     BuildContext context,
@@ -102,7 +102,7 @@ class SideBySideGameTables extends StatelessWidget {
               height: rowHeight,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               color: isStriped
-                  ? cs.surfaceVariant.withAlpha(76)
+                  ? cs.surfaceVariant.withOpacity(0.30)
                   : cs.surface,
               child: Row(
                 children: columns
@@ -125,7 +125,7 @@ class SideBySideGameTables extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // NEW: SINGLE TABLE BUILDER FOR THE RESPONSIVE OVERLAY
+  // SINGLE TABLE BUILDER FOR RESPONSIVE OVERLAY
   // ---------------------------------------------------------------------------
   static Widget buildSingleTable(
     BuildContext context,
@@ -197,7 +197,7 @@ class SideBySideGameTables extends StatelessWidget {
               height: rowHeight,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               color: isStriped
-                  ? cs.surfaceVariant.withAlpha(76)
+                  ? cs.surfaceVariant.withOpacity(0.30)
                   : cs.surface,
               child: Row(
                 children: columns
