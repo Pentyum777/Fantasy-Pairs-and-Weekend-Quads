@@ -88597,9 +88597,9 @@ r=B.Ie[A.AM(s)-1]
 q=A.uy(s)>12?A.uy(s)-12:A.uy(s)
 p=A.uy(s)>=12?"PM":"AM"
 return"Game "+o+" \u2013 "+r+" "+(""+q+":"+B.c.mN(B.e.k(A.ack(s)),2,"0")+" "+p)},
-Qz(a){var s=A.a0v(a),r="logos/"+s+".png"
-A.mx("LOOKING FOR LOGO: "+r)
-return A.eC(A.aAu(A.aBO(r,new A.am5(s),B.lz)),32,32)}}
+Qz(a){var s=A.a0v(a)
+A.mx("TEAM RAW='"+a+"' \u2192 NORMALISED='"+s+"' \u2192 PATH='logos/"+s+".png'")
+return A.eC(A.aAu(A.aBO("logos/"+s+".png",new A.am5(s),B.lz)),32,32)}}
 A.ama.prototype={
 $2(a,b){var s,r,q,p,o,n,m,l,k=null,j=this.b[b],i=j.d,h=j.e
 A.mx("FIXTURE TEAMS: '"+i+"' vs '"+h+"'")
