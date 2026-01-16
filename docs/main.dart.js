@@ -88850,24 +88850,24 @@ s=A.cn(s,"kangaroos","")
 s=A.cn(s,"bulldogs","")
 return B.c.cp(A.cn(s,"crows",""))},
 anW(a){var s=B.c.cp(a).toLowerCase()
-if(B.c.p(s,"adelaide"))return"ADE"
-if(B.c.p(s,"brisbane"))return"BRL"
+if(B.c.p(s,"adelaide crowws"))return"ADE"
+if(B.c.p(s,"brisbane lions"))return"BRL"
 if(B.c.p(s,"carlton"))return"CAR"
 if(B.c.p(s,"collingwood"))return"COL"
 if(B.c.p(s,"essendon"))return"ESS"
 if(B.c.p(s,"fremantle"))return"FRE"
-if(B.c.p(s,"geelong"))return"GEE"
-if(B.c.p(s,"gold coast"))return"GCS"
-if(B.c.p(s,"gws")||B.c.p(s,"giants"))return"GWS"
+if(B.c.p(s,"geelong cats"))return"GEE"
+if(B.c.p(s,"gold coast suns"))return"GCS"
+if(B.c.p(s,"gws giants")||B.c.p(s,"giants"))return"GWS"
 if(B.c.p(s,"hawthorn"))return"HAW"
 if(B.c.p(s,"melbourne"))return"MEL"
-if(B.c.p(s,"north")||B.c.p(s,"kangaroos"))return"NTH"
-if(B.c.p(s,"port"))return"PTA"
+if(B.c.p(s,"north melbourne"))return"NTH"
+if(B.c.p(s,"port adelaide"))return"PTA"
 if(B.c.p(s,"richmond"))return"RIC"
-if(B.c.p(s,"st k"))return"STK"
-if(B.c.p(s,"sydney"))return"SYD"
-if(B.c.p(s,"west coast"))return"WCE"
-if(B.c.p(s,"bulldogs")||B.c.p(s,"western"))return"WBD"
+if(B.c.p(s,"st kilda"))return"STK"
+if(B.c.p(s,"sydney swans"))return"SYD"
+if(B.c.p(s,"west coast eagles"))return"WCE"
+if(B.c.p(s,"western bulldogs"))return"WBD"
 return a},
 QA(a){var s=this.anW(a)
 return A.eC(A.aAt(A.aBN("assets/logos/"+s+".png",new A.anX(s),B.lA)),28,28)},
