@@ -55,20 +55,20 @@ class ChampionshipService {
   }
 
   // ---------------------------------------------------------------------------
-  // MONTHLY AGGREGATION
+  // AGGREGATION (MONTHLY + SEASON)
   // ---------------------------------------------------------------------------
 
-  /// Aggregates multiple Weekend Quads rounds into a monthly leaderboard.
+  /// Aggregates multiple Weekend Quads rounds into a leaderboard.
   ///
   /// Input: A list where each element is a *round* of Weekend Quads selections.
   ///
-  /// Output: A map of punterName → total monthly championship points.
-  Map<String, int> calculateMonthlyChampionship(
-    List<List<PunterSelection>> monthlyRounds,
+  /// Output: A map of punterName → total championship points.
+  Map<String, int> calculateAggregateChampionship(
+    List<List<PunterSelection>> rounds,
   ) {
     final totals = <String, int>{};
 
-    for (final roundSelections in monthlyRounds) {
+    for (final roundSelections in rounds) {
       final roundPoints = calculateRoundPoints(roundSelections);
 
       for (final entry in roundPoints.entries) {
@@ -79,19 +79,11 @@ class ChampionshipService {
     return totals;
   }
 
-  // ---------------------------------------------------------------------------
-  // SEASON AGGREGATION
-  // ---------------------------------------------------------------------------
-
   /// Aggregates all Weekend Quads rounds in the season.
-  ///
-  /// Input: A list of all Weekend Quads rounds for the year.
-  ///
-  /// Output: A map of punterName → total season championship points.
   Map<String, int> calculateSeasonChampionship(
     List<List<PunterSelection>> allRounds,
   ) {
-    return calculateMonthlyChampionship(allRounds);
+    return calculateAggregateChampionship(allRounds);
   }
 
   // ---------------------------------------------------------------------------
@@ -151,7 +143,7 @@ class ChampionshipService {
     final rounds = roundsByMonth[month];
     if (rounds == null || rounds.isEmpty) return [];
 
-    final totals = calculateMonthlyChampionship(rounds);
+    final totals = calculateAggregateChampionship(rounds);
     final sorted = sortLeaderboard(totals);
 
     return sorted

@@ -17,11 +17,12 @@ class LeaderboardTable extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
+    // Sort punters by total score descending
     final sorted = [...punters]
       ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
 
     return Container(
-      width: 32 + 70 + 36, // total compact width
+      width: 32 + 70 + 36, // compact fixed width
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(8),
@@ -103,7 +104,7 @@ class LeaderboardTable extends StatelessWidget {
     return Container(
       width: width,
       alignment: alignCenter ? Alignment.center : Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
         text,
         style: theme.textTheme.labelSmall?.copyWith(
@@ -131,7 +132,7 @@ class LeaderboardTable extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // PUNTER NAME CELL (LEFT‑ALIGNED)
+  // PUNTER NAME CELL
   // ---------------------------------------------------------------------------
   Widget _punterNameCell(BuildContext context, PunterSelection p) {
     return Container(

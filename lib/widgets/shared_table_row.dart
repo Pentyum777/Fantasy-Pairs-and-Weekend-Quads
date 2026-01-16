@@ -11,14 +11,12 @@ Widget buildSharedTableRow({
 }) {
   final cs = Theme.of(context).colorScheme;
 
-  Color bg;
-  if (isInvalid) {
-    bg = Colors.red.withOpacity(0.06);
-  } else if (index.isOdd) {
-    bg = cs.surfaceVariant.withOpacity(0.25);
-  } else {
-    bg = cs.surface;
-  }
+  // Background striping + invalid highlight
+  final Color bg = isInvalid
+      ? Colors.red.withOpacity(0.06)
+      : index.isOdd
+          ? cs.surfaceVariant.withOpacity(0.25)
+          : cs.surface;
 
   return Container(
     height: rowHeight,
@@ -32,12 +30,11 @@ Widget buildSharedTableRow({
       ),
     ),
 
-    // ⭐ THIS IS THE FIX ⭐
     child: SizedBox(
-      width: double.infinity, // forces row to respect parent width
+      width: double.infinity,   // ensures full-width row
       height: rowHeight,
       child: Row(
-        mainAxisSize: MainAxisSize.min, // prevents expansion
+        mainAxisSize: MainAxisSize.max,   // correct pairing with infinity width
         children: [
           leftCell,
           ...middleCells,

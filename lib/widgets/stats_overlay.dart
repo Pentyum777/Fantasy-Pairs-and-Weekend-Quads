@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'side_by_side_game_tables.dart'; // your existing table widget
+import 'side_by_side_game_tables.dart';
 
 class StatsOverlay extends StatelessWidget {
   final String leftTitle;
@@ -8,7 +8,7 @@ class StatsOverlay extends StatelessWidget {
   final List<Map<String, dynamic>> rightRows;
   final List<String> columns;
 
-  /// NEW: optional message when no stats exist
+  /// Optional message when no stats exist.
   final String? noStatsMessage;
 
   const StatsOverlay({
@@ -58,7 +58,7 @@ class StatsOverlay extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // NEW: Empty-state message
+              // Empty-state message
               if (noStatsMessage != null)
                 Expanded(
                   child: Center(
