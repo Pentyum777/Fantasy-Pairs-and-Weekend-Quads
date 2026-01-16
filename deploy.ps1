@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
-# DEPLOY SCRIPT FOR FLUTTER WEB -> GITHUB PAGES
-# Deterministic, idempotent, cache-busting, clean output
+# DEPLOY SCRIPT FOR FLUTTER WEB → GITHUB PAGES
+# Cache-busting, MSAL-safe, deterministic, and fully validated
 # ---------------------------------------------------------------------------
 
 Write-Host "=== Starting Deployment ==="
@@ -12,25 +12,25 @@ Set-Location $PSScriptRoot
 # 1. FLUTTER BUILD
 # ---------------------------------------------------------------------------
 Write-Host "Building Flutter web release..."
+flutter clean
+flutter pub get
 flutter build web --release
 
 $webDir = "build\web"
 if (!(Test-Path $webDir)) {
-    Write-Host "Flutter build failed - web directory not found."
+    Write-Host "❌ Flutter build failed — web directory not found."
     exit 1
 }
 
-Write-Host "Flutter build complete."
+Write-Host "✅ Flutter build complete."
 
 # ---------------------------------------------------------------------------
 # 2. APPLY CACHE-BUSTING VERSION HASH
 # ---------------------------------------------------------------------------
-Write-Host "Applying cache-busting version hash..."
-
 $timestamp = Get-Date -Format "yyyyMMddHHmmss"
 $versionHash = $timestamp
+Write-Host "Applying version hash: $versionHash"
 
-# Files to rename + rewrite references
 $filesToHash = @(
     "flutter.js",
     "main.dart.js",
@@ -41,24 +41,22 @@ $filesToHash = @(
 
 foreach ($file in $filesToHash) {
     $fullPath = Join-Path $webDir $file
-
     if (Test-Path $fullPath) {
         $dir = Split-Path $fullPath
         $name = Split-Path $fullPath -Leaf
         $newName = "$name.$versionHash"
         $newFullPath = Join-Path $dir $newName
 
-        # Prevent "file already exists" error
         if ($fullPath -ne $newFullPath) {
             if (Test-Path $newFullPath) {
                 Remove-Item $newFullPath -Force
             }
             Rename-Item -Path $fullPath -NewName $newName
         }
+    } else {
+        Write-Host "⚠️ Missing file: $file"
     }
 }
-
-Write-Host "Version hash applied: $versionHash"
 
 # ---------------------------------------------------------------------------
 # 3. UPDATE INDEX.HTML REFERENCES
@@ -66,54 +64,53 @@ Write-Host "Version hash applied: $versionHash"
 $indexPath = Join-Path $webDir "index.html"
 if (Test-Path $indexPath) {
     $index = Get-Content $indexPath
-
     foreach ($file in $filesToHash) {
         $pattern = [regex]::Escape($file)
         $replacement = "$file.$versionHash"
         $index = $index -replace $pattern, $replacement
     }
-
     Set-Content -Path $indexPath -Value $index -Encoding UTF8
-    Write-Host "index.html updated with cache-busting references."
+    Write-Host "✅ index.html updated with hashed references."
+} else {
+    Write-Host "❌ index.html not found."
+    exit 1
 }
 
 # ---------------------------------------------------------------------------
 # 4. COPY TO /docs FOR GITHUB PAGES
 # ---------------------------------------------------------------------------
 $docsDir = "docs"
-
 if (Test-Path $docsDir) {
     Remove-Item $docsDir -Recurse -Force
 }
-
 Copy-Item $webDir $docsDir -Recurse
-
-Write-Host "Copied build to /docs."
+Write-Host "✅ Copied build to /docs."
 
 # ---------------------------------------------------------------------------
 # 5. COPY MSAL.JS (CRITICAL FIX)
 # ---------------------------------------------------------------------------
-# Ensure msal.js is deployed alongside index.html
-if (Test-Path "web/msal.js") {
-    Copy-Item "web/msal.js" "$docsDir/msal.js"
-    Write-Host "msal.js copied from web/."
+$msalSourcePaths = @("web/msal.js", "msal.js")
+$msalCopied = $false
+
+foreach ($path in $msalSourcePaths) {
+    if (Test-Path $path) {
+        Copy-Item $path "$docsDir/msal.js"
+        Write-Host "✅ msal.js copied from $path"
+        $msalCopied = $true
+        break
+    }
 }
-elseif (Test-Path "msal.js") {
-    Copy-Item "msal.js" "$docsDir/msal.js"
-    Write-Host "msal.js copied from project root."
-}
-else {
-    Write-Host "⚠️ WARNING: msal.js not found. Login will fail."
+
+if (-not $msalCopied) {
+    Write-Host "❌ msal.js not found — login will fail."
 }
 
 # ---------------------------------------------------------------------------
 # 6. GIT COMMIT + PUSH
 # ---------------------------------------------------------------------------
 Write-Host "Committing and pushing to GitHub..."
-
 git add .
 git commit -m "Deploy $versionHash" --allow-empty
 git pull origin main
 git push origin main
-
-Write-Host "=== Deployment Complete ==="
+Write-Host "✅ Deployment complete."
