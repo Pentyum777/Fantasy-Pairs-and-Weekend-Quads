@@ -42,6 +42,45 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
   /// FIXED: matchId is now a String, so the selection set must also be String
   final Set<String> _selectedFixtureIds = {};
 
+  // ---------------------------------------------------------------------------
+  // AFL CLUB NORMALISATION MAP
+  // ---------------------------------------------------------------------------
+  static const Map<String, String> _clubCodeMap = {
+    "Adelaide": "ADE",
+    "Adelaide Crows": "ADE",
+    "Brisbane": "BRI",
+    "Brisbane Lions": "BRI",
+    "Carlton": "CARL",
+    "Collingwood": "COLL",
+    "Essendon": "ESS",
+    "Fremantle": "FRE",
+    "Geelong": "GEEL",
+    "Gold Coast": "GC",
+    "Gold Coast Suns": "GC",
+    "GWS": "GWS",
+    "Greater Western Sydney": "GWS",
+    "Hawthorn": "HAW",
+    "Melbourne": "MELB",
+    "North Melbourne": "NM",
+    "Port Adelaide": "PORT",
+    "Port": "PORT",
+    "Power": "PORT",
+    "Richmond": "RICH",
+    "St Kilda": "STK",
+    "Sydney": "SYD",
+    "West Coast": "WCE",
+    "West Coast Eagles": "WCE",
+    "Eagles": "WCE",
+    "Western Bulldogs": "WB",
+    "Bulldogs": "WB",
+  };
+
+  String _normalizeClubCode(String raw) {
+    return _clubCodeMap[raw] ?? raw.toUpperCase();
+  }
+
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final fixtures = widget.fixtureRepo.fixturesForRound(widget.round).toList();
@@ -234,8 +273,12 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
     return "$hour:$minute $ampm";
   }
 
+  // ---------------------------------------------------------------------------
+  // UPDATED TEAM LOGO WIDGET WITH NORMALISED CODES
+  // ---------------------------------------------------------------------------
   Widget _teamLogo(String clubCode) {
-    final assetPath = 'logos/$clubCode.png';
+    final code = _normalizeClubCode(clubCode);
+    final assetPath = 'logos/$code.png';
 
     return SizedBox(
       width: 32,
@@ -247,7 +290,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
           errorBuilder: (_, __, ___) {
             return Center(
               child: Text(
-                clubCode,
+                code,
                 style: const TextStyle(fontSize: 10),
               ),
             );

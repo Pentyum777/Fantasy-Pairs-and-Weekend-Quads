@@ -529,15 +529,13 @@ class _GameViewScreenState extends State<GameViewScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                Expanded(
-                                  flex: 1,
-                                  child: LeaderboardTable(
-                                    punters: widget.selections
-                                        .take(_visiblePunterCount)
-                                        .toList(),
-                                    rowHeight: 34,
-                                  ),
-                                ),
+                                Padding(
+  padding: const EdgeInsets.only(left: 12),
+  child: LeaderboardTable(
+    punters: widget.selections.take(_visiblePunterCount).toList(),
+    rowHeight: 34,
+  ),
+),
                               ],
                             ),
                           ),
