@@ -3,7 +3,6 @@ import 'package:excel/excel.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../models/afl_fixture.dart';
-import '../utils/afl_club_codes.dart';
 
 class FixtureRepository {
   final List<AflFixture> fixtures = [];
@@ -14,19 +13,6 @@ class FixtureRepository {
   Future<void> loadFixtures() async {
     final bytesMain = await rootBundle.load('assets/afl_fixtures_2026.xlsx');
     loadFromExcel(bytesMain.buffer.asUint8List());
-  }
-
-  // ---------------------------------------------------------------------------
-  // REFRESH LIVE SCORES FOR A ROUND (placeholder for AFL.com.au)
-  // ---------------------------------------------------------------------------
-  Future<void> refreshLiveScoresForRound(int round) async {
-    final roundFixtures = fixturesForRound(round);
-
-    for (final f in roundFixtures) {
-      if (f.matchId != null && f.matchId!.isNotEmpty) {
-        // AFL.com.au ingestion coming soon
-      }
-    }
   }
 
   // ---------------------------------------------------------------------------
@@ -41,6 +27,7 @@ class FixtureRepository {
 
     final headerRow = sheet.rows.first;
 
+    // Build header index map (case-insensitive)
     final Map<String, int> headerIndex = {};
     for (int i = 0; i < headerRow.length; i++) {
       final cell = headerRow[i];
@@ -87,27 +74,21 @@ class FixtureRepository {
 
       final upper = roundLabel.toUpperCase();
 
+      // Pre-Season → PS
       if (upper == "PRE-SEASON" || upper == "PRESEASON" || upper == "PS") {
         roundLabel = "PS";
       }
 
+      // Opening Round → 0
       if (upper == "OPENING ROUND" || upper == "OR") {
         roundLabel = "0";
       }
 
       final dateText = _cellString(row, idxDate);
-
-      // -----------------------------
-      // TEAM NORMALIZATION
-      // -----------------------------
-      final rawHome = _cellString(row, idxHome);
-      final rawAway = _cellString(row, idxAway);
-
-      final homeTeam = AflClubCodes.normalize(rawHome);
-      final awayTeam = AflClubCodes.normalize(rawAway);
-
+      final homeTeam = _cellString(row, idxHome);
+      final awayTeam = _cellString(row, idxAway);
       final venue = _cellString(row, idxVenue);
-      final timeText = idxTime != null ? _cellString(row, idxTime) : "";
+      final time = idxTime != null ? _cellString(row, idxTime) : "";
       final source = idxSource != null ? _cellString(row, idxSource) : "";
 
       final String? matchId =
@@ -136,8 +117,9 @@ class FixtureRepository {
       if (!isTbcDate) {
         parsedDate = _parseDateWithoutYear(dateText, defaultYear);
 
-        if (parsedDate != null && timeText.isNotEmpty) {
-          parsedDate = _combineDateAndTime(parsedDate, timeText);
+        // Combine with time if available
+        if (parsedDate != null && time.isNotEmpty) {
+          parsedDate = _combineDateAndTime(parsedDate, time);
         }
       }
 
@@ -154,7 +136,7 @@ class FixtureRepository {
           homeTeam: homeTeam,
           awayTeam: awayTeam,
           venue: venue,
-          time: timeText,
+          time: time,
           source: source,
           matchId: matchId,
           isPreseason: isPreseason,
@@ -179,9 +161,17 @@ class FixtureRepository {
   int _parseRound(String roundLabel) {
     final trimmed = roundLabel.trim().toUpperCase();
 
-    if (trimmed == "PS") return -1;
-    if (trimmed == "0") return 0;
+    // Pre-Season
+    if (trimmed == "PS" || trimmed == "PRE-SEASON" || trimmed == "PRESEASON") {
+      return -1;
+    }
 
+    // Opening Round
+    if (trimmed == "0" || trimmed == "OPENING ROUND" || trimmed == "OR") {
+      return 0;
+    }
+
+    // ROUND 1, ROUND 2, etc.
     final digitMatch = RegExp(r'(\d+)').firstMatch(trimmed);
     if (digitMatch != null) {
       return int.tryParse(digitMatch.group(1)!) ?? 0;
@@ -194,6 +184,7 @@ class FixtureRepository {
     final parts = text.trim().split(RegExp(r'\s+'));
     if (parts.length < 3) return null;
 
+    // Format: Wednesday February 25
     final month = _monthFromName(parts[1]);
     if (month == 0) return null;
 
@@ -265,7 +256,7 @@ class FixtureRepository {
   }
 
   // ---------------------------------------------------------------------------
-  // QUERY HELPERS
+  // QUERY HELPERS (required by main.dart + game_view_screen.dart)
   // ---------------------------------------------------------------------------
   List<AflFixture> fixturesForRound(int round) {
     return fixtures.where((f) => f.round == round).toList();
@@ -279,5 +270,15 @@ class FixtureRepository {
     final rounds = fixtures.map((f) => f.round).toSet().toList();
     rounds.sort();
     return rounds;
+  }
+
+  Future<void> refreshLiveScoresForRound(int round) async {
+    final roundFixtures = fixturesForRound(round);
+
+    for (final f in roundFixtures) {
+      if (f.matchId != null && f.matchId!.isNotEmpty) {
+        // Live score ingestion coming later
+      }
+    }
   }
 }
