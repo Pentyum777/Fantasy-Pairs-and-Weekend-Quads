@@ -256,8 +256,26 @@ class FixtureRepository {
   // ---------------------------------------------------------------------------
   // QUERY HELPERS
   // ---------------------------------------------------------------------------
+
+  /// Main-season fixtures only (round 0–24)
   List<AflFixture> fixturesForRound(int round) {
-    return fixtures.where((f) => f.round == round).toList();
+    return fixtures.where((f) => !f.isPreseason && f.round == round).toList();
+  }
+
+  /// Pre‑Season fixtures (PS)
+  List<AflFixture> preseasonFixtures() {
+    return fixtures.where((f) => f.isPreseason).toList();
+  }
+
+  /// All main-season rounds (0–24)
+  List<int> allSeasonRounds() {
+    final rounds = fixtures
+        .where((f) => !f.isPreseason)
+        .map((f) => f.round)
+        .toSet()
+        .toList();
+    rounds.sort();
+    return rounds;
   }
 
   // ---------------------------------------------------------------------------

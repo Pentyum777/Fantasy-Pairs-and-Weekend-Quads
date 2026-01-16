@@ -29,7 +29,6 @@ class _MyAppState extends State<MyApp> {
   late final PlayerRepository playerRepo;
   late final PunterScoreService fantasyService;
 
-  /// NEW: shared services
   final RoundCompletionService roundCompletionService = RoundCompletionService();
   final UserRoleService userRoleService = UserRoleService();
 
@@ -45,8 +44,6 @@ class _MyAppState extends State<MyApp> {
 
     playerRepo.loadPlayers();
 
-    // TEMPORARY: Hard-coded role (Option A)
-    // Change this to UserRole.readOnly to test read-only mode
     userRoleService.setRole(UserRole.admin);
 
     MsalService.listenForToken((token) {
@@ -79,31 +76,54 @@ class _MyAppState extends State<MyApp> {
                   );
                 }
 
-                final rounds = fixtureRepo.fixtures
-                    .map((f) => f.round)
-                    .whereType<int>()
-                    .where((r) => r != -2)
-                    .toSet()
-                    .toList()
-                  ..sort();
+                // ------------------------------------------------------------
+                // BUILD ROUND LIST: PS (as -1) + main-season rounds
+                // ------------------------------------------------------------
+                final List<int> rounds = [];
+
+                // Add sentinel -1 for Pre‑Season if any preseason fixtures exist
+                if (fixtureRepo.preseasonFixtures().isNotEmpty) {
+                  rounds.add(-1);
+                }
+
+                // Add main-season rounds (e.g. 0–24)
+                rounds.addAll(fixtureRepo.allSeasonRounds());
 
                 return RoundSelectionScreen(
                   rounds: rounds,
                   completedRounds: roundCompletionService.completedRounds,
-                  onRoundSelected: (round) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => GameTypeSelectionScreen(
-                          round: round,
-                          fixtureRepo: fixtureRepo,
-                          playerRepo: playerRepo,
-                          fantasyService: fantasyService,
-                          roundCompletionService: roundCompletionService,
-                          userRoleService: userRoleService,
+                  onRoundSelected: (int? round) {
+                    if (round == null || round == -1) {
+                      // Pre‑Season
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => GameTypeSelectionScreen(
+                            round: null,
+                            fixtureRepo: fixtureRepo,
+                            playerRepo: playerRepo,
+                            fantasyService: fantasyService,
+                            roundCompletionService: roundCompletionService,
+                            userRoleService: userRoleService,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    } else {
+                      // Main season R0–R24
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => GameTypeSelectionScreen(
+                            round: round,
+                            fixtureRepo: fixtureRepo,
+                            playerRepo: playerRepo,
+                            fantasyService: fantasyService,
+                            roundCompletionService: roundCompletionService,
+                            userRoleService: userRoleService,
+                          ),
+                        ),
+                      );
+                    }
                   },
                 );
               },
