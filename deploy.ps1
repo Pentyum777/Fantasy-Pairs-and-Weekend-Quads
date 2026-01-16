@@ -91,7 +91,23 @@ Copy-Item $webDir $docsDir -Recurse
 Write-Host "Copied build to /docs."
 
 # ---------------------------------------------------------------------------
-# 5. GIT COMMIT + PUSH
+# 5. COPY MSAL.JS (CRITICAL FIX)
+# ---------------------------------------------------------------------------
+# Ensure msal.js is deployed alongside index.html
+if (Test-Path "web/msal.js") {
+    Copy-Item "web/msal.js" "$docsDir/msal.js"
+    Write-Host "msal.js copied from web/."
+}
+elseif (Test-Path "msal.js") {
+    Copy-Item "msal.js" "$docsDir/msal.js"
+    Write-Host "msal.js copied from project root."
+}
+else {
+    Write-Host "⚠️ WARNING: msal.js not found. Login will fail."
+}
+
+# ---------------------------------------------------------------------------
+# 6. GIT COMMIT + PUSH
 # ---------------------------------------------------------------------------
 Write-Host "Committing and pushing to GitHub..."
 
