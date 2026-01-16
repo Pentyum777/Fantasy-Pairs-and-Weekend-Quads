@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/team_logo.dart';
 
 class SingleTeamStatsTable extends StatefulWidget {
   final List<String> teamCodes;
@@ -30,80 +31,94 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
 
   @override
   Widget build(BuildContext context) {
-  final theme = Theme.of(context);
-  final cs = theme.colorScheme;
-  final rows = widget.teamRows[selectedTeam] ?? [];
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final rows = widget.teamRows[selectedTeam] ?? [];
 
-  return Column(
-    children: [
-      GestureDetector(
-        onTap: () {
-          final otherTeam = widget.teamCodes.firstWhere((t) => t != selectedTeam);
-          setState(() => selectedTeam = otherTeam);
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: SizedBox(
-            height: 40,
-            child: Image.asset(
-              'logos/$selectedTeam.png',   // <-- FIXED
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 40),
+    return Column(
+      children: [
+        // -------------------------------------------------------------------
+        // TEAM LOGO SWITCHER (tap to toggle between the two teams)
+        // -------------------------------------------------------------------
+        GestureDetector(
+          onTap: () {
+            final otherTeam =
+                widget.teamCodes.firstWhere((t) => t != selectedTeam);
+            setState(() => selectedTeam = otherTeam);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: SizedBox(
+              height: 40,
+              child: TeamLogo(
+                selectedTeam,
+                size: 40,
+              ),
             ),
           ),
         ),
-      ),
 
-      Container(
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: cs.outlineVariant),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          children: [
-            // Title header
-            Container(
-              height: headerHeight,
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              alignment: Alignment.centerLeft,
-              color: cs.surfaceVariant,
-              child: Text(
-                selectedTeam,   // <-- This is the club code (ADE, BRI, etc.)
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: cs.onSurfaceVariant,
+        // -------------------------------------------------------------------
+        // TABLE CONTAINER
+        // -------------------------------------------------------------------
+        Container(
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: cs.outlineVariant),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              // -------------------------------------------------------------
+              // TITLE HEADER (shows team code)
+              // -------------------------------------------------------------
+              Container(
+                height: headerHeight,
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                alignment: Alignment.centerLeft,
+                color: cs.surfaceVariant,
+                child: Text(
+                  selectedTeam,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: cs.onSurfaceVariant,
+                  ),
                 ),
               ),
-            ),
 
               const Divider(height: 1),
 
-              // Column labels
+              // -------------------------------------------------------------
+              // COLUMN LABELS
+              // -------------------------------------------------------------
               Container(
                 height: headerHeight,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 color: cs.surfaceVariant,
                 child: Row(
                   children: widget.columns
-                      .map((c) => Expanded(
-                            child: Text(
-                              c,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: cs.onSurfaceVariant,
-                              ),
+                      .map(
+                        (c) => Expanded(
+                          child: Text(
+                            c,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurfaceVariant,
                             ),
-                          ))
+                          ),
+                        ),
+                      )
                       .toList(),
                 ),
               ),
 
               const Divider(height: 1),
 
-              // Data rows
+              // -------------------------------------------------------------
+              // DATA ROWS
+              // -------------------------------------------------------------
               ...rows.asMap().entries.map((entry) {
                 final index = entry.key;
                 final row = entry.value;
@@ -117,13 +132,15 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
                       : cs.surface,
                   child: Row(
                     children: widget.columns
-                        .map((c) => Expanded(
-                              child: Text(
-                                "${row[c]}",
-                                style: theme.textTheme.bodySmall,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ))
+                        .map(
+                          (c) => Expanded(
+                            child: Text(
+                              "${row[c]}",
+                              style: theme.textTheme.bodySmall,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 );

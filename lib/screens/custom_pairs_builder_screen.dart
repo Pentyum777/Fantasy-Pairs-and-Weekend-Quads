@@ -11,7 +11,7 @@ import '../services/championship_service.dart';
 import '../services/round_completion_service.dart';
 import '../services/user_role_service.dart';
 
-import '../utils/afl_club_codes.dart';
+import '../widgets/team_logo.dart';   // <-- unified logo widget
 import 'game_view_screen.dart';
 
 class CustomPairsBuilderScreen extends StatefulWidget {
@@ -43,15 +43,6 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
   /// matchId is now a String, so the selection set must also be String
   final Set<String> _selectedFixtureIds = {};
 
-  // ---------------------------------------------------------------------------
-  // TEAM CODE NORMALISATION (shared AFL-standard)
-  // ---------------------------------------------------------------------------
-  String _normalizeClubCode(String raw) {
-    return AflClubCodes.normalize(raw);
-  }
-
-  // ---------------------------------------------------------------------------
-
   @override
   Widget build(BuildContext context) {
     final fixtures = widget.fixtureRepo.fixturesForRound(widget.round).toList();
@@ -80,7 +71,6 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                     itemBuilder: (context, index) {
                       final f = fixtures[index];
 
-                      // 🔍 DIAGNOSTIC PRINT ADDED HERE
                       print("FIXTURE TEAMS: '${f.homeTeam}' vs '${f.awayTeam}'");
 
                       final fixtureId = f.matchId ?? index.toString();
@@ -105,7 +95,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                         ),
                         child: Row(
                           children: [
-                            _teamLogo(f.homeTeam),
+                            TeamLogo(f.homeTeam, size: 32),
                             const SizedBox(width: 12),
 
                             Expanded(
@@ -149,7 +139,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                                   : null,
                             ),
 
-                            _teamLogo(f.awayTeam),
+                            TeamLogo(f.awayTeam, size: 32),
                           ],
                         ),
                       );
@@ -247,34 +237,5 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
     final ampm = dt.hour >= 12 ? "PM" : "AM";
     final minute = dt.minute.toString().padLeft(2, '0');
     return "$hour:$minute $ampm";
-  }
-
-  // ---------------------------------------------------------------------------
-  // TEAM LOGO WIDGET (AFL-standard codes)
-  // ---------------------------------------------------------------------------
-  Widget _teamLogo(String clubCode) {
-    final code = _normalizeClubCode(clubCode);
-    final assetPath = 'logos/$code.png';
-
-    print("TEAM RAW='$clubCode' → NORMALISED='$code' → PATH='logos/$code.png'");
-
-    return SizedBox(
-      width: 32,
-      height: 32,
-      child: ClipOval(
-        child: Image.asset(
-          assetPath,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) {
-            return Center(
-              child: Text(
-                code,
-                style: const TextStyle(fontSize: 10),
-              ),
-            );
-          },
-        ),
-      ),
-    );
   }
 }
