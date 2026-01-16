@@ -1,100 +1,103 @@
-Write-Host "=== Fantasy Pairs Deployment Script (Base Href + Cache Busting) ===" -ForegroundColor Cyan
+# ---------------------------------------------------------------------------
+# DEPLOY SCRIPT FOR FLUTTER WEB -> GITHUB PAGES
+# Deterministic, idempotent, cache-busting, clean output
+# ---------------------------------------------------------------------------
 
-# --- 1. Ensure no rebase or merge is active ---
-try { git rebase --abort | Out-Null } catch {}
-try { git merge --abort  | Out-Null } catch {}
+Write-Host "=== Starting Deployment ==="
 
-# --- 2. Auto-commit any unstaged changes ---
-if ((git status --porcelain) -ne "") {
-    Write-Host "Staging and committing local changes..." -ForegroundColor Yellow
-    git add .
-    git commit -m "Auto-save before deploy"
+# Ensure script runs from project root
+Set-Location $PSScriptRoot
+
+# ---------------------------------------------------------------------------
+# 1. FLUTTER BUILD
+# ---------------------------------------------------------------------------
+Write-Host "Building Flutter web release..."
+flutter build web --release
+
+$webDir = "build\web"
+if (!(Test-Path $webDir)) {
+    Write-Host "Flutter build failed - web directory not found."
+    exit 1
 }
 
-# --- 3. Pull using merge (remote wins cleanly) ---
-Write-Host "Pulling latest changes (merge, no rebase)..." -ForegroundColor Yellow
-git pull --no-rebase
+Write-Host "Flutter build complete."
 
-# --- 4. Ensure index.html contains required tags ---
-$indexPath = "web/index.html"
-$indexContent = Get-Content $indexPath -Raw
+# ---------------------------------------------------------------------------
+# 2. APPLY CACHE-BUSTING VERSION HASH
+# ---------------------------------------------------------------------------
+Write-Host "Applying cache-busting version hash..."
 
-# Ensure base placeholder exists
-if ($indexContent -notmatch '<base href="\$FLUTTER_BASE_HREF">') {
-    Write-Host "Restoring <base href=""`$FLUTTER_BASE_HREF""> placeholder..." -ForegroundColor Yellow
-    $indexContent = $indexContent -replace '<base href=".*?">', '<base href="$FLUTTER_BASE_HREF">'
-}
+$timestamp = Get-Date -Format "yyyyMMddHHmmss"
+$versionHash = $timestamp
 
-# Ensure service worker is disabled
-if ($indexContent -notmatch 'flutter-service-worker') {
-    Write-Host "Injecting service worker disable flag..." -ForegroundColor Yellow
-    $indexContent = $indexContent -replace '<base href="\$FLUTTER_BASE_HREF">',
-        "<meta name='flutter-service-worker' content='false'>`n  <base href=""`$FLUTTER_BASE_HREF"">"
-}
-
-Set-Content -Path $indexPath -Value $indexContent
-
-# --- 5. Clean + rebuild Flutter ---
-Write-Host "Cleaning Flutter build..." -ForegroundColor Yellow
-flutter clean
-
-Write-Host "Fetching dependencies..." -ForegroundColor Yellow
-flutter pub get
-
-Write-Host "Building Flutter web release..." -ForegroundColor Yellow
-flutter build web --release --base-href /Fantasy-Pairs-and-Weekend-Quads/
-
-# --- 5.5 Purge old docs/assets to prevent stale caching ---
-Write-Host "Purging old docs/assets folder..." -ForegroundColor Yellow
-if (Test-Path "docs/assets") {
-    Remove-Item -Recurse -Force "docs/assets"
-    Write-Host "Old docs/assets removed."
-} else {
-    Write-Host "No old docs/assets folder found."
-}
-
-# --- 5.6 Add cache-busting version hash ---
-Write-Host "Applying cache-busting version hash..." -ForegroundColor Yellow
-
-$version = (Get-Date -Format "yyyyMMddHHmmss")
-$webPath = "build/web"
-
+# Files to rename + rewrite references
 $filesToHash = @(
-    "main.dart.js",
     "flutter.js",
-    "AssetManifest.json",
-    "FontManifest.json",
-    "NOTICES"
+    "main.dart.js",
+    "flutter_service_worker.js",
+    "assets/AssetManifest.json",
+    "assets/FontManifest.json"
 )
 
 foreach ($file in $filesToHash) {
-    $fullPath = Join-Path $webPath $file
-    if (Test-Path $fullPath) {
-        $newName = "$file?v=$version"
-        Rename-Item -Path $fullPath -NewName $newName
+    $fullPath = Join-Path $webDir $file
 
-        # Update references inside index.html
-        (Get-Content "$webPath/index.html") `
-            -replace [regex]::Escape($file), $newName `
-            | Set-Content "$webPath/index.html"
+    if (Test-Path $fullPath) {
+        $dir = Split-Path $fullPath
+        $name = Split-Path $fullPath -Leaf
+        $newName = "$name.$versionHash"
+        $newFullPath = Join-Path $dir $newName
+
+        # Prevent "file already exists" error
+        if ($fullPath -ne $newFullPath) {
+            if (Test-Path $newFullPath) {
+                Remove-Item $newFullPath -Force
+            }
+            Rename-Item -Path $fullPath -NewName $newName
+        }
     }
 }
 
-Write-Host "Version hash applied: $version" -ForegroundColor Green
+Write-Host "Version hash applied: $versionHash"
 
-# --- 6. Replace docs folder ---
-Write-Host "Refreshing docs folder..." -ForegroundColor Yellow
-Remove-Item -Recurse -Force docs -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path docs | Out-Null
-Copy-Item -Recurse -Force build/web/* docs/
+# ---------------------------------------------------------------------------
+# 3. UPDATE INDEX.HTML REFERENCES
+# ---------------------------------------------------------------------------
+$indexPath = Join-Path $webDir "index.html"
+if (Test-Path $indexPath) {
+    $index = Get-Content $indexPath
 
-# --- 7. Commit deployment ---
-Write-Host "Committing deployment..." -ForegroundColor Yellow
-git add docs
-git commit -m "Automated deploy: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" 2>$null
+    foreach ($file in $filesToHash) {
+        $pattern = [regex]::Escape($file)
+        $replacement = "$file.$versionHash"
+        $index = $index -replace $pattern, $replacement
+    }
 
-# --- 8. Push to GitHub ---
-Write-Host "Pushing to GitHub..." -ForegroundColor Yellow
-git push
+    Set-Content -Path $indexPath -Value $index -Encoding UTF8
+    Write-Host "index.html updated with cache-busting references."
+}
 
-Write-Host "=== Deployment Complete ===" -ForegroundColor Green
+# ---------------------------------------------------------------------------
+# 4. COPY TO /docs FOR GITHUB PAGES
+# ---------------------------------------------------------------------------
+$docsDir = "docs"
+
+if (Test-Path $docsDir) {
+    Remove-Item $docsDir -Recurse -Force
+}
+
+Copy-Item $webDir $docsDir -Recurse
+
+Write-Host "Copied build to /docs."
+
+# ---------------------------------------------------------------------------
+# 5. GIT COMMIT + PUSH
+# ---------------------------------------------------------------------------
+Write-Host "Committing and pushing to GitHub..."
+
+git add .
+git commit -m "Deploy $versionHash" --allow-empty
+git pull origin main
+git push origin main
+
+Write-Host "=== Deployment Complete ==="

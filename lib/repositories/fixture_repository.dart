@@ -79,25 +79,32 @@ class FixtureRepository {
         continue;
       }
 
+      // -----------------------------
+      // ROUND LABEL NORMALIZATION
+      // -----------------------------
       String roundLabel = _cellString(row, idxRound).trim();
       if (roundLabel.isEmpty) continue;
 
       final upper = roundLabel.toUpperCase();
+
+      if (upper == "PRE-SEASON" || upper == "PRESEASON" || upper == "PS") {
+        roundLabel = "PS";
+      }
+
       if (upper == "OPENING ROUND" || upper == "OR") {
         roundLabel = "0";
       }
 
       final dateText = _cellString(row, idxDate);
 
-      // ------------------------------------------------------------
-      // NORMALIZE FIXTURE CLUB NAMES (AFL-standard codes)
-      // ------------------------------------------------------------
+      // -----------------------------
+      // TEAM NORMALIZATION
+      // -----------------------------
       final rawHome = _cellString(row, idxHome);
       final rawAway = _cellString(row, idxAway);
 
       final homeTeam = AflClubCodes.normalize(rawHome);
       final awayTeam = AflClubCodes.normalize(rawAway);
-      // ------------------------------------------------------------
 
       final venue = _cellString(row, idxVenue);
       final timeText = idxTime != null ? _cellString(row, idxTime) : "";
@@ -116,6 +123,9 @@ class FixtureRepository {
         continue;
       }
 
+      // -----------------------------
+      // DATE PARSING
+      // -----------------------------
       final upperDate = dateText.toUpperCase();
       final bool isTbcDate = dateText.trim().isEmpty ||
           upperDate.contains("TBC") ||
@@ -131,6 +141,9 @@ class FixtureRepository {
         }
       }
 
+      // -----------------------------
+      // ROUND NUMBER PARSING
+      // -----------------------------
       final int roundNumber = _parseRound(roundLabel);
 
       fixtures.add(
@@ -151,7 +164,7 @@ class FixtureRepository {
   }
 
   // ---------------------------------------------------------------------------
-  // HELPERS (MUST BE INSIDE THE CLASS)
+  // HELPERS
   // ---------------------------------------------------------------------------
   String _cellString(List<Data?> row, int index) {
     if (index < 0 || index >= row.length) return "";
@@ -160,8 +173,13 @@ class FixtureRepository {
     return value?.toString().trim() ?? "";
   }
 
+  // -----------------------------
+  // ROUND PARSER (PS = -1, OR = 0)
+  // -----------------------------
   int _parseRound(String roundLabel) {
     final trimmed = roundLabel.trim().toUpperCase();
+
+    if (trimmed == "PS") return -1;
     if (trimmed == "0") return 0;
 
     final digitMatch = RegExp(r'(\d+)').firstMatch(trimmed);
@@ -250,19 +268,15 @@ class FixtureRepository {
   // QUERY HELPERS
   // ---------------------------------------------------------------------------
   List<AflFixture> fixturesForRound(int round) {
-    return fixtures.where((f) => !f.isPreseason && f.round == round).toList();
+    return fixtures.where((f) => f.round == round).toList();
   }
 
   List<AflFixture> preseasonFixtures() {
-    return fixtures.where((f) => f.isPreseason).toList();
+    return fixtures.where((f) => f.round == -1).toList();
   }
 
   List<int> allSeasonRounds() {
-    final rounds = fixtures
-        .where((f) => !f.isPreseason)
-        .map((f) => f.round)
-        .toSet()
-        .toList();
+    final rounds = fixtures.map((f) => f.round).toSet().toList();
     rounds.sort();
     return rounds;
   }
