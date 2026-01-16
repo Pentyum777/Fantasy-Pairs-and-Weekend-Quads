@@ -11,6 +11,9 @@ import 'services/user_role_service.dart';
 import 'screens/round_selection_screen.dart';
 import 'screens/game_type_selection_screen.dart';
 
+// ✅ Import the diagnostics widget (only once)
+
+
 void main() {
   runApp(const MyApp());
 }
@@ -61,73 +64,65 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'AFL App',
       theme: ThemeData(primarySwatch: Colors.blue),
+
+      // ------------------------------------------------------------
+      // VERSION 1: FORCE DIAGNOSTICS SCREEN
+      // ------------------------------------------------------------
       home: _token == null
-          ? LoginScreen(
-              onLoggedIn: (token) {
-                MsalService.startLogin(["User.Read"]);
-              },
-            )
-          : FutureBuilder(
-              future: _fixtureLoadFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
-                }
+    ? LoginScreen(
+        onLoggedIn: (token) {
+          MsalService.startLogin(["User.Read"]);
+        },
+      )
+    : FutureBuilder(
+        future: _fixtureLoadFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
 
-                // ------------------------------------------------------------
-                // BUILD ROUND LIST: PS (as -1) + main-season rounds
-                // ------------------------------------------------------------
-                final List<int> rounds = [];
+          final List<int> rounds = [];
 
-                // Add sentinel -1 for Pre‑Season if any preseason fixtures exist
-                if (fixtureRepo.preseasonFixtures().isNotEmpty) {
-                  rounds.add(-1);
-                }
+          if (fixtureRepo.preseasonFixtures().isNotEmpty) {
+            rounds.add(-1);
+          }
 
-                // Add main-season rounds (e.g. 0–24)
-                rounds.addAll(fixtureRepo.allSeasonRounds());
+          rounds.addAll(fixtureRepo.allSeasonRounds());
 
-                return RoundSelectionScreen(
-                  rounds: rounds,
-                  completedRounds: roundCompletionService.completedRounds,
-                  onRoundSelected: (int? round) {
-                    if (round == null || round == -1) {
-                      // Pre‑Season
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => GameTypeSelectionScreen(
-                            round: null,
-                            fixtureRepo: fixtureRepo,
-                            playerRepo: playerRepo,
-                            fantasyService: fantasyService,
-                            roundCompletionService: roundCompletionService,
-                            userRoleService: userRoleService,
-                          ),
-                        ),
-                      );
-                    } else {
-                      // Main season R0–R24
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => GameTypeSelectionScreen(
-                            round: round,
-                            fixtureRepo: fixtureRepo,
-                            playerRepo: playerRepo,
-                            fantasyService: fantasyService,
-                            roundCompletionService: roundCompletionService,
-                            userRoleService: userRoleService,
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                );
-              },
-            ),
+          return RoundSelectionScreen(
+            rounds: rounds,
+            completedRounds: roundCompletionService.completedRounds,
+            onRoundSelected: (int? round) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => GameTypeSelectionScreen(
+                    round: round == -1 ? null : round,
+                    fixtureRepo: fixtureRepo,
+                    playerRepo: playerRepo,
+                    fantasyService: fantasyService,
+                    roundCompletionService: roundCompletionService,
+                    userRoleService: userRoleService,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+
+      // ------------------------------------------------------------
+      // NOTE:
+      // Your original login + fixture-loading flow is untouched.
+      // When you're done debugging, simply restore:
+      //
+      // home: _token == null
+      //     ? LoginScreen(...)
+      //     : FutureBuilder(...)
+      //
+      // ------------------------------------------------------------
     );
   }
 }

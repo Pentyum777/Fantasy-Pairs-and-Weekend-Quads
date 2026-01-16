@@ -1,37 +1,40 @@
-// lib/utils/afl_club_codes.dart
-
 class AflClubCodes {
-  static const Set<String> aflCodes = {
-    "ade","bri","carl","coll","ess","fre","geel","gc","gws",
-    "haw","melb","nm","port","rich","stk","syd","wce","wb"
-  };
+  static String normalize(String input) {
+    final code = input.trim().toUpperCase();
 
-  static String normalize(String raw) {
-    final c = raw.trim().toLowerCase();
+    const aliases = {
+      "NM": "NTH",
+      "NORTH": "NTH",
+      "NORTH MELBOURNE": "NTH",
+      "PA": "PTA",
+      "PORT": "PTA",
+      "PORT ADELAIDE": "PTA",
+      "GC": "GCS",
+      "GOLD COAST": "GCS",
+      "GOLD COAST SUNS": "GCS",
+      "SK": "STK",
+      "STKILDA": "STK",
+      "ST KILDA": "STK",
+      "WB": "WB",
+      "WBD": "WB",
+      "WESTERN BULLDOGS": "WB",
+      "BRISBANE": "BRI",
+      "BRIS": "BRI",
+      "GEELONG": "GEE",
+      "CARLTON": "CAR",
+      "COLLINGWOOD": "COL",
+      "MELBOURNE": "MEL",
+      "ESSENDON": "ESS",
+      "FREMANTLE": "FRE",
+      "HAWTHORN": "HAW",
+      "RICHMOND": "RIC",
+      "SYDNEY": "SYD",
+      "WEST COAST": "WCE",
+      "ADELAIDE": "ADE",
+      "GWS": "GWS",
+      "GREATER WESTERN SYDNEY": "GWS",
+    };
 
-    // Already an AFL-standard code?
-    if (aflCodes.contains(c)) return c.toUpperCase();
-
-    // Full name → AFL code
-if (c.contains("adelaide") && c.contains("crows")) return "ADE";
-if (c.contains("brisbane")) return "BRI";
-if (c.contains("carlton")) return "CARL";
-if (c.contains("collingwood")) return "COLL";
-if (c.contains("essendon")) return "ESS";
-if (c.contains("fremantle")) return "FRE";
-if (c.contains("geelong")) return "GEEL";
-if (c.contains("gold coast")) return "GC";
-if (c.contains("gws") || c.contains("giants")) return "GWS";
-if (c.contains("hawthorn")) return "HAW";
-if (c.contains("melbourne")) return "MELB";
-if (c.contains("north melbourne")) return "NM";
-if (c.contains("port adelaide")) return "PORT";
-if (c.contains("richmond")) return "RICH";
-if (c.contains("st kilda")) return "STK";
-if (c.contains("sydney")) return "SYD";
-if (c.contains("west coast")) return "WCE";
-if (c.contains("western") || c.contains("bulldogs")) return "WB";
-
-    return raw.toUpperCase();
+    return aliases[code] ?? code;
   }
 }
