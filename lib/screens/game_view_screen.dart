@@ -17,7 +17,7 @@ import '../models/afl_player_match_stats.dart';
 import '../widgets/punter_selection_table.dart';
 import '../widgets/leaderboard_table.dart';
 import '../widgets/stats_overlay.dart';
-import '../widgets/team_logo.dart';        // <-- ADDED (unified logo widget)
+import '../widgets/team_logo.dart';
 
 import '../parsers/match_stats_parser.dart';
 
@@ -166,7 +166,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     setState(() {});
   }
-    // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
   // RESET SELECTIONS
   // ---------------------------------------------------------------------------
   void _resetSelections() {
@@ -186,8 +187,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     _updateStatsAndPunterScores(_currentStatsByPlayerId.values.toList());
   }
-
-  // ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
   // BUILD
   // ---------------------------------------------------------------------------
   @override
@@ -208,6 +208,33 @@ class _GameViewScreenState extends State<GameViewScreen> {
       _selectedFixture = fixtures.first;
     }
 
+    // -----------------------------------------------------------------------
+    // FIXTURE-DRIVEN ALLOWED CLUBS FOR DROPDOWNS
+    // -----------------------------------------------------------------------
+    final Set<String> allowedClubs;
+    if (widget.gameType == "weekend_quads") {
+      // All fixtures for round except Thursday
+      final allRoundFixtures =
+          widget.fixtureRepo.fixturesForRound(widget.round);
+      final nonThursday = allRoundFixtures.where((f) {
+        final d = f.date;
+        if (d == null) return false;
+        return d.weekday != DateTime.thursday;
+      });
+      allowedClubs = nonThursday
+          .expand((f) => [f.homeTeam, f.awayTeam])
+          .toSet();
+    } else {
+      // Pairs: all teams across all fixtures for this game type
+      allowedClubs = fixtures
+          .expand((f) => [f.homeTeam, f.awayTeam])
+          .toSet();
+    }
+
+    final filteredPlayers = widget.playerRepo.players
+        .where((p) => allowedClubs.contains(p.club))
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 40, // Slim header
@@ -223,255 +250,292 @@ class _GameViewScreenState extends State<GameViewScreen> {
       body: Column(
         children: [
           // FIXTURE SCROLLER
-SizedBox(
-  height: 95,
-  child: fixtures.isEmpty
-      ? const Center(child: Text("No fixtures"))
-      : ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          itemCount: fixtures.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (context, i) {
-            final f = fixtures[i];
-            final selected = f == _selectedFixture;
+          SizedBox(
+            height: 95,
+            child: fixtures.isEmpty
+                ? const Center(child: Text("No fixtures"))
+                : ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    itemCount: fixtures.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, i) {
+                      final f = fixtures[i];
+                      final selected = f == _selectedFixture;
 
-            _handleFridayPairsTrigger(f);
+                      _handleFridayPairsTrigger(f);
 
-            final homeScore = f.homeScore ?? 0;
-            final awayScore = f.awayScore ?? 0;
-            final homeWinning = homeScore > awayScore;
-            final awayWinning = awayScore > homeScore;
+                      final homeScore = f.homeScore ?? 0;
+                      final awayScore = f.awayScore ?? 0;
+                      final homeWinning = homeScore > awayScore;
+                      final awayWinning = awayScore > homeScore;
 
-            final quarterText = _quarterLabel(f);
-            final timeText = _formatTimeRemaining(f);
+                      final quarterText = _quarterLabel(f);
+                      final timeText = _formatTimeRemaining(f);
 
-            return GestureDetector(
-              onTap: () async {
-                setState(() => _selectedFixture = f);
+                      return GestureDetector(
+                        onTap: () async {
+                          setState(() => _selectedFixture = f);
 
-                // matchId is String?, parser expects int
-                final String? rawId = f.matchId;
-                final int? matchId =
-                    rawId != null ? int.tryParse(rawId.trim()) : null;
+                          // matchId is String?, parser expects int
+                          final String? rawId = f.matchId;
+                          final int? matchId =
+                              rawId != null ? int.tryParse(rawId.trim()) : null;
 
-                if (matchId != null) {
-                  final stats =
-                      await MatchStatsParser.fetchMatchStats(matchId);
+                          if (matchId != null) {
+                            final stats =
+                                await MatchStatsParser.fetchMatchStats(matchId);
 
-                  final homeTeam = f.homeTeam;
-                  final awayTeam = f.awayTeam;
+                            final homeTeam = f.homeTeam;
+                            final awayTeam = f.awayTeam;
 
-                  final rowsA = stats
-                      .where((s) => s.team == homeTeam)
-                      .map(_mapStats)
-                      .toList();
+                            final rowsA = stats
+                                .where((s) => s.team == homeTeam)
+                                .map(_mapStats)
+                                .toList();
 
-                  final rowsB = stats
-                      .where((s) => s.team == awayTeam)
-                      .map(_mapStats)
-                      .toList();
+                            final rowsB = stats
+                                .where((s) => s.team == awayTeam)
+                                .map(_mapStats)
+                                .toList();
 
-                  final bool noStats =
-                      stats.isEmpty && rowsA.isEmpty && rowsB.isEmpty;
+                            final bool noStats =
+                                stats.isEmpty && rowsA.isEmpty && rowsB.isEmpty;
 
-                  const columns = [
-                    "Player",
-                    "AF",
-                    "K",
-                    "HB",
-                    "D",
-                    "M",
-                    "T",
-                    "G",
-                    "B",
-                  ];
+                            const columns = [
+                              "Player",
+                              "AF",
+                              "K",
+                              "HB",
+                              "D",
+                              "M",
+                              "T",
+                              "G",
+                              "B",
+                            ];
 
-                  showDialog(
-                    context: context,
-                    builder: (_) => StatsOverlay(
-                      leftTitle: homeTeam,
-                      rightTitle: awayTeam,
-                      leftRows: noStats ? [] : rowsA,
-                      rightRows: noStats ? [] : rowsB,
-                      columns: noStats ? [] : columns,
-                      noStatsMessage:
-                          noStats ? "No stats available yet" : null,
-                    ),
-                  );
+                            showDialog(
+                              context: context,
+                              builder: (_) => StatsOverlay(
+                                leftTitle: homeTeam,
+                                rightTitle: awayTeam,
+                                leftRows: noStats ? [] : rowsA,
+                                rightRows: noStats ? [] : rowsB,
+                                columns: noStats ? [] : columns,
+                                noStatsMessage:
+                                    noStats ? "No stats available yet" : null,
+                              ),
+                            );
 
-                  _updateStatsAndPunterScores(stats);
-                }
-              },
-              child: AnimatedScale(
-                scale: selected ? 1.03 : 1.0,
-                duration: const Duration(milliseconds: 150),
-                child: Container(
-                  width: 115,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(8),
-                    border: selected
-                        ? Border.all(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary,
-                            width: 2,
-                          )
-                        : null,
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.10),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            )
-                          ]
-                        : [],
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 4, horizontal: 6),
-                  child: Column(
-                    mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
-                        children: [
-                          TeamLogo(f.homeTeam, size: 26),
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: RichText(
-                                text: TextSpan(
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black,
-                                  ),
+                            _updateStatsAndPunterScores(stats);
+                          }
+                        },
+                        child: AnimatedScale(
+                          scale: selected ? 1.03 : 1.0,
+                          duration: const Duration(milliseconds: 150),
+                          child: Container(
+                            width: 115,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceVariant,
+                              borderRadius: BorderRadius.circular(8),
+                              border: selected
+                                  ? Border.all(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                      width: 2,
+                                    )
+                                  : null,
+                              boxShadow: selected
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.10),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      )
+                                    ]
+                                  : [],
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 4, horizontal: 6),
+                            child: Column(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    TextSpan(
-                                      text: "$homeScore",
-                                      style: TextStyle(
-                                        fontWeight: homeWinning
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
+                                    TeamLogo(f.homeTeam, size: 26),
+                                    Flexible(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: RichText(
+                                          text: TextSpan(
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.black,
+                                            ),
+                                            children: [
+                                              TextSpan(
+                                                text: "$homeScore",
+                                                style: TextStyle(
+                                                  fontWeight: homeWinning
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                ),
+                                              ),
+                                              const TextSpan(text: " – "),
+                                              TextSpan(
+                                                text: "$awayScore",
+                                                style: TextStyle(
+                                                  fontWeight: awayWinning
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                    const TextSpan(text: " – "),
-                                    TextSpan(
-                                      text: "$awayScore",
-                                      style: TextStyle(
-                                        fontWeight: awayWinning
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                      ),
-                                    ),
+                                    TeamLogo(f.awayTeam, size: 26),
                                   ],
                                 ),
-                              ),
-                            ),
-                          ),
-                          TeamLogo(f.awayTeam, size: 26),
-                        ],
-                      ),
-                      Text(
-                        quarterText.isEmpty
-                            ? timeText
-                            : "$quarterText • $timeText",
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-),
-
-const Divider(height: 1),
-          // MAIN CONTENT
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildPunterControls(context),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: PunterSelectionTable(
-                                    visiblePunterCount: _visiblePunterCount,
-                                    playersPerPunter:
-                                        widget.gameType == "weekend_quads"
-                                            ? 4
-                                            : 2,
-                                    availablePlayers:
-                                        widget.playerRepo.players,
-                                    selections: widget.selections,
-                                    isCompleted: _isCompleted,
-                                    readOnly:
-                                        widget.userRoleService.isReadOnly,
-                                    onChanged:
-                                        widget.userRoleService.isAdmin
-                                            ? () {
-                                                _updateStatsAndPunterScores(
-                                                  _currentStatsByPlayerId
-                                                      .values
-                                                      .toList(),
-                                                );
-                                                setState(() {});
-                                              }
-                                            : null,
+                                Text(
+                                  quarterText.isEmpty
+                                      ? timeText
+                                      : "$quarterText • $timeText",
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 12),
-                                  child: LeaderboardTable(
-                                    punters: widget.selections
-                                        .take(_visiblePunterCount)
-                                        .toList(),
-                                    rowHeight: 34,
-                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                ),
-              ],
+          ),
+
+          const Divider(height: 1),
+
+          // MAIN CONTENT
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmallScreen =
+                    constraints.maxHeight < 650 || constraints.maxWidth < 900;
+
+                Widget buildTables({required bool stacked}) {
+                  final tables = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildPunterControls(context),
+                      const SizedBox(height: 8),
+                      if (stacked)
+                        Column(
+                          children: [
+                            PunterSelectionTable(
+                              visiblePunterCount: _visiblePunterCount,
+                              playersPerPunter:
+                                  widget.gameType == "weekend_quads" ? 4 : 2,
+                              availablePlayers: filteredPlayers,
+                              selections: widget.selections,
+                              isCompleted: _isCompleted,
+                              readOnly: widget.userRoleService.isReadOnly,
+                              onChanged: widget.userRoleService.isAdmin
+                                  ? () {
+                                      _updateStatsAndPunterScores(
+                                        _currentStatsByPlayerId.values
+                                            .toList(),
+                                      );
+                                      setState(() {});
+                                    }
+                                  : null,
+                            ),
+                            const SizedBox(height: 12),
+                            LeaderboardTable(
+                              punters: widget.selections
+                                  .take(_visiblePunterCount)
+                                  .toList(),
+                              rowHeight: 34,
+                            ),
+                          ],
+                        )
+                      else
+                        Expanded(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: PunterSelectionTable(
+                                  visiblePunterCount: _visiblePunterCount,
+                                  playersPerPunter:
+                                      widget.gameType == "weekend_quads"
+                                          ? 4
+                                          : 2,
+                                  availablePlayers: filteredPlayers,
+                                  selections: widget.selections,
+                                  isCompleted: _isCompleted,
+                                  readOnly:
+                                      widget.userRoleService.isReadOnly,
+                                  onChanged: widget.userRoleService.isAdmin
+                                      ? () {
+                                          _updateStatsAndPunterScores(
+                                            _currentStatsByPlayerId.values
+                                                .toList(),
+                                          );
+                                          setState(() {});
+                                        }
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 12),
+                                child: LeaderboardTable(
+                                  punters: widget.selections
+                                      .take(_visiblePunterCount)
+                                      .toList(),
+                                  rowHeight: 34,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  );
+
+                  if (isSmallScreen) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(12),
+                      child: tables,
+                    );
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: tables,
+                  );
+                }
+
+                return buildTables(stacked: isSmallScreen);
+              },
             ),
           ),
         ],
       ),
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // REMOVED: _teamLogoSmallSized — no longer needed
-  // ---------------------------------------------------------------------------
-
   Widget _buildPunterControls(BuildContext context) {
     final theme = Theme.of(context);
 
@@ -512,8 +576,7 @@ const Divider(height: 1),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red.shade600,
             foregroundColor: Colors.white,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             visualDensity: VisualDensity.compact,
             minimumSize: const Size(0, 32),
           ),
@@ -525,12 +588,13 @@ const Divider(height: 1),
       ],
     );
   }
-    // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
   // FIXTURE FILTERING
   // ---------------------------------------------------------------------------
   List<AflFixture> _fixturesForGameType() {
-    // KEY CHANGE: if selectedFixtureIds is provided (PS mode),
-    // we must NOT filter by round; we start from all fixtures.
+    // If selectedFixtureIds is provided (e.g. Pre-Season/custom),
+    // start from all fixtures; otherwise, use round fixtures.
     final all = widget.selectedFixtureIds != null
         ? widget.fixtureRepo.fixtures
         : widget.fixtureRepo.fixturesForRound(widget.round);

@@ -26,6 +26,15 @@ class StatsOverlay extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     final isWide = size.width >= 600;
 
+    // ------------------------------------------------------------
+    // AUTO-DETECT EMPTY STATS
+    // ------------------------------------------------------------
+    final bool noStats =
+        (leftRows.isEmpty && rightRows.isEmpty);
+
+    final String message =
+        noStatsMessage ?? "No stats available for this match.";
+
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -58,12 +67,14 @@ class StatsOverlay extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // Empty-state message
-              if (noStatsMessage != null)
+              // ------------------------------------------------------------
+              // EMPTY STATE
+              // ------------------------------------------------------------
+              if (noStats)
                 Expanded(
                   child: Center(
                     child: Text(
-                      noStatsMessage!,
+                      message,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: Colors.grey,
                             fontWeight: FontWeight.w600,
@@ -71,8 +82,11 @@ class StatsOverlay extends StatelessWidget {
                     ),
                   ),
                 )
+
+              // ------------------------------------------------------------
+              // NORMAL TABLE RENDERING
+              // ------------------------------------------------------------
               else
-                // Scrollable content
                 Expanded(
                   child: SingleChildScrollView(
                     child: isWide

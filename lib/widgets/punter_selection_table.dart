@@ -114,7 +114,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
   static const Map<String, String> _clubCodeMap = {
     "Adelaide Crows": "ADE",
-    "Brisbane Lions": "BRL",
+    "Brisbane Lions": "BRI",
     "Carlton": "CAR",
     "Collingwood": "COL",
     "Essendon": "ESS",
@@ -130,7 +130,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     "St Kilda": "STK",
     "Sydney Swans": "SYD",
     "West Coast Eagles": "WCE",
-    "Western Bulldogs": "WBD",
+    "Western Bulldogs": "WB",
   };
 
   // ---------------------------------------------------------------------------
@@ -195,8 +195,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
 
   int get _punterCount => widget.visiblePunterCount;
   int get _roundCount => widget.playersPerPunter;
-
-  // ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
   // HEADER ROW
   // ---------------------------------------------------------------------------
   Widget _buildHeaderRow(ThemeData theme) {
@@ -380,8 +379,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       );
     });
   }
-
-  // ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
   // GLOBAL UNIQUENESS
   // ---------------------------------------------------------------------------
   void _cleanInvalidSelectionsGlobal() {
@@ -487,30 +485,31 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                           }
 
                           return Container(
-                            height: rowHeight,
-                            decoration: BoxDecoration(
-                              color: bg,
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: cs.outlineVariant.withOpacity(0.6),
-                                  width: 0.5,
-                                ),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                _punterCell(context, row),
-                                if (!_isMobile) _resizeHandlePunter(() {}),
+  height: rowHeight,
+  decoration: BoxDecoration(
+    color: bg,
+    border: Border(
+      bottom: BorderSide(
+        color: cs.outlineVariant.withOpacity(0.6),
+        width: 0.5,
+      ),
+    ),
+  ),
+  child: Row(
+    children: [
+      _punterCell(context, row),
 
-                                for (final pick in row.picks) ...[
-                                  _pickCell(context, row, pick),
-                                  if (!_isMobile) _resizeHandle(() {}),
-                                ],
+      if (!_isMobile) _resizeHandlePunter(() {}),
 
-                                _totalCell(context, row),
-                              ],
-                            ),
-                          );
+      for (final pick in row.picks) ...[
+        _pickCell(context, row, pick),
+        if (!_isMobile) _resizeHandle(() {}),
+      ],
+
+      _totalCell(context, row),
+    ],
+  ),
+);
                         },
                       ),
                     ),
@@ -523,8 +522,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       },
     );
   }
-
-  // ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
   // PUNTER CELL (LEFT‑ALIGNED)
   // ---------------------------------------------------------------------------
   Widget _punterCell(BuildContext context, PunterSelection row) {
@@ -605,14 +603,13 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
 
     final selectedPlayer = owner.picks[colIndex].player;
 
-    // Filter JSON players by clubs in availablePlayers
+    // Fixture-driven allowed clubs: passed in via availablePlayers
     final allowedClubs = widget.availablePlayers.map((p) => p.club).toSet();
 
     final filteredPlayers = _players.where((p) {
       final isAllowedClub = allowedClubs.contains(p.club);
       final isTaken = globalTaken.contains(p.id);
       final isCurrent = p == selectedPlayer;
-
       return isAllowedClub && (!isTaken || isCurrent);
     }).toList();
 
@@ -630,80 +627,78 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     return Container(
       width: pickColWidth,
       padding: const EdgeInsets.symmetric(horizontal: 2),
-      alignment: Alignment.centerLeft,
+      alignment: Alignment.center, // vertical centering
       decoration: BoxDecoration(
         color: isCurrentPick ? cs.primary.withOpacity(0.08) : Colors.transparent,
       ),
       child: Row(
         children: [
           Expanded(
-  child: DropdownSearch<AflPlayer>(
-    enabled: !widget.isCompleted,
-    selectedItem: selectedPlayer,
-    items: filteredPlayers,
-    itemAsString: (p) => p.shortName,
-
-    dropdownDecoratorProps: DropDownDecoratorProps(
-      dropdownSearchDecoration: InputDecoration(
-        isDense: true,
-        border: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        suffixIcon: selectedPlayer == null
-            ? const Icon(Icons.arrow_drop_down)
-            : null, // HIDE ARROW
-      ),
-    ),
-
-    dropdownBuilder: (context, player) {
-      if (player == null) {
-        return Text(
-          hintText,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
+            child: DropdownSearch<AflPlayer>(
+              enabled: !widget.isCompleted,
+              selectedItem: selectedPlayer,
+              items: filteredPlayers,
+              itemAsString: (p) => p.shortName,
+              dropdownDecoratorProps: DropDownDecoratorProps(
+                dropdownSearchDecoration: InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  suffixIcon: selectedPlayer == null
+                      ? const Icon(Icons.arrow_drop_down)
+                      : null, // hide arrow when selected
+                ),
+              ),
+              dropdownBuilder: (context, player) {
+                if (player == null) {
+                  return Text(
+                    hintText,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  );
+                }
+                final colours = _getTeamColoursForPlayer(player);
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: colours["bg"]?.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    player.shortName,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colours["fg"],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                );
+              },
+              popupProps: PopupProps.menu(
+                showSearchBox: true,
+                fit: FlexFit.loose,
+                searchFieldProps: TextFieldProps(
+                  decoration: const InputDecoration(
+                    hintText: "Search players...",
+                    isDense: true,
+                    contentPadding: EdgeInsets.all(8),
+                  ),
+                ),
+              ),
+              onChanged: (value) {
+                owner.picks[colIndex].player = value;
+                owner.picks[colIndex].score = value?.fantasyScore ?? 0;
+                widget.onChanged?.call();
+                setState(() {
+                  _saveSnapshot();
+                });
+                _scrollToCurrentPick();
+              },
+            ),
           ),
-        );
-      }
-      final colours = _getTeamColoursForPlayer(player);
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: colours["bg"]?.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          player.shortName,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: colours["fg"],
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
-    },
-
-    popupProps: PopupProps.menu(
-      showSearchBox: true,
-      fit: FlexFit.loose,
-      searchFieldProps: TextFieldProps(
-        decoration: const InputDecoration(
-          hintText: "Search players...",
-          isDense: true,
-          contentPadding: EdgeInsets.all(8),
-        ),
-      ),
-    ),
-
-    onChanged: (value) {
-      owner.picks[colIndex].player = value;
-      owner.picks[colIndex].score = value?.fantasyScore ?? 0;
-      widget.onChanged?.call();
-      setState(() {
-        _saveSnapshot();
-      });
-      _scrollToCurrentPick();
-    },
-  ),
-),
 
           // SCORE DISPLAY
           if (selectedPlayer != null)
@@ -721,8 +716,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       ),
     );
   }
-
-  // ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
   // TOTAL CELL
   // ---------------------------------------------------------------------------
   Widget _totalCell(BuildContext context, PunterSelection row) {
