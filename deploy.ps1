@@ -1,17 +1,16 @@
 # ---------------------------------------------------------------------------
 # DEPLOY SCRIPT FOR FLUTTER WEB → GITHUB PAGES
-# Cache-busting, MSAL-safe, deterministic, and fully validated
+# Cache-busting (JS only), MSAL-safe, deterministic
 # ---------------------------------------------------------------------------
 
 Write-Host "=== Starting Deployment ==="
 
-# Ensure script runs from project root
 Set-Location $PSScriptRoot
 
 # ---------------------------------------------------------------------------
-# 1. FLUTTER BUILD
+# 1. CLEAN + BUILD
 # ---------------------------------------------------------------------------
-Write-Host "Building Flutter web release..."
+Write-Host "Cleaning and building Flutter web release..."
 flutter clean
 flutter pub get
 flutter build web --release
@@ -25,18 +24,17 @@ if (!(Test-Path $webDir)) {
 Write-Host "✅ Flutter build complete."
 
 # ---------------------------------------------------------------------------
-# 2. APPLY CACHE-BUSTING VERSION HASH
+# 2. APPLY CACHE-BUSTING VERSION HASH (JS ONLY)
 # ---------------------------------------------------------------------------
 $timestamp = Get-Date -Format "yyyyMMddHHmmss"
 $versionHash = $timestamp
 Write-Host "Applying version hash: $versionHash"
 
+# IMPORTANT: DO NOT HASH AssetManifest.json / FontManifest.json
 $filesToHash = @(
     "flutter.js",
     "main.dart.js",
-    "flutter_service_worker.js",
-    "assets/AssetManifest.json",
-    "assets/FontManifest.json"
+    "flutter_service_worker.js"
 )
 
 foreach ($file in $filesToHash) {
@@ -53,8 +51,6 @@ foreach ($file in $filesToHash) {
             }
             Rename-Item -Path $fullPath -NewName $newName
         }
-    } else {
-        Write-Host "⚠️ Missing file: $file"
     }
 }
 
@@ -62,32 +58,33 @@ foreach ($file in $filesToHash) {
 # 3. UPDATE INDEX.HTML REFERENCES
 # ---------------------------------------------------------------------------
 $indexPath = Join-Path $webDir "index.html"
-if (Test-Path $indexPath) {
-    $index = Get-Content $indexPath
-    foreach ($file in $filesToHash) {
-        $pattern = [regex]::Escape($file)
-        $replacement = "$file.$versionHash"
-        $index = $index -replace $pattern, $replacement
-    }
-    Set-Content -Path $indexPath -Value $index -Encoding UTF8
-    Write-Host "✅ index.html updated with hashed references."
-} else {
-    Write-Host "❌ index.html not found."
-    exit 1
+$index = Get-Content $indexPath
+
+foreach ($file in $filesToHash) {
+    $pattern = [regex]::Escape($file)
+    $replacement = "$file.$versionHash"
+    $index = $index -replace $pattern, $replacement
 }
 
+Set-Content -Path $indexPath -Value $index -Encoding UTF8
+Write-Host "✅ index.html updated with hashed JS references."
+
 # ---------------------------------------------------------------------------
-# 4. COPY TO /docs FOR GITHUB PAGES
+# 4. CLEAN /docs COMPLETELY AND COPY BUILD
 # ---------------------------------------------------------------------------
 $docsDir = "docs"
+
 if (Test-Path $docsDir) {
+    Write-Host "Removing existing /docs..."
     Remove-Item $docsDir -Recurse -Force
 }
+
+Write-Host "Copying build to /docs..."
 Copy-Item $webDir $docsDir -Recurse
 Write-Host "✅ Copied build to /docs."
 
 # ---------------------------------------------------------------------------
-# 5. COPY MSAL.JS (CRITICAL FIX)
+# 5. COPY MSAL.JS INTO /docs
 # ---------------------------------------------------------------------------
 $msalSourcePaths = @("web/msal.js", "msal.js")
 $msalCopied = $false
@@ -102,7 +99,7 @@ foreach ($path in $msalSourcePaths) {
 }
 
 if (-not $msalCopied) {
-    Write-Host "❌ msal.js not found — login will fail."
+    Write-Host "⚠️ WARNING: msal.js not found — login will fail."
 }
 
 # ---------------------------------------------------------------------------
@@ -113,4 +110,5 @@ git add .
 git commit -m "Deploy $versionHash" --allow-empty
 git pull origin main
 git push origin main
+
 Write-Host "✅ Deployment complete."
