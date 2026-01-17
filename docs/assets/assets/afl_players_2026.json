@@ -1,0 +1,4652 @@
+[
+  {
+    "id": "Chayce Jones",
+    "club": "Adelaide Crows",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Ben Keays",
+    "club": "Adelaide Crows",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Sam Berry",
+    "club": "Adelaide Crows",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Dan Curtin",
+    "club": "Adelaide Crows",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Riley Thilthorpe",
+    "club": "Adelaide Crows",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Josh Rachele",
+    "club": "Adelaide Crows",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Nick Murray",
+    "club": "Adelaide Crows",
+    "number": 9,
+    "season": 2026
+  },
+  {
+    "id": "Luke Pedlar",
+    "club": "Adelaide Crows",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Edwards",
+    "club": "Adelaide Crows",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Jordan Dawson",
+    "club": "Adelaide Crows",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Taylor Walker",
+    "club": "Adelaide Crows",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Jake Soligo",
+    "club": "Adelaide Crows",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Brayden Cook",
+    "club": "Adelaide Crows",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Max Michalanney",
+    "club": "Adelaide Crows",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Tyler Welsh",
+    "club": "Adelaide Crows",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Zac Taylor",
+    "club": "Adelaide Crows",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Hinge",
+    "club": "Adelaide Crows",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Oscar Ryan",
+    "club": "Adelaide Crows",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Izak Rankine",
+    "club": "Adelaide Crows",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Josh Worrell",
+    "club": "Adelaide Crows",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "James Peatling",
+    "club": "Adelaide Crows",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Luke Nankervis",
+    "club": "Adelaide Crows",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Alex Neal-Bullen",
+    "club": "Adelaide Crows",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Rory Laird",
+    "club": "Adelaide Crows",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Wayne Milera",
+    "club": "Adelaide Crows",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Billy Dowling",
+    "club": "Adelaide Crows",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Fogarty",
+    "club": "Adelaide Crows",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Sid Draper",
+    "club": "Adelaide Crows",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "James Borlase",
+    "club": "Adelaide Crows",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Sholl",
+    "club": "Adelaide Crows",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Toby Murray",
+    "club": "Adelaide Crows",
+    "number": 39,
+    "season": 2026
+  },
+  {
+    "id": "Hugh Bond",
+    "club": "Adelaide Crows",
+    "number": 40,
+    "season": 2026
+  },
+  {
+    "id": "Jordon Butts",
+    "club": "Adelaide Crows",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan McAndrew",
+    "club": "Adelaide Crows",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Reilly O'Brien",
+    "club": "Adelaide Crows",
+    "number": 43,
+    "season": 2026
+  },
+  {
+    "id": "Isaac Cumming",
+    "club": "Adelaide Crows",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Mark Keane",
+    "club": "Adelaide Crows",
+    "number": 48,
+    "season": 2026
+  },
+  {
+    "id": "Callum Ah Chee",
+    "club": "Adelaide Crows",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Archie Ludowyke",
+    "club": "Adelaide Crows",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Mitchell Marsh",
+    "club": "Adelaide Crows",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Finnbar Maley",
+    "club": "Adelaide Crows",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Kai Lohmann",
+    "club": "Brisbane",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jaspa Fletcher",
+    "club": "Brisbane",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Josh Dunkley",
+    "club": "Brisbane",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Hugh McCluggage",
+    "club": "Brisbane",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Jarrod Berry",
+    "club": "Brisbane",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Will Ashcroft",
+    "club": "Brisbane",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Neale",
+    "club": "Brisbane",
+    "number": 9,
+    "season": 2026
+  },
+  {
+    "id": "Levi Ashcroft",
+    "club": "Brisbane",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Lincoln McCarthy",
+    "club": "Brisbane",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Tom Doedee",
+    "club": "Brisbane",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Logan Morris",
+    "club": "Brisbane",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Dayne Zorko",
+    "club": "Brisbane",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Cam Rayner",
+    "club": "Brisbane",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Luke Beecken",
+    "club": "Brisbane",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Keidean Coleman",
+    "club": "Brisbane",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Luke Lloyd",
+    "club": "Brisbane",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Sam Marshall",
+    "club": "Brisbane",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Zane Zakostelsky",
+    "club": "Brisbane",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Ty Gallop",
+    "club": "Brisbane",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Cameron",
+    "club": "Brisbane",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Henry Smith",
+    "club": "Brisbane",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Conor McKenna",
+    "club": "Brisbane",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Gardiner",
+    "club": "Brisbane",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Will McLachlan",
+    "club": "Brisbane",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "James Tunstill",
+    "club": "Brisbane",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Eric Hipwood",
+    "club": "Brisbane",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Harris Andrews",
+    "club": "Brisbane",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Fort",
+    "club": "Brisbane",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Zac Bailey",
+    "club": "Brisbane",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Shadeau Brain",
+    "club": "Brisbane",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Ryan Lester",
+    "club": "Brisbane",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Reece Torrent",
+    "club": "Brisbane",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Bruce Reville",
+    "club": "Brisbane",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Jack Payne",
+    "club": "Brisbane",
+    "number": 40,
+    "season": 2026
+  },
+  {
+    "id": "Darragh Joyce",
+    "club": "Brisbane",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Noah Answerth",
+    "club": "Brisbane",
+    "number": 43,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Wilmot",
+    "club": "Brisbane",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Koby Evans",
+    "club": "Brisbane",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Daniel Annable",
+    "club": "Brisbane",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Tai Hayes",
+    "club": "Brisbane",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Cody Curtin",
+    "club": "Brisbane",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sam Draper",
+    "club": "Brisbane",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Oscar Allen",
+    "club": "Brisbane",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Cowan",
+    "club": "Carlton",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Jesse Motlop",
+    "club": "Carlton",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Oliver Hollands",
+    "club": "Carlton",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Adam Cerra",
+    "club": "Carlton",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Zac Williams",
+    "club": "Carlton",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Jagga Smith",
+    "club": "Carlton",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Fogarty",
+    "club": "Carlton",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Cripps",
+    "club": "Carlton",
+    "number": 9,
+    "season": 2026
+  },
+  {
+    "id": "Harry McKay",
+    "club": "Carlton",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Mitch McGovern",
+    "club": "Carlton",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Blake Acres",
+    "club": "Carlton",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Ben Camporeale",
+    "club": "Carlton",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Brodie Kemp",
+    "club": "Carlton",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Sam Walsh",
+    "club": "Carlton",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Lucas Camporeale",
+    "club": "Carlton",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Harry O'Farrell",
+    "club": "Carlton",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Weitering",
+    "club": "Carlton",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Nic Newman",
+    "club": "Carlton",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Nick Haynes",
+    "club": "Carlton",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Marc Pittonet",
+    "club": "Carlton",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Harry Charleson",
+    "club": "Carlton",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "George Hewett",
+    "club": "Carlton",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Matt Carroll",
+    "club": "Carlton",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Lewis Young",
+    "club": "Carlton",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Rob Monahan",
+    "club": "Carlton",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Billy Wilson",
+    "club": "Carlton",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Lord",
+    "club": "Carlton",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Jordan Boyd",
+    "club": "Carlton",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Hudson O'Keeffe",
+    "club": "Carlton",
+    "number": 40,
+    "season": 2026
+  },
+  {
+    "id": "Matt Duffy",
+    "club": "Carlton",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Adam Saad",
+    "club": "Carlton",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Ashton Moir",
+    "club": "Carlton",
+    "number": 43,
+    "season": 2026
+  },
+  {
+    "id": "Francis Evans",
+    "club": "Carlton",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Flynn Young",
+    "club": "Carlton",
+    "number": 45,
+    "season": 2026
+  },
+  {
+    "id": "Matt Cottrell",
+    "club": "Carlton",
+    "number": 46,
+    "season": 2026
+  },
+  {
+    "id": "Campbell Chesser",
+    "club": "Carlton",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Ben Ainsworth",
+    "club": "Carlton",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Oliver Florent",
+    "club": "Carlton",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Harry Dean",
+    "club": "Carlton",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Talor Byrne",
+    "club": "Carlton",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Ison",
+    "club": "Carlton",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Liam Reidy",
+    "club": "Carlton",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Will Hayward",
+    "club": "Carlton",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Lipinski",
+    "club": "Collingwood",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jordan De Goey",
+    "club": "Collingwood",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Isaac Quaynor",
+    "club": "Collingwood",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Brayden Maynard",
+    "club": "Collingwood",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Jamie Elliott",
+    "club": "Collingwood",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Josh Daicos",
+    "club": "Collingwood",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Schultz",
+    "club": "Collingwood",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Dan Houston",
+    "club": "Collingwood",
+    "number": 9,
+    "season": 2026
+  },
+  {
+    "id": "Scott Pendlebury",
+    "club": "Collingwood",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Daniel McStay",
+    "club": "Collingwood",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Harry Perryman",
+    "club": "Collingwood",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Harry Demattia",
+    "club": "Collingwood",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Cameron",
+    "club": "Collingwood",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Wil Parker",
+    "club": "Collingwood",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Ed Allan",
+    "club": "Collingwood",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Billy Frampton",
+    "club": "Collingwood",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Tew Jiath",
+    "club": "Collingwood",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Iliro Smit",
+    "club": "Collingwood",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Oscar Steene",
+    "club": "Collingwood",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Steele Sidebottom",
+    "club": "Collingwood",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Bobby Hill",
+    "club": "Collingwood",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Jakob Ryan",
+    "club": "Collingwood",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Jack Crisp",
+    "club": "Collingwood",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Reef McInnes",
+    "club": "Collingwood",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Joel Cochran",
+    "club": "Collingwood",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Tim Membrey",
+    "club": "Collingwood",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Charlie West",
+    "club": "Collingwood",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Moore",
+    "club": "Collingwood",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Beau McCreery",
+    "club": "Collingwood",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Sullivan",
+    "club": "Collingwood",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Nick Daicos",
+    "club": "Collingwood",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Harvey Harrison",
+    "club": "Collingwood",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Jeremy Howe",
+    "club": "Collingwood",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Will Hayes",
+    "club": "Collingwood",
+    "number": 39,
+    "season": 2026
+  },
+  {
+    "id": "Ned Long",
+    "club": "Collingwood",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Roan Steele",
+    "club": "Collingwood",
+    "number": 45,
+    "season": 2026
+  },
+  {
+    "id": "Noah Howes",
+    "club": "Collingwood",
+    "number": 47,
+    "season": 2026
+  },
+  {
+    "id": "Jai Saxena",
+    "club": "Collingwood",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Angus Anderson",
+    "club": "Collingwood",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Zac McCarthy",
+    "club": "Collingwood",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Samuel Swadling",
+    "club": "Collingwood",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Tyan Prindable",
+    "club": "Collingwood",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Buller",
+    "club": "Collingwood",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Andrew McGrath",
+    "club": "Essendon",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Parish",
+    "club": "Essendon",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Kyle Langford",
+    "club": "Essendon",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Elijah Tsatas",
+    "club": "Essendon",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Jye Caldwell",
+    "club": "Essendon",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Zach Merrett",
+    "club": "Essendon",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Isaac Kako",
+    "club": "Essendon",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Jade Gresham",
+    "club": "Essendon",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Will Setterfield",
+    "club": "Essendon",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Nik Cox",
+    "club": "Essendon",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Jordan Ridley",
+    "club": "Essendon",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Archie Perkins",
+    "club": "Essendon",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Lewis Hayes",
+    "club": "Essendon",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Kayle Gerreyn",
+    "club": "Essendon",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Peter Wright",
+    "club": "Essendon",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Archie Roberts",
+    "club": "Essendon",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Sam Durham",
+    "club": "Essendon",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Harrison Jones",
+    "club": "Essendon",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Nick Bryan",
+    "club": "Essendon",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Jaxon Prior",
+    "club": "Essendon",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Archie May",
+    "club": "Essendon",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Mason Redman",
+    "club": "Essendon",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Xavier Duursma",
+    "club": "Essendon",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Nate Caddy",
+    "club": "Essendon",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Zach Reid",
+    "club": "Essendon",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Ben McKay",
+    "club": "Essendon",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Matt Guelfi",
+    "club": "Essendon",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Angus Clarke",
+    "club": "Essendon",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Nic Martin",
+    "club": "Essendon",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Rhys Unwin",
+    "club": "Essendon",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Vigo Visentini",
+    "club": "Essendon",
+    "number": 39,
+    "season": 2026
+  },
+  {
+    "id": "Zak Johnson",
+    "club": "Essendon",
+    "number": 40,
+    "season": 2026
+  },
+  {
+    "id": "Saad El-Hawli",
+    "club": "Essendon",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Jayden Nguyen",
+    "club": "Essendon",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Archer Day-Wicks",
+    "club": "Essendon",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Tom Edwards",
+    "club": "Essendon",
+    "number": 45,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Blakiston",
+    "club": "Essendon",
+    "number": 46,
+    "season": 2026
+  },
+  {
+    "id": "Liam McMahon",
+    "club": "Essendon",
+    "number": 48,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Farrow",
+    "club": "Essendon",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Max Kondogiannis",
+    "club": "Essendon",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Hussien El Achkar",
+    "club": "Essendon",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Brayden Fiorini",
+    "club": "Essendon",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sullivan Robey",
+    "club": "Essendon",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Dyson Sharp",
+    "club": "Essendon",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sam Sturt",
+    "club": "Fremantle",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jaeger O'Meara",
+    "club": "Fremantle",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Caleb Serong",
+    "club": "Fremantle",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Sean Darcy",
+    "club": "Fremantle",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Heath Chapman",
+    "club": "Fremantle",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Jordan Clark",
+    "club": "Fremantle",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Andrew Brayshaw",
+    "club": "Fremantle",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Luke Jackson",
+    "club": "Fremantle",
+    "number": 9,
+    "season": 2026
+  },
+  {
+    "id": "Hugh Davies",
+    "club": "Fremantle",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Luke Ryan",
+    "club": "Fremantle",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Jeremy Sharp",
+    "club": "Fremantle",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Shai Bolton",
+    "club": "Fremantle",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Murphy Reid",
+    "club": "Fremantle",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Voss",
+    "club": "Fremantle",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Oscar McDonald",
+    "club": "Fremantle",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Nicholls",
+    "club": "Fremantle",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Karl Worner",
+    "club": "Fremantle",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Jye Amiss",
+    "club": "Fremantle",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Alex Pearce",
+    "club": "Fremantle",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Hayden Young",
+    "club": "Fremantle",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Neil Erasmus",
+    "club": "Fremantle",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Simpson",
+    "club": "Fremantle",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Nathan O'Driscoll",
+    "club": "Fremantle",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Brandon Walker",
+    "club": "Fremantle",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Michael Frederick",
+    "club": "Fremantle",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Ollie Murphy",
+    "club": "Fremantle",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Corey Wagner",
+    "club": "Fremantle",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Josh Treacy",
+    "club": "Fremantle",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Brennan Cox",
+    "club": "Fremantle",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Josh Draper",
+    "club": "Fremantle",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Jaren Carr",
+    "club": "Fremantle",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Sam Switkowski",
+    "club": "Fremantle",
+    "number": 39,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Banfield",
+    "club": "Fremantle",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Aiden Riddle",
+    "club": "Fremantle",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Isaiah Dudley",
+    "club": "Fremantle",
+    "number": 43,
+    "season": 2026
+  },
+  {
+    "id": "Matt Johnson",
+    "club": "Fremantle",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Tobyn Murray",
+    "club": "Fremantle",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Leon Kickett",
+    "club": "Fremantle",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Toby Whan",
+    "club": "Fremantle",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Ryda Luke",
+    "club": "Fremantle",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Mason Cox",
+    "club": "Fremantle",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Adam Sweid",
+    "club": "Fremantle",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Judd McVee",
+    "club": "Fremantle",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Rhys Stanley",
+    "club": "Geelong",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jay Polkinghorne",
+    "club": "Geelong",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Smith",
+    "club": "Geelong",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Tanner Bruhn",
+    "club": "Geelong",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Jeremy Cameron",
+    "club": "Geelong",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Toby Conway",
+    "club": "Geelong",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Shaun Mannagh",
+    "club": "Geelong",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Jake Kolodjashnij",
+    "club": "Geelong",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Max Holmes",
+    "club": "Geelong",
+    "number": 9,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Knevitt",
+    "club": "Geelong",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Edwards",
+    "club": "Geelong",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Jack Bowes",
+    "club": "Geelong",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Jhye Clark",
+    "club": "Geelong",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Connor O'Sullivan",
+    "club": "Geelong",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "George Stevens",
+    "club": "Geelong",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Sam De Koning",
+    "club": "Geelong",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Lawson Humphries",
+    "club": "Geelong",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Tyson Stengle",
+    "club": "Geelong",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Jack Martin",
+    "club": "Geelong",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Molier",
+    "club": "Geelong",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Oli Wiltshire",
+    "club": "Geelong",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Lennox Hofmann",
+    "club": "Geelong",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Jed Bews",
+    "club": "Geelong",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Oliver Dempsey",
+    "club": "Geelong",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Tom Atkins",
+    "club": "Geelong",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Keighton Matofai-Forbes",
+    "club": "Geelong",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Gryan Miers",
+    "club": "Geelong",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Shannon Neale",
+    "club": "Geelong",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Oisin Mullin",
+    "club": "Geelong",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Dangerfield",
+    "club": "Geelong",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Oliver Henry",
+    "club": "Geelong",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Joe Pike",
+    "club": "Geelong",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Jack Henry",
+    "club": "Geelong",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Zach Guthrie",
+    "club": "Geelong",
+    "number": 39,
+    "season": 2026
+  },
+  {
+    "id": "Cillian Burke",
+    "club": "Geelong",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Mark O'Connor",
+    "club": "Geelong",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Tom Stewart",
+    "club": "Geelong",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Brad Close",
+    "club": "Geelong",
+    "number": 45,
+    "season": 2026
+  },
+  {
+    "id": "Mark Blicavs",
+    "club": "Geelong",
+    "number": 46,
+    "season": 2026
+  },
+  {
+    "id": "Jesse Mellor",
+    "club": "Geelong",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Harley Barker",
+    "club": "Geelong",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Nick Driscoll",
+    "club": "Geelong",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Hunter Holmes",
+    "club": "Geelong",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "James Worpel",
+    "club": "Geelong",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Mac Andrew",
+    "club": "Gold Coast Suns",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "John Noble",
+    "club": "Gold Coast Suns",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Jed Walter",
+    "club": "Gold Coast Suns",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Alex Davies",
+    "club": "Gold Coast Suns",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Nick Holman",
+    "club": "Gold Coast Suns",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Ballard",
+    "club": "Gold Coast Suns",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Touk Miller",
+    "club": "Gold Coast Suns",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Elliot Himmelberg",
+    "club": "Gold Coast Suns",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Weller",
+    "club": "Gold Coast Suns",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Noah Anderson",
+    "club": "Gold Coast Suns",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Daniel Rioli",
+    "club": "Gold Coast Suns",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Matt Rowell",
+    "club": "Gold Coast Suns",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Humphrey",
+    "club": "Gold Coast Suns",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Ethan Read",
+    "club": "Gold Coast Suns",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Ned Moyle",
+    "club": "Gold Coast Suns",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Ben Long",
+    "club": "Gold Coast Suns",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Sam Collins",
+    "club": "Gold Coast Suns",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Will Graham",
+    "club": "Gold Coast Suns",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Wil Powell",
+    "club": "Gold Coast Suns",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Jarrod Witts",
+    "club": "Gold Coast Suns",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Jake Rogers",
+    "club": "Gold Coast Suns",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Leo Lombard",
+    "club": "Gold Coast Suns",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Bell",
+    "club": "Gold Coast Suns",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Bodhi Uwland",
+    "club": "Gold Coast Suns",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Sam Clohesy",
+    "club": "Gold Coast Suns",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Ben King",
+    "club": "Gold Coast Suns",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Zak Evans",
+    "club": "Gold Coast Suns",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Max Knobel",
+    "club": "Gold Coast Suns",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Gulbin",
+    "club": "Gold Coast Suns",
+    "number": 39,
+    "season": 2026
+  },
+  {
+    "id": "Joel Jeffrey",
+    "club": "Gold Coast Suns",
+    "number": 40,
+    "season": 2026
+  },
+  {
+    "id": "Asher Eastham",
+    "club": "Gold Coast Suns",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Ben Jepson",
+    "club": "Gold Coast Suns",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Caleb Lewis",
+    "club": "Gold Coast Suns",
+    "number": 45,
+    "season": 2026
+  },
+  {
+    "id": "Caleb Graham",
+    "club": "Gold Coast Suns",
+    "number": 46,
+    "season": 2026
+  },
+  {
+    "id": "Oscar Adams",
+    "club": "Gold Coast Suns",
+    "number": 48,
+    "season": 2026
+  },
+  {
+    "id": "Jy Farrar",
+    "club": "Gold Coast Suns",
+    "number": 50,
+    "season": 2026
+  },
+  {
+    "id": "Koby Coulson",
+    "club": "Gold Coast Suns",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Avery Thomas",
+    "club": "Gold Coast Suns",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Beau Addinsall",
+    "club": "Gold Coast Suns",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jai Murray",
+    "club": "Gold Coast Suns",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Dylan Patterson",
+    "club": "Gold Coast Suns",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jamarra Ugle-Hagan",
+    "club": "Gold Coast Suns",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Christian Petracca",
+    "club": "Gold Coast Suns",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Zeke Uwland",
+    "club": "Gold Coast Suns",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Harvey Thomas",
+    "club": "Greater Western Sydney",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Jones",
+    "club": "Greater Western Sydney",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Stephen Coniglio",
+    "club": "Greater Western Sydney",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Toby Greene",
+    "club": "Greater Western Sydney",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Aaron Cadman",
+    "club": "Greater Western Sydney",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Whitfield",
+    "club": "Greater Western Sydney",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Ash",
+    "club": "Greater Western Sydney",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Ryan Angwin",
+    "club": "Greater Western Sydney",
+    "number": 9,
+    "season": 2026
+  },
+  {
+    "id": "Phoenix Gothard",
+    "club": "Greater Western Sydney",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Tom Green",
+    "club": "Greater Western Sydney",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Ollie Hannaford",
+    "club": "Greater Western Sydney",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Toby Bedford",
+    "club": "Greater Western Sydney",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Sam Taylor",
+    "club": "Greater Western Sydney",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Brent Daniels",
+    "club": "Greater Western Sydney",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Finn Callaghan",
+    "club": "Greater Western Sydney",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Conor Stone",
+    "club": "Greater Western Sydney",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Harry Oliver",
+    "club": "Greater Western Sydney",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Jake Stringer",
+    "club": "Greater Western Sydney",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Leek Aleer",
+    "club": "Greater Western Sydney",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Josh Kelly",
+    "club": "Greater Western Sydney",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Jesse Hogan",
+    "club": "Greater Western Sydney",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Harry Rowston",
+    "club": "Greater Western Sydney",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Jake Riccardi",
+    "club": "Greater Western Sydney",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Harry Himmelberg",
+    "club": "Greater Western Sydney",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Jack Ough",
+    "club": "Greater Western Sydney",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Cody Angove",
+    "club": "Greater Western Sydney",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "James Leake",
+    "club": "Greater Western Sydney",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Toby McMullin",
+    "club": "Greater Western Sydney",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Kieren Briggs",
+    "club": "Greater Western Sydney",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Xavier O'Halloran",
+    "club": "Greater Western Sydney",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Max Gruzewski",
+    "club": "Greater Western Sydney",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Logan Smith",
+    "club": "Greater Western Sydney",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Joe Fonti",
+    "club": "Greater Western Sydney",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Josaia Delana",
+    "club": "Greater Western Sydney",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Connor Idun",
+    "club": "Greater Western Sydney",
+    "number": 39,
+    "season": 2026
+  },
+  {
+    "id": "Nick Madden",
+    "club": "Greater Western Sydney",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Nathan Wardius",
+    "club": "Greater Western Sydney",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Jack Buckley",
+    "club": "Greater Western Sydney",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Callum Brown",
+    "club": "Greater Western Sydney",
+    "number": 46,
+    "season": 2026
+  },
+  {
+    "id": "Jayden Laverde",
+    "club": "Greater Western Sydney",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Finnegan Davis",
+    "club": "Greater Western Sydney",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Oskar Taylor",
+    "club": "Greater Western Sydney",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Riley Hamilton",
+    "club": "Greater Western Sydney",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Clayton Oliver",
+    "club": "Greater Western Sydney",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Harry Morrison",
+    "club": "Hawthorn",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Lewis",
+    "club": "Hawthorn",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Jai Newcombe",
+    "club": "Hawthorn",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Jarman Impey",
+    "club": "Hawthorn",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "James Sicily",
+    "club": "Hawthorn",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Ned Reeves",
+    "club": "Hawthorn",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Karl Amon",
+    "club": "Hawthorn",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Conor Nash",
+    "club": "Hawthorn",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Will Day",
+    "club": "Hawthorn",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Dylan Moore",
+    "club": "Hawthorn",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Jack Scrimshaw",
+    "club": "Hawthorn",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Blake Hardwick",
+    "club": "Hawthorn",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Massimo D'Ambrosio",
+    "club": "Hawthorn",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Lloyd Meek",
+    "club": "Hawthorn",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Mabior Chol",
+    "club": "Hawthorn",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Jack Gunston",
+    "club": "Hawthorn",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Finn Maginness",
+    "club": "Hawthorn",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Noah Mraz",
+    "club": "Hawthorn",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Josh Weddle",
+    "club": "Hawthorn",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Josh Battle",
+    "club": "Hawthorn",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Josh Ward",
+    "club": "Hawthorn",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Bodie Ryan",
+    "club": "Hawthorn",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Will McCabe",
+    "club": "Hawthorn",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Cam Mackenzie",
+    "club": "Hawthorn",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Sam Butler",
+    "club": "Hawthorn",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Connor Macdonald",
+    "club": "Hawthorn",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Cody Anderson",
+    "club": "Hawthorn",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Jack Ginnivan",
+    "club": "Hawthorn",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Nick Watson",
+    "club": "Hawthorn",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Calsher Dear",
+    "club": "Hawthorn",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "James Blanck",
+    "club": "Hawthorn",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Tom Barrass",
+    "club": "Hawthorn",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Max Ramsden",
+    "club": "Hawthorn",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Matt Hill",
+    "club": "Hawthorn",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Macdonald",
+    "club": "Hawthorn",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Jaime Uhr-Henry",
+    "club": "Hawthorn",
+    "number": 43,
+    "season": 2026
+  },
+  {
+    "id": "Henry Hustwaite",
+    "club": "Hawthorn",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Cam Nairn",
+    "club": "Hawthorn",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Aidan Schubert",
+    "club": "Hawthorn",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Dalton",
+    "club": "Hawthorn",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Matthew LeRay",
+    "club": "Hawthorn",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Ollie Greeves",
+    "club": "Hawthorn",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Steven May",
+    "club": "Melbourne",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jacob van Rooyen",
+    "club": "Melbourne",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Christian Salem",
+    "club": "Melbourne",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Caleb Windsor",
+    "club": "Melbourne",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Jack Viney",
+    "club": "Melbourne",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Jake Lever",
+    "club": "Melbourne",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Daniel Turner",
+    "club": "Melbourne",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Max Gawn",
+    "club": "Melbourne",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Koltyn Tholstrup",
+    "club": "Melbourne",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Ed Langdon",
+    "club": "Melbourne",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Laurie",
+    "club": "Melbourne",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Jake Bowey",
+    "club": "Melbourne",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Jake Melksham",
+    "club": "Melbourne",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Harvey Langford",
+    "club": "Melbourne",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Xavier Lindsay",
+    "club": "Melbourne",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Matthew Jefferson",
+    "club": "Melbourne",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Blake Howes",
+    "club": "Melbourne",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Shane McAdam",
+    "club": "Melbourne",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Trent Rivers",
+    "club": "Melbourne",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Tom McDonald",
+    "club": "Melbourne",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Jed Adams",
+    "club": "Melbourne",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Tom Campbell",
+    "club": "Melbourne",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Harry Sharp",
+    "club": "Melbourne",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Bayley Fritsch",
+    "club": "Melbourne",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Tom Sparrow",
+    "club": "Melbourne",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Harrison Petty",
+    "club": "Melbourne",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Kysaiah Pickett",
+    "club": "Melbourne",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Kade Chandler",
+    "club": "Melbourne",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Ricky Mentha",
+    "club": "Melbourne",
+    "number": 39,
+    "season": 2026
+  },
+  {
+    "id": "Aidan Johnson",
+    "club": "Melbourne",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Jack Henderson",
+    "club": "Melbourne",
+    "number": 43,
+    "season": 2026
+  },
+  {
+    "id": "Luker Kentfield",
+    "club": "Melbourne",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Andy Moniz-Wakefield",
+    "club": "Melbourne",
+    "number": 45,
+    "season": 2026
+  },
+  {
+    "id": "Jai Culley",
+    "club": "Melbourne",
+    "number": 46,
+    "season": 2026
+  },
+  {
+    "id": "Kalani White",
+    "club": "Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Steele",
+    "club": "Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Riley Onley",
+    "club": "Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Thomas Matthews",
+    "club": "Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Latrelle Pickett",
+    "club": "Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Xavier Taylor",
+    "club": "Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Changkuoth Jiath",
+    "club": "Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Brody Mihocek",
+    "club": "Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Max Heath",
+    "club": "Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Finn O'Sullivan",
+    "club": "North Melbourne",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Harry Sheezel",
+    "club": "North Melbourne",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Aidan Corr",
+    "club": "North Melbourne",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Caleb Daniel",
+    "club": "North Melbourne",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "George Wardlaw",
+    "club": "North Melbourne",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Zane Duursma",
+    "club": "North Melbourne",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Scott",
+    "club": "North Melbourne",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Luke Davies-Uniacke",
+    "club": "North Melbourne",
+    "number": 9,
+    "season": 2026
+  },
+  {
+    "id": "Colby McKercher",
+    "club": "North Melbourne",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Luke McDonald",
+    "club": "North Melbourne",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Jy Simpkin",
+    "club": "North Melbourne",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Luke Urquhart",
+    "club": "North Melbourne",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Dylan Stephens",
+    "club": "North Melbourne",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Zac Fisher",
+    "club": "North Melbourne",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Riley Hardeman",
+    "club": "North Melbourne",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Wil Dawson",
+    "club": "North Melbourne",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Griffin Logue",
+    "club": "North Melbourne",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Nick Larkey",
+    "club": "North Melbourne",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Callum Coleman-Jones",
+    "club": "North Melbourne",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Taylor Goad",
+    "club": "North Melbourne",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Tom Powell",
+    "club": "North Melbourne",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Paul Curtis",
+    "club": "North Melbourne",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Luke Parker",
+    "club": "North Melbourne",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Jack Darling",
+    "club": "North Melbourne",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Comben",
+    "club": "North Melbourne",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Josh Goater",
+    "club": "North Melbourne",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Toby Pink",
+    "club": "North Melbourne",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Brayden George",
+    "club": "North Melbourne",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Jackson Archer",
+    "club": "North Melbourne",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Matt Whitlock",
+    "club": "North Melbourne",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "River Stevens",
+    "club": "North Melbourne",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Harvey",
+    "club": "North Melbourne",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Tristan Xerri",
+    "club": "North Melbourne",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Konstanty",
+    "club": "North Melbourne",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Cameron Zurhaar",
+    "club": "North Melbourne",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Zac Banch",
+    "club": "North Melbourne",
+    "number": 45,
+    "season": 2026
+  },
+  {
+    "id": "Robert Hansen",
+    "club": "North Melbourne",
+    "number": 46,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Trembath",
+    "club": "North Melbourne",
+    "number": 47,
+    "season": 2026
+  },
+  {
+    "id": "Hugo Mikunda",
+    "club": "North Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Blake Thredgold",
+    "club": "North Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Lachy Dovaston",
+    "club": "North Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Spargo",
+    "club": "North Melbourne",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Connor Rozee",
+    "club": "Port Adelaide",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Sam Powell-Pepper",
+    "club": "Port Adelaide",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Todd Marshall",
+    "club": "Port Adelaide",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Joe Berry",
+    "club": "Port Adelaide",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Kane Farrell",
+    "club": "Port Adelaide",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Jase Burgoyne",
+    "club": "Port Adelaide",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Josh Sinn",
+    "club": "Port Adelaide",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Zak Butters",
+    "club": "Port Adelaide",
+    "number": 9,
+    "season": 2026
+  },
+  {
+    "id": "Jack Lukosius",
+    "club": "Port Adelaide",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Ivan Soldo",
+    "club": "Port Adelaide",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Miles Bergman",
+    "club": "Port Adelaide",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Ollie Wines",
+    "club": "Port Adelaide",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Jack Whitlock",
+    "club": "Port Adelaide",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Jason Horne-Francis",
+    "club": "Port Adelaide",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Georgiades",
+    "club": "Port Adelaide",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Aliir Aliir",
+    "club": "Port Adelaide",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Logan Evans",
+    "club": "Port Adelaide",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Jordon Sweet",
+    "club": "Port Adelaide",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Brandon Zerk-Thatcher",
+    "club": "Port Adelaide",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Esava Ratugolea",
+    "club": "Port Adelaide",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Willem Drew",
+    "club": "Port Adelaide",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Tom Anastasopoulos",
+    "club": "Port Adelaide",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Ollie Lord",
+    "club": "Port Adelaide",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Christian Moraes",
+    "club": "Port Adelaide",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Byrne-Jones",
+    "club": "Port Adelaide",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Jones",
+    "club": "Port Adelaide",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Joe Richards",
+    "club": "Port Adelaide",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Will Lorenz",
+    "club": "Port Adelaide",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Tom Cochrane",
+    "club": "Port Adelaide",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Dante Visentini",
+    "club": "Port Adelaide",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Benny Barrett",
+    "club": "Port Adelaide",
+    "number": 40,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Moss",
+    "club": "Port Adelaide",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Josh Lai",
+    "club": "Port Adelaide",
+    "number": 43,
+    "season": 2026
+  },
+  {
+    "id": "Jackson Mead",
+    "club": "Port Adelaide",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Xavier Walsh",
+    "club": "Port Adelaide",
+    "number": 45,
+    "season": 2026
+  },
+  {
+    "id": "Harrison Ramm",
+    "club": "Port Adelaide",
+    "number": 48,
+    "season": 2026
+  },
+  {
+    "id": "Ewan Mackinlay",
+    "club": "Port Adelaide",
+    "number": 49,
+    "season": 2026
+  },
+  {
+    "id": "Mani Liddy",
+    "club": "Port Adelaide",
+    "number": 50,
+    "season": 2026
+  },
+  {
+    "id": "Corey Durdin",
+    "club": "Port Adelaide",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Will Brodie",
+    "club": "Port Adelaide",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Watkins",
+    "club": "Port Adelaide",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Wehr",
+    "club": "Port Adelaide",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Nick Vlastuin",
+    "club": "Richmond",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Hopper",
+    "club": "Richmond",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Dion Prestia",
+    "club": "Richmond",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Jack Ross",
+    "club": "Richmond",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Rhyan Mansell",
+    "club": "Richmond",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Ben Miller",
+    "club": "Richmond",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Hugo Ralphsmith",
+    "club": "Richmond",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Tim Taranto",
+    "club": "Richmond",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Jayden Short",
+    "club": "Richmond",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Josh Smillie",
+    "club": "Richmond",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Maurice Rioli",
+    "club": "Richmond",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Josh Gibcus",
+    "club": "Richmond",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Tom Lynch",
+    "club": "Richmond",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Noah Balta",
+    "club": "Richmond",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Sam Lalor",
+    "club": "Richmond",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Judson Clarke",
+    "club": "Richmond",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Taj Hotton",
+    "club": "Richmond",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Toby Nankervis",
+    "club": "Richmond",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Jonty Faull",
+    "club": "Richmond",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Kane McAuliffe",
+    "club": "Richmond",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Jasper Alger",
+    "club": "Richmond",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Tom Brown",
+    "club": "Richmond",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Luke Trainor",
+    "club": "Richmond",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Samson Ryan",
+    "club": "Richmond",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Harry Armstrong",
+    "club": "Richmond",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Nathan Broad",
+    "club": "Richmond",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "James Trezise",
+    "club": "Richmond",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Liam Fawcett",
+    "club": "Richmond",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Tom Sims",
+    "club": "Richmond",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Tyler Sonsie",
+    "club": "Richmond",
+    "number": 40,
+    "season": 2026
+  },
+  {
+    "id": "Sam Banks",
+    "club": "Richmond",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Mykelti Lefau",
+    "club": "Richmond",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Seth Campbell",
+    "club": "Richmond",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Oliver Hayes-Brown",
+    "club": "Richmond",
+    "number": 47,
+    "season": 2026
+  },
+  {
+    "id": "Steely Green",
+    "club": "Richmond",
+    "number": 48,
+    "season": 2026
+  },
+  {
+    "id": "Kaleb Smith",
+    "club": "Richmond",
+    "number": 49,
+    "season": 2026
+  },
+  {
+    "id": "Campbell Gray",
+    "club": "Richmond",
+    "number": 50,
+    "season": 2026
+  },
+  {
+    "id": "Sam Grlj",
+    "club": "Richmond",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Noah Roberts-Thomson",
+    "club": "Richmond",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Zane Peucker",
+    "club": "Richmond",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sam Cumming",
+    "club": "Richmond",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Retschko",
+    "club": "Richmond",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Higgins",
+    "club": "St Kilda",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Marcus Windhager",
+    "club": "St Kilda",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Lance Collard",
+    "club": "St Kilda",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Tobie Travaglia",
+    "club": "St Kilda",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Jack Macrae",
+    "club": "St Kilda",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Nasiah Wanganeen-Milera",
+    "club": "St Kilda",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Brad Hill",
+    "club": "St Kilda",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Owens",
+    "club": "St Kilda",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Hunter Clark",
+    "club": "St Kilda",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Max King",
+    "club": "St Kilda",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Ryan Byrnes",
+    "club": "St Kilda",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Liam Stocker",
+    "club": "St Kilda",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Paddy Dow",
+    "club": "St Kilda",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Dan Butler",
+    "club": "St Kilda",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Isaac Keeler",
+    "club": "St Kilda",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Jack Carroll",
+    "club": "St Kilda",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Rowan Marshall",
+    "club": "St Kilda",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Dougal Howard",
+    "club": "St Kilda",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Wilson",
+    "club": "St Kilda",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Liam Henry",
+    "club": "St Kilda",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Angus Hastie",
+    "club": "St Kilda",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Mattaes Phillipou",
+    "club": "St Kilda",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Alix Tauru",
+    "club": "St Kilda",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "James Barrat",
+    "club": "St Kilda",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Alex Dodson",
+    "club": "St Kilda",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Mason Wood",
+    "club": "St Kilda",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Said",
+    "club": "St Kilda",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Hugo Garcia",
+    "club": "St Kilda",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Jack Sinclair",
+    "club": "St Kilda",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Hugh Boxshall",
+    "club": "St Kilda",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Max Hall",
+    "club": "St Kilda",
+    "number": 40,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Sharman",
+    "club": "St Kilda",
+    "number": 43,
+    "season": 2026
+  },
+  {
+    "id": "Callum Wilkie",
+    "club": "St Kilda",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Liam O'Connell",
+    "club": "St Kilda",
+    "number": 45,
+    "season": 2026
+  },
+  {
+    "id": "Eamonn Armstrong",
+    "club": "St Kilda",
+    "number": 46,
+    "season": 2026
+  },
+  {
+    "id": "Anthony Caminiti",
+    "club": "St Kilda",
+    "number": 47,
+    "season": 2026
+  },
+  {
+    "id": "Tom De Koning",
+    "club": "St Kilda",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Silvagni",
+    "club": "St Kilda",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sam Flanders",
+    "club": "St Kilda",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Kye Fincher",
+    "club": "St Kilda",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Liam Ryan",
+    "club": "St Kilda",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Banfield",
+    "club": "St Kilda",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Chad Warner",
+    "club": "Sydney Swans",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Hayden McLean",
+    "club": "Sydney Swans",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Taylor Adams",
+    "club": "Sydney Swans",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Brodie Grundy",
+    "club": "Sydney Swans",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Isaac Heeney",
+    "club": "Sydney Swans",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Logan McDonald",
+    "club": "Sydney Swans",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Harry Cunningham",
+    "club": "Sydney Swans",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "James Rowbottom",
+    "club": "Sydney Swans",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Tom Papley",
+    "club": "Sydney Swans",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Angus Sheldrick",
+    "club": "Sydney Swans",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Callum Mills",
+    "club": "Sydney Swans",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Sam Wicks",
+    "club": "Sydney Swans",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Braeden Campbell",
+    "club": "Sydney Swans",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "James Jordon",
+    "club": "Sydney Swans",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Jesse Dattoli",
+    "club": "Sydney Swans",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Peter Ladhams",
+    "club": "Sydney Swans",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Riak Andrew",
+    "club": "Sydney Swans",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Errol Gulden",
+    "club": "Sydney Swans",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "Nick Blakey",
+    "club": "Sydney Swans",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Ned Bowman",
+    "club": "Sydney Swans",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Dane Rampe",
+    "club": "Sydney Swans",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Riley Bice",
+    "club": "Sydney Swans",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Justin McInerney",
+    "club": "Sydney Swans",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Will Edwards",
+    "club": "Sydney Swans",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Joel Hamling",
+    "club": "Sydney Swans",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Tom McCartin",
+    "club": "Sydney Swans",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Caiden Cleary",
+    "club": "Sydney Swans",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Matt Roberts",
+    "club": "Sydney Swans",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Joel Amartey",
+    "club": "Sydney Swans",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Corey Warner",
+    "club": "Sydney Swans",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Tom Hanily",
+    "club": "Sydney Swans",
+    "number": 40,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Snell",
+    "club": "Sydney Swans",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Lewis Melican",
+    "club": "Sydney Swans",
+    "number": 43,
+    "season": 2026
+  },
+  {
+    "id": "Jake Lloyd",
+    "club": "Sydney Swans",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Will Green",
+    "club": "Sydney Swans",
+    "number": 45,
+    "season": 2026
+  },
+  {
+    "id": "Liam Hetherton",
+    "club": "Sydney Swans",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Noah Chamberlain",
+    "club": "Sydney Swans",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Max King",
+    "club": "Sydney Swans",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Billy Cootee",
+    "club": "Sydney Swans",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jevan Phillipou",
+    "club": "Sydney Swans",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Harry Kyle",
+    "club": "Sydney Swans",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jai Serong",
+    "club": "Sydney Swans",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Malcolm Rosas",
+    "club": "Sydney Swans",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Curnow",
+    "club": "Sydney Swans",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jake Waterman",
+    "club": "West Coast Eagles",
+    "number": 2,
+    "season": 2026
+  },
+  {
+    "id": "Liam Baker",
+    "club": "West Coast Eagles",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Elliot Yeo",
+    "club": "West Coast Eagles",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Reuben Ginbey",
+    "club": "West Coast Eagles",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Elijah Hewett",
+    "club": "West Coast Eagles",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Harley Reid",
+    "club": "West Coast Eagles",
+    "number": 9,
+    "season": 2026
+  },
+  {
+    "id": "Tyler Brockman",
+    "club": "West Coast Eagles",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Tim Kelly",
+    "club": "West Coast Eagles",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Noah Long",
+    "club": "West Coast Eagles",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Liam Duggan",
+    "club": "West Coast Eagles",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Jamie Cripps",
+    "club": "West Coast Eagles",
+    "number": 15,
+    "season": 2026
+  },
+  {
+    "id": "Matt Owies",
+    "club": "West Coast Eagles",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Jack Graham",
+    "club": "West Coast Eagles",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "Brady Hough",
+    "club": "West Coast Eagles",
+    "number": 19,
+    "season": 2026
+  },
+  {
+    "id": "Archer Reid",
+    "club": "West Coast Eagles",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Ryan Maric",
+    "club": "West Coast Eagles",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Harvey Johnston",
+    "club": "West Coast Eagles",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Matthew Flynn",
+    "club": "West Coast Eagles",
+    "number": 25,
+    "season": 2026
+  },
+  {
+    "id": "Bo Allan",
+    "club": "West Coast Eagles",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Tom Gross",
+    "club": "West Coast Eagles",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Tom Cole",
+    "club": "West Coast Eagles",
+    "number": 28,
+    "season": 2026
+  },
+  {
+    "id": "Clay Hall",
+    "club": "West Coast Eagles",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Harry Barnett",
+    "club": "West Coast Eagles",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Lucca Grego",
+    "club": "West Coast Eagles",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Williams",
+    "club": "West Coast Eagles",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Rhett Bazzo",
+    "club": "West Coast Eagles",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Jack Williams",
+    "club": "West Coast Eagles",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Jobe Shanahan",
+    "club": "West Coast Eagles",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Malakai Champion",
+    "club": "West Coast Eagles",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Hamish Davis",
+    "club": "West Coast Eagles",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Sandy Brock",
+    "club": "West Coast Eagles",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Harry Edwards",
+    "club": "West Coast Eagles",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Tyrell Dewar",
+    "club": "West Coast Eagles",
+    "number": 43,
+    "season": 2026
+  },
+  {
+    "id": "Jack Hutchinson",
+    "club": "West Coast Eagles",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Tom McCarthy",
+    "club": "West Coast Eagles",
+    "number": 45,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Newton",
+    "club": "West Coast Eagles",
+    "number": 46,
+    "season": 2026
+  },
+  {
+    "id": "Harry Schoenberg",
+    "club": "West Coast Eagles",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Finlay Macrae",
+    "club": "West Coast Eagles",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Fred Rodriguez",
+    "club": "West Coast Eagles",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Willem Duursma",
+    "club": "West Coast Eagles",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Josh Lindsay",
+    "club": "West Coast Eagles",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Tylah Williams",
+    "club": "West Coast Eagles",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Brandon Starcevich",
+    "club": "West Coast Eagles",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sam Allen",
+    "club": "West Coast Eagles",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Duff-Tytler",
+    "club": "West Coast Eagles",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Tylar Young",
+    "club": "West Coast Eagles",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Deven Robertson",
+    "club": "West Coast Eagles",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Adam Treloar",
+    "club": "Western Bulldogs",
+    "number": 1,
+    "season": 2026
+  },
+  {
+    "id": "Cody Weightman",
+    "club": "Western Bulldogs",
+    "number": 3,
+    "season": 2026
+  },
+  {
+    "id": "Marcus Bontempelli",
+    "club": "Western Bulldogs",
+    "number": 4,
+    "season": 2026
+  },
+  {
+    "id": "Jedd Busslinger",
+    "club": "Western Bulldogs",
+    "number": 5,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Hynes",
+    "club": "Western Bulldogs",
+    "number": 6,
+    "season": 2026
+  },
+  {
+    "id": "Rory Lobb",
+    "club": "Western Bulldogs",
+    "number": 7,
+    "season": 2026
+  },
+  {
+    "id": "Matthew Kennedy",
+    "club": "Western Bulldogs",
+    "number": 8,
+    "season": 2026
+  },
+  {
+    "id": "Ryley Sanders",
+    "club": "Western Bulldogs",
+    "number": 9,
+    "season": 2026
+  },
+  {
+    "id": "Sam Darcy",
+    "club": "Western Bulldogs",
+    "number": 10,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Jaques",
+    "club": "Western Bulldogs",
+    "number": 11,
+    "season": 2026
+  },
+  {
+    "id": "Harvey Gallagher",
+    "club": "Western Bulldogs",
+    "number": 12,
+    "season": 2026
+  },
+  {
+    "id": "Oskar Baker",
+    "club": "Western Bulldogs",
+    "number": 13,
+    "season": 2026
+  },
+  {
+    "id": "Rhylee West",
+    "club": "Western Bulldogs",
+    "number": 14,
+    "season": 2026
+  },
+  {
+    "id": "Jordan Croft",
+    "club": "Western Bulldogs",
+    "number": 16,
+    "season": 2026
+  },
+  {
+    "id": "Nick Coffield",
+    "club": "Western Bulldogs",
+    "number": 17,
+    "season": 2026
+  },
+  {
+    "id": "James O'Donnell",
+    "club": "Western Bulldogs",
+    "number": 18,
+    "season": 2026
+  },
+  {
+    "id": "Ed Richards",
+    "club": "Western Bulldogs",
+    "number": 20,
+    "season": 2026
+  },
+  {
+    "id": "Tom Liberatore",
+    "club": "Western Bulldogs",
+    "number": 21,
+    "season": 2026
+  },
+  {
+    "id": "James Harmes",
+    "club": "Western Bulldogs",
+    "number": 22,
+    "season": 2026
+  },
+  {
+    "id": "Laitham Vandermeer",
+    "club": "Western Bulldogs",
+    "number": 23,
+    "season": 2026
+  },
+  {
+    "id": "Buku Khamis",
+    "club": "Western Bulldogs",
+    "number": 24,
+    "season": 2026
+  },
+  {
+    "id": "Josh Dolan",
+    "club": "Western Bulldogs",
+    "number": 26,
+    "season": 2026
+  },
+  {
+    "id": "Joel Freijah",
+    "club": "Western Bulldogs",
+    "number": 27,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Bramble",
+    "club": "Western Bulldogs",
+    "number": 29,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan McNeil",
+    "club": "Western Bulldogs",
+    "number": 30,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Dale",
+    "club": "Western Bulldogs",
+    "number": 31,
+    "season": 2026
+  },
+  {
+    "id": "Arthur Jones",
+    "club": "Western Bulldogs",
+    "number": 32,
+    "season": 2026
+  },
+  {
+    "id": "Aaron Naughton",
+    "club": "Western Bulldogs",
+    "number": 33,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Williams",
+    "club": "Western Bulldogs",
+    "number": 34,
+    "season": 2026
+  },
+  {
+    "id": "Luke Kennedy",
+    "club": "Western Bulldogs",
+    "number": 35,
+    "season": 2026
+  },
+  {
+    "id": "Luke Cleary",
+    "club": "Western Bulldogs",
+    "number": 36,
+    "season": 2026
+  },
+  {
+    "id": "Michael Sellwood",
+    "club": "Western Bulldogs",
+    "number": 37,
+    "season": 2026
+  },
+  {
+    "id": "Riley Garcia",
+    "club": "Western Bulldogs",
+    "number": 38,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Smith",
+    "club": "Western Bulldogs",
+    "number": 40,
+    "season": 2026
+  },
+  {
+    "id": "Zac Walker",
+    "club": "Western Bulldogs",
+    "number": 41,
+    "season": 2026
+  },
+  {
+    "id": "Sam Davidson",
+    "club": "Western Bulldogs",
+    "number": 42,
+    "season": 2026
+  },
+  {
+    "id": "Ryan Gardner",
+    "club": "Western Bulldogs",
+    "number": 43,
+    "season": 2026
+  },
+  {
+    "id": "Tim English",
+    "club": "Western Bulldogs",
+    "number": 44,
+    "season": 2026
+  },
+  {
+    "id": "Louis Emmett",
+    "club": "Western Bulldogs",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Will Darcy",
+    "club": "Western Bulldogs",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Carmichael",
+    "club": "Western Bulldogs",
+    "number": 0,
+    "season": 2026
+  },
+  {
+    "id": "Connor Budarick",
+    "club": "Western Bulldogs",
+    "number": 0,
+    "season": 2026
+  }
+]
