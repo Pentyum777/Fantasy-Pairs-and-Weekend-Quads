@@ -38,25 +38,23 @@ if (!window.__msalInitialized) {
     // -------------------------------------------------------------------
     // 3. Handle redirect result
     // -------------------------------------------------------------------
-    msalInstance.handleRedirectPromise()
-        .then((result) => {
-            if (result) {
-                console.log("MSAL: Redirect login success", result);
+    msalInstance.handleRedirectPromise().then((result) => {
+        if (result) {
+            console.log("MSAL: Redirect login success", result);
 
-                msalInstance.setActiveAccount(result.account);
-                activeAccount = result.account;
+            msalInstance.setActiveAccount(result.account);
+            activeAccount = result.account;
 
-                if (result.accessToken) {
-                    console.log("MSAL: Dispatching token to Flutter");
-                    sendTokenToFlutter(result.accessToken);
-                }
-            } else {
-                console.log("MSAL: No redirect result");
+            if (result.accessToken) {
+                console.log("MSAL: Dispatching token to Flutter");
+                sendTokenToFlutter(result.accessToken);
             }
-        })
-        .catch((err) => {
-            console.error("MSAL Redirect Error:", err);
-        });
+        } else {
+            console.log("MSAL: No redirect result");
+        }
+    }).catch((err) => {
+        console.error("MSAL Redirect Error:", err);
+    });
 
     // -------------------------------------------------------------------
     // 4. Restore active account
@@ -86,6 +84,7 @@ if (!window.__msalInitialized) {
             console.log("MSAL: Starting redirect login...");
             await msalInstance.loginRedirect({ scopes });
             return null;
+
         } catch (err) {
             console.error("MSAL Login Redirect Error:", err);
             return null;
@@ -119,6 +118,7 @@ if (!window.__msalInitialized) {
             }
 
             return result.accessToken || null;
+
         } catch (err) {
             console.warn("MSAL: Silent token failed, redirecting to login", err);
             await msalInstance.loginRedirect({ scopes });

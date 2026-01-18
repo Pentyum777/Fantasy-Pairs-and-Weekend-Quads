@@ -3,12 +3,11 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "2388e328d05c9ec3dd13e27640131cbe",
-"assets/AssetManifest.bin.json": "45a37e74977a100b2dff80167c4372a8",
-"assets/AssetManifest.json": "221c5c7e3acde47da34165c44e8d8b47",
+const RESOURCES = {"assets/AssetManifest.bin": "a08c2947ad53a53ce6675053e3c26b9a",
+"assets/AssetManifest.bin.json": "d80d6d1b48e7507754e86b66e4ecb349",
+"assets/AssetManifest.json": "1247312deae533ed718421c897c58c8f",
 "assets/assets/afl_fixtures_2025_round_24.xlsx": "60c937b2f2f2603ad741222e7a019a73",
-"assets/assets/afl_fixtures_2026.xlsx": "2e2dde45670aef0c3b1b32f1d711bbcf",
-"assets/assets/afl_fixtures_2026_pre_season.xlsx": "8d23a9bf3b1886be3403a7111e556616",
+"assets/assets/afl_fixtures_2026.xlsx": "f95b0ca2dde20bd2f4302d1e15af3bb4",
 "assets/assets/afl_players_2026.json": "f5fd39afa633c0192a37ff552133621b",
 "assets/assets/afl_players_2026.xlsx": "b5908c09c4b183ffbf34afaec0e18351",
 "assets/assets/logos/ADE.png": "aa5948ef627590cde4577d20693350f6",
@@ -47,11 +46,11 @@ const RESOURCES = {"assets/AssetManifest.bin": "2388e328d05c9ec3dd13e27640131cbe
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "icons/Icon-maskable-192.png": "c457ef57daa1d16f64b27b786ec2ea3c",
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
-"index.html": "1d71ffc96b7d77fcf25c12e06e65e908",
-"/": "1d71ffc96b7d77fcf25c12e06e65e908",
-"main.dart.js": "b057cdae0230448ce4b97c1df4113ad1",
+"index.html": "ff5cb34dc688fa8e3e1cc12bc1a60d74",
+"/": "ff5cb34dc688fa8e3e1cc12bc1a60d74",
+"main.dart.js": "8b457885572088dc10fbd5031ba01794",
 "manifest.json": "18b05de58f5aeed2ffa6be1246cc43f1",
-"msal.js": "048932bbbfef32d16327437ca5db5d6b",
+"msal.js": "7dd4ad38d883c25e5652b5e7b00bbfe9",
 "version.json": "b0d2ea9d293a4ff4175362a67375b4a4"};
 // The application shell files that are downloaded before a service worker can
 // start.
