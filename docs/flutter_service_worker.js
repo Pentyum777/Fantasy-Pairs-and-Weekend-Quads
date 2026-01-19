@@ -7,7 +7,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "a08c2947ad53a53ce6675053e3c26b9a
 "assets/AssetManifest.bin.json": "d80d6d1b48e7507754e86b66e4ecb349",
 "assets/AssetManifest.json": "1247312deae533ed718421c897c58c8f",
 "assets/assets/afl_fixtures_2025_round_24.xlsx": "60c937b2f2f2603ad741222e7a019a73",
-"assets/assets/afl_fixtures_2026.xlsx": "f95b0ca2dde20bd2f4302d1e15af3bb4",
+"assets/assets/afl_fixtures_2026.xlsx": "5e35664b0d8a2509975b112f291b0978",
 "assets/assets/afl_players_2026.json": "f5fd39afa633c0192a37ff552133621b",
 "assets/assets/afl_players_2026.xlsx": "b5908c09c4b183ffbf34afaec0e18351",
 "assets/assets/logos/ADE.png": "aa5948ef627590cde4577d20693350f6",
@@ -48,7 +48,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "a08c2947ad53a53ce6675053e3c26b9a
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
 "index.html": "ff5cb34dc688fa8e3e1cc12bc1a60d74",
 "/": "ff5cb34dc688fa8e3e1cc12bc1a60d74",
-"main.dart.js": "8b457885572088dc10fbd5031ba01794",
+"main.dart.js": "2da3314bf76b2d8891a7c6cb2e939411",
 "manifest.json": "18b05de58f5aeed2ffa6be1246cc43f1",
 "msal.js": "7dd4ad38d883c25e5652b5e7b00bbfe9",
 "version.json": "b0d2ea9d293a4ff4175362a67375b4a4"};
