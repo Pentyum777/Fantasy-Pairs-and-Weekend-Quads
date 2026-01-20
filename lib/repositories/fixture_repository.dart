@@ -20,12 +20,24 @@ class FixtureRepository {
   // ---------------------------------------------------------------------------
   void loadFromExcel(Uint8List bytes) {
     final excel = Excel.decodeBytes(bytes);
-    if (excel.tables.isEmpty) return;
+    if (excel.tables.isEmpty) {
+      print("❌ No tables found in Excel file");
+      return;
+    }
 
     final sheet = excel.tables[excel.tables.keys.first];
-    if (sheet == null || sheet.rows.length <= 1) return;
+    if (sheet == null || sheet.rows.length <= 1) {
+      print("❌ Sheet is empty or missing rows");
+      return;
+    }
 
     final headerRow = sheet.rows.first;
+
+    print("====== HEADER DIAGNOSTIC ======");
+    for (int i = 0; i < headerRow.length; i++) {
+      print("COL $i → '${headerRow[i]?.value}'");
+    }
+    print("====== END HEADER DIAGNOSTIC ======");
 
     // Build header index map (case-insensitive)
     final Map<String, int> headerIndex = {};
@@ -67,7 +79,7 @@ class FixtureRepository {
       }
 
       // -----------------------------
-      // ROUND LABEL NORMALIZATION
+      // ROUND LABEL
       // -----------------------------
       String roundLabel = _cellString(row, idxRound).trim();
       if (roundLabel.isEmpty) {
@@ -77,11 +89,6 @@ class FixtureRepository {
 
       final originalRoundLabel = roundLabel;
       final upper = roundLabel.toUpperCase();
-
-      // Pre-Season → PS
-      if (upper == "PRE-SEASON" || upper == "PRESEASON" || upper == "PS") {
-        roundLabel = "PS";
-      }
 
       // Opening Round → 0
       if (upper == "OPENING ROUND" || upper == "OR") {
@@ -98,10 +105,18 @@ class FixtureRepository {
       final String? matchId =
           idxMatchId != null ? _cellString(row, idxMatchId) : null;
 
-      final String preseasonRaw =
+      // Derive preseason flag
+      bool isPreseasonFromRound =
+          upper == "PRE-SEASON" ||
+          upper == "PRESEASON" ||
+          upper == "PS";
+
+      String preseasonRaw =
           idxIsPreseason != null ? _cellString(row, idxIsPreseason) : "";
-      final bool isPreseason =
+      bool isPreseasonFromColumn =
           preseasonRaw.toUpperCase() == "TRUE" || preseasonRaw == "1";
+
+      final bool isPreseason = isPreseasonFromColumn || isPreseasonFromRound;
 
       if (homeTeam.isEmpty || awayTeam.isEmpty) {
         print("⚠️ Skipping row $r (missing home/away team)");
@@ -121,7 +136,6 @@ class FixtureRepository {
       if (!isTbcDate) {
         parsedDate = _parseDateWithoutYear(dateText, defaultYear);
 
-        // Combine with time if available
         if (parsedDate != null && time.isNotEmpty) {
           parsedDate = _combineDateAndTime(parsedDate, time);
         }
@@ -130,11 +144,11 @@ class FixtureRepository {
       // -----------------------------
       // ROUND NUMBER PARSING
       // -----------------------------
-      final int roundNumber = _parseRound(roundLabel);
+      final int? roundNumber =
+          isPreseason ? null : _parseRound(roundLabel);
 
-      // 🔍 Debug print for this row
       print(
-        "ROW $r | RAW_ROUND='$originalRoundLabel' → NORM_ROUND='$roundLabel' → round=$roundNumber | "
+        "ROW $r | RAW_ROUND='$originalRoundLabel' → NORM_ROUND='$roundLabel' → round=${roundNumber ?? "null"} | "
         "DATE='$dateText' → $parsedDate | HOME='$homeTeam' AWAY='$awayTeam' | "
         "matchId='${matchId ?? ""}' isPreseason=$isPreseason",
       );
@@ -168,23 +182,13 @@ class FixtureRepository {
     return value?.toString().trim() ?? "";
   }
 
-  // -----------------------------
-  // ROUND PARSER (PS = -1, OR = 0)
-  // -----------------------------
   int _parseRound(String roundLabel) {
     final trimmed = roundLabel.trim().toUpperCase();
 
-    // Pre-Season
-    if (trimmed == "PS" || trimmed == "PRE-SEASON" || trimmed == "PRESEASON") {
-      return -1;
-    }
-
-    // Opening Round
     if (trimmed == "0" || trimmed == "OPENING ROUND" || trimmed == "OR") {
       return 0;
     }
 
-    // ROUND 1, ROUND 2, etc.
     final digitMatch = RegExp(r'(\d+)').firstMatch(trimmed);
     if (digitMatch != null) {
       return int.tryParse(digitMatch.group(1)!) ?? 0;
@@ -197,7 +201,6 @@ class FixtureRepository {
     final parts = text.trim().split(RegExp(r'\s+'));
     if (parts.length < 3) return null;
 
-    // Format: Wednesday February 25
     final month = _monthFromName(parts[1]);
     if (month == 0) return null;
 
@@ -269,24 +272,37 @@ class FixtureRepository {
   }
 
   // ---------------------------------------------------------------------------
-  // QUERY HELPERS (required by main.dart + game_view_screen.dart)
+  // QUERY HELPERS
   // ---------------------------------------------------------------------------
-  List<AflFixture> fixturesForRound(int round) {
-    return fixtures.where((f) => f.round == round).toList();
+  List<AflFixture> fixturesForRound(int? round) {
+    if (round == null) {
+      return fixtures.where((f) => f.isPreseason).toList();
+    }
+
+    return fixtures
+        .where((f) => !f.isPreseason && f.round == round)
+        .toList();
   }
 
   List<AflFixture> preseasonFixtures() {
-    return fixtures.where((f) => f.round == -1).toList();
+    return fixtures.where((f) => f.isPreseason).toList();
   }
 
   List<int> allSeasonRounds() {
-    final rounds = fixtures.map((f) => f.round).toSet().toList();
+    final rounds = fixtures
+        .where((f) => !f.isPreseason && f.round != null)
+        .map((f) => f.round!)
+        .toSet()
+        .toList();
+
     rounds.sort();
     return rounds;
   }
 
-  Future<void> refreshLiveScoresForRound(int round) async {
-    final roundFixtures = fixturesForRound(round);
+  Future<void> refreshLiveScoresForRound(int? round) async {
+    final roundFixtures = round == null
+        ? fixtures.where((f) => f.isPreseason).toList()
+        : fixturesForRound(round);
 
     for (final f in roundFixtures) {
       if (f.matchId != null && f.matchId!.isNotEmpty) {

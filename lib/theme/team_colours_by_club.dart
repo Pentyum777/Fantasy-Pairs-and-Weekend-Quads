@@ -12,11 +12,11 @@ class TeamColoursByClub {
       "bg": Color(0xFFa30046),
       "fg": Color(0xFFfdbe57),
     },
-    "CARL": {
+    "CAR": {
       "bg": Color(0xFF0e1e2d),
       "fg": Colors.white,
     },
-    "COLL": {
+    "COL": {
       "bg": Colors.black,
       "fg": Colors.white,
     },
@@ -28,11 +28,11 @@ class TeamColoursByClub {
       "bg": Color(0xFF2a1a54),
       "fg": Colors.white,
     },
-    "GEEL": {
+    "GEE": {
       "bg": Colors.white,
       "fg": Color(0xFF1c3c63),
     },
-    "GC": {
+    "GCS": {
       "bg": Color(0xFFd93e39),
       "fg": Color(0xFFffe600),
     },
@@ -44,19 +44,19 @@ class TeamColoursByClub {
       "bg": Color(0xFF4d2004),
       "fg": Color(0xFFfbbf15),
     },
-    "MELB": {
+    "MEL": {
       "fg": Color(0xFFcc2031),
       "bg": Color(0xFF0f1131),
     },
-    "NM": {
+    "NTH": {
       "bg": Color(0xFF013b9f),
       "fg": Colors.white,
     },
-    "PORT": {
+    "PTA": {
       "bg": Color(0xFF008AAB),
       "fg": Colors.black,
     },
-    "RICH": {
+    "RIC": {
       "bg": Colors.black,
       "fg": Color(0xFFfed102),
     },

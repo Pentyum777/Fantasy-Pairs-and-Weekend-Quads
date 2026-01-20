@@ -1,35 +1,23 @@
-import 'dart:convert';
-// ignore: deprecated_member_use
-import 'dart:html' as html;
-// ignore: deprecated_member_use
 import 'dart:js' as js;
+import 'dart:convert';
+import 'dart:async';
 
 class MsalService {
-  /// Listen for the msalToken event dispatched from msal.js
-  static void listenForToken(void Function(String token) onTokenReceived) {
-    html.window.addEventListener('msalToken', (event) {
-      final custom = event as html.CustomEvent;
-      final detail = custom.detail;
+  // Stream for delivering tokens to the app
+  static final _tokenStreamController = StreamController<String>.broadcast();
 
-      if (detail is String) {
-        onTokenReceived(detail);
-      } else {
-        print("MSAL(Dart): msalToken event received with non-string detail: $detail");
-      }
-    });
+  // Called by main.dart when JS dispatches the token event
+  static void receiveTokenFromJs(String token) {
+    _tokenStreamController.add(token);
   }
 
-  /// Trigger login in JS; token will come back via the msalToken event.
+  // App code listens here
+  static void listenForToken(void Function(String token) callback) {
+    _tokenStreamController.stream.listen(callback);
+  }
+
+  // Trigger login via JS
   static void startLogin(List<String> scopes) {
-    final scopesJson = jsonEncode(scopes);
-    print("MSAL(Dart): startLogin with $scopesJson");
-    js.context.callMethod('msalLogin', [scopesJson]);
-  }
-
-  /// Optional: trigger getToken (silent → popup) from Dart.
-  static void startGetToken(List<String> scopes) {
-    final scopesJson = jsonEncode(scopes);
-    print("MSAL(Dart): startGetToken with $scopesJson");
-    js.context.callMethod('msalGetToken', [scopesJson]);
+    js.context.callMethod('msalLogin', [jsonEncode(scopes)]);
   }
 }

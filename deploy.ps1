@@ -30,7 +30,6 @@ $timestamp = Get-Date -Format "yyyyMMddHHmmss"
 $versionHash = $timestamp
 Write-Host "Applying version hash: $versionHash"
 
-# IMPORTANT: DO NOT HASH AssetManifest.json / FontManifest.json
 $filesToHash = @(
     "flutter.js",
     "main.dart.js",
@@ -79,8 +78,9 @@ if (Test-Path $docsDir) {
     Remove-Item $docsDir -Recurse -Force
 }
 
-Write-Host "Copying build to /docs..."
-Copy-Item $webDir $docsDir -Recurse
+Write-Host "Creating /docs and copying build..."
+New-Item -ItemType Directory -Path $docsDir | Out-Null
+Copy-Item "$webDir\*" $docsDir -Recurse
 Write-Host "✅ Copied build to /docs."
 
 # ---------------------------------------------------------------------------
@@ -106,7 +106,7 @@ if (-not $msalCopied) {
 # 6. GIT COMMIT + PUSH
 # ---------------------------------------------------------------------------
 Write-Host "Committing and pushing to GitHub..."
-git add .
+git add docs
 git commit -m "Deploy $versionHash" --allow-empty
 git pull origin main
 git push origin main

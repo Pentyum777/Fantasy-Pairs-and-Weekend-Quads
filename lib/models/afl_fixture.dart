@@ -3,7 +3,7 @@ class AflFixture {
   final String roundLabel;
 
   /// Numeric round number (0 = Opening Round, 1..24 = normal rounds)
-  final int round;
+  final int? round;
 
   /// Parsed match date (nullable for TBC/TBA)
   final DateTime? date;

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../helpers/round_helper.dart';
+
 import '../models/punter_selection.dart';
 import '../models/player_pick.dart';
 
@@ -15,7 +17,10 @@ import 'championship_screen.dart';
 import 'custom_pairs_builder_screen.dart';
 
 class GameTypeSelectionScreen extends StatefulWidget {
+  /// null → Pre‑Season
+  /// int  → R0–R24
   final int? round;
+
   final FixtureRepository fixtureRepo;
   final PlayerRepository playerRepo;
   final PunterScoreService fantasyService;
@@ -80,6 +85,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
   }
 
   void _openGame(String type) {
+    // Championship
     if (type == "championship") {
       Navigator.push(
         context,
@@ -90,12 +96,13 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       return;
     }
 
+    // Custom Pairs Builder
     if (type == "custom_pairs") {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => CustomPairsBuilderScreen(
-            round: widget.round!,
+            round: widget.round, // null = Pre‑Season
             fixtureRepo: widget.fixtureRepo,
             playerRepo: widget.playerRepo,
             fantasyService: widget.fantasyService,
@@ -108,6 +115,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       return;
     }
 
+    // Standard game types
     late List<PunterSelection> selections;
 
     switch (type) {
@@ -137,7 +145,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => GameViewScreen(
-          round: widget.round ?? -1,
+          round: widget.round, // null = Pre‑Season
           gameType: type,
           selections: selections,
           fixtureRepo: widget.fixtureRepo,
@@ -187,9 +195,11 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       }
     }
 
+    final String roundLabel = RoundHelper.label(widget.round);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text("Round ${widget.round} – Select Game Type"),
+        title: Text("$roundLabel – Select Game Type"),
       ),
       body: Center(
         child: Padding(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/punter_selection.dart';
+import '../constants/ui_dimensions.dart';
 import 'shared_table_row.dart';
 
 class LeaderboardTable extends StatelessWidget {
@@ -21,8 +22,14 @@ class LeaderboardTable extends StatelessWidget {
     final sorted = [...punters]
       ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
 
+    // Final compact width
+    final totalWidth =
+        UIDimensions.rankColumnWidth +
+        UIDimensions.punterNameColumnWidth +
+        UIDimensions.totalColumnWidth;
+
     return Container(
-      width: 32 + 70 + 36, // compact fixed width
+      width: totalWidth,
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(8),
@@ -37,10 +44,11 @@ class LeaderboardTable extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // HEADER
             Container(
-              height: 26,
+              height: UIDimensions.headerHeight,
               decoration: BoxDecoration(
                 color: cs.surfaceVariant,
                 border: Border(
@@ -52,39 +60,39 @@ class LeaderboardTable extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  _headerCell(theme, "P", 32, alignCenter: true),
-                  _headerCell(theme, "Punter", 70, alignCenter: true),
-                  _headerCell(theme, "T", 36, alignCenter: true),
+                  _headerCell(theme, "P", UIDimensions.rankColumnWidth, alignCenter: true),
+                  _headerCell(theme, "Punter", UIDimensions.punterNameColumnWidth, alignCenter: true),
+                  _headerCell(theme, "T", UIDimensions.totalColumnWidth, alignCenter: true),
                 ],
               ),
             ),
 
-            // ROWS
-            Expanded(
-              child: ListView.builder(
-                itemCount: sorted.length,
-                itemBuilder: (context, index) {
-                  final p = sorted[index];
-                  final isWinner = p.isPrizeWinner;
+            // ROWS (shrink-wrapped, no expansion)
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: sorted.length,
+              itemBuilder: (context, index) {
+                final p = sorted[index];
+                final isWinner = p.isPrizeWinner;
 
-                  return Container(
-                    color: isWinner
-                        ? Colors.orange.withOpacity(0.25)
-                        : Colors.transparent,
-                    child: buildSharedTableRow(
-                      context: context,
-                      index: index,
-                      rowHeight: rowHeight,
-                      isInvalid: false,
-                      leftCell: _rankCell(context, index),
-                      middleCells: [
-                        _punterNameCell(context, p),
-                      ],
-                      rightCell: _scoreCell(context, p),
-                    ),
-                  );
-                },
-              ),
+                return Container(
+                  color: isWinner
+                      ? Colors.orange.withOpacity(0.25)
+                      : Colors.transparent,
+                  child: buildSharedTableRow(
+                    context: context,
+                    index: index,
+                    rowHeight: rowHeight,
+                    isInvalid: false,
+                    leftCell: _rankCell(context, index),
+                    middleCells: [
+                      _punterNameCell(context, p),
+                    ],
+                    rightCell: _scoreCell(context, p),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -121,7 +129,7 @@ class LeaderboardTable extends StatelessWidget {
   // ---------------------------------------------------------------------------
   Widget _rankCell(BuildContext context, int index) {
     return Container(
-      width: 32,
+      width: UIDimensions.rankColumnWidth,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
@@ -136,7 +144,7 @@ class LeaderboardTable extends StatelessWidget {
   // ---------------------------------------------------------------------------
   Widget _punterNameCell(BuildContext context, PunterSelection p) {
     return Container(
-      width: 70,
+      width: UIDimensions.punterNameColumnWidth,
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
@@ -152,7 +160,7 @@ class LeaderboardTable extends StatelessWidget {
   // ---------------------------------------------------------------------------
   Widget _scoreCell(BuildContext context, PunterSelection p) {
     return Container(
-      width: 36,
+      width: UIDimensions.totalColumnWidth,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(

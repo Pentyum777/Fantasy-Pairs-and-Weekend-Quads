@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../helpers/round_helper.dart';
 
 class RoundSelectionScreen extends StatelessWidget {
-  /// Main‑season rounds: 0–24
-  final List<int> rounds;
+  /// Main‑season rounds: null (PS), 0–24
+  final List<int?> rounds;
 
   /// Callback receives:
   ///   - null → Pre‑Season (PS)
@@ -21,17 +22,18 @@ class RoundSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Build identifiers: PS + R0–R24
-    final List<String> items = [];
+    // 🔥 DIAGNOSTIC PRINT — shows exactly what the UI is receiving
+    print("🔥 RoundSelectionScreen received rounds → $rounds");
 
-    // Always show Pre‑Season first if any preseason fixtures exist
-    items.add("PS");
+    // Build tokens directly from the rounds list
+    final List<String> items = rounds.map(RoundHelper.toToken).toList();
 
-    // Add main‑season rounds as R0, R1, ..., R24
-    items.addAll(rounds.map((r) => "R$r"));
+    // 🔥 NEW DIAGNOSTIC
+print("🔥 ITEMS LIST → $items");
+
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Select")),
+      appBar: AppBar(title: const Text("Select Round")),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -46,19 +48,22 @@ class RoundSelectionScreen extends StatelessWidget {
             ),
             itemCount: items.length,
             itemBuilder: (context, i) {
-              final label = items[i];
-
-              final bool isPreseason = label == "PS";
-
-              // For PS, round = null
-              final int? round =
-                  isPreseason ? null : int.parse(label.substring(1));
+              final token = items[i];
+              final int? round = RoundHelper.fromToken(token);
+              final bool isPreseason = RoundHelper.isPreseason(round);
 
               final bool isCompleted =
                   !isPreseason && completedRounds.contains(round);
 
+              // 🔥 DIAGNOSTIC PRINT — shows exactly which tile is wrong
+              print(
+                "RoundSelectionScreen → token='$token'  parsedRound=$round  isPreseason=$isPreseason",
+              );
+
               return GestureDetector(
-                onTap: () => onRoundSelected(round),
+                onTap: () {
+                  onRoundSelected(round);
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   alignment: Alignment.center,
@@ -75,14 +80,12 @@ class RoundSelectionScreen extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    isPreseason ? "Pre‑Season" : label,
+                    RoundHelper.label(round),
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: isCompleted
                           ? Colors.grey.shade800
-                          : Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant,
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),

@@ -1,31 +1,17 @@
 import 'dart:typed_data';
 import 'package:excel/excel.dart';
-import 'package:flutter/services.dart' show rootBundle;
 
 import '../models/afl_fixture.dart';
 
-class FixtureRepository {
-  final List<AflFixture> fixtures = [];
+class FixtureParser {
+  List<AflFixture> parse(Uint8List bytes) {
+    final List<AflFixture> fixtures = [];
 
-  // ---------------------------------------------------------------------------
-  // LOAD FIXTURES
-  // ---------------------------------------------------------------------------
-  Future<void> loadFixtures() async {
-    final bytesMain = await rootBundle.load('assets/afl_fixtures_2026.xlsx');
-    loadFromExcel(bytesMain.buffer.asUint8List());
-
-    // AFL.com.au score fetching will be added later.
-  }
-
-  // ---------------------------------------------------------------------------
-  // EXCEL PARSING
-  // ---------------------------------------------------------------------------
-  void loadFromExcel(Uint8List bytes) {
     final excel = Excel.decodeBytes(bytes);
-    if (excel.tables.isEmpty) return;
+    if (excel.tables.isEmpty) return fixtures;
 
     final sheet = excel.tables[excel.tables.keys.first];
-    if (sheet == null || sheet.rows.length <= 1) return;
+    if (sheet == null || sheet.rows.length <= 1) return fixtures;
 
     final headerRow = sheet.rows.first;
 
@@ -55,7 +41,7 @@ class FixtureRepository {
         idxAway == null ||
         idxVenue == null) {
       print("❌ Missing required columns in fixture sheet");
-      return;
+      return fixtures;
     }
 
     const int defaultYear = 2026;
@@ -63,13 +49,21 @@ class FixtureRepository {
     for (int r = 1; r < sheet.rows.length; r++) {
       final row = sheet.rows[r];
 
-      if (row.length < headerRow.length) {
-        print("⚠️ Skipping malformed row $r (not enough columns)");
-        continue;
-      }
+      if (row.length < headerRow.length) continue;
 
-      String roundLabel = _cellString(row, idxRound);
+      // -----------------------------
+      // ROUND LABEL
+      // -----------------------------
+      String roundLabel = _cellString(row, idxRound).trim();
       if (roundLabel.isEmpty) continue;
+
+      final originalRoundLabel = roundLabel;
+      final upper = roundLabel.toUpperCase();
+
+      // Opening Round → 0
+      if (upper == "OPENING ROUND" || upper == "OR") {
+        roundLabel = "0";
+      }
 
       final dateText = _cellString(row, idxDate);
       final homeTeam = _cellString(row, idxHome);
@@ -78,22 +72,29 @@ class FixtureRepository {
       final time = idxTime != null ? _cellString(row, idxTime) : "";
       final source = idxSource != null ? _cellString(row, idxSource) : "";
 
-      // NEW: matchId is now STRING
       final String? matchId =
           idxMatchId != null ? _cellString(row, idxMatchId) : null;
 
-      // NEW: preseason flag
+      // -----------------------------
+      // PRE‑SEASON DETECTION
+      // -----------------------------
+      final bool isPreseasonFromRound =
+          upper == "PRE-SEASON" ||
+          upper == "PRESEASON" ||
+          upper == "PS";
+
       final String preseasonRaw =
           idxIsPreseason != null ? _cellString(row, idxIsPreseason) : "";
-      final bool isPreseason =
+      final bool isPreseasonFromColumn =
           preseasonRaw.toUpperCase() == "TRUE" || preseasonRaw == "1";
 
-      if (homeTeam.isEmpty || awayTeam.isEmpty) {
-        print("⚠️ Skipping row $r (missing home/away team)");
-        continue;
-      }
+      final bool isPreseason = isPreseasonFromRound || isPreseasonFromColumn;
 
-      // Handle TBC/TBA/TBD dates
+      if (homeTeam.isEmpty || awayTeam.isEmpty) continue;
+
+      // -----------------------------
+      // DATE PARSING
+      // -----------------------------
       final upperDate = dateText.toUpperCase();
       final bool isTbcDate = dateText.trim().isEmpty ||
           upperDate.contains("TBC") ||
@@ -103,9 +104,23 @@ class FixtureRepository {
       DateTime? parsedDate;
       if (!isTbcDate) {
         parsedDate = _parseDateWithoutYear(dateText, defaultYear);
+
+        if (parsedDate != null && time.isNotEmpty) {
+          parsedDate = _combineDateAndTime(parsedDate, time);
+        }
       }
 
-      final int roundNumber = _parseRound(roundLabel);
+      // -----------------------------
+      // ROUND NUMBER PARSING
+      // -----------------------------
+      final int? roundNumber =
+          isPreseason ? null : _parseRound(roundLabel);
+
+      print(
+        "ROW $r | RAW_ROUND='$originalRoundLabel' → NORM_ROUND='$roundLabel' → round=${roundNumber ?? "null"} | "
+        "DATE='$dateText' → $parsedDate | HOME='$homeTeam' AWAY='$awayTeam' | "
+        "matchId='${matchId ?? ""}' isPreseason=$isPreseason",
+      );
 
       fixtures.add(
         AflFixture(
@@ -122,6 +137,8 @@ class FixtureRepository {
         ),
       );
     }
+
+    return fixtures;
   }
 
   // ---------------------------------------------------------------------------
@@ -137,7 +154,9 @@ class FixtureRepository {
   int _parseRound(String roundLabel) {
     final trimmed = roundLabel.trim().toUpperCase();
 
-    if (trimmed == "OPENING ROUND") return 0;
+    if (trimmed == "0" || trimmed == "OPENING ROUND" || trimmed == "OR") {
+      return 0;
+    }
 
     final digitMatch = RegExp(r'(\d+)').firstMatch(trimmed);
     if (digitMatch != null) {
@@ -157,6 +176,26 @@ class FixtureRepository {
     final day = int.tryParse(parts[2].replaceAll(RegExp(r'\D'), '')) ?? 1;
 
     return DateTime(year, month, day);
+  }
+
+  DateTime _combineDateAndTime(DateTime date, String timeText) {
+    final parts = timeText.split(RegExp(r'[:\s]'));
+    if (parts.length < 3) return date;
+
+    int hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts[1]) ?? 0;
+    final ampm = parts[2].toUpperCase();
+
+    if (ampm == "PM" && hour != 12) hour += 12;
+    if (ampm == "AM" && hour == 12) hour = 0;
+
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      hour,
+      minute,
+    );
   }
 
   int _monthFromName(String monthName) {
@@ -199,12 +238,5 @@ class FixtureRepository {
       default:
         return 0;
     }
-  }
-
-  // ---------------------------------------------------------------------------
-  // QUERY HELPERS
-  // ---------------------------------------------------------------------------
-  List<AflFixture> fixturesForRound(int round) {
-    return fixtures.where((f) => f.round == round).toList();
   }
 }

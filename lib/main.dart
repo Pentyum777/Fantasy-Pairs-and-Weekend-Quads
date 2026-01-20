@@ -1,4 +1,9 @@
+
+
 import 'package:flutter/material.dart';
+import 'dart:js' as js;
+import 'dart:js_util' as js_util;
+import 'package:js/js.dart';
 
 import 'services/msal_service.dart';
 
@@ -11,10 +16,24 @@ import 'services/user_role_service.dart';
 import 'screens/round_selection_screen.dart';
 import 'screens/game_type_selection_screen.dart';
 
-// ✅ Import the diagnostics widget (only once)
+@JS('onMsalToken')
+external set onMsalToken(void Function(String token) f);
 
 
 void main() {
+ 
+print("🔥🔥🔥 MAIN EXECUTED — VERSION 7");
+
+  onMsalToken = allowInterop((String token) {
+    MsalService.receiveTokenFromJs(token);
+  });
+
+  final pending = js_util.getProperty(js.context, '__pendingMsalToken');
+  if (pending != null) {
+    MsalService.receiveTokenFromJs(pending);
+    js_util.setProperty(js.context, '__pendingMsalToken', null);
+  }
+
   runApp(const MyApp());
 }
 
@@ -46,7 +65,6 @@ class _MyAppState extends State<MyApp> {
     fantasyService = PunterScoreService();
 
     playerRepo.loadPlayers();
-
     userRoleService.setRole(UserRole.admin);
 
     MsalService.listenForToken((token) {
@@ -64,65 +82,53 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'AFL App',
       theme: ThemeData(primarySwatch: Colors.blue),
-
-      // ------------------------------------------------------------
-      // VERSION 1: FORCE DIAGNOSTICS SCREEN
-      // ------------------------------------------------------------
       home: _token == null
-    ? LoginScreen(
-        onLoggedIn: (token) {
-          MsalService.startLogin(["User.Read"]);
-        },
-      )
-    : FutureBuilder(
-        future: _fixtureLoadFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
+          ? LoginScreen(
+              onLoggedIn: (token) {
+                MsalService.startLogin(["User.Read"]);
+              },
+            )
+          : FutureBuilder(
+              future: _fixtureLoadFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
 
-          final List<int> rounds = [];
+                final List<int?> rounds = [];
 
-          if (fixtureRepo.preseasonFixtures().isNotEmpty) {
-            rounds.add(-1);
-          }
+                if (fixtureRepo.preseasonFixtures().isNotEmpty) {
+                  rounds.add(null);
+                }
 
-          rounds.addAll(fixtureRepo.allSeasonRounds());
+                rounds.addAll(fixtureRepo.allSeasonRounds());
 
-          return RoundSelectionScreen(
-            rounds: rounds,
-            completedRounds: roundCompletionService.completedRounds,
-            onRoundSelected: (int? round) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => GameTypeSelectionScreen(
-                    round: round == -1 ? null : round,
-                    fixtureRepo: fixtureRepo,
-                    playerRepo: playerRepo,
-                    fantasyService: fantasyService,
-                    roundCompletionService: roundCompletionService,
-                    userRoleService: userRoleService,
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
+                // 🔥 CRITICAL DIAGNOSTIC
+                print("🔥 ROUNDS LIST (from main.dart) → $rounds");
 
-      // ------------------------------------------------------------
-      // NOTE:
-      // Your original login + fixture-loading flow is untouched.
-      // When you're done debugging, simply restore:
-      //
-      // home: _token == null
-      //     ? LoginScreen(...)
-      //     : FutureBuilder(...)
-      //
-      // ------------------------------------------------------------
+                return RoundSelectionScreen(
+                  rounds: rounds,
+                  completedRounds: roundCompletionService.completedRounds,
+                  onRoundSelected: (int? round) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GameTypeSelectionScreen(
+                          round: round,
+                          fixtureRepo: fixtureRepo,
+                          playerRepo: playerRepo,
+                          fantasyService: fantasyService,
+                          roundCompletionService: roundCompletionService,
+                          userRoleService: userRoleService,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
     );
   }
 }
@@ -141,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     setState(() => _loading = true);
-    widget.onLoggedIn(""); // triggers MSAL login
+    widget.onLoggedIn("");
   }
 
   @override

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../helpers/round_helper.dart';
+
 import '../models/punter_selection.dart';
 import '../models/player_pick.dart';
 import '../models/afl_fixture.dart';
@@ -11,11 +13,11 @@ import '../services/championship_service.dart';
 import '../services/round_completion_service.dart';
 import '../services/user_role_service.dart';
 
-import '../widgets/team_logo.dart';   // <-- unified logo widget
+import '../widgets/team_logo.dart';
 import 'game_view_screen.dart';
 
 class CustomPairsBuilderScreen extends StatefulWidget {
-  final int round;
+  final int? round;
   final FixtureRepository fixtureRepo;
   final PlayerRepository playerRepo;
   final PunterScoreService fantasyService;
@@ -40,12 +42,14 @@ class CustomPairsBuilderScreen extends StatefulWidget {
 }
 
 class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
-  /// matchId is now a String, so the selection set must also be String
   final Set<String> _selectedFixtureIds = {};
 
   @override
   Widget build(BuildContext context) {
-    final fixtures = widget.fixtureRepo.fixturesForRound(widget.round).toList();
+    final fixtures = widget.round == null
+    ? widget.fixtureRepo.preseasonFixtures()
+    : widget.fixtureRepo.fixturesForRound(widget.round!).toList();
+    final roundLabel = RoundHelper.label(widget.round);
 
     return Scaffold(
       appBar: AppBar(
@@ -59,7 +63,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
             child: Column(
               children: [
                 Text(
-                  "Select fixtures for Round ${widget.round}",
+                  "Select fixtures for $roundLabel",
                   style: Theme.of(context).textTheme.titleMedium,
                   textAlign: TextAlign.center,
                 ),
@@ -70,8 +74,6 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                     itemCount: fixtures.length,
                     itemBuilder: (context, index) {
                       final f = fixtures[index];
-
-                      print("FIXTURE TEAMS: '${f.homeTeam}' vs '${f.awayTeam}'");
 
                       final fixtureId = f.matchId ?? index.toString();
                       final selected = _selectedFixtureIds.contains(fixtureId);
@@ -170,19 +172,16 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
       return _selectedFixtureIds.contains(id);
     }).toList();
 
-    // Collect AFL-standard club codes
     final clubs = <String>{};
     for (final f in selectedFixtures) {
       clubs.add(f.homeTeam);
       clubs.add(f.awayTeam);
     }
 
-    // Filter players by AFL-standard club codes
     final players = widget.playerRepo.players
         .where((p) => clubs.contains(p.club))
         .toList();
 
-    // Build 25 punters with empty picks
     final selections = List.generate(
       25,
       (i) => PunterSelection(

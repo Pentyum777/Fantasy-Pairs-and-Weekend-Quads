@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import '../helpers/round_helper.dart';
+
 import '../repositories/fixture_repository.dart';
 import '../repositories/player_repository.dart';
 import '../services/punter_score_service.dart';
@@ -15,14 +17,14 @@ import '../models/punter_selection.dart';
 import '../models/afl_player_match_stats.dart';
 
 import '../widgets/punter_selection_table.dart';
-import '../widgets/leaderboard_table.dart';
 import '../widgets/stats_overlay.dart';
-import '../widgets/team_logo.dart';        // <-- ADDED (unified logo widget)
+import '../widgets/team_logo.dart';
+import '../widgets/leaderboard_panel.dart';
 
 import '../parsers/match_stats_parser.dart';
 
 class GameViewScreen extends StatefulWidget {
-  final int round;
+  final int? round;
   final String gameType;
   final List<PunterSelection> selections;
   final FixtureRepository fixtureRepo;
@@ -32,9 +34,7 @@ class GameViewScreen extends StatefulWidget {
   final RoundCompletionService roundCompletionService;
   final UserRoleService userRoleService;
 
-  // String IDs instead of int
   final List<String>? selectedFixtureIds;
-
   final List<AflPlayer>? overridePlayers;
 
   const GameViewScreen({
@@ -59,6 +59,8 @@ class GameViewScreen extends StatefulWidget {
 class _GameViewScreenState extends State<GameViewScreen> {
   int _visiblePunterCount = 10;
   bool _isCompleted = false;
+  
+    bool _leaderboardCollapsed = false;
 
   AflFixture? _selectedFixture;
   Timer? _liveTimer;
@@ -88,9 +90,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // FRIDAY PAIRS TRIGGER
-  // ---------------------------------------------------------------------------
   void _handleFridayPairsTrigger(AflFixture fixture) {
     if (widget.gameType != "friday_pairs") return;
     if (_fridayWinnerSelected) return;
@@ -110,9 +109,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // ROUND COMPLETION CHECK
-  // ---------------------------------------------------------------------------
   void _checkRoundCompletion() {
     final fixtures = widget.fixtureRepo.fixturesForRound(widget.round);
     if (fixtures.isEmpty) return;
@@ -123,9 +119,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // LIVE SCORES + STATS REFRESH
-  // ---------------------------------------------------------------------------
   Future<void> _refreshLiveScoresAndStats() async {
     try {
       await widget.fixtureRepo.refreshLiveScoresForRound(widget.round);
@@ -134,7 +127,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
       _checkRoundCompletion();
 
-      // matchId is stored as String, but MatchStatsParser expects an int
       final String? rawMatchId = _selectedFixture?.matchId;
       final int? matchId =
           rawMatchId != null ? int.tryParse(rawMatchId.trim()) : null;
@@ -147,9 +139,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
       }
 
       _checkAndCompleteWeekendQuadsRound();
-    } catch (_) {
-      // Silently ignore errors
-    }
+    } catch (_) {}
   }
 
   void _updateStatsAndPunterScores(List<AflPlayerMatchStats> stats) {
@@ -166,9 +156,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     setState(() {});
   }
-    // ---------------------------------------------------------------------------
-  // RESET SELECTIONS
-  // ---------------------------------------------------------------------------
   void _resetSelections() {
     if (widget.userRoleService.isReadOnly) return;
 
@@ -187,250 +174,288 @@ class _GameViewScreenState extends State<GameViewScreen> {
     _updateStatsAndPunterScores(_currentStatsByPlayerId.values.toList());
   }
 
-  // ---------------------------------------------------------------------------
-  // BUILD
-  // ---------------------------------------------------------------------------
   @override
-  Widget build(BuildContext context) {
-    final allFixtures = _fixturesForGameType();
+Widget build(BuildContext context) {
+  final allFixtures = _fixturesForGameType();
 
-    // Apply optional fixture filtering
-    var fixtures = allFixtures;
-    if (widget.selectedFixtureIds != null) {
-      fixtures = allFixtures.where((f) {
-        final id = f.matchId ?? allFixtures.indexOf(f).toString();
-        return widget.selectedFixtureIds!.contains(id);
-      }).toList();
-    }
+  var fixtures = allFixtures;
+  if (widget.selectedFixtureIds != null) {
+    fixtures = allFixtures.where((f) {
+      final id = f.matchId ?? allFixtures.indexOf(f).toString();
+      return widget.selectedFixtureIds!.contains(id);
+    }).toList();
+  }
 
-    // Default selected fixture
-    if (_selectedFixture == null && fixtures.isNotEmpty) {
-      _selectedFixture = fixtures.first;
-    }
+  if (_selectedFixture == null && fixtures.isNotEmpty) {
+    _selectedFixture = fixtures.first;
+  }
 
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 40, // Slim header
-        titleSpacing: 0,
-        title: Text(
-          _appBarTitle(),
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+  return Scaffold(
+    appBar: AppBar(
+      toolbarHeight: 40,
+      titleSpacing: 0,
+      title: Text(
+        _appBarTitle(),
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
         ),
       ),
-      body: Column(
-        children: [
-          // FIXTURE SCROLLER
-SizedBox(
-  height: 95,
-  child: fixtures.isEmpty
-      ? const Center(child: Text("No fixtures"))
-      : ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          itemCount: fixtures.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (context, i) {
-            final f = fixtures[i];
-            final selected = f == _selectedFixture;
+    ),
+    body: LayoutBuilder(
+      builder: (context, constraints) {
+        // keep content reasonably narrow on big desktop widths
+        final maxWidth = constraints.maxWidth.clamp(0.0, 1200.0);
 
-            _handleFridayPairsTrigger(f);
+        return Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 95,
+                  child: fixtures.isEmpty
+                      ? const Center(child: Text("No fixtures"))
+                      : ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 8,
+                          ),
+                          itemCount: fixtures.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 8),
+                          itemBuilder: (context, i) {
+                            final f = fixtures[i];
+                            final selected = f == _selectedFixture;
 
-            final homeScore = f.homeScore ?? 0;
-            final awayScore = f.awayScore ?? 0;
-            final homeWinning = homeScore > awayScore;
-            final awayWinning = awayScore > homeScore;
+                            _handleFridayPairsTrigger(f);
 
-            final quarterText = _quarterLabel(f);
-            final timeText = _formatTimeRemaining(f);
+                            final homeScore = f.homeScore ?? 0;
+                            final awayScore = f.awayScore ?? 0;
+                            final homeWinning = homeScore > awayScore;
+                            final awayWinning = awayScore > homeScore;
 
-            return GestureDetector(
-              onTap: () async {
-                setState(() => _selectedFixture = f);
+                            final quarterText = _quarterLabel(f);
+                            final timeText = _formatTimeRemaining(f);
 
-                // matchId is String?, parser expects int
-                final String? rawId = f.matchId;
-                final int? matchId =
-                    rawId != null ? int.tryParse(rawId.trim()) : null;
+                            return GestureDetector(
+                              onTap: () async {
+                                setState(() => _selectedFixture = f);
 
-                if (matchId != null) {
-                  final stats =
-                      await MatchStatsParser.fetchMatchStats(matchId);
+                                final String? rawId = f.matchId;
+                                final int? matchId = rawId != null
+                                    ? int.tryParse(rawId.trim())
+                                    : null;
 
-                  final homeTeam = f.homeTeam;
-                  final awayTeam = f.awayTeam;
+                                if (matchId != null) {
+                                  final stats =
+                                      await MatchStatsParser.fetchMatchStats(
+                                          matchId);
 
-                  final rowsA = stats
-                      .where((s) => s.team == homeTeam)
-                      .map(_mapStats)
-                      .toList();
+                                  final homeTeam = f.homeTeam;
+                                  final awayTeam = f.awayTeam;
 
-                  final rowsB = stats
-                      .where((s) => s.team == awayTeam)
-                      .map(_mapStats)
-                      .toList();
+                                  final rowsA = stats
+                                      .where((s) => s.team == homeTeam)
+                                      .map(_mapStats)
+                                      .toList();
 
-                  final bool noStats =
-                      stats.isEmpty && rowsA.isEmpty && rowsB.isEmpty;
+                                  final rowsB = stats
+                                      .where((s) => s.team == awayTeam)
+                                      .map(_mapStats)
+                                      .toList();
 
-                  const columns = [
-                    "Player",
-                    "AF",
-                    "K",
-                    "HB",
-                    "D",
-                    "M",
-                    "T",
-                    "G",
-                    "B",
-                  ];
+                                  final bool noStats = stats.isEmpty &&
+                                      rowsA.isEmpty &&
+                                      rowsB.isEmpty;
 
-                  showDialog(
-                    context: context,
-                    builder: (_) => StatsOverlay(
-                      leftTitle: homeTeam,
-                      rightTitle: awayTeam,
-                      leftRows: noStats ? [] : rowsA,
-                      rightRows: noStats ? [] : rowsB,
-                      columns: noStats ? [] : columns,
-                      noStatsMessage:
-                          noStats ? "No stats available yet" : null,
-                    ),
-                  );
+                                  const columns = [
+                                    "Player",
+                                    "AF",
+                                    "K",
+                                    "HB",
+                                    "D",
+                                    "M",
+                                    "T",
+                                    "G",
+                                    "B",
+                                  ];
 
-                  _updateStatsAndPunterScores(stats);
-                }
-              },
-              child: AnimatedScale(
-                scale: selected ? 1.03 : 1.0,
-                duration: const Duration(milliseconds: 150),
-                child: Container(
-                  width: 115,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(8),
-                    border: selected
-                        ? Border.all(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary,
-                            width: 2,
-                          )
-                        : null,
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.10),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            )
-                          ]
-                        : [],
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 4, horizontal: 6),
-                  child: Column(
-                    mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
-                        children: [
-                          TeamLogo(f.homeTeam, size: 26),
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: RichText(
-                                text: TextSpan(
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black,
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => StatsOverlay(
+                                      leftTitle: homeTeam,
+                                      rightTitle: awayTeam,
+                                      leftRows: noStats ? [] : rowsA,
+                                      rightRows: noStats ? [] : rowsB,
+                                      columns: noStats ? [] : columns,
+                                      noStatsMessage: noStats
+                                          ? "No stats available yet"
+                                          : null,
+                                    ),
+                                  );
+
+                                  _updateStatsAndPunterScores(stats);
+                                }
+                              },
+                              child: AnimatedScale(
+                                scale: selected ? 1.03 : 1.0,
+                                duration:
+                                    const Duration(milliseconds: 150),
+                                child: Container(
+                                  width: 115,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceVariant,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: selected
+                                        ? Border.all(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                            width: 2,
+                                          )
+                                        : null,
+                                    boxShadow: selected
+                                        ? [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withOpacity(0.10),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            )
+                                          ]
+                                        : [],
                                   ),
-                                  children: [
-                                    TextSpan(
-                                      text: "$homeScore",
-                                      style: TextStyle(
-                                        fontWeight: homeWinning
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                    horizontal: 6,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          TeamLogo(f.homeTeam, size: 26),
+                                          Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: RichText(
+                                                text: TextSpan(
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.black,
+                                                  ),
+                                                  children: [
+                                                    TextSpan(
+                                                      text: "$homeScore",
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            homeWinning
+                                                                ? FontWeight
+                                                                    .bold
+                                                                : FontWeight
+                                                                    .normal,
+                                                      ),
+                                                    ),
+                                                    const TextSpan(
+                                                        text: " – "),
+                                                    TextSpan(
+                                                      text: "$awayScore",
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            awayWinning
+                                                                ? FontWeight
+                                                                    .bold
+                                                                : FontWeight
+                                                                    .normal,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          TeamLogo(f.awayTeam, size: 26),
+                                        ],
                                       ),
-                                    ),
-                                    const TextSpan(text: " – "),
-                                    TextSpan(
-                                      text: "$awayScore",
-                                      style: TextStyle(
-                                        fontWeight: awayWinning
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
+                                      Text(
+                                        quarterText.isEmpty
+                                            ? timeText
+                                            : "$quarterText • $timeText",
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                          TeamLogo(f.awayTeam, size: 26),
-                        ],
-                      ),
-                      Text(
-                        quarterText.isEmpty
-                            ? timeText
-                            : "$quarterText • $timeText",
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
+                            );
+                          },
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
                 ),
-              ),
-            );
-          },
-        ),
-),
 
-const Divider(height: 1),
-          // MAIN CONTENT
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+                const Divider(height: 1),
+
                 Expanded(
-                  flex: 5,
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildPunterControls(context),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
+
                         Expanded(
-                          child: IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: PunterSelectionTable(
-                                    visiblePunterCount: _visiblePunterCount,
-                                    playersPerPunter:
-                                        widget.gameType == "weekend_quads"
-                                            ? 4
-                                            : 2,
-                                    availablePlayers:
-                                        widget.playerRepo.players,
-                                    selections: widget.selections,
-                                    isCompleted: _isCompleted,
-                                    readOnly:
-                                        widget.userRoleService.isReadOnly,
-                                    onChanged:
-                                        widget.userRoleService.isAdmin
+                          child: Row(
+                            children: [
+                              // LEFT — punter table
+                              Expanded(
+                                child: AnimatedContainer(
+                                  duration:
+                                      const Duration(milliseconds: 220),
+                                  curve: Curves.easeOut,
+                                  child: Builder(
+                                    builder: (context) {
+                                      final fixtures =
+                                          _fixturesForGameType();
+
+                                      final clubs = <String>{};
+                                      for (final f in fixtures) {
+                                        clubs.add(f.homeTeam);
+                                        clubs.add(f.awayTeam);
+                                      }
+
+                                      final availablePlayers =
+                                          widget.playerRepo.players
+                                              .where((p) =>
+                                                  clubs.contains(p.club))
+                                              .toList();
+
+                                      return PunterSelectionTable(
+                                        visiblePunterCount:
+                                            _visiblePunterCount,
+                                        playersPerPunter:
+                                            widget.gameType ==
+                                                    "weekend_quads"
+                                                ? 4
+                                                : 2,
+                                        availablePlayers: availablePlayers,
+                                        selections: widget.selections,
+                                        isCompleted: _isCompleted,
+                                        readOnly: widget
+                                            .userRoleService.isReadOnly,
+                                        onChanged: widget
+                                                .userRoleService.isAdmin
                                             ? () {
                                                 _updateStatsAndPunterScores(
                                                   _currentStatsByPlayerId
@@ -440,22 +465,62 @@ const Divider(height: 1),
                                                 setState(() {});
                                               }
                                             : null,
+                                      );
+                                    },
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 12),
-                                  child: LeaderboardTable(
+                              ),
+
+                              const SizedBox(width: 16),
+
+                              // RIGHT — leaderboard (fixed width-ish)
+                              if (!_leaderboardCollapsed)
+                                SizedBox(
+                                  width: 260,
+                                  child: LeaderboardPanel(
                                     punters: widget.selections
                                         .take(_visiblePunterCount)
                                         .toList(),
                                     rowHeight: 34,
+                                    onCollapseChanged: (collapsed) {
+                                      setState(() =>
+                                          _leaderboardCollapsed =
+                                              collapsed);
+                                    },
                                   ),
                                 ),
-                              ],
-                            ),
+                            ],
                           ),
                         ),
+
+                        if (!widget.userRoleService.isReadOnly)
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(top: 12),
+                            child: ElevatedButton(
+                              onPressed: _resetSelections,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    Colors.red.shade600,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                visualDensity:
+                                    VisualDensity.compact,
+                                minimumSize: const Size(0, 32),
+                              ),
+                              child: const Text(
+                                "Reset Selections",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -463,16 +528,14 @@ const Divider(height: 1),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
+        );
+      },
+    ),
+  );
+}
 
-  // ---------------------------------------------------------------------------
-  // REMOVED: _teamLogoSmallSized — no longer needed
-  // ---------------------------------------------------------------------------
 
-  Widget _buildPunterControls(BuildContext context) {
+    Widget _buildPunterControls(BuildContext context) {
     final theme = Theme.of(context);
 
     return Row(
@@ -482,7 +545,6 @@ const Divider(height: 1),
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(width: 8),
-
         DropdownButtonHideUnderline(
           child: DropdownButton<int>(
             value: _visiblePunterCount,
@@ -492,7 +554,8 @@ const Divider(height: 1),
                 .map(
                   (v) => DropdownMenuItem<int>(
                     value: v,
-                    child: Text("$v", style: theme.textTheme.bodyMedium),
+                    child: Text("$v",
+                        style: theme.textTheme.bodyMedium),
                   ),
                 )
                 .toList(),
@@ -504,33 +567,31 @@ const Divider(height: 1),
                 : null,
           ),
         ),
-
         const SizedBox(width: 16),
-
         ElevatedButton(
-          onPressed: widget.userRoleService.isAdmin ? _resetSelections : null,
+          onPressed:
+              widget.userRoleService.isAdmin ? _resetSelections : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red.shade600,
             foregroundColor: Colors.white,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 10, vertical: 4),
             visualDensity: VisualDensity.compact,
             minimumSize: const Size(0, 32),
           ),
           child: const Text(
             "Reset Selections",
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
           ),
         ),
       ],
     );
   }
-    // ---------------------------------------------------------------------------
-  // FIXTURE FILTERING
-  // ---------------------------------------------------------------------------
+
   List<AflFixture> _fixturesForGameType() {
-    // KEY CHANGE: if selectedFixtureIds is provided (PS mode),
-    // we must NOT filter by round; we start from all fixtures.
     final all = widget.selectedFixtureIds != null
         ? widget.fixtureRepo.fixtures
         : widget.fixtureRepo.fixturesForRound(widget.round);
@@ -568,9 +629,6 @@ const Divider(height: 1),
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // TIME + QUARTER HELPERS
-  // ---------------------------------------------------------------------------
   String _quarterLabel(AflFixture f) {
     if (f.complete) return "FT";
     return "";
@@ -582,9 +640,6 @@ const Divider(height: 1),
     return "--:--";
   }
 
-  // ---------------------------------------------------------------------------
-  // WEEKEND QUADS → CHAMPIONSHIP
-  // ---------------------------------------------------------------------------
   void _checkAndCompleteWeekendQuadsRound() {
     if (widget.gameType != "weekend_quads") return;
     if (_isCompleted) return;
@@ -608,12 +663,10 @@ const Divider(height: 1),
 
     widget.championshipService.addRound(month, widget.selections);
 
-    debugPrint("🏆 Weekend Quads round completed and recorded for $month");
+    debugPrint(
+        "🏆 Weekend Quads round completed and recorded for $month");
   }
 
-  // ---------------------------------------------------------------------------
-  // MONTH NAME HELPER
-  // ---------------------------------------------------------------------------
   String _monthName(int m) {
     const names = [
       "January",
@@ -632,9 +685,6 @@ const Divider(height: 1),
     return names[m - 1];
   }
 
-  // ---------------------------------------------------------------------------
-  // GAME TYPE LABELS + APP BAR TITLE
-  // ---------------------------------------------------------------------------
   String _gameTypeLabel() {
     switch (widget.gameType) {
       case "thursday_pairs":
@@ -645,7 +695,7 @@ const Divider(height: 1),
         return "Saturday Pairs";
       case "sunday_pairs":
         return "Sunday Pairs";
-      case "monday_pairs":
+            case "monday_pairs":
         return "Monday Pairs";
       case "weekend_quads":
         return "Weekend Quads";
@@ -657,12 +707,10 @@ const Divider(height: 1),
   }
 
   String _appBarTitle() {
-    return "Round ${widget.round} • ${_gameTypeLabel()}";
+    final roundLabel = RoundHelper.label(widget.round);
+    return "$roundLabel • ${_gameTypeLabel()}";
   }
 
-  // ---------------------------------------------------------------------------
-  // MAP STATS → TABLE ROW
-  // ---------------------------------------------------------------------------
   Map<String, dynamic> _mapStats(AflPlayerMatchStats s) {
     return {
       "Player": s.player.name,

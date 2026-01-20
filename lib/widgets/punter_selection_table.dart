@@ -9,6 +9,7 @@ import '../models/afl_player.dart';
 import '../models/punter_selection.dart';
 import '../models/player_pick.dart';
 import '../theme/team_colours_by_club.dart';
+import '../constants/ui_dimensions.dart';
 
 class PunterSelectionTable extends StatefulWidget {
   final int visiblePunterCount;
@@ -39,12 +40,12 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
   // LAYOUT CONSTANTS
   // ---------------------------------------------------------------------------
-  static const double rowHeight = 34.0;
-  static const double headerHeight = 26.0;
+  static const double headerHeight = UIDimensions.headerHeight;
+static const double rowHeight = UIDimensions.rowHeight;
 
   double punterColWidth = 80.0;
   double pickColWidth = 185.0; // widened
-  static const double totalColWidth = 40.0;
+  static const double totalColWidth = UIDimensions.totalColumnWidth;
 
   // ---------------------------------------------------------------------------
   // CONTROLLERS
@@ -417,112 +418,110 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
   // BUILD
   // ---------------------------------------------------------------------------
-  @override
-  Widget build(BuildContext context) {
-    _cleanInvalidSelectionsGlobal();
+@override
+Widget build(BuildContext context) {
+  _cleanInvalidSelectionsGlobal();
 
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    final visible = widget.selections.take(_punterCount).toList();
+  final visible = widget.selections.take(_punterCount).toList();
 
-    final minWidth =
-        punterColWidth + _roundCount * pickColWidth + totalColWidth;
+  final minWidth =
+      punterColWidth + _roundCount * pickColWidth + totalColWidth;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final tableWidth =
-            constraints.maxWidth < minWidth ? minWidth : constraints.maxWidth;
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final tableWidth =
+          constraints.maxWidth < minWidth ? minWidth : constraints.maxWidth;
 
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Column(
-              children: [
-                // HEADER
-                SingleChildScrollView(
-                  controller: _horizontalScrollController,
-                  scrollDirection: Axis.horizontal,
-                  child: SizedBox(
-                    width: tableWidth,
-                    child: _buildHeaderRow(theme),
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SingleChildScrollView(
+            controller: _horizontalScrollController,
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: tableWidth,
+              child: Column(
+                children: [
+                  // HEADER (no separate horizontal scroll)
+                  _buildHeaderRow(theme),
+
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: cs.outlineVariant,
                   ),
-                ),
 
-                Divider(height: 1, thickness: 1, color: cs.outlineVariant),
+                  // BODY
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _verticalScrollController,
+                      itemCount: visible.length,
+                      itemBuilder: (context, index) {
+                        final row = visible[index];
+                        final isStriped = index.isOdd;
+                        final invalid = _hasAnyGlobalDuplicate();
 
-                // BODY
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _horizontalScrollController,
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: tableWidth,
-                      child: ListView.builder(
-                        controller: _verticalScrollController,
-                        itemCount: visible.length,
-                        itemBuilder: (context, index) {
-                          final row = visible[index];
-                          final isStriped = index.isOdd;
-                          final invalid = _hasAnyGlobalDuplicate();
+                        Color bg;
+                        if (invalid) {
+                          bg = Colors.red.withOpacity(0.06);
+                        } else if (isStriped) {
+                          bg = cs.surfaceVariant.withOpacity(0.25);
+                        } else {
+                          bg = cs.surface;
+                        }
 
-                          Color bg;
-                          if (invalid) {
-                            bg = Colors.red.withOpacity(0.06);
-                          } else if (isStriped) {
-                            bg = cs.surfaceVariant.withOpacity(0.25);
-                          } else {
-                            bg = cs.surface;
-                          }
-
-                          return Container(
-                            height: rowHeight,
-                            decoration: BoxDecoration(
-                              color: bg,
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: cs.outlineVariant.withOpacity(0.6),
-                                  width: 0.5,
-                                ),
+                        return Container(
+                          height: rowHeight,
+                          decoration: BoxDecoration(
+                            color: bg,
+                            border: Border(
+                              bottom: BorderSide(
+                                color: cs.outlineVariant.withOpacity(0.6),
+                                width: 0.5,
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                _punterCell(context, row),
-                                if (!_isMobile) _resizeHandlePunter(() {}),
+                          ),
+                          child: Row(
+                            children: [
+                              _punterCell(context, row),
+                              if (!_isMobile) _resizeHandlePunter(() {}),
 
-                                for (final pick in row.picks) ...[
-                                  _pickCell(context, row, pick),
-                                  if (!_isMobile) _resizeHandle(() {}),
-                                ],
-
-                                _totalCell(context, row),
+                              for (final pick in row.picks) ...[
+                                _pickCell(context, row, pick),
+                                if (!_isMobile) _resizeHandle(() {}),
                               ],
-                            ),
-                          );
-                        },
-                      ),
+
+                              _totalCell(context, row),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
+
 
   // ---------------------------------------------------------------------------
   // PUNTER CELL (LEFT‑ALIGNED)
@@ -563,6 +562,9 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   // ---------------------------------------------------------------------------
+  // PICK CELL (GLOBAL UNIQUENESS + HIDE ARROW WHEN SELECTED)
+  // ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
   // PICK CELL (GLOBAL UNIQUENESS + HIDE ARROW WHEN SELECTED)
   // ---------------------------------------------------------------------------
   Widget _pickCell(
@@ -623,89 +625,71 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       colIndex: colIndex,
     );
 
-    final hintText = selectedPlayer == null
-        ? "P$globalPickNumber"
-        : selectedPlayer.shortName;
+    final hintText =
+        selectedPlayer == null ? "P$globalPickNumber" : selectedPlayer.shortName;
 
     return Container(
       width: pickColWidth,
       padding: const EdgeInsets.symmetric(horizontal: 2),
-      alignment: Alignment.centerLeft,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: isCurrentPick ? cs.primary.withOpacity(0.08) : Colors.transparent,
       ),
       child: Row(
         children: [
           Expanded(
-  child: DropdownSearch<AflPlayer>(
-    enabled: !widget.isCompleted,
-    selectedItem: selectedPlayer,
-    items: filteredPlayers,
-    itemAsString: (p) => p.shortName,
-
-    dropdownDecoratorProps: DropDownDecoratorProps(
-      dropdownSearchDecoration: InputDecoration(
-        isDense: true,
-        border: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        suffixIcon: selectedPlayer == null
-            ? const Icon(Icons.arrow_drop_down)
-            : null, // HIDE ARROW
-      ),
-    ),
-
-    dropdownBuilder: (context, player) {
-      if (player == null) {
-        return Text(
-          hintText,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
+            child: DropdownSearch<AflPlayer>(
+              enabled: !widget.isCompleted,
+              selectedItem: selectedPlayer,
+              items: filteredPlayers,
+              itemAsString: (p) => p.shortName,
+              dropdownDecoratorProps: DropDownDecoratorProps(
+                dropdownSearchDecoration: InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  suffixIcon: selectedPlayer == null
+                      ? const Icon(Icons.arrow_drop_down)
+                      : null, // hide arrow when selected
+                ),
+              ),
+              dropdownBuilder: (context, player) {
+                if (player == null) {
+                  return Center(
+                    child: Text(
+                      hintText,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  );
+                }
+                final colours = _getTeamColoursForPlayer(player);
+                return Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colours["bg"]?.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      player.shortName,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colours["fg"],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                );
+              },
+              // keep your popupProps + onChanged here if you had them
+            ),
           ),
-        );
-      }
-      final colours = _getTeamColoursForPlayer(player);
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: colours["bg"]?.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          player.shortName,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: colours["fg"],
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
-    },
-
-    popupProps: PopupProps.menu(
-      showSearchBox: true,
-      fit: FlexFit.loose,
-      searchFieldProps: TextFieldProps(
-        decoration: const InputDecoration(
-          hintText: "Search players...",
-          isDense: true,
-          contentPadding: EdgeInsets.all(8),
-        ),
-      ),
-    ),
-
-    onChanged: (value) {
-      owner.picks[colIndex].player = value;
-      owner.picks[colIndex].score = value?.fantasyScore ?? 0;
-      widget.onChanged?.call();
-      setState(() {
-        _saveSnapshot();
-      });
-      _scrollToCurrentPick();
-    },
-  ),
-),
-
-          // SCORE DISPLAY
           if (selectedPlayer != null)
             Padding(
               padding: const EdgeInsets.only(left: 4),
@@ -789,7 +773,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     });
     widget.onChanged?.call();
   }
-}
+} // <-- closes _PunterSelectionTableState
 
 // -----------------------------------------------------------------------------
 // SNAPSHOT MODEL
