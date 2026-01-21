@@ -3,12 +3,14 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "04190428fdd402422d933c99d8245743",
-"assets/AssetManifest.bin.json": "15831781e81235d2a1dde417cfb71352",
-"assets/AssetManifest.json": "6ade325edb0d1b945beb2ea4be089ded",
-"assets/assets/afl_fixtures_2025_round_24.xlsx": "60c937b2f2f2603ad741222e7a019a73",
+const RESOURCES = {"assets/AssetManifest.bin": "0250fe103a44fd8d5f55d2ca68be70c5",
+"assets/AssetManifest.bin.json": "13d9b4a82c07aa4bef5bfb0b8ae02f91",
+"assets/AssetManifest.json": "fdc9f90ae70d6304530d7bac6fa774d9",
+"assets/assets/afl_fixtures_2025_round_24.xlsx": "7bd23b43169c4f87c0849841d10b59b6",
 "assets/assets/afl_fixtures_2026.xlsx": "5e35664b0d8a2509975b112f291b0978",
-"assets/assets/afl_players_2026.json": "f5fd39afa633c0192a37ff552133621b",
+"assets/assets/afl_players_2025.json": "7ff132878b0ef0220178647dea1cedfa",
+"assets/assets/afl_players_2025.xlsx": "c578d298ece2622982c100c89efd7b2f",
+"assets/assets/afl_players_2026.json": "012efc92e4ddde0f6fe0c13c8a472ae1",
 "assets/assets/afl_players_2026.xlsx": "b5908c09c4b183ffbf34afaec0e18351",
 "assets/assets/logos/ADE.png": "f679f7f635a719736bc85619958f4eac",
 "assets/assets/logos/BRI.png": "a62077041e9aa07ac9ac03625d267489",
