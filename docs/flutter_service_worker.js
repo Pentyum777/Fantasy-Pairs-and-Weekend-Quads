@@ -3,9 +3,9 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "a47fe9e79748e56831b538f1320111fc",
-"assets/AssetManifest.bin.json": "ee1b229c51502556a05951bf42adca76",
-"assets/AssetManifest.json": "9483b554ce2c6515a36bc59b99303d46",
+const RESOURCES = {"assets/AssetManifest.bin": "e8d8765f86f52bebdb80cfa8f078808f",
+"assets/AssetManifest.bin.json": "841258464105999766e990e9ade9e5d7",
+"assets/AssetManifest.json": "963374e7012a536441ab04d115f1728d",
 "assets/assets/afl_fixtures_2025_round_24.xlsx": "60c937b2f2f2603ad741222e7a019a73",
 "assets/assets/afl_fixtures_2026.xlsx": "5e35664b0d8a2509975b112f291b0978",
 "assets/assets/afl_players_2026.json": "f5fd39afa633c0192a37ff552133621b",
@@ -18,12 +18,12 @@ const RESOURCES = {"assets/AssetManifest.bin": "a47fe9e79748e56831b538f1320111fc
 "assets/assets/logos/FRE.png": "a48483ec82df22c3062fcc04a76c8043",
 "assets/assets/logos/GCS.png": "08ac1adbad6b043337701f9589cedce3",
 "assets/assets/logos/GEE.png": "080f81a9f452b075e25b8f128726088d",
-"assets/assets/logos/GWS_Giants.png": "86a10c0ac46c87bf7c25ff79e6748ff6",
+"assets/assets/logos/GWS%2520Giants.png": "86a10c0ac46c87bf7c25ff79e6748ff6",
 "assets/assets/logos/HAW.png": "a7b6da2ec9c4ade79e558ad3c52b3b64",
 "assets/assets/logos/MELB.png": "9f360259f4cf06ce34ddcbb8ba00fd1c",
 "assets/assets/logos/NTH.png": "71fddf414973c7245dfdec2c58780f67",
 "assets/assets/logos/PTA.png": "b56569459326c94903b9277dcf3eb7ca",
-"assets/assets/logos/RIC.png": "4da89a6bacc73b73fe772a28e3be6bdc",
+"assets/assets/logos/RICH.png": "4da89a6bacc73b73fe772a28e3be6bdc",
 "assets/assets/logos/STK.png": "3efc3828dc17812021e99e5107c3190b",
 "assets/assets/logos/SYD.png": "0a5c1a3e03198ddd4951aa2422922dd6",
 "assets/assets/logos/WB.png": "873715efc04a06c2cdc679a34be132d5",
@@ -48,7 +48,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "a47fe9e79748e56831b538f1320111fc
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
 "index.html": "ff5cb34dc688fa8e3e1cc12bc1a60d74",
 "/": "ff5cb34dc688fa8e3e1cc12bc1a60d74",
-"main.dart.js": "33acfd2b5cc02dc2882a7456933ca74c",
+"main.dart.js": "4d6ea3688926e3ae53f0588db66bf439",
 "manifest.json": "18b05de58f5aeed2ffa6be1246cc43f1",
 "msal.js": "7dd4ad38d883c25e5652b5e7b00bbfe9",
 "version.json": "b0d2ea9d293a4ff4175362a67375b4a4"};
