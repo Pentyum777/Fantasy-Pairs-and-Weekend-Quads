@@ -3,9 +3,9 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "e8d8765f86f52bebdb80cfa8f078808f",
-"assets/AssetManifest.bin.json": "841258464105999766e990e9ade9e5d7",
-"assets/AssetManifest.json": "963374e7012a536441ab04d115f1728d",
+const RESOURCES = {"assets/AssetManifest.bin": "9b9f29a8865bdf8082ca662eccd4e4c5",
+"assets/AssetManifest.bin.json": "dea6d1fcf31eb5dee95011a82ee4bf30",
+"assets/AssetManifest.json": "32a2935001f8338c9b8e71081f6fe27e",
 "assets/assets/afl_fixtures_2025_round_24.xlsx": "60c937b2f2f2603ad741222e7a019a73",
 "assets/assets/afl_fixtures_2026.xlsx": "5e35664b0d8a2509975b112f291b0978",
 "assets/assets/afl_players_2026.json": "f5fd39afa633c0192a37ff552133621b",
@@ -18,7 +18,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "e8d8765f86f52bebdb80cfa8f078808f
 "assets/assets/logos/FRE.png": "075a2fe11f6b592e1f0bf8b168d02797",
 "assets/assets/logos/GCS.png": "c297c637f25701d3ddbf5ebff4b6c083",
 "assets/assets/logos/GEE.png": "0adb22ee3f2c3df5053d9799545fb06e",
-"assets/assets/logos/GWS%2520Giants.png": "48b1fdf99f96033a8b57b2bc0745e0e1",
+"assets/assets/logos/GWS%2520Giant.png": "48b1fdf99f96033a8b57b2bc0745e0e1",
 "assets/assets/logos/HAW.png": "61babe9b37c530693a8f203f57c052d0",
 "assets/assets/logos/MELB.png": "c3bfff8ae1c1f07eb1ba455c5b0e8727",
 "assets/assets/logos/NTH.png": "3fd5899156017d35ebef537d8cb3b5d6",
