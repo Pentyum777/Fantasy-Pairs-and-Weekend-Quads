@@ -50,7 +50,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "0250fe103a44fd8d5f55d2ca68be70c5
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
 "index.html": "ff5cb34dc688fa8e3e1cc12bc1a60d74",
 "/": "ff5cb34dc688fa8e3e1cc12bc1a60d74",
-"main.dart.js": "d41c6a2c9ef480ef5545dfb58fdc8622",
+"main.dart.js": "9fc51f365c6124aa12e594fb77f47418",
 "manifest.json": "18b05de58f5aeed2ffa6be1246cc43f1",
 "msal.js": "7dd4ad38d883c25e5652b5e7b00bbfe9",
 "version.json": "b0d2ea9d293a4ff4175362a67375b4a4"};
