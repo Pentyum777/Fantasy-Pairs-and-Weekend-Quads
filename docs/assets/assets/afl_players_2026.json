@@ -1,0 +1,5427 @@
+[
+  {
+    "id": "Chayce Jones",
+    "name": "Chayce Jones",
+    "club": "ADE",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Ben Keays",
+    "name": "Ben Keays",
+    "club": "ADE",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Sam Berry",
+    "name": "Sam Berry",
+    "club": "ADE",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Dan Curtin",
+    "name": "Dan Curtin",
+    "club": "ADE",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Riley Thilthorpe",
+    "name": "Riley Thilthorpe",
+    "club": "ADE",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Josh Rachele",
+    "name": "Josh Rachele",
+    "club": "ADE",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Nick Murray",
+    "name": "Nick Murray",
+    "club": "ADE",
+    "guernseyNumber": 9,
+    "season": 2026
+  },
+  {
+    "id": "Luke Pedlar",
+    "name": "Luke Pedlar",
+    "club": "ADE",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Edwards",
+    "name": "Charlie Edwards",
+    "club": "ADE",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Jordan Dawson",
+    "name": "Jordan Dawson",
+    "club": "ADE",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Taylor Walker",
+    "name": "Taylor Walker",
+    "club": "ADE",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Jake Soligo",
+    "name": "Jake Soligo",
+    "club": "ADE",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Brayden Cook",
+    "name": "Brayden Cook",
+    "club": "ADE",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Max Michalanney",
+    "name": "Max Michalanney",
+    "club": "ADE",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Tyler Welsh",
+    "name": "Tyler Welsh",
+    "club": "ADE",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Zac Taylor",
+    "name": "Zac Taylor",
+    "club": "ADE",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Hinge",
+    "name": "Mitch Hinge",
+    "club": "ADE",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Oscar Ryan",
+    "name": "Oscar Ryan",
+    "club": "ADE",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Izak Rankine",
+    "name": "Izak Rankine",
+    "club": "ADE",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Josh Worrell",
+    "name": "Josh Worrell",
+    "club": "ADE",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "James Peatling",
+    "name": "James Peatling",
+    "club": "ADE",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Luke Nankervis",
+    "name": "Luke Nankervis",
+    "club": "ADE",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Alex Neal-Bullen",
+    "name": "Alex Neal-Bullen",
+    "club": "ADE",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Rory Laird",
+    "name": "Rory Laird",
+    "club": "ADE",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Wayne Milera",
+    "name": "Wayne Milera",
+    "club": "ADE",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Billy Dowling",
+    "name": "Billy Dowling",
+    "club": "ADE",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Fogarty",
+    "name": "Darcy Fogarty",
+    "club": "ADE",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Sid Draper",
+    "name": "Sid Draper",
+    "club": "ADE",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "James Borlase",
+    "name": "James Borlase",
+    "club": "ADE",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Sholl",
+    "name": "Lachlan Sholl",
+    "club": "ADE",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Toby Murray",
+    "name": "Toby Murray",
+    "club": "ADE",
+    "guernseyNumber": 39,
+    "season": 2026
+  },
+  {
+    "id": "Hugh Bond",
+    "name": "Hugh Bond",
+    "club": "ADE",
+    "guernseyNumber": 40,
+    "season": 2026
+  },
+  {
+    "id": "Jordon Butts",
+    "name": "Jordon Butts",
+    "club": "ADE",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan McAndrew",
+    "name": "Lachlan McAndrew",
+    "club": "ADE",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Reilly O'Brien",
+    "name": "Reilly O'Brien",
+    "club": "ADE",
+    "guernseyNumber": 43,
+    "season": 2026
+  },
+  {
+    "id": "Isaac Cumming",
+    "name": "Isaac Cumming",
+    "club": "ADE",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Mark Keane",
+    "name": "Mark Keane",
+    "club": "ADE",
+    "guernseyNumber": 48,
+    "season": 2026
+  },
+  {
+    "id": "Callum Ah Chee",
+    "name": "Callum Ah Chee",
+    "club": "ADE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Archie Ludowyke",
+    "name": "Archie Ludowyke",
+    "club": "ADE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Mitchell Marsh",
+    "name": "Mitchell Marsh",
+    "club": "ADE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Finnbar Maley",
+    "name": "Finnbar Maley",
+    "club": "ADE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Kai Lohmann",
+    "name": "Kai Lohmann",
+    "club": "",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jaspa Fletcher",
+    "name": "Jaspa Fletcher",
+    "club": "",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Josh Dunkley",
+    "name": "Josh Dunkley",
+    "club": "",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Hugh McCluggage",
+    "name": "Hugh McCluggage",
+    "club": "",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Jarrod Berry",
+    "name": "Jarrod Berry",
+    "club": "",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Will Ashcroft",
+    "name": "Will Ashcroft",
+    "club": "",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Neale",
+    "name": "Lachie Neale",
+    "club": "",
+    "guernseyNumber": 9,
+    "season": 2026
+  },
+  {
+    "id": "Levi Ashcroft",
+    "name": "Levi Ashcroft",
+    "club": "",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Lincoln McCarthy",
+    "name": "Lincoln McCarthy",
+    "club": "",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Tom Doedee",
+    "name": "Tom Doedee",
+    "club": "",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Logan Morris",
+    "name": "Logan Morris",
+    "club": "",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Dayne Zorko",
+    "name": "Dayne Zorko",
+    "club": "",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Cam Rayner",
+    "name": "Cam Rayner",
+    "club": "",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Luke Beecken",
+    "name": "Luke Beecken",
+    "club": "",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Keidean Coleman",
+    "name": "Keidean Coleman",
+    "club": "",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Luke Lloyd",
+    "name": "Luke Lloyd",
+    "club": "",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Sam Marshall",
+    "name": "Sam Marshall",
+    "club": "",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Zane Zakostelsky",
+    "name": "Zane Zakostelsky",
+    "club": "",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Ty Gallop",
+    "name": "Ty Gallop",
+    "club": "",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Cameron",
+    "name": "Charlie Cameron",
+    "club": "",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Henry Smith",
+    "name": "Henry Smith",
+    "club": "",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Conor McKenna",
+    "name": "Conor McKenna",
+    "club": "",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Gardiner",
+    "name": "Darcy Gardiner",
+    "club": "",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Will McLachlan",
+    "name": "Will McLachlan",
+    "club": "",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "James Tunstill",
+    "name": "James Tunstill",
+    "club": "",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Eric Hipwood",
+    "name": "Eric Hipwood",
+    "club": "",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Harris Andrews",
+    "name": "Harris Andrews",
+    "club": "",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Fort",
+    "name": "Darcy Fort",
+    "club": "",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Zac Bailey",
+    "name": "Zac Bailey",
+    "club": "",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Shadeau Brain",
+    "name": "Shadeau Brain",
+    "club": "",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Ryan Lester",
+    "name": "Ryan Lester",
+    "club": "",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Reece Torrent",
+    "name": "Reece Torrent",
+    "club": "",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Bruce Reville",
+    "name": "Bruce Reville",
+    "club": "",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Jack Payne",
+    "name": "Jack Payne",
+    "club": "",
+    "guernseyNumber": 40,
+    "season": 2026
+  },
+  {
+    "id": "Darragh Joyce",
+    "name": "Darragh Joyce",
+    "club": "",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Noah Answerth",
+    "name": "Noah Answerth",
+    "club": "",
+    "guernseyNumber": 43,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Wilmot",
+    "name": "Darcy Wilmot",
+    "club": "",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Koby Evans",
+    "name": "Koby Evans",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Daniel Annable",
+    "name": "Daniel Annable",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Tai Hayes",
+    "name": "Tai Hayes",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Cody Curtin",
+    "name": "Cody Curtin",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sam Draper",
+    "name": "Sam Draper",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Oscar Allen",
+    "name": "Oscar Allen",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Cowan",
+    "name": "Lachie Cowan",
+    "club": "CAR",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Jesse Motlop",
+    "name": "Jesse Motlop",
+    "club": "CAR",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Oliver Hollands",
+    "name": "Oliver Hollands",
+    "club": "CAR",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Adam Cerra",
+    "name": "Adam Cerra",
+    "club": "CAR",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Zac Williams",
+    "name": "Zac Williams",
+    "club": "CAR",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Jagga Smith",
+    "name": "Jagga Smith",
+    "club": "CAR",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Fogarty",
+    "name": "Lachlan Fogarty",
+    "club": "CAR",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Cripps",
+    "name": "Patrick Cripps",
+    "club": "CAR",
+    "guernseyNumber": 9,
+    "season": 2026
+  },
+  {
+    "id": "Harry McKay",
+    "name": "Harry McKay",
+    "club": "CAR",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Mitch McGovern",
+    "name": "Mitch McGovern",
+    "club": "CAR",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Blake Acres",
+    "name": "Blake Acres",
+    "club": "CAR",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Ben Camporeale",
+    "name": "Ben Camporeale",
+    "club": "CAR",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Brodie Kemp",
+    "name": "Brodie Kemp",
+    "club": "CAR",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Sam Walsh",
+    "name": "Sam Walsh",
+    "club": "CAR",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Lucas Camporeale",
+    "name": "Lucas Camporeale",
+    "club": "CAR",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Harry O'Farrell",
+    "name": "Harry O'Farrell",
+    "club": "CAR",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Weitering",
+    "name": "Jacob Weitering",
+    "club": "CAR",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Nic Newman",
+    "name": "Nic Newman",
+    "club": "CAR",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Nick Haynes",
+    "name": "Nick Haynes",
+    "club": "CAR",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Marc Pittonet",
+    "name": "Marc Pittonet",
+    "club": "CAR",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Harry Charleson",
+    "name": "Harry Charleson",
+    "club": "CAR",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "George Hewett",
+    "name": "George Hewett",
+    "club": "CAR",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Matt Carroll",
+    "name": "Matt Carroll",
+    "club": "CAR",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Lewis Young",
+    "name": "Lewis Young",
+    "club": "CAR",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Rob Monahan",
+    "name": "Rob Monahan",
+    "club": "CAR",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Billy Wilson",
+    "name": "Billy Wilson",
+    "club": "CAR",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Lord",
+    "name": "Cooper Lord",
+    "club": "CAR",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Jordan Boyd",
+    "name": "Jordan Boyd",
+    "club": "CAR",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Hudson O'Keeffe",
+    "name": "Hudson O'Keeffe",
+    "club": "CAR",
+    "guernseyNumber": 40,
+    "season": 2026
+  },
+  {
+    "id": "Matt Duffy",
+    "name": "Matt Duffy",
+    "club": "CAR",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Adam Saad",
+    "name": "Adam Saad",
+    "club": "CAR",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Ashton Moir",
+    "name": "Ashton Moir",
+    "club": "CAR",
+    "guernseyNumber": 43,
+    "season": 2026
+  },
+  {
+    "id": "Francis Evans",
+    "name": "Francis Evans",
+    "club": "CAR",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Flynn Young",
+    "name": "Flynn Young",
+    "club": "CAR",
+    "guernseyNumber": 45,
+    "season": 2026
+  },
+  {
+    "id": "Matt Cottrell",
+    "name": "Matt Cottrell",
+    "club": "CAR",
+    "guernseyNumber": 46,
+    "season": 2026
+  },
+  {
+    "id": "Campbell Chesser",
+    "name": "Campbell Chesser",
+    "club": "CAR",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Ben Ainsworth",
+    "name": "Ben Ainsworth",
+    "club": "CAR",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Oliver Florent",
+    "name": "Oliver Florent",
+    "club": "CAR",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Harry Dean",
+    "name": "Harry Dean",
+    "club": "CAR",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Talor Byrne",
+    "name": "Talor Byrne",
+    "club": "CAR",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Ison",
+    "name": "Jack Ison",
+    "club": "CAR",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Liam Reidy",
+    "name": "Liam Reidy",
+    "club": "CAR",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Will Hayward",
+    "name": "Will Hayward",
+    "club": "CAR",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Lipinski",
+    "name": "Patrick Lipinski",
+    "club": "COL",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jordan De Goey",
+    "name": "Jordan De Goey",
+    "club": "COL",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Isaac Quaynor",
+    "name": "Isaac Quaynor",
+    "club": "COL",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Brayden Maynard",
+    "name": "Brayden Maynard",
+    "club": "COL",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Jamie Elliott",
+    "name": "Jamie Elliott",
+    "club": "COL",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Josh Daicos",
+    "name": "Josh Daicos",
+    "club": "COL",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Schultz",
+    "name": "Lachie Schultz",
+    "club": "COL",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Dan Houston",
+    "name": "Dan Houston",
+    "club": "COL",
+    "guernseyNumber": 9,
+    "season": 2026
+  },
+  {
+    "id": "Scott Pendlebury",
+    "name": "Scott Pendlebury",
+    "club": "COL",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Daniel McStay",
+    "name": "Daniel McStay",
+    "club": "COL",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Harry Perryman",
+    "name": "Harry Perryman",
+    "club": "COL",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Harry Demattia",
+    "name": "Harry Demattia",
+    "club": "COL",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Cameron",
+    "name": "Darcy Cameron",
+    "club": "COL",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Wil Parker",
+    "name": "Wil Parker",
+    "club": "COL",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Ed Allan",
+    "name": "Ed Allan",
+    "club": "COL",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Billy Frampton",
+    "name": "Billy Frampton",
+    "club": "COL",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Tew Jiath",
+    "name": "Tew Jiath",
+    "club": "COL",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Iliro Smit",
+    "name": "Iliro Smit",
+    "club": "COL",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Oscar Steene",
+    "name": "Oscar Steene",
+    "club": "COL",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Steele Sidebottom",
+    "name": "Steele Sidebottom",
+    "club": "COL",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Bobby Hill",
+    "name": "Bobby Hill",
+    "club": "COL",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Jakob Ryan",
+    "name": "Jakob Ryan",
+    "club": "COL",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Jack Crisp",
+    "name": "Jack Crisp",
+    "club": "COL",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Reef McInnes",
+    "name": "Reef McInnes",
+    "club": "COL",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Joel Cochran",
+    "name": "Joel Cochran",
+    "club": "COL",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Tim Membrey",
+    "name": "Tim Membrey",
+    "club": "COL",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Charlie West",
+    "name": "Charlie West",
+    "club": "COL",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Moore",
+    "name": "Darcy Moore",
+    "club": "COL",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Beau McCreery",
+    "name": "Beau McCreery",
+    "club": "COL",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Sullivan",
+    "name": "Lachie Sullivan",
+    "club": "COL",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Nick Daicos",
+    "name": "Nick Daicos",
+    "club": "COL",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Harvey Harrison",
+    "name": "Harvey Harrison",
+    "club": "COL",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Jeremy Howe",
+    "name": "Jeremy Howe",
+    "club": "COL",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Will Hayes",
+    "name": "Will Hayes",
+    "club": "COL",
+    "guernseyNumber": 39,
+    "season": 2026
+  },
+  {
+    "id": "Ned Long",
+    "name": "Ned Long",
+    "club": "COL",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Roan Steele",
+    "name": "Roan Steele",
+    "club": "COL",
+    "guernseyNumber": 45,
+    "season": 2026
+  },
+  {
+    "id": "Noah Howes",
+    "name": "Noah Howes",
+    "club": "COL",
+    "guernseyNumber": 47,
+    "season": 2026
+  },
+  {
+    "id": "Jai Saxena",
+    "name": "Jai Saxena",
+    "club": "COL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Angus Anderson",
+    "name": "Angus Anderson",
+    "club": "COL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Zac McCarthy",
+    "name": "Zac McCarthy",
+    "club": "COL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Samuel Swadling",
+    "name": "Samuel Swadling",
+    "club": "COL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Tyan Prindable",
+    "name": "Tyan Prindable",
+    "club": "COL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Buller",
+    "name": "Jack Buller",
+    "club": "COL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Andrew McGrath",
+    "name": "Andrew McGrath",
+    "club": "ESS",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Parish",
+    "name": "Darcy Parish",
+    "club": "ESS",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Kyle Langford",
+    "name": "Kyle Langford",
+    "club": "ESS",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Elijah Tsatas",
+    "name": "Elijah Tsatas",
+    "club": "ESS",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Jye Caldwell",
+    "name": "Jye Caldwell",
+    "club": "ESS",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Zach Merrett",
+    "name": "Zach Merrett",
+    "club": "ESS",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Isaac Kako",
+    "name": "Isaac Kako",
+    "club": "ESS",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Jade Gresham",
+    "name": "Jade Gresham",
+    "club": "ESS",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Will Setterfield",
+    "name": "Will Setterfield",
+    "club": "ESS",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Nik Cox",
+    "name": "Nik Cox",
+    "club": "ESS",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Jordan Ridley",
+    "name": "Jordan Ridley",
+    "club": "ESS",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Archie Perkins",
+    "name": "Archie Perkins",
+    "club": "ESS",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Lewis Hayes",
+    "name": "Lewis Hayes",
+    "club": "ESS",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Kayle Gerreyn",
+    "name": "Kayle Gerreyn",
+    "club": "ESS",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Peter Wright",
+    "name": "Peter Wright",
+    "club": "ESS",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Archie Roberts",
+    "name": "Archie Roberts",
+    "club": "ESS",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Sam Durham",
+    "name": "Sam Durham",
+    "club": "ESS",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Harrison Jones",
+    "name": "Harrison Jones",
+    "club": "ESS",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Nick Bryan",
+    "name": "Nick Bryan",
+    "club": "ESS",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Jaxon Prior",
+    "name": "Jaxon Prior",
+    "club": "ESS",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Archie May",
+    "name": "Archie May",
+    "club": "ESS",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Mason Redman",
+    "name": "Mason Redman",
+    "club": "ESS",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Xavier Duursma",
+    "name": "Xavier Duursma",
+    "club": "ESS",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Nate Caddy",
+    "name": "Nate Caddy",
+    "club": "ESS",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Zach Reid",
+    "name": "Zach Reid",
+    "club": "ESS",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Ben McKay",
+    "name": "Ben McKay",
+    "club": "ESS",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Matt Guelfi",
+    "name": "Matt Guelfi",
+    "club": "ESS",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Angus Clarke",
+    "name": "Angus Clarke",
+    "club": "ESS",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Nic Martin",
+    "name": "Nic Martin",
+    "club": "ESS",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Rhys Unwin",
+    "name": "Rhys Unwin",
+    "club": "ESS",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Vigo Visentini",
+    "name": "Vigo Visentini",
+    "club": "ESS",
+    "guernseyNumber": 39,
+    "season": 2026
+  },
+  {
+    "id": "Zak Johnson",
+    "name": "Zak Johnson",
+    "club": "ESS",
+    "guernseyNumber": 40,
+    "season": 2026
+  },
+  {
+    "id": "Saad El-Hawli",
+    "name": "Saad El-Hawli",
+    "club": "ESS",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Jayden Nguyen",
+    "name": "Jayden Nguyen",
+    "club": "ESS",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Archer Day-Wicks",
+    "name": "Archer Day-Wicks",
+    "club": "ESS",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Tom Edwards",
+    "name": "Tom Edwards",
+    "club": "ESS",
+    "guernseyNumber": 45,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Blakiston",
+    "name": "Lachlan Blakiston",
+    "club": "ESS",
+    "guernseyNumber": 46,
+    "season": 2026
+  },
+  {
+    "id": "Liam McMahon",
+    "name": "Liam McMahon",
+    "club": "ESS",
+    "guernseyNumber": 48,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Farrow",
+    "name": "Jacob Farrow",
+    "club": "ESS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Max Kondogiannis",
+    "name": "Max Kondogiannis",
+    "club": "ESS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Hussien El Achkar",
+    "name": "Hussien El Achkar",
+    "club": "ESS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Brayden Fiorini",
+    "name": "Brayden Fiorini",
+    "club": "ESS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sullivan Robey",
+    "name": "Sullivan Robey",
+    "club": "ESS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Dyson Sharp",
+    "name": "Dyson Sharp",
+    "club": "ESS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sam Sturt",
+    "name": "Sam Sturt",
+    "club": "FRE",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jaeger O'Meara",
+    "name": "Jaeger O'Meara",
+    "club": "FRE",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Caleb Serong",
+    "name": "Caleb Serong",
+    "club": "FRE",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Sean Darcy",
+    "name": "Sean Darcy",
+    "club": "FRE",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Heath Chapman",
+    "name": "Heath Chapman",
+    "club": "FRE",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Jordan Clark",
+    "name": "Jordan Clark",
+    "club": "FRE",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Andrew Brayshaw",
+    "name": "Andrew Brayshaw",
+    "club": "FRE",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Luke Jackson",
+    "name": "Luke Jackson",
+    "club": "FRE",
+    "guernseyNumber": 9,
+    "season": 2026
+  },
+  {
+    "id": "Hugh Davies",
+    "name": "Hugh Davies",
+    "club": "FRE",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Luke Ryan",
+    "name": "Luke Ryan",
+    "club": "FRE",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Jeremy Sharp",
+    "name": "Jeremy Sharp",
+    "club": "FRE",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Shai Bolton",
+    "name": "Shai Bolton",
+    "club": "FRE",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Murphy Reid",
+    "name": "Murphy Reid",
+    "club": "FRE",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Voss",
+    "name": "Patrick Voss",
+    "club": "FRE",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Oscar McDonald",
+    "name": "Oscar McDonald",
+    "club": "FRE",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Nicholls",
+    "name": "Charlie Nicholls",
+    "club": "FRE",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Karl Worner",
+    "name": "Karl Worner",
+    "club": "FRE",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Jye Amiss",
+    "name": "Jye Amiss",
+    "club": "FRE",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Alex Pearce",
+    "name": "Alex Pearce",
+    "club": "FRE",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Hayden Young",
+    "name": "Hayden Young",
+    "club": "FRE",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Neil Erasmus",
+    "name": "Neil Erasmus",
+    "club": "FRE",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Simpson",
+    "name": "Cooper Simpson",
+    "club": "FRE",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Nathan O'Driscoll",
+    "name": "Nathan O'Driscoll",
+    "club": "FRE",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Brandon Walker",
+    "name": "Brandon Walker",
+    "club": "FRE",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Michael Frederick",
+    "name": "Michael Frederick",
+    "club": "FRE",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Ollie Murphy",
+    "name": "Ollie Murphy",
+    "club": "FRE",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Corey Wagner",
+    "name": "Corey Wagner",
+    "club": "FRE",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Josh Treacy",
+    "name": "Josh Treacy",
+    "club": "FRE",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Brennan Cox",
+    "name": "Brennan Cox",
+    "club": "FRE",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Josh Draper",
+    "name": "Josh Draper",
+    "club": "FRE",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Jaren Carr",
+    "name": "Jaren Carr",
+    "club": "FRE",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Sam Switkowski",
+    "name": "Sam Switkowski",
+    "club": "FRE",
+    "guernseyNumber": 39,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Banfield",
+    "name": "Bailey Banfield",
+    "club": "FRE",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Aiden Riddle",
+    "name": "Aiden Riddle",
+    "club": "FRE",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Isaiah Dudley",
+    "name": "Isaiah Dudley",
+    "club": "FRE",
+    "guernseyNumber": 43,
+    "season": 2026
+  },
+  {
+    "id": "Matt Johnson",
+    "name": "Matt Johnson",
+    "club": "FRE",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Tobyn Murray",
+    "name": "Tobyn Murray",
+    "club": "FRE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Leon Kickett",
+    "name": "Leon Kickett",
+    "club": "FRE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Toby Whan",
+    "name": "Toby Whan",
+    "club": "FRE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Ryda Luke",
+    "name": "Ryda Luke",
+    "club": "FRE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Mason Cox",
+    "name": "Mason Cox",
+    "club": "FRE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Adam Sweid",
+    "name": "Adam Sweid",
+    "club": "FRE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Judd McVee",
+    "name": "Judd McVee",
+    "club": "FRE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Rhys Stanley",
+    "name": "Rhys Stanley",
+    "club": "",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jay Polkinghorne",
+    "name": "Jay Polkinghorne",
+    "club": "",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Smith",
+    "name": "Bailey Smith",
+    "club": "",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Tanner Bruhn",
+    "name": "Tanner Bruhn",
+    "club": "",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Jeremy Cameron",
+    "name": "Jeremy Cameron",
+    "club": "",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Toby Conway",
+    "name": "Toby Conway",
+    "club": "",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Shaun Mannagh",
+    "name": "Shaun Mannagh",
+    "club": "",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Jake Kolodjashnij",
+    "name": "Jake Kolodjashnij",
+    "club": "",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Max Holmes",
+    "name": "Max Holmes",
+    "club": "",
+    "guernseyNumber": 9,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Knevitt",
+    "name": "Mitch Knevitt",
+    "club": "",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Edwards",
+    "name": "Mitch Edwards",
+    "club": "",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Jack Bowes",
+    "name": "Jack Bowes",
+    "club": "",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Jhye Clark",
+    "name": "Jhye Clark",
+    "club": "",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Connor O'Sullivan",
+    "name": "Connor O'Sullivan",
+    "club": "",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "George Stevens",
+    "name": "George Stevens",
+    "club": "",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Sam De Koning",
+    "name": "Sam De Koning",
+    "club": "",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Lawson Humphries",
+    "name": "Lawson Humphries",
+    "club": "",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Tyson Stengle",
+    "name": "Tyson Stengle",
+    "club": "",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Jack Martin",
+    "name": "Jack Martin",
+    "club": "",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Molier",
+    "name": "Jacob Molier",
+    "club": "",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Oli Wiltshire",
+    "name": "Oli Wiltshire",
+    "club": "",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Lennox Hofmann",
+    "name": "Lennox Hofmann",
+    "club": "",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Jed Bews",
+    "name": "Jed Bews",
+    "club": "",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Oliver Dempsey",
+    "name": "Oliver Dempsey",
+    "club": "",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Tom Atkins",
+    "name": "Tom Atkins",
+    "club": "",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Keighton Matofai-Forbes",
+    "name": "Keighton Matofai-Forbes",
+    "club": "",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Gryan Miers",
+    "name": "Gryan Miers",
+    "club": "",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Shannon Neale",
+    "name": "Shannon Neale",
+    "club": "",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Oisin Mullin",
+    "name": "Oisin Mullin",
+    "club": "",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Dangerfield",
+    "name": "Patrick Dangerfield",
+    "club": "",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Oliver Henry",
+    "name": "Oliver Henry",
+    "club": "",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Joe Pike",
+    "name": "Joe Pike",
+    "club": "",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Jack Henry",
+    "name": "Jack Henry",
+    "club": "",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Zach Guthrie",
+    "name": "Zach Guthrie",
+    "club": "",
+    "guernseyNumber": 39,
+    "season": 2026
+  },
+  {
+    "id": "Cillian Burke",
+    "name": "Cillian Burke",
+    "club": "",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Mark O'Connor",
+    "name": "Mark O'Connor",
+    "club": "",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Tom Stewart",
+    "name": "Tom Stewart",
+    "club": "",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Brad Close",
+    "name": "Brad Close",
+    "club": "",
+    "guernseyNumber": 45,
+    "season": 2026
+  },
+  {
+    "id": "Mark Blicavs",
+    "name": "Mark Blicavs",
+    "club": "",
+    "guernseyNumber": 46,
+    "season": 2026
+  },
+  {
+    "id": "Jesse Mellor",
+    "name": "Jesse Mellor",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Harley Barker",
+    "name": "Harley Barker",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Nick Driscoll",
+    "name": "Nick Driscoll",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Hunter Holmes",
+    "name": "Hunter Holmes",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "James Worpel",
+    "name": "James Worpel",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Mac Andrew",
+    "name": "Mac Andrew",
+    "club": "GCS",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "John Noble",
+    "name": "John Noble",
+    "club": "GCS",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Jed Walter",
+    "name": "Jed Walter",
+    "club": "GCS",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Alex Davies",
+    "name": "Alex Davies",
+    "club": "GCS",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Nick Holman",
+    "name": "Nick Holman",
+    "club": "GCS",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Ballard",
+    "name": "Charlie Ballard",
+    "club": "GCS",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Touk Miller",
+    "name": "Touk Miller",
+    "club": "GCS",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Elliot Himmelberg",
+    "name": "Elliot Himmelberg",
+    "club": "GCS",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Weller",
+    "name": "Lachie Weller",
+    "club": "GCS",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Noah Anderson",
+    "name": "Noah Anderson",
+    "club": "GCS",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Daniel Rioli",
+    "name": "Daniel Rioli",
+    "club": "GCS",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Matt Rowell",
+    "name": "Matt Rowell",
+    "club": "GCS",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Humphrey",
+    "name": "Bailey Humphrey",
+    "club": "GCS",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Ethan Read",
+    "name": "Ethan Read",
+    "club": "GCS",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Ned Moyle",
+    "name": "Ned Moyle",
+    "club": "GCS",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Ben Long",
+    "name": "Ben Long",
+    "club": "GCS",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Sam Collins",
+    "name": "Sam Collins",
+    "club": "GCS",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Will Graham",
+    "name": "Will Graham",
+    "club": "GCS",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Wil Powell",
+    "name": "Wil Powell",
+    "club": "GCS",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Jarrod Witts",
+    "name": "Jarrod Witts",
+    "club": "GCS",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Jake Rogers",
+    "name": "Jake Rogers",
+    "club": "GCS",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Leo Lombard",
+    "name": "Leo Lombard",
+    "club": "GCS",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Bell",
+    "name": "Cooper Bell",
+    "club": "GCS",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Bodhi Uwland",
+    "name": "Bodhi Uwland",
+    "club": "GCS",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Sam Clohesy",
+    "name": "Sam Clohesy",
+    "club": "GCS",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Ben King",
+    "name": "Ben King",
+    "club": "GCS",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Zak Evans",
+    "name": "Zak Evans",
+    "club": "GCS",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Max Knobel",
+    "name": "Max Knobel",
+    "club": "GCS",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Gulbin",
+    "name": "Lachlan Gulbin",
+    "club": "GCS",
+    "guernseyNumber": 39,
+    "season": 2026
+  },
+  {
+    "id": "Joel Jeffrey",
+    "name": "Joel Jeffrey",
+    "club": "GCS",
+    "guernseyNumber": 40,
+    "season": 2026
+  },
+  {
+    "id": "Asher Eastham",
+    "name": "Asher Eastham",
+    "club": "GCS",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Ben Jepson",
+    "name": "Ben Jepson",
+    "club": "GCS",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Caleb Lewis",
+    "name": "Caleb Lewis",
+    "club": "GCS",
+    "guernseyNumber": 45,
+    "season": 2026
+  },
+  {
+    "id": "Caleb Graham",
+    "name": "Caleb Graham",
+    "club": "GCS",
+    "guernseyNumber": 46,
+    "season": 2026
+  },
+  {
+    "id": "Oscar Adams",
+    "name": "Oscar Adams",
+    "club": "GCS",
+    "guernseyNumber": 48,
+    "season": 2026
+  },
+  {
+    "id": "Jy Farrar",
+    "name": "Jy Farrar",
+    "club": "GCS",
+    "guernseyNumber": 50,
+    "season": 2026
+  },
+  {
+    "id": "Koby Coulson",
+    "name": "Koby Coulson",
+    "club": "GCS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Avery Thomas",
+    "name": "Avery Thomas",
+    "club": "GCS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Beau Addinsall",
+    "name": "Beau Addinsall",
+    "club": "GCS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jai Murray",
+    "name": "Jai Murray",
+    "club": "GCS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Dylan Patterson",
+    "name": "Dylan Patterson",
+    "club": "GCS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jamarra Ugle-Hagan",
+    "name": "Jamarra Ugle-Hagan",
+    "club": "GCS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Christian Petracca",
+    "name": "Christian Petracca",
+    "club": "GCS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Zeke Uwland",
+    "name": "Zeke Uwland",
+    "club": "GCS",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Harvey Thomas",
+    "name": "Harvey Thomas",
+    "club": "",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Jones",
+    "name": "Darcy Jones",
+    "club": "",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Stephen Coniglio",
+    "name": "Stephen Coniglio",
+    "club": "",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Toby Greene",
+    "name": "Toby Greene",
+    "club": "",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Aaron Cadman",
+    "name": "Aaron Cadman",
+    "club": "",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Whitfield",
+    "name": "Lachie Whitfield",
+    "club": "",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Ash",
+    "name": "Lachie Ash",
+    "club": "",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Ryan Angwin",
+    "name": "Ryan Angwin",
+    "club": "",
+    "guernseyNumber": 9,
+    "season": 2026
+  },
+  {
+    "id": "Phoenix Gothard",
+    "name": "Phoenix Gothard",
+    "club": "",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Tom Green",
+    "name": "Tom Green",
+    "club": "",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Ollie Hannaford",
+    "name": "Ollie Hannaford",
+    "club": "",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Toby Bedford",
+    "name": "Toby Bedford",
+    "club": "",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Sam Taylor",
+    "name": "Sam Taylor",
+    "club": "",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Brent Daniels",
+    "name": "Brent Daniels",
+    "club": "",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Finn Callaghan",
+    "name": "Finn Callaghan",
+    "club": "",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Conor Stone",
+    "name": "Conor Stone",
+    "club": "",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Harry Oliver",
+    "name": "Harry Oliver",
+    "club": "",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Jake Stringer",
+    "name": "Jake Stringer",
+    "club": "",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Leek Aleer",
+    "name": "Leek Aleer",
+    "club": "",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Josh Kelly",
+    "name": "Josh Kelly",
+    "club": "",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Jesse Hogan",
+    "name": "Jesse Hogan",
+    "club": "",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Harry Rowston",
+    "name": "Harry Rowston",
+    "club": "",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Jake Riccardi",
+    "name": "Jake Riccardi",
+    "club": "",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Harry Himmelberg",
+    "name": "Harry Himmelberg",
+    "club": "",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Jack Ough",
+    "name": "Jack Ough",
+    "club": "",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Cody Angove",
+    "name": "Cody Angove",
+    "club": "",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "James Leake",
+    "name": "James Leake",
+    "club": "",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Toby McMullin",
+    "name": "Toby McMullin",
+    "club": "",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Kieren Briggs",
+    "name": "Kieren Briggs",
+    "club": "",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Xavier O'Halloran",
+    "name": "Xavier O'Halloran",
+    "club": "",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Max Gruzewski",
+    "name": "Max Gruzewski",
+    "club": "",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Logan Smith",
+    "name": "Logan Smith",
+    "club": "",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Joe Fonti",
+    "name": "Joe Fonti",
+    "club": "",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Josaia Delana",
+    "name": "Josaia Delana",
+    "club": "",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Connor Idun",
+    "name": "Connor Idun",
+    "club": "",
+    "guernseyNumber": 39,
+    "season": 2026
+  },
+  {
+    "id": "Nick Madden",
+    "name": "Nick Madden",
+    "club": "",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Nathan Wardius",
+    "name": "Nathan Wardius",
+    "club": "",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Jack Buckley",
+    "name": "Jack Buckley",
+    "club": "",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Callum Brown",
+    "name": "Callum Brown",
+    "club": "",
+    "guernseyNumber": 46,
+    "season": 2026
+  },
+  {
+    "id": "Jayden Laverde",
+    "name": "Jayden Laverde",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Finnegan Davis",
+    "name": "Finnegan Davis",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Oskar Taylor",
+    "name": "Oskar Taylor",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Riley Hamilton",
+    "name": "Riley Hamilton",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Clayton Oliver",
+    "name": "Clayton Oliver",
+    "club": "",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Harry Morrison",
+    "name": "Harry Morrison",
+    "club": "HAW",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Lewis",
+    "name": "Mitch Lewis",
+    "club": "HAW",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Jai Newcombe",
+    "name": "Jai Newcombe",
+    "club": "HAW",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Jarman Impey",
+    "name": "Jarman Impey",
+    "club": "HAW",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "James Sicily",
+    "name": "James Sicily",
+    "club": "HAW",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Ned Reeves",
+    "name": "Ned Reeves",
+    "club": "HAW",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Karl Amon",
+    "name": "Karl Amon",
+    "club": "HAW",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Conor Nash",
+    "name": "Conor Nash",
+    "club": "HAW",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Will Day",
+    "name": "Will Day",
+    "club": "HAW",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Dylan Moore",
+    "name": "Dylan Moore",
+    "club": "HAW",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Jack Scrimshaw",
+    "name": "Jack Scrimshaw",
+    "club": "HAW",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Blake Hardwick",
+    "name": "Blake Hardwick",
+    "club": "HAW",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Massimo D'Ambrosio",
+    "name": "Massimo D'Ambrosio",
+    "club": "HAW",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Lloyd Meek",
+    "name": "Lloyd Meek",
+    "club": "HAW",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Mabior Chol",
+    "name": "Mabior Chol",
+    "club": "HAW",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Jack Gunston",
+    "name": "Jack Gunston",
+    "club": "HAW",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Finn Maginness",
+    "name": "Finn Maginness",
+    "club": "HAW",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Noah Mraz",
+    "name": "Noah Mraz",
+    "club": "HAW",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Josh Weddle",
+    "name": "Josh Weddle",
+    "club": "HAW",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Josh Battle",
+    "name": "Josh Battle",
+    "club": "HAW",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Josh Ward",
+    "name": "Josh Ward",
+    "club": "HAW",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Bodie Ryan",
+    "name": "Bodie Ryan",
+    "club": "HAW",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Will McCabe",
+    "name": "Will McCabe",
+    "club": "HAW",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Cam Mackenzie",
+    "name": "Cam Mackenzie",
+    "club": "HAW",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Sam Butler",
+    "name": "Sam Butler",
+    "club": "HAW",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Connor Macdonald",
+    "name": "Connor Macdonald",
+    "club": "HAW",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Cody Anderson",
+    "name": "Cody Anderson",
+    "club": "HAW",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Jack Ginnivan",
+    "name": "Jack Ginnivan",
+    "club": "HAW",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Nick Watson",
+    "name": "Nick Watson",
+    "club": "HAW",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Calsher Dear",
+    "name": "Calsher Dear",
+    "club": "HAW",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "James Blanck",
+    "name": "James Blanck",
+    "club": "HAW",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Tom Barrass",
+    "name": "Tom Barrass",
+    "club": "HAW",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Max Ramsden",
+    "name": "Max Ramsden",
+    "club": "HAW",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Matt Hill",
+    "name": "Matt Hill",
+    "club": "HAW",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Macdonald",
+    "name": "Bailey Macdonald",
+    "club": "HAW",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Jaime Uhr-Henry",
+    "name": "Jaime Uhr-Henry",
+    "club": "HAW",
+    "guernseyNumber": 43,
+    "season": 2026
+  },
+  {
+    "id": "Henry Hustwaite",
+    "name": "Henry Hustwaite",
+    "club": "HAW",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Cam Nairn",
+    "name": "Cam Nairn",
+    "club": "HAW",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Aidan Schubert",
+    "name": "Aidan Schubert",
+    "club": "HAW",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Dalton",
+    "name": "Jack Dalton",
+    "club": "HAW",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Matthew LeRay",
+    "name": "Matthew LeRay",
+    "club": "HAW",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Ollie Greeves",
+    "name": "Ollie Greeves",
+    "club": "HAW",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Steven May",
+    "name": "Steven May",
+    "club": "MEL",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jacob van Rooyen",
+    "name": "Jacob van Rooyen",
+    "club": "MEL",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Christian Salem",
+    "name": "Christian Salem",
+    "club": "MEL",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Caleb Windsor",
+    "name": "Caleb Windsor",
+    "club": "MEL",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Jack Viney",
+    "name": "Jack Viney",
+    "club": "MEL",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Jake Lever",
+    "name": "Jake Lever",
+    "club": "MEL",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Daniel Turner",
+    "name": "Daniel Turner",
+    "club": "MEL",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Max Gawn",
+    "name": "Max Gawn",
+    "club": "MEL",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Koltyn Tholstrup",
+    "name": "Koltyn Tholstrup",
+    "club": "MEL",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Ed Langdon",
+    "name": "Ed Langdon",
+    "club": "MEL",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Laurie",
+    "name": "Bailey Laurie",
+    "club": "MEL",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Jake Bowey",
+    "name": "Jake Bowey",
+    "club": "MEL",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Jake Melksham",
+    "name": "Jake Melksham",
+    "club": "MEL",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Harvey Langford",
+    "name": "Harvey Langford",
+    "club": "MEL",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Xavier Lindsay",
+    "name": "Xavier Lindsay",
+    "club": "MEL",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Matthew Jefferson",
+    "name": "Matthew Jefferson",
+    "club": "MEL",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Blake Howes",
+    "name": "Blake Howes",
+    "club": "MEL",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Shane McAdam",
+    "name": "Shane McAdam",
+    "club": "MEL",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Trent Rivers",
+    "name": "Trent Rivers",
+    "club": "MEL",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Tom McDonald",
+    "name": "Tom McDonald",
+    "club": "MEL",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Jed Adams",
+    "name": "Jed Adams",
+    "club": "MEL",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Tom Campbell",
+    "name": "Tom Campbell",
+    "club": "MEL",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Harry Sharp",
+    "name": "Harry Sharp",
+    "club": "MEL",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Bayley Fritsch",
+    "name": "Bayley Fritsch",
+    "club": "MEL",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Tom Sparrow",
+    "name": "Tom Sparrow",
+    "club": "MEL",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Harrison Petty",
+    "name": "Harrison Petty",
+    "club": "MEL",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Kysaiah Pickett",
+    "name": "Kysaiah Pickett",
+    "club": "MEL",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Kade Chandler",
+    "name": "Kade Chandler",
+    "club": "MEL",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Ricky Mentha",
+    "name": "Ricky Mentha",
+    "club": "MEL",
+    "guernseyNumber": 39,
+    "season": 2026
+  },
+  {
+    "id": "Aidan Johnson",
+    "name": "Aidan Johnson",
+    "club": "MEL",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Jack Henderson",
+    "name": "Jack Henderson",
+    "club": "MEL",
+    "guernseyNumber": 43,
+    "season": 2026
+  },
+  {
+    "id": "Luker Kentfield",
+    "name": "Luker Kentfield",
+    "club": "MEL",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Andy Moniz-Wakefield",
+    "name": "Andy Moniz-Wakefield",
+    "club": "MEL",
+    "guernseyNumber": 45,
+    "season": 2026
+  },
+  {
+    "id": "Jai Culley",
+    "name": "Jai Culley",
+    "club": "MEL",
+    "guernseyNumber": 46,
+    "season": 2026
+  },
+  {
+    "id": "Kalani White",
+    "name": "Kalani White",
+    "club": "MEL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Steele",
+    "name": "Jack Steele",
+    "club": "MEL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Riley Onley",
+    "name": "Riley Onley",
+    "club": "MEL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Thomas Matthews",
+    "name": "Thomas Matthews",
+    "club": "MEL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Latrelle Pickett",
+    "name": "Latrelle Pickett",
+    "club": "MEL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Xavier Taylor",
+    "name": "Xavier Taylor",
+    "club": "MEL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Changkuoth Jiath",
+    "name": "Changkuoth Jiath",
+    "club": "MEL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Brody Mihocek",
+    "name": "Brody Mihocek",
+    "club": "MEL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Max Heath",
+    "name": "Max Heath",
+    "club": "MEL",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Finn O'Sullivan",
+    "name": "Finn O'Sullivan",
+    "club": "NTH",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Harry Sheezel",
+    "name": "Harry Sheezel",
+    "club": "NTH",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Aidan Corr",
+    "name": "Aidan Corr",
+    "club": "NTH",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Caleb Daniel",
+    "name": "Caleb Daniel",
+    "club": "NTH",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "George Wardlaw",
+    "name": "George Wardlaw",
+    "club": "NTH",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Zane Duursma",
+    "name": "Zane Duursma",
+    "club": "NTH",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Scott",
+    "name": "Bailey Scott",
+    "club": "NTH",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Luke Davies-Uniacke",
+    "name": "Luke Davies-Uniacke",
+    "club": "NTH",
+    "guernseyNumber": 9,
+    "season": 2026
+  },
+  {
+    "id": "Colby McKercher",
+    "name": "Colby McKercher",
+    "club": "NTH",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Luke McDonald",
+    "name": "Luke McDonald",
+    "club": "NTH",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Jy Simpkin",
+    "name": "Jy Simpkin",
+    "club": "NTH",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Luke Urquhart",
+    "name": "Luke Urquhart",
+    "club": "NTH",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Dylan Stephens",
+    "name": "Dylan Stephens",
+    "club": "NTH",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Zac Fisher",
+    "name": "Zac Fisher",
+    "club": "NTH",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Riley Hardeman",
+    "name": "Riley Hardeman",
+    "club": "NTH",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Wil Dawson",
+    "name": "Wil Dawson",
+    "club": "NTH",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Griffin Logue",
+    "name": "Griffin Logue",
+    "club": "NTH",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Nick Larkey",
+    "name": "Nick Larkey",
+    "club": "NTH",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Callum Coleman-Jones",
+    "name": "Callum Coleman-Jones",
+    "club": "NTH",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Taylor Goad",
+    "name": "Taylor Goad",
+    "club": "NTH",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Tom Powell",
+    "name": "Tom Powell",
+    "club": "NTH",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Paul Curtis",
+    "name": "Paul Curtis",
+    "club": "NTH",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Luke Parker",
+    "name": "Luke Parker",
+    "club": "NTH",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Jack Darling",
+    "name": "Jack Darling",
+    "club": "NTH",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Comben",
+    "name": "Charlie Comben",
+    "club": "NTH",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Josh Goater",
+    "name": "Josh Goater",
+    "club": "NTH",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Toby Pink",
+    "name": "Toby Pink",
+    "club": "NTH",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Brayden George",
+    "name": "Brayden George",
+    "club": "NTH",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Jackson Archer",
+    "name": "Jackson Archer",
+    "club": "NTH",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Matt Whitlock",
+    "name": "Matt Whitlock",
+    "club": "NTH",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "River Stevens",
+    "name": "River Stevens",
+    "club": "NTH",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Harvey",
+    "name": "Cooper Harvey",
+    "club": "NTH",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Tristan Xerri",
+    "name": "Tristan Xerri",
+    "club": "NTH",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Konstanty",
+    "name": "Jacob Konstanty",
+    "club": "NTH",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Cameron Zurhaar",
+    "name": "Cameron Zurhaar",
+    "club": "NTH",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Zac Banch",
+    "name": "Zac Banch",
+    "club": "NTH",
+    "guernseyNumber": 45,
+    "season": 2026
+  },
+  {
+    "id": "Robert Hansen",
+    "name": "Robert Hansen",
+    "club": "NTH",
+    "guernseyNumber": 46,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Trembath",
+    "name": "Cooper Trembath",
+    "club": "NTH",
+    "guernseyNumber": 47,
+    "season": 2026
+  },
+  {
+    "id": "Hugo Mikunda",
+    "name": "Hugo Mikunda",
+    "club": "NTH",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Blake Thredgold",
+    "name": "Blake Thredgold",
+    "club": "NTH",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Lachy Dovaston",
+    "name": "Lachy Dovaston",
+    "club": "NTH",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Spargo",
+    "name": "Charlie Spargo",
+    "club": "NTH",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Connor Rozee",
+    "name": "Connor Rozee",
+    "club": "PTA",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Sam Powell-Pepper",
+    "name": "Sam Powell-Pepper",
+    "club": "PTA",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Todd Marshall",
+    "name": "Todd Marshall",
+    "club": "PTA",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Joe Berry",
+    "name": "Joe Berry",
+    "club": "PTA",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Kane Farrell",
+    "name": "Kane Farrell",
+    "club": "PTA",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Jase Burgoyne",
+    "name": "Jase Burgoyne",
+    "club": "PTA",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Josh Sinn",
+    "name": "Josh Sinn",
+    "club": "PTA",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Zak Butters",
+    "name": "Zak Butters",
+    "club": "PTA",
+    "guernseyNumber": 9,
+    "season": 2026
+  },
+  {
+    "id": "Jack Lukosius",
+    "name": "Jack Lukosius",
+    "club": "PTA",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Ivan Soldo",
+    "name": "Ivan Soldo",
+    "club": "PTA",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Miles Bergman",
+    "name": "Miles Bergman",
+    "club": "PTA",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Ollie Wines",
+    "name": "Ollie Wines",
+    "club": "PTA",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Jack Whitlock",
+    "name": "Jack Whitlock",
+    "club": "PTA",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Jason Horne-Francis",
+    "name": "Jason Horne-Francis",
+    "club": "PTA",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Georgiades",
+    "name": "Mitch Georgiades",
+    "club": "PTA",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Aliir Aliir",
+    "name": "Aliir Aliir",
+    "club": "PTA",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Logan Evans",
+    "name": "Logan Evans",
+    "club": "PTA",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Jordon Sweet",
+    "name": "Jordon Sweet",
+    "club": "PTA",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Brandon Zerk-Thatcher",
+    "name": "Brandon Zerk-Thatcher",
+    "club": "PTA",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Esava Ratugolea",
+    "name": "Esava Ratugolea",
+    "club": "PTA",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Willem Drew",
+    "name": "Willem Drew",
+    "club": "PTA",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Tom Anastasopoulos",
+    "name": "Tom Anastasopoulos",
+    "club": "PTA",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Ollie Lord",
+    "name": "Ollie Lord",
+    "club": "PTA",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Christian Moraes",
+    "name": "Christian Moraes",
+    "club": "PTA",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Byrne-Jones",
+    "name": "Darcy Byrne-Jones",
+    "club": "PTA",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Jones",
+    "name": "Lachie Jones",
+    "club": "PTA",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Joe Richards",
+    "name": "Joe Richards",
+    "club": "PTA",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Will Lorenz",
+    "name": "Will Lorenz",
+    "club": "PTA",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Tom Cochrane",
+    "name": "Tom Cochrane",
+    "club": "PTA",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Dante Visentini",
+    "name": "Dante Visentini",
+    "club": "PTA",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Benny Barrett",
+    "name": "Benny Barrett",
+    "club": "PTA",
+    "guernseyNumber": 40,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Moss",
+    "name": "Jacob Moss",
+    "club": "PTA",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Josh Lai",
+    "name": "Josh Lai",
+    "club": "PTA",
+    "guernseyNumber": 43,
+    "season": 2026
+  },
+  {
+    "id": "Jackson Mead",
+    "name": "Jackson Mead",
+    "club": "PTA",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Xavier Walsh",
+    "name": "Xavier Walsh",
+    "club": "PTA",
+    "guernseyNumber": 45,
+    "season": 2026
+  },
+  {
+    "id": "Harrison Ramm",
+    "name": "Harrison Ramm",
+    "club": "PTA",
+    "guernseyNumber": 48,
+    "season": 2026
+  },
+  {
+    "id": "Ewan Mackinlay",
+    "name": "Ewan Mackinlay",
+    "club": "PTA",
+    "guernseyNumber": 49,
+    "season": 2026
+  },
+  {
+    "id": "Mani Liddy",
+    "name": "Mani Liddy",
+    "club": "PTA",
+    "guernseyNumber": 50,
+    "season": 2026
+  },
+  {
+    "id": "Corey Durdin",
+    "name": "Corey Durdin",
+    "club": "PTA",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Will Brodie",
+    "name": "Will Brodie",
+    "club": "PTA",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Watkins",
+    "name": "Jack Watkins",
+    "club": "PTA",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Wehr",
+    "name": "Jacob Wehr",
+    "club": "PTA",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Nick Vlastuin",
+    "name": "Nick Vlastuin",
+    "club": "RIC",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Hopper",
+    "name": "Jacob Hopper",
+    "club": "RIC",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Dion Prestia",
+    "name": "Dion Prestia",
+    "club": "RIC",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Jack Ross",
+    "name": "Jack Ross",
+    "club": "RIC",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Rhyan Mansell",
+    "name": "Rhyan Mansell",
+    "club": "RIC",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Ben Miller",
+    "name": "Ben Miller",
+    "club": "RIC",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Hugo Ralphsmith",
+    "name": "Hugo Ralphsmith",
+    "club": "RIC",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Tim Taranto",
+    "name": "Tim Taranto",
+    "club": "RIC",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Jayden Short",
+    "name": "Jayden Short",
+    "club": "RIC",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Josh Smillie",
+    "name": "Josh Smillie",
+    "club": "RIC",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Maurice Rioli",
+    "name": "Maurice Rioli",
+    "club": "RIC",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Josh Gibcus",
+    "name": "Josh Gibcus",
+    "club": "RIC",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Tom Lynch",
+    "name": "Tom Lynch",
+    "club": "RIC",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Noah Balta",
+    "name": "Noah Balta",
+    "club": "RIC",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Sam Lalor",
+    "name": "Sam Lalor",
+    "club": "RIC",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Judson Clarke",
+    "name": "Judson Clarke",
+    "club": "RIC",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Taj Hotton",
+    "name": "Taj Hotton",
+    "club": "RIC",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Toby Nankervis",
+    "name": "Toby Nankervis",
+    "club": "RIC",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Jonty Faull",
+    "name": "Jonty Faull",
+    "club": "RIC",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Kane McAuliffe",
+    "name": "Kane McAuliffe",
+    "club": "RIC",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Jasper Alger",
+    "name": "Jasper Alger",
+    "club": "RIC",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Tom Brown",
+    "name": "Tom Brown",
+    "club": "RIC",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Luke Trainor",
+    "name": "Luke Trainor",
+    "club": "RIC",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Samson Ryan",
+    "name": "Samson Ryan",
+    "club": "RIC",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Harry Armstrong",
+    "name": "Harry Armstrong",
+    "club": "RIC",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Nathan Broad",
+    "name": "Nathan Broad",
+    "club": "RIC",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "James Trezise",
+    "name": "James Trezise",
+    "club": "RIC",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Liam Fawcett",
+    "name": "Liam Fawcett",
+    "club": "RIC",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Tom Sims",
+    "name": "Tom Sims",
+    "club": "RIC",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Tyler Sonsie",
+    "name": "Tyler Sonsie",
+    "club": "RIC",
+    "guernseyNumber": 40,
+    "season": 2026
+  },
+  {
+    "id": "Sam Banks",
+    "name": "Sam Banks",
+    "club": "RIC",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Mykelti Lefau",
+    "name": "Mykelti Lefau",
+    "club": "RIC",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Seth Campbell",
+    "name": "Seth Campbell",
+    "club": "RIC",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Oliver Hayes-Brown",
+    "name": "Oliver Hayes-Brown",
+    "club": "RIC",
+    "guernseyNumber": 47,
+    "season": 2026
+  },
+  {
+    "id": "Steely Green",
+    "name": "Steely Green",
+    "club": "RIC",
+    "guernseyNumber": 48,
+    "season": 2026
+  },
+  {
+    "id": "Kaleb Smith",
+    "name": "Kaleb Smith",
+    "club": "RIC",
+    "guernseyNumber": 49,
+    "season": 2026
+  },
+  {
+    "id": "Campbell Gray",
+    "name": "Campbell Gray",
+    "club": "RIC",
+    "guernseyNumber": 50,
+    "season": 2026
+  },
+  {
+    "id": "Sam Grlj",
+    "name": "Sam Grlj",
+    "club": "RIC",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Noah Roberts-Thomson",
+    "name": "Noah Roberts-Thomson",
+    "club": "RIC",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Zane Peucker",
+    "name": "Zane Peucker",
+    "club": "RIC",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sam Cumming",
+    "name": "Sam Cumming",
+    "club": "RIC",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Retschko",
+    "name": "Patrick Retschko",
+    "club": "RIC",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Higgins",
+    "name": "Jack Higgins",
+    "club": "STK",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Marcus Windhager",
+    "name": "Marcus Windhager",
+    "club": "STK",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Lance Collard",
+    "name": "Lance Collard",
+    "club": "STK",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Tobie Travaglia",
+    "name": "Tobie Travaglia",
+    "club": "STK",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Jack Macrae",
+    "name": "Jack Macrae",
+    "club": "STK",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Nasiah Wanganeen-Milera",
+    "name": "Nasiah Wanganeen-Milera",
+    "club": "STK",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Brad Hill",
+    "name": "Brad Hill",
+    "club": "STK",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Mitch Owens",
+    "name": "Mitch Owens",
+    "club": "STK",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Hunter Clark",
+    "name": "Hunter Clark",
+    "club": "STK",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Max King",
+    "name": "Max King",
+    "club": "STK",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Ryan Byrnes",
+    "name": "Ryan Byrnes",
+    "club": "STK",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Liam Stocker",
+    "name": "Liam Stocker",
+    "club": "STK",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Paddy Dow",
+    "name": "Paddy Dow",
+    "club": "STK",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Dan Butler",
+    "name": "Dan Butler",
+    "club": "STK",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Isaac Keeler",
+    "name": "Isaac Keeler",
+    "club": "STK",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Jack Carroll",
+    "name": "Jack Carroll",
+    "club": "STK",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Rowan Marshall",
+    "name": "Rowan Marshall",
+    "club": "STK",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Dougal Howard",
+    "name": "Dougal Howard",
+    "club": "STK",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Darcy Wilson",
+    "name": "Darcy Wilson",
+    "club": "STK",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Liam Henry",
+    "name": "Liam Henry",
+    "club": "STK",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Angus Hastie",
+    "name": "Angus Hastie",
+    "club": "STK",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Mattaes Phillipou",
+    "name": "Mattaes Phillipou",
+    "club": "STK",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Alix Tauru",
+    "name": "Alix Tauru",
+    "club": "STK",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "James Barrat",
+    "name": "James Barrat",
+    "club": "STK",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Alex Dodson",
+    "name": "Alex Dodson",
+    "club": "STK",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Mason Wood",
+    "name": "Mason Wood",
+    "club": "STK",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Said",
+    "name": "Patrick Said",
+    "club": "STK",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Hugo Garcia",
+    "name": "Hugo Garcia",
+    "club": "STK",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Jack Sinclair",
+    "name": "Jack Sinclair",
+    "club": "STK",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Hugh Boxshall",
+    "name": "Hugh Boxshall",
+    "club": "STK",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Max Hall",
+    "name": "Max Hall",
+    "club": "STK",
+    "guernseyNumber": 40,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Sharman",
+    "name": "Cooper Sharman",
+    "club": "STK",
+    "guernseyNumber": 43,
+    "season": 2026
+  },
+  {
+    "id": "Callum Wilkie",
+    "name": "Callum Wilkie",
+    "club": "STK",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Liam O'Connell",
+    "name": "Liam O'Connell",
+    "club": "STK",
+    "guernseyNumber": 45,
+    "season": 2026
+  },
+  {
+    "id": "Eamonn Armstrong",
+    "name": "Eamonn Armstrong",
+    "club": "STK",
+    "guernseyNumber": 46,
+    "season": 2026
+  },
+  {
+    "id": "Anthony Caminiti",
+    "name": "Anthony Caminiti",
+    "club": "STK",
+    "guernseyNumber": 47,
+    "season": 2026
+  },
+  {
+    "id": "Tom De Koning",
+    "name": "Tom De Koning",
+    "club": "STK",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jack Silvagni",
+    "name": "Jack Silvagni",
+    "club": "STK",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sam Flanders",
+    "name": "Sam Flanders",
+    "club": "STK",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Kye Fincher",
+    "name": "Kye Fincher",
+    "club": "STK",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Liam Ryan",
+    "name": "Liam Ryan",
+    "club": "STK",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Banfield",
+    "name": "Charlie Banfield",
+    "club": "STK",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Chad Warner",
+    "name": "Chad Warner",
+    "club": "SYD",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Hayden McLean",
+    "name": "Hayden McLean",
+    "club": "SYD",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Taylor Adams",
+    "name": "Taylor Adams",
+    "club": "SYD",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Brodie Grundy",
+    "name": "Brodie Grundy",
+    "club": "SYD",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Isaac Heeney",
+    "name": "Isaac Heeney",
+    "club": "SYD",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Logan McDonald",
+    "name": "Logan McDonald",
+    "club": "SYD",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Harry Cunningham",
+    "name": "Harry Cunningham",
+    "club": "SYD",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "James Rowbottom",
+    "name": "James Rowbottom",
+    "club": "SYD",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Tom Papley",
+    "name": "Tom Papley",
+    "club": "SYD",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Angus Sheldrick",
+    "name": "Angus Sheldrick",
+    "club": "SYD",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Callum Mills",
+    "name": "Callum Mills",
+    "club": "SYD",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Sam Wicks",
+    "name": "Sam Wicks",
+    "club": "SYD",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Braeden Campbell",
+    "name": "Braeden Campbell",
+    "club": "SYD",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "James Jordon",
+    "name": "James Jordon",
+    "club": "SYD",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Jesse Dattoli",
+    "name": "Jesse Dattoli",
+    "club": "SYD",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Peter Ladhams",
+    "name": "Peter Ladhams",
+    "club": "SYD",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Riak Andrew",
+    "name": "Riak Andrew",
+    "club": "SYD",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Errol Gulden",
+    "name": "Errol Gulden",
+    "club": "SYD",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "Nick Blakey",
+    "name": "Nick Blakey",
+    "club": "SYD",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Ned Bowman",
+    "name": "Ned Bowman",
+    "club": "SYD",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Dane Rampe",
+    "name": "Dane Rampe",
+    "club": "SYD",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Riley Bice",
+    "name": "Riley Bice",
+    "club": "SYD",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Justin McInerney",
+    "name": "Justin McInerney",
+    "club": "SYD",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Will Edwards",
+    "name": "Will Edwards",
+    "club": "SYD",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Joel Hamling",
+    "name": "Joel Hamling",
+    "club": "SYD",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Tom McCartin",
+    "name": "Tom McCartin",
+    "club": "SYD",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Caiden Cleary",
+    "name": "Caiden Cleary",
+    "club": "SYD",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Matt Roberts",
+    "name": "Matt Roberts",
+    "club": "SYD",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Joel Amartey",
+    "name": "Joel Amartey",
+    "club": "SYD",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Corey Warner",
+    "name": "Corey Warner",
+    "club": "SYD",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Tom Hanily",
+    "name": "Tom Hanily",
+    "club": "SYD",
+    "guernseyNumber": 40,
+    "season": 2026
+  },
+  {
+    "id": "Patrick Snell",
+    "name": "Patrick Snell",
+    "club": "SYD",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Lewis Melican",
+    "name": "Lewis Melican",
+    "club": "SYD",
+    "guernseyNumber": 43,
+    "season": 2026
+  },
+  {
+    "id": "Jake Lloyd",
+    "name": "Jake Lloyd",
+    "club": "SYD",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Will Green",
+    "name": "Will Green",
+    "club": "SYD",
+    "guernseyNumber": 45,
+    "season": 2026
+  },
+  {
+    "id": "Liam Hetherton",
+    "name": "Liam Hetherton",
+    "club": "SYD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Noah Chamberlain",
+    "name": "Noah Chamberlain",
+    "club": "SYD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Max King",
+    "name": "Max King",
+    "club": "SYD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Billy Cootee",
+    "name": "Billy Cootee",
+    "club": "SYD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jevan Phillipou",
+    "name": "Jevan Phillipou",
+    "club": "SYD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Harry Kyle",
+    "name": "Harry Kyle",
+    "club": "SYD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jai Serong",
+    "name": "Jai Serong",
+    "club": "SYD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Malcolm Rosas",
+    "name": "Malcolm Rosas",
+    "club": "SYD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Charlie Curnow",
+    "name": "Charlie Curnow",
+    "club": "SYD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Jake Waterman",
+    "name": "Jake Waterman",
+    "club": "WCE",
+    "guernseyNumber": 2,
+    "season": 2026
+  },
+  {
+    "id": "Liam Baker",
+    "name": "Liam Baker",
+    "club": "WCE",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Elliot Yeo",
+    "name": "Elliot Yeo",
+    "club": "WCE",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Reuben Ginbey",
+    "name": "Reuben Ginbey",
+    "club": "WCE",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Elijah Hewett",
+    "name": "Elijah Hewett",
+    "club": "WCE",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Harley Reid",
+    "name": "Harley Reid",
+    "club": "WCE",
+    "guernseyNumber": 9,
+    "season": 2026
+  },
+  {
+    "id": "Tyler Brockman",
+    "name": "Tyler Brockman",
+    "club": "WCE",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Tim Kelly",
+    "name": "Tim Kelly",
+    "club": "WCE",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Noah Long",
+    "name": "Noah Long",
+    "club": "WCE",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Liam Duggan",
+    "name": "Liam Duggan",
+    "club": "WCE",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Jamie Cripps",
+    "name": "Jamie Cripps",
+    "club": "WCE",
+    "guernseyNumber": 15,
+    "season": 2026
+  },
+  {
+    "id": "Matt Owies",
+    "name": "Matt Owies",
+    "club": "WCE",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Jack Graham",
+    "name": "Jack Graham",
+    "club": "WCE",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "Brady Hough",
+    "name": "Brady Hough",
+    "club": "WCE",
+    "guernseyNumber": 19,
+    "season": 2026
+  },
+  {
+    "id": "Archer Reid",
+    "name": "Archer Reid",
+    "club": "WCE",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Ryan Maric",
+    "name": "Ryan Maric",
+    "club": "WCE",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Harvey Johnston",
+    "name": "Harvey Johnston",
+    "club": "WCE",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Matthew Flynn",
+    "name": "Matthew Flynn",
+    "club": "WCE",
+    "guernseyNumber": 25,
+    "season": 2026
+  },
+  {
+    "id": "Bo Allan",
+    "name": "Bo Allan",
+    "club": "WCE",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Tom Gross",
+    "name": "Tom Gross",
+    "club": "WCE",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Tom Cole",
+    "name": "Tom Cole",
+    "club": "WCE",
+    "guernseyNumber": 28,
+    "season": 2026
+  },
+  {
+    "id": "Clay Hall",
+    "name": "Clay Hall",
+    "club": "WCE",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Harry Barnett",
+    "name": "Harry Barnett",
+    "club": "WCE",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Lucca Grego",
+    "name": "Lucca Grego",
+    "club": "WCE",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Williams",
+    "name": "Bailey Williams",
+    "club": "WCE",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Rhett Bazzo",
+    "name": "Rhett Bazzo",
+    "club": "WCE",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Jack Williams",
+    "name": "Jack Williams",
+    "club": "WCE",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Jobe Shanahan",
+    "name": "Jobe Shanahan",
+    "club": "WCE",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Malakai Champion",
+    "name": "Malakai Champion",
+    "club": "WCE",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Hamish Davis",
+    "name": "Hamish Davis",
+    "club": "WCE",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Sandy Brock",
+    "name": "Sandy Brock",
+    "club": "WCE",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Harry Edwards",
+    "name": "Harry Edwards",
+    "club": "WCE",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Tyrell Dewar",
+    "name": "Tyrell Dewar",
+    "club": "WCE",
+    "guernseyNumber": 43,
+    "season": 2026
+  },
+  {
+    "id": "Jack Hutchinson",
+    "name": "Jack Hutchinson",
+    "club": "WCE",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Tom McCarthy",
+    "name": "Tom McCarthy",
+    "club": "WCE",
+    "guernseyNumber": 45,
+    "season": 2026
+  },
+  {
+    "id": "Jacob Newton",
+    "name": "Jacob Newton",
+    "club": "WCE",
+    "guernseyNumber": 46,
+    "season": 2026
+  },
+  {
+    "id": "Harry Schoenberg",
+    "name": "Harry Schoenberg",
+    "club": "WCE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Finlay Macrae",
+    "name": "Finlay Macrae",
+    "club": "WCE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Fred Rodriguez",
+    "name": "Fred Rodriguez",
+    "club": "WCE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Willem Duursma",
+    "name": "Willem Duursma",
+    "club": "WCE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Josh Lindsay",
+    "name": "Josh Lindsay",
+    "club": "WCE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Tylah Williams",
+    "name": "Tylah Williams",
+    "club": "WCE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Brandon Starcevich",
+    "name": "Brandon Starcevich",
+    "club": "WCE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Sam Allen",
+    "name": "Sam Allen",
+    "club": "WCE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Duff-Tytler",
+    "name": "Cooper Duff-Tytler",
+    "club": "WCE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Tylar Young",
+    "name": "Tylar Young",
+    "club": "WCE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Deven Robertson",
+    "name": "Deven Robertson",
+    "club": "WCE",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Adam Treloar",
+    "name": "Adam Treloar",
+    "club": "WBD",
+    "guernseyNumber": 1,
+    "season": 2026
+  },
+  {
+    "id": "Cody Weightman",
+    "name": "Cody Weightman",
+    "club": "WBD",
+    "guernseyNumber": 3,
+    "season": 2026
+  },
+  {
+    "id": "Marcus Bontempelli",
+    "name": "Marcus Bontempelli",
+    "club": "WBD",
+    "guernseyNumber": 4,
+    "season": 2026
+  },
+  {
+    "id": "Jedd Busslinger",
+    "name": "Jedd Busslinger",
+    "club": "WBD",
+    "guernseyNumber": 5,
+    "season": 2026
+  },
+  {
+    "id": "Cooper Hynes",
+    "name": "Cooper Hynes",
+    "club": "WBD",
+    "guernseyNumber": 6,
+    "season": 2026
+  },
+  {
+    "id": "Rory Lobb",
+    "name": "Rory Lobb",
+    "club": "WBD",
+    "guernseyNumber": 7,
+    "season": 2026
+  },
+  {
+    "id": "Matthew Kennedy",
+    "name": "Matthew Kennedy",
+    "club": "WBD",
+    "guernseyNumber": 8,
+    "season": 2026
+  },
+  {
+    "id": "Ryley Sanders",
+    "name": "Ryley Sanders",
+    "club": "WBD",
+    "guernseyNumber": 9,
+    "season": 2026
+  },
+  {
+    "id": "Sam Darcy",
+    "name": "Sam Darcy",
+    "club": "WBD",
+    "guernseyNumber": 10,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Jaques",
+    "name": "Lachie Jaques",
+    "club": "WBD",
+    "guernseyNumber": 11,
+    "season": 2026
+  },
+  {
+    "id": "Harvey Gallagher",
+    "name": "Harvey Gallagher",
+    "club": "WBD",
+    "guernseyNumber": 12,
+    "season": 2026
+  },
+  {
+    "id": "Oskar Baker",
+    "name": "Oskar Baker",
+    "club": "WBD",
+    "guernseyNumber": 13,
+    "season": 2026
+  },
+  {
+    "id": "Rhylee West",
+    "name": "Rhylee West",
+    "club": "WBD",
+    "guernseyNumber": 14,
+    "season": 2026
+  },
+  {
+    "id": "Jordan Croft",
+    "name": "Jordan Croft",
+    "club": "WBD",
+    "guernseyNumber": 16,
+    "season": 2026
+  },
+  {
+    "id": "Nick Coffield",
+    "name": "Nick Coffield",
+    "club": "WBD",
+    "guernseyNumber": 17,
+    "season": 2026
+  },
+  {
+    "id": "James O'Donnell",
+    "name": "James O'Donnell",
+    "club": "WBD",
+    "guernseyNumber": 18,
+    "season": 2026
+  },
+  {
+    "id": "Ed Richards",
+    "name": "Ed Richards",
+    "club": "WBD",
+    "guernseyNumber": 20,
+    "season": 2026
+  },
+  {
+    "id": "Tom Liberatore",
+    "name": "Tom Liberatore",
+    "club": "WBD",
+    "guernseyNumber": 21,
+    "season": 2026
+  },
+  {
+    "id": "James Harmes",
+    "name": "James Harmes",
+    "club": "WBD",
+    "guernseyNumber": 22,
+    "season": 2026
+  },
+  {
+    "id": "Laitham Vandermeer",
+    "name": "Laitham Vandermeer",
+    "club": "WBD",
+    "guernseyNumber": 23,
+    "season": 2026
+  },
+  {
+    "id": "Buku Khamis",
+    "name": "Buku Khamis",
+    "club": "WBD",
+    "guernseyNumber": 24,
+    "season": 2026
+  },
+  {
+    "id": "Josh Dolan",
+    "name": "Josh Dolan",
+    "club": "WBD",
+    "guernseyNumber": 26,
+    "season": 2026
+  },
+  {
+    "id": "Joel Freijah",
+    "name": "Joel Freijah",
+    "club": "WBD",
+    "guernseyNumber": 27,
+    "season": 2026
+  },
+  {
+    "id": "Lachie Bramble",
+    "name": "Lachie Bramble",
+    "club": "WBD",
+    "guernseyNumber": 29,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan McNeil",
+    "name": "Lachlan McNeil",
+    "club": "WBD",
+    "guernseyNumber": 30,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Dale",
+    "name": "Bailey Dale",
+    "club": "WBD",
+    "guernseyNumber": 31,
+    "season": 2026
+  },
+  {
+    "id": "Arthur Jones",
+    "name": "Arthur Jones",
+    "club": "WBD",
+    "guernseyNumber": 32,
+    "season": 2026
+  },
+  {
+    "id": "Aaron Naughton",
+    "name": "Aaron Naughton",
+    "club": "WBD",
+    "guernseyNumber": 33,
+    "season": 2026
+  },
+  {
+    "id": "Bailey Williams",
+    "name": "Bailey Williams",
+    "club": "WBD",
+    "guernseyNumber": 34,
+    "season": 2026
+  },
+  {
+    "id": "Luke Kennedy",
+    "name": "Luke Kennedy",
+    "club": "WBD",
+    "guernseyNumber": 35,
+    "season": 2026
+  },
+  {
+    "id": "Luke Cleary",
+    "name": "Luke Cleary",
+    "club": "WBD",
+    "guernseyNumber": 36,
+    "season": 2026
+  },
+  {
+    "id": "Michael Sellwood",
+    "name": "Michael Sellwood",
+    "club": "WBD",
+    "guernseyNumber": 37,
+    "season": 2026
+  },
+  {
+    "id": "Riley Garcia",
+    "name": "Riley Garcia",
+    "club": "WBD",
+    "guernseyNumber": 38,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Smith",
+    "name": "Lachlan Smith",
+    "club": "WBD",
+    "guernseyNumber": 40,
+    "season": 2026
+  },
+  {
+    "id": "Zac Walker",
+    "name": "Zac Walker",
+    "club": "WBD",
+    "guernseyNumber": 41,
+    "season": 2026
+  },
+  {
+    "id": "Sam Davidson",
+    "name": "Sam Davidson",
+    "club": "WBD",
+    "guernseyNumber": 42,
+    "season": 2026
+  },
+  {
+    "id": "Ryan Gardner",
+    "name": "Ryan Gardner",
+    "club": "WBD",
+    "guernseyNumber": 43,
+    "season": 2026
+  },
+  {
+    "id": "Tim English",
+    "name": "Tim English",
+    "club": "WBD",
+    "guernseyNumber": 44,
+    "season": 2026
+  },
+  {
+    "id": "Louis Emmett",
+    "name": "Louis Emmett",
+    "club": "WBD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Will Darcy",
+    "name": "Will Darcy",
+    "club": "WBD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Lachlan Carmichael",
+    "name": "Lachlan Carmichael",
+    "club": "WBD",
+    "guernseyNumber": 0,
+    "season": 2026
+  },
+  {
+    "id": "Connor Budarick",
+    "name": "Connor Budarick",
+    "club": "WBD",
+    "guernseyNumber": 0,
+    "season": 2026
+  }
+]
