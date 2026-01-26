@@ -14,7 +14,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "7e8a40b4efe7ba1582d5f1fcd7cb3034
 "assets/assets/afl_players_2026.xlsx": "b5908c09c4b183ffbf34afaec0e18351",
 "assets/assets/data/afl_players_2026.json": "ce9690dcaa5f79d3c78896d004870c33",
 "assets/assets/data/players_2025.json": "e71c8236bfb65b6fab2b31c85522fea5",
-"assets/assets/data/players_2026.json": "dd7e33c0b14f971ae11e51e7560613ec",
+"assets/assets/data/players_2026.json": "56ef784c0f7578b8be6fbf00e4993921",
 "assets/assets/logos/ADE.png": "f679f7f635a719736bc85619958f4eac",
 "assets/assets/logos/BRI.png": "a62077041e9aa07ac9ac03625d267489",
 "assets/assets/logos/CARL.png": "f2f4ce1257835580773747933ece8f9c",
