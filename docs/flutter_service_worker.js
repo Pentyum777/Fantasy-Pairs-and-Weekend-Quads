@@ -3,15 +3,18 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "0250fe103a44fd8d5f55d2ca68be70c5",
-"assets/AssetManifest.bin.json": "13d9b4a82c07aa4bef5bfb0b8ae02f91",
-"assets/AssetManifest.json": "fdc9f90ae70d6304530d7bac6fa774d9",
+const RESOURCES = {"assets/AssetManifest.bin": "7e8a40b4efe7ba1582d5f1fcd7cb3034",
+"assets/AssetManifest.bin.json": "95da08a2d2d8d48c2ceb1e09294cd097",
+"assets/AssetManifest.json": "de1f0a7edea1e0abf26b09f81ff8e40e",
 "assets/assets/afl_fixtures_2025_round_24.xlsx": "7bd23b43169c4f87c0849841d10b59b6",
 "assets/assets/afl_fixtures_2026.xlsx": "29ed66951e44272b4401397510a2096c",
-"assets/assets/afl_players_2025.json": "7ff132878b0ef0220178647dea1cedfa",
+"assets/assets/afl_players_2025.json": "66803cefbdaee13e5241d916f2e5f9b1",
 "assets/assets/afl_players_2025.xlsx": "86620d8940a8195e7680491da374d97b",
 "assets/assets/afl_players_2026.json": "d751713988987e9331980363e24189ce",
 "assets/assets/afl_players_2026.xlsx": "b5908c09c4b183ffbf34afaec0e18351",
+"assets/assets/data/afl_players_2026.json": "ce9690dcaa5f79d3c78896d004870c33",
+"assets/assets/data/players_2025.json": "e71c8236bfb65b6fab2b31c85522fea5",
+"assets/assets/data/players_2026.json": "dd7e33c0b14f971ae11e51e7560613ec",
 "assets/assets/logos/ADE.png": "f679f7f635a719736bc85619958f4eac",
 "assets/assets/logos/BRI.png": "a62077041e9aa07ac9ac03625d267489",
 "assets/assets/logos/CARL.png": "f2f4ce1257835580773747933ece8f9c",
@@ -50,7 +53,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "0250fe103a44fd8d5f55d2ca68be70c5
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
 "index.html": "ff5cb34dc688fa8e3e1cc12bc1a60d74",
 "/": "ff5cb34dc688fa8e3e1cc12bc1a60d74",
-"main.dart.js": "c7eaa7f1dd14b66c1ccbef334980b83a",
+"main.dart.js": "14f1450e1880884f8f08219e2406a4bd",
 "manifest.json": "18b05de58f5aeed2ffa6be1246cc43f1",
 "msal.js": "7dd4ad38d883c25e5652b5e7b00bbfe9",
 "version.json": "b0d2ea9d293a4ff4175362a67375b4a4"};
