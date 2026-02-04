@@ -11,6 +11,10 @@ if (!window.__msalInitialized) {
         if (window.onMsalToken) {
             console.log("MSAL: Calling window.onMsalToken with access token");
             window.onMsalToken(token);
+
+            // NEW FIX: Clear pending token if it existed
+            window.__pendingMsalToken = null;
+
         } else {
             console.log("MSAL: Flutter not ready, stashing pending token");
             window.__pendingMsalToken = token;
@@ -128,3 +132,23 @@ if (!window.__msalInitialized) {
 
     console.log("MSAL: Initialization complete (Redirect Mode).");
 }
+
+// -------------------------------------------------------------------
+// NEW FIX: If Flutter registers late, deliver pending token immediately
+// -------------------------------------------------------------------
+Object.defineProperty(window, "onMsalToken", {
+    set: function (callback) {
+        console.log("MSAL: Flutter registered onMsalToken callback");
+        this.__onMsalToken = callback;
+
+        // If a token was stashed earlier, deliver it now
+        if (window.__pendingMsalToken) {
+            console.log("MSAL: Delivering previously stashed token");
+            callback(window.__pendingMsalToken);
+            window.__pendingMsalToken = null;
+        }
+    },
+    get: function () {
+        return this.__onMsalToken;
+    }
+});
