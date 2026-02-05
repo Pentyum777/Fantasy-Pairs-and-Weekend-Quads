@@ -2,29 +2,26 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-  <meta name="description" content="Fantasy Pairs" />
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+  <meta name="description" content="A new Flutter project." />
 
   <title>Fantasy Pairs</title>
 
-  <!-- Load MSAL browser library -->
+  <!-- Load MSAL.js -->
   <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
 
   <!-- Load your MSAL integration -->
   <script src="msal.js"></script>
 
+  <!-- Flutter web bootstrap -->
   <meta name="flutter-service-worker" content="false">
-  <base href="/Fantasy-Pairs-and-Weekend-Quads/">
+  <base href="/">
 
   <meta name="flutter-web-renderer" content="html" />
   <meta name="flutter-web-auto-detect" content="false" />
 </head>
 
 <body>
-  <!-- Required for Flutter JS interop -->
-  <script src="flutter.js"></script>
-
-  <!-- Main Flutter application -->
   <script src="main.dart.js" type="application/javascript"></script>
 </body>
 </html>
