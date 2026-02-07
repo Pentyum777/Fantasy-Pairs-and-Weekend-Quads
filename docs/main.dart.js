@@ -90218,7 +90218,7 @@ d=o.i(0,"MATCH ID")
 c=o.i(0,"ISPRESEASON")
 if(k==null||j==null||i==null||h==null||g==null){A.c9("\u274c Missing required columns for season "+b9)
 return}for(s=b5.a,r=d!=null,b=e!=null,a=f!=null,a0=c==null,a1=1;a1<q.gBe(0).length;++a1){a2=q.gBe(0)[a1]
-if(a2.length<p.length)continue
+while(a2.length<p.length)a2.push(b6)
 a3=B.c.ct(b5.l9(a2,k))
 if(a3.length===0)continue
 a4=a3.toUpperCase()
