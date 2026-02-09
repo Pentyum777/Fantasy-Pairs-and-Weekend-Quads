@@ -26894,7 +26894,7 @@ v4(a,b,c){return A.aTd(a,b,c)},
 aTd(c7,c8,c9){var s=0,r=A.V(t.IA),q,p=2,o=[],n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,c0,c1,c2,c3,c4,c5,c6
 var $async$v4=A.W(function(d1,d2){if(d1===1){o.push(d2)
 s=p}for(;;)switch(s){case 0:s=3
-return A.X(A.aEa(A.hI("http://localhost:3000/fantasy/"+c7)),$async$v4)
+return A.X(A.aEa(A.hI("http://localhost:8080/fantasy/"+c7)),$async$v4)
 case 3:c5=d2
 if(c5.b!==200){b=c5
 A.bx("\u274c DFS fantasy request failed for "+c7+" (status "+c5.b+"). Body: "+A.tm(A.ti(b.e).c.a.i(0,"charset")).cm(0,b.w))
@@ -26913,7 +26913,7 @@ q=b
 s=1
 break}p=5
 s=8
-return A.X(A.aEa(A.hI("http://localhost:3000/meta/"+c7)),$async$v4)
+return A.X(A.aEa(A.hI("http://localhost:8080/meta/"+c7)),$async$v4)
 case 8:l=d2
 if(l.b===200){b=l
 b=A.tm(A.ti(b.e).c.a.i(0,"charset")).cm(0,b.w).length!==0}else b=!1
