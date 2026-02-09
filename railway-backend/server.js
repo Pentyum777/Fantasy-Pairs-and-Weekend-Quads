@@ -9,6 +9,11 @@ const dfsMap = JSON.parse(fs.readFileSync("./dfs_map.json", "utf8"));
 
 const app = express();
 
+// Root route so the Railway domain shows a response
+app.get("/", (req, res) => {
+  res.send("DFS backend is running");
+});
+
 // Fantasy stats endpoint
 app.get("/fantasy/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
