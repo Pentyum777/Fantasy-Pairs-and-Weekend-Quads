@@ -2,12 +2,25 @@ import express from "express";
 import fs from "fs";
 import { scrapeDFS } from "./dfs_scraper.js";
 
+console.log("CORS-enabled server starting...");
+
 const port = process.env.PORT || 8080;
 
 // Load DFS mapping
 const dfsMap = JSON.parse(fs.readFileSync("./dfs_map.json", "utf8"));
 
 const app = express();
+
+// ✅ CORS middleware — MUST be here, before all routes
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Root route so the Railway domain shows a response
 app.get("/", (req, res) => {
