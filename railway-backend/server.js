@@ -2,7 +2,7 @@ import express from "express";
 import fs from "fs";
 import { scrapeDFS } from "./dfs_scraper.js";
 
-const PORT = 3000;
+const port = process.env.PORT || 8080;
 
 // Load DFS mapping
 const dfsMap = JSON.parse(fs.readFileSync("./dfs_map.json", "utf8"));
@@ -45,6 +45,6 @@ app.get("/meta/:matchId", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`DFS backend running on http://localhost:${PORT}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`DFS backend running on port ${port}`);
 });
