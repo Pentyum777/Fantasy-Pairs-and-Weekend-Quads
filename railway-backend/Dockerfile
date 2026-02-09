@@ -1,12 +1,12 @@
-FROM mcr.microsoft.com/playwright:v1.44.0-jammy
+FROM mcr.microsoft.com/playwright:v1.58.1-jammy
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY railway-backend/package*.json ./
 RUN npm install
 
-COPY . .
+COPY railway-backend/. .
 
-EXPOSE 3000
+EXPOSE 8080
 
 CMD ["node", "server.js"]
