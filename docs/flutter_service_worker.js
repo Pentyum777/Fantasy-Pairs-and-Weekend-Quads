@@ -3,8 +3,8 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "6f0a7ceb9aa86e9e7705f7654033ba49",
-"assets/AssetManifest.bin.json": "46b02f1b61afe77b353d924b7bc47246",
+const RESOURCES = {"assets/AssetManifest.bin": "a1a3964403c88415ccc57a8c8f8320b5",
+"assets/AssetManifest.bin.json": "16faf8c477a400c913e288dceadcf6fa",
 "assets/assets/afl_fixtures_2025_round_24.xlsx": "af4feba7549d8fc172b91c670824a772",
 "assets/assets/afl_fixtures_2026.xlsx": "b1aabc56c84a5fe5e886b4d13b680da4",
 "assets/assets/afl_players_2025.json": "66803cefbdaee13e5241d916f2e5f9b1",
@@ -24,7 +24,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "6f0a7ceb9aa86e9e7705f7654033ba49
 "assets/assets/logos/GEE.png": "0adb22ee3f2c3df5053d9799545fb06e",
 "assets/assets/logos/GWS.png": "48b1fdf99f96033a8b57b2bc0745e0e1",
 "assets/assets/logos/HAW.png": "61babe9b37c530693a8f203f57c052d0",
-"assets/assets/logos/MELB.png": "c3bfff8ae1c1f07eb1ba455c5b0e8727",
+"assets/assets/logos/MEL.png": "c3bfff8ae1c1f07eb1ba455c5b0e8727",
 "assets/assets/logos/NTH.png": "3fd5899156017d35ebef537d8cb3b5d6",
 "assets/assets/logos/PTA.png": "1a27054be1e286441dcff3f0e424c591",
 "assets/assets/logos/RIC.png": "473d31863ae58cb38f1d049580008b5f",
@@ -52,7 +52,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "6f0a7ceb9aa86e9e7705f7654033ba49
 "canvaskit/skwasm_heavy.wasm": "b0be7910760d205ea4e011458df6ee01",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
 "flutter.js": "24bc71911b75b5f8135c949e27a2984e",
-"flutter_bootstrap.js": "1f8611ed17302906edec57c8a52366a5",
+"flutter_bootstrap.js": "06373146cd58ea7c987fbeab81bc9268",
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "icons/Icon-maskable-192.png": "c457ef57daa1d16f64b27b786ec2ea3c",
