@@ -3,8 +3,8 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "a1a3964403c88415ccc57a8c8f8320b5",
-"assets/AssetManifest.bin.json": "16faf8c477a400c913e288dceadcf6fa",
+const RESOURCES = {"assets/AssetManifest.bin": "6f0a7ceb9aa86e9e7705f7654033ba49",
+"assets/AssetManifest.bin.json": "46b02f1b61afe77b353d924b7bc47246",
 "assets/assets/afl_fixtures_2025_round_24.xlsx": "af4feba7549d8fc172b91c670824a772",
 "assets/assets/afl_fixtures_2026.xlsx": "b1aabc56c84a5fe5e886b4d13b680da4",
 "assets/assets/afl_players_2025.json": "66803cefbdaee13e5241d916f2e5f9b1",
@@ -24,7 +24,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "a1a3964403c88415ccc57a8c8f8320b5
 "assets/assets/logos/GEE.png": "0adb22ee3f2c3df5053d9799545fb06e",
 "assets/assets/logos/GWS.png": "48b1fdf99f96033a8b57b2bc0745e0e1",
 "assets/assets/logos/HAW.png": "61babe9b37c530693a8f203f57c052d0",
-"assets/assets/logos/MEL.png": "c3bfff8ae1c1f07eb1ba455c5b0e8727",
+"assets/assets/logos/MELB.png": "c3bfff8ae1c1f07eb1ba455c5b0e8727",
 "assets/assets/logos/NTH.png": "3fd5899156017d35ebef537d8cb3b5d6",
 "assets/assets/logos/PTA.png": "1a27054be1e286441dcff3f0e424c591",
 "assets/assets/logos/RIC.png": "473d31863ae58cb38f1d049580008b5f",
@@ -52,14 +52,14 @@ const RESOURCES = {"assets/AssetManifest.bin": "a1a3964403c88415ccc57a8c8f8320b5
 "canvaskit/skwasm_heavy.wasm": "b0be7910760d205ea4e011458df6ee01",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
 "flutter.js": "24bc71911b75b5f8135c949e27a2984e",
-"flutter_bootstrap.js": "0ef1523535be0fbcaa3121cd191a56ea",
+"flutter_bootstrap.js": "ef3d72a2fa77244dac2f052d2cdb5c83",
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "icons/Icon-maskable-192.png": "c457ef57daa1d16f64b27b786ec2ea3c",
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
 "index.html": "8ec89253df6932e0578c48fa061ec9d3",
 "/": "8ec89253df6932e0578c48fa061ec9d3",
-"main.dart.js": "84f6e3686f562f8d9ad35264d0da71c9",
+"main.dart.js": "10911882af917cee7fe0b70636a4610e",
 "manifest.json": "18b05de58f5aeed2ffa6be1246cc43f1",
 "msal.js": "c48001f4d76ed76910535c1d663e140d",
 "version.json": "b0d2ea9d293a4ff4175362a67375b4a4"};
