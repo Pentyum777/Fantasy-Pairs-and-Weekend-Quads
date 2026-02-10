@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/punter_selection.dart';
 import '../services/championship_service.dart';
 import '../widgets/leaderboard_table.dart';
+import '../constants/ui_dimensions.dart';
 
 class ChampionshipScreen extends StatefulWidget {
   final ChampionshipService service;
@@ -39,6 +40,10 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
     final List<PunterSelection> monthlyLeaderboard = _selectedMonth == null
         ? []
         : widget.service.monthlyLeaderboard(_selectedMonth!);
+
+    final double leaderboardWidth = UIDimensions.rankColumnWidth +
+        UIDimensions.punterNameColumnWidth +
+        UIDimensions.totalColumnWidth;
 
     return Scaffold(
       appBar: AppBar(
@@ -98,7 +103,8 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
                         Expanded(
                           child: LeaderboardTable(
                             punters: overallLeaderboard,
-                            rowHeight: 34,
+                            rowHeight: UIDimensions.rowHeight,
+                            totalWidth: leaderboardWidth,
                           ),
                         ),
                       ],
@@ -123,7 +129,8 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
                         Expanded(
                           child: LeaderboardTable(
                             punters: monthlyLeaderboard,
-                            rowHeight: 34,
+                            rowHeight: UIDimensions.rowHeight,
+                            totalWidth: leaderboardWidth,
                           ),
                         ),
                       ],

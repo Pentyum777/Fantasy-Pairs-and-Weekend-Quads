@@ -1,9 +1,7 @@
-
-
 import 'package:flutter/material.dart';
-import 'dart:js' as js;
-import 'dart:js_util' as js_util;
-import 'package:js/js.dart';
+
+// ignore: deprecated_member_use
+
 
 import 'services/msal_service.dart';
 
@@ -16,23 +14,14 @@ import 'services/user_role_service.dart';
 import 'screens/round_selection_screen.dart';
 import 'screens/game_type_selection_screen.dart';
 
-@JS('onMsalToken')
-external set onMsalToken(void Function(String token) f);
-
+import 'debug/afl_data_validator.dart';
 
 void main() {
- 
-print("🔥🔥🔥 MAIN EXECUTED — VERSION 7");
+  print("🔥 MAIN EXECUTED — CLEAN VERSION");
 
-  onMsalToken = allowInterop((String token) {
-    MsalService.receiveTokenFromJs(token);
-  });
-
-  final pending = js_util.getProperty(js.context, '__pendingMsalToken');
-  if (pending != null) {
-    MsalService.receiveTokenFromJs(pending);
-    js_util.setProperty(js.context, '__pendingMsalToken', null);
-  }
+  // IMPORTANT:
+  // We do NOT override js.context['onMsalToken'] anymore.
+  // msal.js already delivers tokens into MsalService internally.
 
   runApp(const MyApp());
 }
@@ -46,6 +35,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String? _token;
+
+  int selectedSeason = 2026;
 
   late final FixtureRepository fixtureRepo;
   late final PlayerRepository playerRepo;
@@ -64,17 +55,25 @@ class _MyAppState extends State<MyApp> {
     playerRepo = PlayerRepository();
     fantasyService = PunterScoreService();
 
-    playerRepo.loadPlayers();
+    playerRepo.loadAllPlayers();
     userRoleService.setRole(UserRole.admin);
 
+    // MSAL → Dart token callback
     MsalService.listenForToken((token) {
+      print("MSAL(Dart): Token received → $token");
+
       if (!mounted) return;
 
       setState(() {
         _token = token;
-        _fixtureLoadFuture = fixtureRepo.loadFixtures();
+        _fixtureLoadFuture = _loadAllFixtures();
       });
     });
+  }
+
+  Future<void> _loadAllFixtures() async {
+    await fixtureRepo.loadFixturesFromExcelFile('assets/afl_fixtures_2026.xlsx');
+    await fixtureRepo.loadFixturesFromExcelFile('assets/afl_fixtures_2025_round_24.xlsx');
   }
 
   @override
@@ -84,7 +83,15 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(primarySwatch: Colors.blue),
       home: _token == null
           ? LoginScreen(
-              onLoggedIn: (token) {
+              onLoggedIn: () {
+                // User pressed login → mark as logged in immediately
+                // so FutureBuilder can run and fixtures can load.
+                setState(() {
+                  _token = "local-login";
+                  _fixtureLoadFuture = _loadAllFixtures();
+                });
+
+                // Also start MSAL login flow (optional for real auth)
                 MsalService.startLogin(["User.Read"]);
               },
             )
@@ -97,31 +104,52 @@ class _MyAppState extends State<MyApp> {
                   );
                 }
 
-                final List<int?> rounds = [];
+                validateAflData(
+                  fixtureRepo: fixtureRepo,
+                  playerRepo: playerRepo,
+                );
 
-                if (fixtureRepo.preseasonFixtures().isNotEmpty) {
-                  rounds.add(null);
-                }
+                return SeasonSelectionScreen(
+                  seasons: const [2025, 2026],
+                  onSelect: (season) {
+                    setState(() {
+                      selectedSeason = season;
+                    });
 
-                rounds.addAll(fixtureRepo.allSeasonRounds());
+                    final List<int?> rounds = [];
 
-                // 🔥 CRITICAL DIAGNOSTIC
-                print("🔥 ROUNDS LIST (from main.dart) → $rounds");
+                    if (fixtureRepo.preseasonFixturesForSeason(season).isNotEmpty) {
+                      rounds.add(null);
+                    }
 
-                return RoundSelectionScreen(
-                  rounds: rounds,
-                  completedRounds: roundCompletionService.completedRounds,
-                  onRoundSelected: (int? round) {
+                    rounds.addAll(fixtureRepo.allRoundsForSeason(season));
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => GameTypeSelectionScreen(
-                          round: round,
-                          fixtureRepo: fixtureRepo,
-                          playerRepo: playerRepo,
-                          fantasyService: fantasyService,
-                          roundCompletionService: roundCompletionService,
-                          userRoleService: userRoleService,
+                        settings: const RouteSettings(name: "round_selection"),
+                        builder: (_) => RoundSelectionScreen(
+                          rounds: rounds,
+                          completedRounds: roundCompletionService.completedRounds,
+                          onRoundSelected: (int? round) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                settings: RouteSettings(
+                                  name: "game_type_${round ?? 'ps'}",
+                                ),
+                                builder: (_) => GameTypeSelectionScreen(
+                                  season: season,
+                                  round: round,
+                                  fixtureRepo: fixtureRepo,
+                                  playerRepo: playerRepo,
+                                  fantasyService: fantasyService,
+                                  roundCompletionService: roundCompletionService,
+                                  userRoleService: userRoleService,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     );
@@ -133,8 +161,38 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
+class SeasonSelectionScreen extends StatelessWidget {
+  final List<int> seasons;
+  final void Function(int season) onSelect;
+
+  const SeasonSelectionScreen({
+    super.key,
+    required this.seasons,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Select Season")),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: seasons.map((season) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: ElevatedButton(
+              onPressed: () => onSelect(season),
+              child: Text("$season Season"),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
 class LoginScreen extends StatefulWidget {
-  final void Function(String token) onLoggedIn;
+  final void Function() onLoggedIn;
 
   const LoginScreen({super.key, required this.onLoggedIn});
 
@@ -147,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     setState(() => _loading = true);
-    widget.onLoggedIn("");
+    widget.onLoggedIn();
   }
 
   @override

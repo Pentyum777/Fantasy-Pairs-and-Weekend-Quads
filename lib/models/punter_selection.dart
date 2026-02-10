@@ -33,6 +33,6 @@ class PunterSelection {
   }
 
   int get totalScore {
-    return picks.fold(0, (sum, p) => sum + (p.score));
+    return picks.fold(0, (sum, p) => sum + (p.fantasyPoints));
   }
 }

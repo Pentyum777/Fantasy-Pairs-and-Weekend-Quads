@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
+import 'dart:io';
+
 import '../models/afl_player.dart';
 
 class PlayerLoader {
@@ -14,7 +15,7 @@ class PlayerLoader {
     "Gold Coast Suns": "GCS",
     "GWS Giants": "GWS",
     "Hawthorn": "HAW",
-    "Melbourne": "MEL",
+    "Melbourne": "MELB",
     "North Melbourne": "NTH",
     "Port Adelaide": "PTA",
     "Richmond": "RIC",
@@ -25,7 +26,8 @@ class PlayerLoader {
   };
 
   static Future<List<AflPlayer>> loadPlayers2026() async {
-    final raw = await rootBundle.loadString('assets/afl_players_2026.json');
+    // Load the TSV file directly from disk (not via Flutter rootBundle)
+    final raw = await File('assets/afl_players_2026.json').readAsString();
 
     // The file is actually TSV, not JSON.
     final lines = const LineSplitter().convert(raw);

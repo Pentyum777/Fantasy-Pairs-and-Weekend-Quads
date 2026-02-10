@@ -4,6 +4,7 @@ class AflPlayerMatchStats {
   final AflPlayer player;
 
   final String team;
+
   final int kicks;
   final int handballs;
   final int disposals;
@@ -12,10 +13,16 @@ class AflPlayerMatchStats {
   final int goals;
   final int behinds;
   final int hitouts;
+
+  final int clearances;
+  final int metresGained;
+  final int goalAssists;
+  final int timeOnGroundPercentage;
+
   final int freesFor;
   final int freesAgainst;
 
-  /// Live AFL Fantasy score (computed from raw stats)
+  /// Live AFL Fantasy score (direct from backend)
   int fantasyPoints;
 
   AflPlayerMatchStats({
@@ -29,6 +36,10 @@ class AflPlayerMatchStats {
     this.goals = 0,
     this.behinds = 0,
     this.hitouts = 0,
+    this.clearances = 0,
+    this.metresGained = 0,
+    this.goalAssists = 0,
+    this.timeOnGroundPercentage = 0,
     this.freesFor = 0,
     this.freesAgainst = 0,
     this.fantasyPoints = 0,

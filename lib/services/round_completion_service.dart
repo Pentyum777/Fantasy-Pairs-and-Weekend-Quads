@@ -9,11 +9,11 @@ class RoundCompletionService {
 
   /// Marks a round as completed.
   void markCompleted(int? round) {
-  if (round == null) {
-    // If you *don’t* want to track PS completion, you can early‑return:
-    // return;
-  }
+    if (round == null) {
+      // If null rounds should be ignored, simply return.
+      return;
+    }
 
-  // Existing logic, now accepting null if you choose to handle it.
-}
+    completedRounds.add(round);
+  }
 }

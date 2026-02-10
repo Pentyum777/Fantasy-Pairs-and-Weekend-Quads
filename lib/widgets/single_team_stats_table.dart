@@ -37,9 +37,7 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
 
     return Column(
       children: [
-        // -------------------------------------------------------------------
-        // TEAM LOGO SWITCHER (tap to toggle between the two teams)
-        // -------------------------------------------------------------------
+        // TEAM LOGO SWITCHER
         GestureDetector(
           onTap: () {
             final otherTeam =
@@ -58,9 +56,7 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
           ),
         ),
 
-        // -------------------------------------------------------------------
         // TABLE CONTAINER
-        // -------------------------------------------------------------------
         Container(
           decoration: BoxDecoration(
             color: cs.surface,
@@ -70,15 +66,13 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
-              // -------------------------------------------------------------
-              // TITLE HEADER (shows team code)
-              // -------------------------------------------------------------
+              // TITLE HEADER
               Container(
                 height: headerHeight,
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 alignment: Alignment.centerLeft,
-                color: cs.surfaceVariant,
+                color: cs.surfaceContainerHighest,
                 child: Text(
                   selectedTeam,
                   style: theme.textTheme.labelLarge?.copyWith(
@@ -90,13 +84,11 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
 
               const Divider(height: 1),
 
-              // -------------------------------------------------------------
               // COLUMN LABELS
-              // -------------------------------------------------------------
               Container(
                 height: headerHeight,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                color: cs.surfaceVariant,
+                color: cs.surfaceContainerHighest,
                 child: Row(
                   children: widget.columns
                       .map(
@@ -116,9 +108,7 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
 
               const Divider(height: 1),
 
-              // -------------------------------------------------------------
               // DATA ROWS
-              // -------------------------------------------------------------
               ...rows.asMap().entries.map((entry) {
                 final index = entry.key;
                 final row = entry.value;
@@ -128,7 +118,7 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
                   height: rowHeight,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   color: isStriped
-                      ? cs.surfaceVariant.withAlpha(76)
+                      ? cs.surfaceContainerHighest.withValues(alpha: 0.30)
                       : cs.surface,
                   child: Row(
                     children: widget.columns

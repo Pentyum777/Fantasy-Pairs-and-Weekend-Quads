@@ -17,7 +17,9 @@ import '../widgets/team_logo.dart';
 import 'game_view_screen.dart';
 
 class CustomPairsBuilderScreen extends StatefulWidget {
+  final int season;
   final int? round;
+
   final FixtureRepository fixtureRepo;
   final PlayerRepository playerRepo;
   final PunterScoreService fantasyService;
@@ -27,6 +29,7 @@ class CustomPairsBuilderScreen extends StatefulWidget {
 
   const CustomPairsBuilderScreen({
     super.key,
+    required this.season,
     required this.round,
     required this.fixtureRepo,
     required this.playerRepo,
@@ -47,8 +50,12 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
   @override
   Widget build(BuildContext context) {
     final fixtures = widget.round == null
-    ? widget.fixtureRepo.preseasonFixtures()
-    : widget.fixtureRepo.fixturesForRound(widget.round!).toList();
+        ? widget.fixtureRepo.preseasonFixturesForSeason(widget.season)
+        : widget.fixtureRepo.fixturesForSeasonRound(
+            widget.season,
+            widget.round!,
+          );
+
     final roundLabel = RoundHelper.label(widget.round);
 
     return Scaffold(
@@ -57,9 +64,9 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+          constraints: const BoxConstraints(maxWidth: 480),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 Text(
@@ -67,96 +74,109 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                   style: Theme.of(context).textTheme.titleMedium,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
+                // FIXTURE LIST
                 Expanded(
                   child: ListView.builder(
                     itemCount: fixtures.length,
                     itemBuilder: (context, index) {
                       final f = fixtures[index];
-
                       final fixtureId = f.matchId ?? index.toString();
                       final selected = _selectedFixtureIds.contains(fixtureId);
-
                       final label = _buildFixtureLabel(index, f.date);
 
-                      return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: selected
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.grey.shade400,
-                            width: selected ? 2 : 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            TeamLogo(f.homeTeam, size: 32),
-                            const SizedBox(width: 12),
-
-                            Expanded(
-                              child: InkWell(
-                                onTap: widget.userRoleService.isAdmin
-                                    ? () {
-                                        setState(() {
-                                          selected
-                                              ? _selectedFixtureIds
-                                                  .remove(fixtureId)
-                                              : _selectedFixtureIds
-                                                  .add(fixtureId);
-                                        });
-                                      }
-                                    : null,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      label,
-                                      style: const TextStyle(fontSize: 14),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: widget.userRoleService.isAdmin
+                              ? () {
+                                  setState(() {
+                                    selected
+                                        ? _selectedFixtureIds.remove(fixtureId)
+                                        : _selectedFixtureIds.add(fixtureId);
+                                  });
+                                }
+                              : null,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(18),
+                              color: selected
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.08)
+                                  : Theme.of(context).colorScheme.surface,
+                              border: Border.all(
+                                color: selected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.grey.shade400,
+                                width: selected ? 2 : 1,
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                             ),
+                            child: Row(
+                              children: [
+                                TeamLogo(f.homeTeam, size: 34),
+                                const SizedBox(width: 12),
 
-                            Checkbox(
-                              value: selected,
-                              onChanged: widget.userRoleService.isAdmin
-                                  ? (v) {
-                                      setState(() {
-                                        v == true
-                                            ? _selectedFixtureIds
-                                                .add(fixtureId)
-                                            : _selectedFixtureIds
-                                                .remove(fixtureId);
-                                      });
-                                    }
-                                  : null,
+                                // LABEL
+                                Expanded(
+                                  child: Text(
+                                    label,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(width: 12),
+                                TeamLogo(f.awayTeam, size: 34),
+                              ],
                             ),
-
-                            TeamLogo(f.awayTeam, size: 32),
-                          ],
+                          ),
                         ),
                       );
                     },
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
+                // START BUTTON
                 ElevatedButton(
                   onPressed: widget.userRoleService.isAdmin &&
                           _selectedFixtureIds.isNotEmpty
                       ? () => _startCustomPairs(context, fixtures)
                       : null,
-                  child: const Text("Start Custom Pairs"),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 24,
+                    ),
+                  ),
+                  child: const Text(
+                    "Start Custom Pairs",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ],
             ),
@@ -188,8 +208,8 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
         punterNumber: i + 1,
         punterName: "P${i + 1}",
         picks: [
-          PlayerPick(pickNumber: 1, player: null, score: 0),
-          PlayerPick(pickNumber: 2, player: null, score: 0),
+          PlayerPick(pickNumber: 1, player: null, stats: null),
+          PlayerPick(pickNumber: 2, player: null, stats: null),
         ],
       ),
     );
@@ -198,6 +218,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => GameViewScreen(
+          season: widget.season,
           round: widget.round,
           gameType: "custom_pairs",
           selections: selections,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/game_type.dart';
 
 class GameTypeSelector extends StatelessWidget {
-  final Function(GameType) onSelect;
+  final ValueChanged<GameType> onSelect;
 
   const GameTypeSelector({
     super.key,

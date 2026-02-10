@@ -24,6 +24,18 @@ if (!(Test-Path $webDir)) {
 Write-Host "✅ Flutter build complete."
 
 # ---------------------------------------------------------------------------
+# 1B. REMOVE SERVICE WORKER (HARD DELETE)
+# ---------------------------------------------------------------------------
+$swPath = Join-Path $webDir "flutter_service_worker.js"
+if (Test-Path $swPath) {
+    Write-Host "🧹 Removing flutter_service_worker.js to prevent stale caching..."
+    Remove-Item -Force $swPath
+    Write-Host "✅ Service worker removed."
+} else {
+    Write-Host "ℹ️ No service worker found — nothing to remove."
+}
+
+# ---------------------------------------------------------------------------
 # 2. APPLY CACHE-BUSTING VERSION HASH (JS ONLY)
 # ---------------------------------------------------------------------------
 $timestamp = Get-Date -Format "yyyyMMddHHmmss"
@@ -32,8 +44,7 @@ Write-Host "Applying version hash: $versionHash"
 
 $filesToHash = @(
     "flutter.js",
-    "main.dart.js",
-    "flutter_service_worker.js"
+    "main.dart.js"
 )
 
 foreach ($file in $filesToHash) {
@@ -65,7 +76,7 @@ foreach ($file in $filesToHash) {
     $index = $index -replace $pattern, $replacement
 }
 
-Set-Content -Path $indexPath -Value $index -Encoding UTF8
+[System.IO.File]::WriteAllLines($indexPath, $index)
 Write-Host "✅ index.html updated with hashed JS references."
 
 # ---------------------------------------------------------------------------

@@ -56,7 +56,7 @@ class SideBySideGameTables extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             alignment: Alignment.centerLeft,
-            color: cs.surfaceVariant,
+            color: cs.surfaceContainerHighest,
             child: Text(
               title,
               style: theme.textTheme.labelLarge?.copyWith(
@@ -72,7 +72,7 @@ class SideBySideGameTables extends StatelessWidget {
           Container(
             height: headerHeight,
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            color: cs.surfaceVariant,
+            color: cs.surfaceContainerHighest,
             child: Row(
               children: columns
                   .map(
@@ -102,7 +102,7 @@ class SideBySideGameTables extends StatelessWidget {
               height: rowHeight,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               color: isStriped
-                  ? cs.surfaceVariant.withOpacity(0.30)
+                  ? cs.surfaceContainerHighest.withValues(alpha: 0.30)
                   : cs.surface,
               child: Row(
                 children: columns
@@ -151,7 +151,7 @@ class SideBySideGameTables extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             alignment: Alignment.centerLeft,
-            color: cs.surfaceVariant,
+            color: cs.surfaceContainerHighest,
             child: Text(
               title,
               style: theme.textTheme.labelLarge?.copyWith(
@@ -167,7 +167,7 @@ class SideBySideGameTables extends StatelessWidget {
           Container(
             height: headerHeight,
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            color: cs.surfaceVariant,
+            color: cs.surfaceContainerHighest,
             child: Row(
               children: columns
                   .map(
@@ -197,7 +197,7 @@ class SideBySideGameTables extends StatelessWidget {
               height: rowHeight,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               color: isStriped
-                  ? cs.surfaceVariant.withOpacity(0.30)
+                  ? cs.surfaceContainerHighest.withValues(alpha: 0.30)
                   : cs.surface,
               child: Row(
                 children: columns

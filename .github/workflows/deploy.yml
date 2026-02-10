@@ -16,6 +16,13 @@ jobs:
         with:
           channel: stable
 
+      - name: Remove Flutter service worker before deploy
+        shell: pwsh
+        run: |
+          if (Test-Path "build/web/flutter_service_worker.js") {
+            Remove-Item -Force "build/web/flutter_service_worker.js"
+          }
+
       - name: Run deploy script
         shell: pwsh
         run: |

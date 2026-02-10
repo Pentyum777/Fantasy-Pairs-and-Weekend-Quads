@@ -5,20 +5,39 @@ if (!window.__msalInitialized) {
     console.log("MSAL: Initializing (Redirect + PKCE)...");
 
     // -------------------------------------------------------------------
-    // 1. Function to deliver token to Flutter (matches main.dart)
+    // TOKEN DELIVERY (Callback + Pending Token)
     // -------------------------------------------------------------------
-    function sendTokenToFlutter(token) {
-        if (window.onMsalToken) {
-            console.log("MSAL: Calling window.onMsalToken with access token");
+    function deliverToken(token) {
+        if (typeof window.onMsalToken === "function") {
+            console.log("MSAL: Delivering token to Flutter");
             window.onMsalToken(token);
+            window.__pendingMsalToken = null;
         } else {
             console.log("MSAL: Flutter not ready, stashing pending token");
             window.__pendingMsalToken = token;
         }
     }
 
+    // Intercept assignment to window.onMsalToken
+    Object.defineProperty(window, "onMsalToken", {
+        set: function (callback) {
+            console.log("MSAL: Flutter registered onMsalToken callback");
+            this.__onMsalToken = callback;
+
+            // Deliver pending token immediately
+            if (window.__pendingMsalToken) {
+                console.log("MSAL: Delivering previously stashed token");
+                callback(window.__pendingMsalToken);
+                window.__pendingMsalToken = null;
+            }
+        },
+        get: function () {
+            return this.__onMsalToken;
+        }
+    });
+
     // -------------------------------------------------------------------
-    // 2. MSAL configuration
+    // MSAL CONFIG
     // -------------------------------------------------------------------
     const msalConfig = {
         auth: {
@@ -36,18 +55,17 @@ if (!window.__msalInitialized) {
     let activeAccount = null;
 
     // -------------------------------------------------------------------
-    // 3. Handle redirect result
+    // HANDLE REDIRECT RESULT
     // -------------------------------------------------------------------
     msalInstance.handleRedirectPromise().then((result) => {
         if (result) {
-            console.log("MSAL: Redirect login success", result);
+            console.log("MSAL: Redirect login success →", result);
 
             msalInstance.setActiveAccount(result.account);
             activeAccount = result.account;
 
             if (result.accessToken) {
-                console.log("MSAL: Dispatching token to Flutter");
-                sendTokenToFlutter(result.accessToken);
+                deliverToken(result.accessToken);
             }
         } else {
             console.log("MSAL: No redirect result");
@@ -57,7 +75,7 @@ if (!window.__msalInitialized) {
     });
 
     // -------------------------------------------------------------------
-    // 4. Restore active account
+    // RESTORE ACTIVE ACCOUNT
     // -------------------------------------------------------------------
     const restored = msalInstance.getActiveAccount();
     if (restored) {
@@ -73,7 +91,7 @@ if (!window.__msalInitialized) {
     }
 
     // -------------------------------------------------------------------
-    // 5. Login (Redirect)
+    // LOGIN (REDIRECT)
     // -------------------------------------------------------------------
     window.msalLogin = async function (scopesJson) {
         console.log(">>> msalLogin called with:", scopesJson);
@@ -83,16 +101,13 @@ if (!window.__msalInitialized) {
         try {
             console.log("MSAL: Starting redirect login...");
             await msalInstance.loginRedirect({ scopes });
-            return null;
-
         } catch (err) {
             console.error("MSAL Login Redirect Error:", err);
-            return null;
         }
     };
 
     // -------------------------------------------------------------------
-    // 6. Silent token acquisition
+    // SILENT TOKEN ACQUISITION
     // -------------------------------------------------------------------
     window.msalGetToken = async function (scopesJson) {
         console.log(">>> msalGetToken called with:", scopesJson);
@@ -113,8 +128,7 @@ if (!window.__msalInitialized) {
             console.log("MSAL: Silent token success", result);
 
             if (result.accessToken) {
-                console.log("MSAL: Dispatching token to Flutter");
-                sendTokenToFlutter(result.accessToken);
+                deliverToken(result.accessToken);
             }
 
             return result.accessToken || null;

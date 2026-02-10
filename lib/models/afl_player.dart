@@ -34,8 +34,6 @@ class AflPlayer {
   String get fullName => name;
 
   /// Short name used for dropdowns and compact UI
-  /// "Marcus Bontempelli" -> "Marcus Bontempelli"
-  /// "Nick Daicos" -> "Nick Daicos"
   String get shortName {
     final parts = name.split(" ");
     if (parts.length <= 1) return name;
@@ -51,4 +49,16 @@ class AflPlayer {
         season: 2026,
         fantasyScore: 0,
       );
+
+  /// JSON serialization for batch export
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "name": name,
+      "club": club,
+      "guernseyNumber": guernseyNumber,
+      "season": season,
+      "fantasyScore": fantasyScore,
+    };
+  }
 }

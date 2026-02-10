@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
 
 class TeamColoursByClub {
-  // Keys here should match AflPlayer.club values.
-  // Adjust these codes to whatever you actually use.
   static const Map<String, Map<String, Color>> colours = {
     "ADE": {
       "bg": Color(0xFF002b5c),
       "fg": Color(0xFFffd200),
     },
-    "BRI": {
+    "BRL": {
       "bg": Color(0xFFa30046),
       "fg": Color(0xFFfdbe57),
     },
-    "CAR": {
+    "CAR": { // FIXED
       "bg": Color(0xFF0e1e2d),
       "fg": Colors.white,
     },
-    "COL": {
+    "COL": { // FIXED
       "bg": Colors.black,
       "fg": Colors.white,
     },
@@ -44,9 +42,9 @@ class TeamColoursByClub {
       "bg": Color(0xFF4d2004),
       "fg": Color(0xFFfbbf15),
     },
-    "MEL": {
-      "fg": Color(0xFFcc2031),
+    "MEL": { // FIXED
       "bg": Color(0xFF0f1131),
+      "fg": Color(0xFFcc2031),
     },
     "NTH": {
       "bg": Color(0xFF013b9f),
@@ -56,7 +54,7 @@ class TeamColoursByClub {
       "bg": Color(0xFF008AAB),
       "fg": Colors.black,
     },
-    "RIC": {
+    "RIC": { // FIXED
       "bg": Colors.black,
       "fg": Color(0xFFfed102),
     },
@@ -71,9 +69,8 @@ class TeamColoursByClub {
     "WCE": {
       "bg": Color(0xFFFFD700),
       "fg": Color(0xFF062ee2),
-      
     },
-    "WB": {
+    "WBD": {
       "bg": Color(0xFF014896),
       "fg": Color(0xFFc70136),
     },

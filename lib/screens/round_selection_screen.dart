@@ -22,15 +22,7 @@ class RoundSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 DIAGNOSTIC PRINT — shows exactly what the UI is receiving
-    print("🔥 RoundSelectionScreen received rounds → $rounds");
-
-    // Build tokens directly from the rounds list
-    final List<String> items = rounds.map(RoundHelper.toToken).toList();
-
-    // 🔥 NEW DIAGNOSTIC
-print("🔥 ITEMS LIST → $items");
-
+    final items = rounds.map(RoundHelper.toToken).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text("Select Round")),
@@ -49,43 +41,53 @@ print("🔥 ITEMS LIST → $items");
             itemCount: items.length,
             itemBuilder: (context, i) {
               final token = items[i];
-              final int? round = RoundHelper.fromToken(token);
-              final bool isPreseason = RoundHelper.isPreseason(round);
+              final round = RoundHelper.fromToken(token);
 
-              final bool isCompleted =
-                  !isPreseason && completedRounds.contains(round);
+              // ⭐ Null‑safe: only real rounds can be completed
+              final isCompleted =
+                  round != null && completedRounds.contains(round);
 
-              // 🔥 DIAGNOSTIC PRINT — shows exactly which tile is wrong
-              print(
-                "RoundSelectionScreen → token='$token'  parsedRound=$round  isPreseason=$isPreseason",
-              );
-
-              return GestureDetector(
-                onTap: () {
-                  onRoundSelected(round);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    color: isCompleted
-                        ? Colors.grey.shade400
-                        : Theme.of(context).colorScheme.surfaceVariant,
-                    border: Border.all(
-                      color: isCompleted
-                          ? Colors.grey.shade600
-                          : Theme.of(context).colorScheme.primary,
-                      width: 2,
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => onRoundSelected(round),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 6,
                     ),
-                  ),
-                  child: Text(
-                    RoundHelper.label(round),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
                       color: isCompleted
-                          ? Colors.grey.shade800
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                          ? Colors.grey.shade300
+                          : Theme.of(context).colorScheme.surface,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: isCompleted
+                            ? Colors.grey.shade500
+                            : Theme.of(context).colorScheme.primary,
+                        width: 1.6,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        RoundHelper.label(round),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: isCompleted
+                              ? Colors.grey.shade700
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
                     ),
                   ),
                 ),

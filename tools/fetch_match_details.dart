@@ -121,21 +121,25 @@ Future<MatchDetails> _fetchMatchDetails(String slug, String url) async {
       }
 
       if (matchData is Map<String, dynamic>) {
-        homeTeam = matchData['homeTeamName'] ??
-            matchData['homeTeam']?['teamName'] ??
-            matchData['homeTeam']?['name'];
+        homeTeam = (matchData['homeTeamName'] ??
+                matchData['homeTeam']?['teamName'] ??
+                matchData['homeTeam']?['name'])
+            ?.toString();
 
-        awayTeam = matchData['awayTeamName'] ??
-            matchData['awayTeam']?['teamName'] ??
-            matchData['awayTeam']?['name'];
+        awayTeam = (matchData['awayTeamName'] ??
+                matchData['awayTeam']?['teamName'] ??
+                matchData['awayTeam']?['name'])
+            ?.toString();
 
-        startTime = matchData['startTime'] ??
-            matchData['startDateTime'] ??
-            matchData['start']?['dateTime'];
+        startTime = (matchData['startTime'] ??
+                matchData['startDateTime'] ??
+                matchData['start']?['dateTime'])
+            ?.toString();
 
-        venue = matchData['venueName'] ??
-            matchData['venue']?['name'] ??
-            matchData['venue']?['shortName'];
+        venue = (matchData['venueName'] ??
+                matchData['venue']?['name'] ??
+                matchData['venue']?['shortName'])
+            ?.toString();
       }
     } catch (_) {}
   }

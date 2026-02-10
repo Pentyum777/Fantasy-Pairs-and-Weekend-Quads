@@ -11,6 +11,8 @@ dependencies:
   flutter:
     sdk: flutter
 
+  collection: ^1.18.0  
+
   # State management
   provider: ^6.1.1
 
@@ -20,14 +22,15 @@ dependencies:
   # HTTP for fetching match stats / fantasy scores
   http: ^1.1.0
 
-  # JSON utilities
-  js: ^0.7.1   # Compatible with Dart 3.2.6
+  # JSON utilities (correct version for Dart 3.2)
+  js: ^0.6.7
 
   # Flutter material icons
   flutter_svg: ^2.0.9
 
   cupertino_icons: ^1.0.6
 
+  csv: ^5.0.2
 
 dev_dependencies:
   flutter_test:
@@ -39,7 +42,14 @@ flutter:
 
   assets:
     - assets/logos/
+    - assets/afl_players_2025.json
     - assets/afl_players_2026.json
     - assets/afl_fixtures_2026.xlsx
+    - assets/afl_players_2025.xlsx
     - assets/afl_players_2026.xlsx
     - assets/afl_fixtures_2025_round_24.xlsx
+    - assets/data/
+
+# ⭐ Critical fix for Flutter Web JSObject errors
+dependency_overrides:
+  web: 0.5.1

@@ -1,43 +1,58 @@
 import 'package:flutter/material.dart';
 
+/// Shared table row builder that guarantees identical column structure
+/// between header rows and body rows.
+///
+/// IMPORTANT:
+/// - leftCell must be a SizedBox(width: punterWidth)
+/// - middleCells must contain alternating:
+///     Expanded(child: pickCell)
+///     SizedBox(width: scoreWidth, child: scoreCell)
+/// - rightCell must be a SizedBox(width: totalWidth)
+///
+/// This ensures perfect alignment with the header row.
 Widget buildSharedTableRow({
   required BuildContext context,
   required int index,
   required double rowHeight,
+  required double totalWidth,
   required Widget leftCell,
   required List<Widget> middleCells,
   required Widget rightCell,
   required bool isInvalid,
+  bool isHighlighted = false,
 }) {
   final cs = Theme.of(context).colorScheme;
 
-  // Background striping + invalid highlight
-  final Color bg = isInvalid
-      ? Colors.red.withOpacity(0.06)
+  final Color bg = isHighlighted
+      ? Colors.amber.withValues(alpha: 0.15)
       : index.isOdd
-          ? cs.surfaceVariant.withOpacity(0.25)
+          ? cs.surfaceContainerHighest.withValues(alpha: 0.25)
           : cs.surface;
 
-  return Container(
+  return SizedBox(
+    width: totalWidth,
     height: rowHeight,
-    decoration: BoxDecoration(
-      color: bg,
-      border: Border(
-        bottom: BorderSide(
-          color: cs.outlineVariant.withOpacity(0.6),
-          width: 0.5,
+    child: Container(
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border(
+          bottom: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.6),
+            width: 0.5,
+          ),
         ),
       ),
-    ),
-
-    child: SizedBox(
-      width: double.infinity,   // ensures full-width row
-      height: rowHeight,
       child: Row(
-        mainAxisSize: MainAxisSize.max,   // correct pairing with infinity width
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          /// FIXED-WIDTH LEFT COLUMN (Punter)
           leftCell,
+
+          /// MIDDLE COLUMNS (Pick + Score pairs)
           ...middleCells,
+
+          /// FIXED-WIDTH RIGHT COLUMN (Total)
           rightCell,
         ],
       ),

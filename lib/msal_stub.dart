@@ -11,6 +11,7 @@ Future<String> loginWithMsal(List<String> scopes) {
 }
 
 Future<String> acquireTokenWithMsal(List<String> scopes) {
-  throw UnsupportedError("MSAL authentication is only supported on Flutter Web."
+  throw UnsupportedError(
+    "MSAL authentication is only supported on Flutter Web.",
   );
 }

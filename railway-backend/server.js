@@ -11,7 +11,7 @@ const dfsMap = JSON.parse(fs.readFileSync("./dfs_map.json", "utf8"));
 
 const app = express();
 
-// ✅ CORS middleware — MUST be here, before all routes
+// CORS middleware — MUST be here, before all routes
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -38,9 +38,17 @@ app.get("/fantasy/:matchId", async (req, res) => {
 
   try {
     const data = await scrapeDFS(dfsId);
-    res.json({ matchId, players: data.players });
+
+    if (!data || !data.players) {
+      return res.status(500).json({ error: "DFS returned no player data" });
+    }
+
+    res.json({
+      matchId,
+      players: data.players,
+    });
   } catch (err) {
-    console.error("DFS scrape error:", err);
+    console.error("❌ DFS scrape error:", err);
     res.status(500).json({ error: String(err) });
   }
 });
@@ -56,9 +64,17 @@ app.get("/meta/:matchId", async (req, res) => {
 
   try {
     const data = await scrapeDFS(dfsId);
-    res.json({ matchId, match: data.meta });
+
+    if (!data || !data.meta) {
+      return res.status(500).json({ error: "DFS returned no metadata" });
+    }
+
+    res.json({
+      matchId,
+      match: data.meta,
+    });
   } catch (err) {
-    console.error("DFS meta scrape error:", err);
+    console.error("❌ DFS meta scrape error:", err);
     res.status(500).json({ error: String(err) });
   }
 });

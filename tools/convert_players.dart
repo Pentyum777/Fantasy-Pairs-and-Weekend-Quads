@@ -1,72 +1,42 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:csv/csv.dart';
 
-/// Converts afl_players_2026.csv (full club names) into afl_players_2026.json
-/// with club codes and normalised fields.
 void main() async {
   final input = File('afl_players_2026.csv');
-  final lines = await input.readAsLines();
+  final csv = const CsvToListConverter().convert(await input.readAsString());
 
-  if (lines.isEmpty) {
+  if (csv.isEmpty) {
     print("ERROR: CSV file is empty.");
     return;
   }
 
-  // Full club name → AFL club code
-  const clubCodeMap = {
-    "Adelaide Crows": "ADE",
-    "Brisbane Lions": "BRL",
-    "Carlton": "CAR",
-    "Collingwood": "COL",
-    "Essendon": "ESS",
-    "Fremantle": "FRE",
-    "Geelong Cats": "GEE",
-    "Gold Coast Suns": "GCS",
-    "GWS Giants": "GWS",
-    "Hawthorn": "HAW",
-    "Melbourne": "MEL",
-    "North Melbourne": "NTH",
-    "Port Adelaide": "PTA",
-    "Richmond": "RIC",
-    "St Kilda": "STK",
-    "Sydney Swans": "SYD",
-    "West Coast Eagles": "WCE",
-    "Western Bulldogs": "WBD",
-  };
+  final players = <Map<String, dynamic>>[];
 
-  // Skip header row
-  final List<Map<String, dynamic>> players = [];
+  for (var i = 1; i < csv.length; i++) {
+    final row = csv[i];
 
-  for (var i = 1; i < lines.length; i++) {
-    final row = lines[i].split(',');
-
-    if (row.length < 4) {
-      print("Skipping malformed row $i: ${lines[i]}");
-      continue;
-    }
-
-    final fullName = row[0].trim();
-    final clubFull = row[1].trim();
-    final numberStr = row[2].trim();
-    final seasonStr = row[3].trim();
-
-    final clubCode = clubCodeMap[clubFull] ?? "";
-    final guernsey = int.tryParse(numberStr) ?? 0;
-    final season = int.tryParse(seasonStr) ?? 2026;
+    final fullName = row[0].toString().trim();
+    final clubFull = row[1].toString().trim();        // full name required
+    final guernsey = int.tryParse(row[2].toString()) ?? 0;
+    final season = int.tryParse(row[3].toString()) ?? 2026;
+    final championId = row[4].toString().trim();
 
     players.add({
-      "id": fullName,
+      "id": championId,
       "name": fullName,
-      "club": clubCode,
+      "club": clubFull,              // full club name
       "guernseyNumber": guernsey,
       "season": season,
     });
   }
 
-  final output = File('afl_players_2026.json');
+  final wrapped = {"players": players};
+
+  final output = File('assets/data/players_2026.json');
   await output.writeAsString(
-    const JsonEncoder.withIndent('  ').convert(players),
+    const JsonEncoder.withIndent('  ').convert(wrapped),
   );
 
-  print("Done! Created afl_players_2026.json with ${players.length} players.");
+  print("Done! Created players_2026.json with ${players.length} players.");
 }

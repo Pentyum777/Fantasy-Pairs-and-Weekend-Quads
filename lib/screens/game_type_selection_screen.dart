@@ -17,8 +17,7 @@ import 'championship_screen.dart';
 import 'custom_pairs_builder_screen.dart';
 
 class GameTypeSelectionScreen extends StatefulWidget {
-  /// null → Pre‑Season
-  /// int  → R0–R24
+  final int season;
   final int? round;
 
   final FixtureRepository fixtureRepo;
@@ -30,6 +29,7 @@ class GameTypeSelectionScreen extends StatefulWidget {
 
   const GameTypeSelectionScreen({
     super.key,
+    required this.season,
     required this.round,
     required this.fixtureRepo,
     required this.playerRepo,
@@ -77,7 +77,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
           (j) => PlayerPick(
             pickNumber: j + 1,
             player: null,
-            score: 0,
+            stats: null,
           ),
         ),
       ),
@@ -85,7 +85,6 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
   }
 
   void _openGame(String type) {
-    // Championship
     if (type == "championship") {
       Navigator.push(
         context,
@@ -96,13 +95,13 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       return;
     }
 
-    // Custom Pairs Builder
     if (type == "custom_pairs") {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => CustomPairsBuilderScreen(
-            round: widget.round, // null = Pre‑Season
+            season: widget.season,
+            round: widget.round,
             fixtureRepo: widget.fixtureRepo,
             playerRepo: widget.playerRepo,
             fantasyService: widget.fantasyService,
@@ -115,7 +114,6 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       return;
     }
 
-    // Standard game types
     late List<PunterSelection> selections;
 
     switch (type) {
@@ -145,7 +143,8 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => GameViewScreen(
-          round: widget.round, // null = Pre‑Season
+          season: widget.season,
+          round: widget.round,
           gameType: type,
           selections: selections,
           fixtureRepo: widget.fixtureRepo,
@@ -209,28 +208,50 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 2.8,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: 2.6,
             ),
             itemCount: gameTypes.length,
             itemBuilder: (context, i) {
               final type = gameTypes[i];
 
-              return GestureDetector(
-                onTap: () => _openGame(type),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    color: Theme.of(context).colorScheme.surfaceVariant,
-                  ),
-                  child: Text(
-                    shortLabel(type),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(22),
+                  onTap: () => _openGame(type),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(22),
+                      color: Theme.of(context).colorScheme.surface,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.6,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        shortLabel(type),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
                     ),
                   ),
                 ),

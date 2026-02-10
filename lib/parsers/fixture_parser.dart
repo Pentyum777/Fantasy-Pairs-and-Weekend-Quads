@@ -2,20 +2,39 @@ import 'dart:typed_data';
 import 'package:excel/excel.dart';
 
 import '../models/afl_fixture.dart';
+import '../utils/afl_club_codes.dart';
 
 class FixtureParser {
   List<AflFixture> parse(Uint8List bytes) {
+    print("DEBUG: FixtureParser.parse() called");
+    print("DEBUG: bytes length = ${bytes.length}");
+
     final List<AflFixture> fixtures = [];
 
     final excel = Excel.decodeBytes(bytes);
-    if (excel.tables.isEmpty) return fixtures;
 
-    final sheet = excel.tables[excel.tables.keys.first];
-    if (sheet == null || sheet.rows.length <= 1) return fixtures;
+    print("DEBUG: excel.tables keys = ${excel.tables.keys}");
+
+    if (excel.tables.isEmpty) {
+      print("❌ DEBUG: No tables found in XLSX file");
+      return fixtures;
+    }
+
+    final sheetName = excel.tables.keys.first;
+    final sheet = excel.tables[sheetName];
+
+    print("DEBUG: Using sheet '$sheetName'");
+    print("DEBUG: sheet row count = ${sheet?.rows.length}");
+
+    if (sheet == null || sheet.rows.length <= 1) {
+      print("❌ DEBUG: Sheet is empty or has no data rows");
+      return fixtures;
+    }
 
     final headerRow = sheet.rows.first;
 
-    // Build header index map (case-insensitive)
+    print("DEBUG: Header row = ${headerRow.map((c) => c?.value).toList()}");
+
     final Map<String, int> headerIndex = {};
     for (int i = 0; i < headerRow.length; i++) {
       final cell = headerRow[i];
@@ -24,6 +43,8 @@ class FixtureParser {
         headerIndex[value.toUpperCase()] = i;
       }
     }
+
+    print("DEBUG: headerIndex = $headerIndex");
 
     final idxRound = headerIndex["ROUND"];
     final idxDate = headerIndex["DATE"];
@@ -40,7 +61,7 @@ class FixtureParser {
         idxHome == null ||
         idxAway == null ||
         idxVenue == null) {
-      print("❌ Missing required columns in fixture sheet");
+      print("❌ DEBUG: Missing required columns in fixture sheet");
       return fixtures;
     }
 
@@ -49,35 +70,37 @@ class FixtureParser {
     for (int r = 1; r < sheet.rows.length; r++) {
       final row = sheet.rows[r];
 
-      if (row.length < headerRow.length) continue;
+      while (row.length < headerRow.length) {
+        row.add(null);
+      }
 
-      // -----------------------------
-      // ROUND LABEL
-      // -----------------------------
       String roundLabel = _cellString(row, idxRound).trim();
-      if (roundLabel.isEmpty) continue;
+      if (roundLabel.isEmpty) {
+        print("DEBUG: Row $r skipped (empty round)");
+        continue;
+      }
 
       final originalRoundLabel = roundLabel;
       final upper = roundLabel.toUpperCase();
 
-      // Opening Round → 0
       if (upper == "OPENING ROUND" || upper == "OR") {
         roundLabel = "0";
       }
 
       final dateText = _cellString(row, idxDate);
-      final homeTeam = _cellString(row, idxHome);
-      final awayTeam = _cellString(row, idxAway);
+
+      final homeTeamRaw = _cellString(row, idxHome);
+      final awayTeamRaw = _cellString(row, idxAway);
+
+      final homeTeam = _normalizeClub(homeTeamRaw);
+      final awayTeam = _normalizeClub(awayTeamRaw);
+
       final venue = _cellString(row, idxVenue);
       final time = idxTime != null ? _cellString(row, idxTime) : "";
       final source = idxSource != null ? _cellString(row, idxSource) : "";
-
       final String? matchId =
           idxMatchId != null ? _cellString(row, idxMatchId) : null;
 
-      // -----------------------------
-      // PRE‑SEASON DETECTION
-      // -----------------------------
       final bool isPreseasonFromRound =
           upper == "PRE-SEASON" ||
           upper == "PRESEASON" ||
@@ -90,11 +113,11 @@ class FixtureParser {
 
       final bool isPreseason = isPreseasonFromRound || isPreseasonFromColumn;
 
-      if (homeTeam.isEmpty || awayTeam.isEmpty) continue;
+      if (homeTeam.isEmpty || awayTeam.isEmpty) {
+        print("DEBUG: Row $r skipped (empty home/away team)");
+        continue;
+      }
 
-      // -----------------------------
-      // DATE PARSING
-      // -----------------------------
       final upperDate = dateText.toUpperCase();
       final bool isTbcDate = dateText.trim().isEmpty ||
           upperDate.contains("TBC") ||
@@ -110,16 +133,13 @@ class FixtureParser {
         }
       }
 
-      // -----------------------------
-      // ROUND NUMBER PARSING
-      // -----------------------------
       final int? roundNumber =
           isPreseason ? null : _parseRound(roundLabel);
 
       print(
         "ROW $r | RAW_ROUND='$originalRoundLabel' → NORM_ROUND='$roundLabel' → round=${roundNumber ?? "null"} | "
-        "DATE='$dateText' → $parsedDate | HOME='$homeTeam' AWAY='$awayTeam' | "
-        "matchId='${matchId ?? ""}' isPreseason=$isPreseason",
+        "DATE='$dateText' → $parsedDate | HOME='$homeTeamRaw' → '$homeTeam' | "
+        "AWAY='$awayTeamRaw' → '$awayTeam' | matchId='${matchId ?? ""}' isPreseason=$isPreseason",
       );
 
       fixtures.add(
@@ -138,17 +158,47 @@ class FixtureParser {
       );
     }
 
+    print("DEBUG: Total fixtures parsed = ${fixtures.length}");
     return fixtures;
   }
 
-  // ---------------------------------------------------------------------------
-  // HELPERS
-  // ---------------------------------------------------------------------------
   String _cellString(List<Data?> row, int index) {
     if (index < 0 || index >= row.length) return "";
     final cell = row[index];
     final value = cell?.value;
     return value?.toString().trim() ?? "";
+  }
+
+  String _normalizeClub(String raw) {
+    final cleaned = raw
+        .replaceAll('\t', ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    if (cleaned.isEmpty) return "";
+
+    final base = AflClubCodes.normalize(cleaned);
+
+    const overrides = {
+      "CARL": "CAR",
+      "CARLTON": "CAR",
+      "COLL": "COL",
+      "COLLINGWOOD": "COL",
+      "BRI": "BRL",
+      "BRISBANE": "BRL",
+      "BRISBANE LIONS": "BRL",
+      "MELB": "MELB",
+      "MELBOURNE": "MELB",
+      "RICH": "RIC",
+      "RICHMOND": "RIC",
+      "WB": "WBD",
+      "WESTERN BULLDOGS": "WBD",
+      "WESTERN BULLDOGS FOOTBALL CLUB": "WBD",
+      "GWS GIANTS": "GWS",
+      "GWS": "GWS",
+    };
+
+    return overrides[base.toUpperCase()] ?? base;
   }
 
   int _parseRound(String roundLabel) {

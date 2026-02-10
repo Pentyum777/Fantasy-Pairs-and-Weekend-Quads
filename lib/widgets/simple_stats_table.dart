@@ -23,8 +23,9 @@ class SimpleStatsTable extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
+          // Header row
           Container(
-            color: cs.surfaceVariant,
+            color: cs.surfaceContainerHighest,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Row(
               children: columns
@@ -45,7 +46,10 @@ class SimpleStatsTable extends StatelessWidget {
                   .toList(),
             ),
           ),
+
           const Divider(height: 1),
+
+          // Data rows
           ...rows.asMap().entries.map((entry) {
             final index = entry.key;
             final row = entry.value;
@@ -54,7 +58,7 @@ class SimpleStatsTable extends StatelessWidget {
             return Container(
               height: 32,
               color: isStriped
-                  ? cs.surfaceVariant.withAlpha(76)
+                  ? cs.surfaceContainerHighest.withValues(alpha: 0.30)
                   : cs.surface,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(
