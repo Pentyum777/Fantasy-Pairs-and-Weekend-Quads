@@ -90521,7 +90521,8 @@ case"monday_pairs":return"Monday Pairs"
 case"weekend_quads":return"Weekend Quads"
 case"custom_pairs":return"Custom Pairs"
 default:return s}},
-ad8(a){return A.az(["Player",a.a.b,"AF",a.ch,"K",a.c,"HB",a.d,"D",a.e,"M",a.f,"T",a.r,"G",a.w,"B",a.x],t.N,t.z)},
+ad8(a){var s=a.a.b
+return A.az(["Player",s,"AF",a.ch,"K",a.c,"HB",a.d,"D",a.e,"M",a.f,"T",a.r,"G",a.w,"B",a.x],t.N,t.z)},
 agg(){var s,r,q,p,o,n=this,m=n.a
 if(m.Q.a===B.lP)return
 s=m.e==="weekend_quads"?4:2
