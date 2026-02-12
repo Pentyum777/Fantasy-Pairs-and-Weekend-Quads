@@ -3,17 +3,20 @@ import fs from "fs";
 import cors from "cors";
 
 import { scrapeDFS } from "./dfs_scraper.js";
-import footyInfoMap from "./footyinfo_map.json" assert { type: "json" };
 
-// If you have a separate JS file exporting a map, remove this line.
-// import { matchIdToFootyInfoId } from "./footyinfo_map.js";
+// Load FootyInfo map WITHOUT import assertions
+const footyInfoMap = JSON.parse(
+  fs.readFileSync("./footyinfo_map.json", "utf8")
+);
+
+// Load DFS mapping
+const dfsMap = JSON.parse(
+  fs.readFileSync("./dfs_map.json", "utf8")
+);
 
 console.log("CORS-enabled DFS + FootyInfo backend starting...");
 
 const port = process.env.PORT || 8080;
-
-// Load DFS mapping
-const dfsMap = JSON.parse(fs.readFileSync("./dfs_map.json", "utf8"));
 
 const app = express();
 
@@ -26,17 +29,14 @@ app.get("/", (req, res) => {
   res.send("DFS backend is running");
 });
 
-// -----------------------------
-// Helper: fetch FootyInfo metadata
-// -----------------------------
+// Placeholder FootyInfo metadata fetcher
 async function fetchFootyInfoMeta(footyInfoId) {
   const url = `https://www.footyinfo.com/match/${footyInfoId}`;
 
   const response = await fetch(url);
   const html = await response.text();
 
-  // TODO: Replace this with your real HTML parser
-  // For now, return empty metadata so backend doesn't crash
+  // TODO: Replace with real HTML parsing
   return {
     homeScore: 0,
     awayScore: 0,
@@ -46,9 +46,7 @@ async function fetchFootyInfoMeta(footyInfoId) {
   };
 }
 
-// -----------------------------
 // Fantasy stats endpoint
-// -----------------------------
 app.get("/fantasy/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
 
@@ -64,17 +62,15 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 
   try {
-    // DFS fantasy stats
     const dfsData = await scrapeDFS(dfsId);
 
     if (!dfsData || !dfsData.players) {
       return res.status(500).json({ error: "DFS returned no player data" });
     }
 
-    // FootyInfo metadata
     const fiMeta = await fetchFootyInfoMeta(footyInfoId);
 
-    const payload = {
+    res.json({
       matchId,
       homeScore: fiMeta.homeScore ?? 0,
       awayScore: fiMeta.awayScore ?? 0,
@@ -82,18 +78,14 @@ app.get("/fantasy/:matchId", async (req, res) => {
       clock: fiMeta.clock ?? "",
       status: fiMeta.status ?? "",
       players: dfsData.players,
-    };
-
-    res.json(payload);
+    });
   } catch (err) {
     console.error("❌ Combined DFS + FootyInfo error:", err);
     res.status(500).json({ error: String(err) });
   }
 });
 
-// -----------------------------
 // Metadata-only endpoint
-// -----------------------------
 app.get("/meta/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
 
