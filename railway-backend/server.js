@@ -1,6 +1,9 @@
 import express from "express";
 import fs from "fs";
+
 import { scrapeDFS } from "./dfs_scraper.js";
+import { scrapeFootyInfoMeta } from "./footyinfo_scraper.js";
+import { matchIdToFootyInfoId } from "./footyinfo_map.js";
 
 console.log("CORS-enabled server starting...");
 
@@ -27,60 +30,67 @@ app.get("/", (req, res) => {
   res.send("DFS backend is running");
 });
 
-// ⭐ UPDATED: Fantasy stats endpoint now returns full match payload
+// ⭐ UPDATED: Fantasy stats endpoint now merges DFS + FootyInfo
 app.get("/fantasy/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
+
   const dfsId = dfsMap[matchId];
+  const footyInfoId = matchIdToFootyInfoId[matchId];
 
   if (!dfsId) {
     return res.status(404).json({ error: "No DFS mapping for matchId" });
   }
 
-  try {
-    const data = await scrapeDFS(dfsId);
+  if (!footyInfoId) {
+    return res.status(404).json({ error: "No FootyInfo mapping for matchId" });
+  }
 
-    if (!data || !data.players) {
+  try {
+    // DFS fantasy stats
+    const dfsData = await scrapeDFS(dfsId);
+
+    if (!dfsData || !dfsData.players) {
       return res.status(500).json({ error: "DFS returned no player data" });
     }
 
-    const meta = data.meta || {};
+    // FootyInfo metadata
+    const fiMeta = await scrapeFootyInfoMeta(footyInfoId);
 
-    res.json({
+    const payload = {
       matchId,
-      homeScore: meta.homeScore ?? 0,
-      awayScore: meta.awayScore ?? 0,
-      quarter: meta.quarter ?? "Final",
-      clock: meta.clock ?? "FT",
-      players: data.players,
-    });
+      homeScore: fiMeta.homeScore ?? 0,
+      awayScore: fiMeta.awayScore ?? 0,
+      quarter: fiMeta.quarter ?? "",
+      clock: fiMeta.clock ?? "",
+      status: fiMeta.status ?? "",
+      players: dfsData.players,
+    };
+
+    res.json(payload);
   } catch (err) {
-    console.error("❌ DFS scrape error:", err);
+    console.error("❌ Combined DFS + FootyInfo scrape error:", err);
     res.status(500).json({ error: String(err) });
   }
 });
 
-// Match metadata endpoint (unchanged)
+// ⭐ Metadata-only endpoint (FootyInfo only)
 app.get("/meta/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
-  const dfsId = dfsMap[matchId];
 
-  if (!dfsId) {
-    return res.status(404).json({ error: "No DFS mapping for matchId" });
+  const footyInfoId = matchIdToFootyInfoId[matchId];
+  if (!footyInfoId) {
+    return res.status(404).json({ error: "No FootyInfo mapping for matchId" });
   }
 
   try {
-    const data = await scrapeDFS(dfsId);
-
-    if (!data || !data.meta) {
-      return res.status(500).json({ error: "DFS returned no metadata" });
-    }
+    const meta = await scrapeFootyInfoMeta(footyInfoId);
 
     res.json({
       matchId,
-      match: data.meta,
+      match: meta,
     });
   } catch (err) {
-    console.error("❌ DFS meta scrape error:", err);
+    console.error("❌ FootyInfo meta scrape error:", err);
     res.status(500).json({ error: String(err) });
   }
 });
