@@ -2,7 +2,7 @@ import express from "express";
 import fs from "fs";
 
 import { scrapeDFS } from "./dfs_scraper.js";
-import { scrapeFootyInfoMeta } from "./footyinfo_scraper.js";
+import footyInfoMap from "./footyinfo_map.json" assert { type: "json" };
 import { matchIdToFootyInfoId } from "./footyinfo_map.js";
 
 console.log("CORS-enabled server starting...");
