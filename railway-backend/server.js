@@ -1,7 +1,7 @@
 import express from "express";
 import fs from "fs";
 import cors from "cors";
-import cheerio from "cheerio";
+import { load } from "cheerio";
 
 import { scrapeDFS } from "./dfs_scraper.js";
 
@@ -39,7 +39,7 @@ async function fetchFootyInfoMeta(footyInfoId) {
   const response = await fetch(url);
   const html = await response.text();
 
-  const $ = cheerio.load(html);
+  const $ = load(html);
 
   // Scoreboard
   const homeScore = parseInt(
@@ -84,14 +84,12 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 
   try {
-    // DFS fantasy stats
     const dfsData = await scrapeDFS(dfsId);
 
     if (!dfsData || !dfsData.players) {
       return res.status(500).json({ error: "DFS returned no player data" });
     }
 
-    // FootyInfo metadata
     const fiMeta = await fetchFootyInfoMeta(footyInfoId);
 
     res.json({
