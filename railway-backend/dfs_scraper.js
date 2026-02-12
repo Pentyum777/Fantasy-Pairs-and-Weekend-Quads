@@ -1,3 +1,48 @@
+import { chromium } from "playwright";
+
+let browser = null;
+
+// ⭐ REQUIRED: getBrowser() — this is what Railway says is missing
+async function getBrowser() {
+  if (!browser || browser.isConnected() === false) {
+    browser = await chromium.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+  }
+  return browser;
+}
+
+// ⭐ REQUIRED: safeGoto() — handles browser crashes
+async function safeGoto(page, url) {
+  try {
+    await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: 15000,
+    });
+    return page;
+  } catch (err) {
+    console.error("Goto failed, restarting browser:", err);
+
+    try {
+      await browser?.close();
+    } catch (_) {}
+
+    browser = await chromium.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const newPage = await browser.newPage();
+    await newPage.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: 15000,
+    });
+
+    return newPage;
+  }
+}
+
 export async function scrapeDFS(dfsId) {
   const url = `https://dfsaustralia.com/afl-game-stats/?gameId=${dfsId}`;
 
