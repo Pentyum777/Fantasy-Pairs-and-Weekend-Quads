@@ -27,7 +27,7 @@ app.get("/", (req, res) => {
   res.send("DFS backend is running");
 });
 
-// Fantasy stats endpoint
+// ⭐ UPDATED: Fantasy stats endpoint now returns full match payload
 app.get("/fantasy/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
   const dfsId = dfsMap[matchId];
@@ -43,8 +43,15 @@ app.get("/fantasy/:matchId", async (req, res) => {
       return res.status(500).json({ error: "DFS returned no player data" });
     }
 
+    // ⭐ Extract metadata from DFS scrape
+    const meta = data.meta || {};
+
     res.json({
       matchId,
+      homeScore: meta.homeScore ?? 0,
+      awayScore: meta.awayScore ?? 0,
+      quarter: meta.quarter ?? "Final",
+      clock: meta.clock ?? "FT",
       players: data.players,
     });
   } catch (err) {
@@ -53,7 +60,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 });
 
-// Match metadata endpoint
+// Match metadata endpoint (unchanged)
 app.get("/meta/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
   const dfsId = dfsMap[matchId];

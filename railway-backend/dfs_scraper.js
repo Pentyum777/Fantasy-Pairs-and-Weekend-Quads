@@ -1,47 +1,3 @@
-// backend/dfs_scraper.js
-import { chromium } from "playwright";
-
-let browser = null;
-
-async function getBrowser() {
-  if (!browser || browser.isConnected() === false) {
-    browser = await chromium.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-  }
-  return browser;
-}
-
-async function safeGoto(page, url) {
-  try {
-    await page.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: 15000,
-    });
-    return page;
-  } catch (err) {
-    console.error("Goto failed, restarting browser:", err);
-
-    try {
-      await browser?.close();
-    } catch (_) {}
-
-    browser = await chromium.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-
-    const newPage = await browser.newPage();
-    await newPage.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: 15000,
-    });
-
-    return newPage;
-  }
-}
-
 export async function scrapeDFS(dfsId) {
   const url = `https://dfsaustralia.com/afl-game-stats/?gameId=${dfsId}`;
 
@@ -130,10 +86,8 @@ export async function scrapeDFS(dfsId) {
       .filter(Boolean)
   );
 
+  // ⭐ UPDATED META BLOCK
   const meta = await page.evaluate(() => {
-    const home = document.querySelector(".team-home .team-name")?.textContent?.trim() || "";
-    const away = document.querySelector(".team-away .team-name")?.textContent?.trim() || "";
-
     const homeScore = parseInt(
       document.querySelector(".team-home .team-score")?.textContent || "0",
       10
@@ -149,8 +103,8 @@ export async function scrapeDFS(dfsId) {
       document.querySelector(".match-clock")?.textContent?.trim() || "";
 
     return {
-      homeTeam: { name: home, score: homeScore },
-      awayTeam: { name: away, score: awayScore },
+      homeScore,
+      awayScore,
       quarter,
       clock,
     };
