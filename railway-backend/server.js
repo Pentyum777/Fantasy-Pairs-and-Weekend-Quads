@@ -43,7 +43,6 @@ app.get("/fantasy/:matchId", async (req, res) => {
       return res.status(500).json({ error: "DFS returned no player data" });
     }
 
-    // ⭐ Extract metadata from DFS scrape
     const meta = data.meta || {};
 
     res.json({

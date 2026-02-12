@@ -1,8 +1,9 @@
+
 import { chromium } from "playwright";
 
 let browser = null;
 
-// ⭐ REQUIRED: getBrowser() — this is what Railway says is missing
+// Launch or reuse browser
 async function getBrowser() {
   if (!browser || browser.isConnected() === false) {
     browser = await chromium.launch({
@@ -13,7 +14,7 @@ async function getBrowser() {
   return browser;
 }
 
-// ⭐ REQUIRED: safeGoto() — handles browser crashes
+// Safe navigation with auto-restart
 async function safeGoto(page, url) {
   try {
     await page.goto(url, {
@@ -51,6 +52,7 @@ export async function scrapeDFS(dfsId) {
 
   page = await safeGoto(page, url);
 
+  // Ensure table exists
   try {
     await page.waitForSelector("table.dataTable tbody tr", {
       timeout: 8000,
@@ -60,6 +62,7 @@ export async function scrapeDFS(dfsId) {
     return { players: [], meta: {} };
   }
 
+  // Extract players
   const players = await page.$$eval("table.dataTable tbody tr", rows =>
     rows
       .map(row => {
@@ -71,6 +74,8 @@ export async function scrapeDFS(dfsId) {
 
         const name = link?.innerText.trim() || nameCell.innerText.trim() || "";
         const href = link?.getAttribute("href") || "";
+
+        // DFS uses AFL IDs directly (CD_Ixxxxxx)
         const idMatch = href.match(/playerId=([^&]+)/);
         const playerId = idMatch ? idMatch[1] : "";
 
@@ -131,21 +136,22 @@ export async function scrapeDFS(dfsId) {
       .filter(Boolean)
   );
 
-  // ⭐ UPDATED META BLOCK
+  // ⭐ Robust metadata extraction using page text
   const meta = await page.evaluate(() => {
-    const homeScore = parseInt(
-      document.querySelector(".team-home .team-score")?.textContent || "0",
-      10
-    );
-    const awayScore = parseInt(
-      document.querySelector(".team-away .team-score")?.textContent || "0",
-      10
-    );
+    const text = document.body.innerText || "";
 
-    const quarter =
-      document.querySelector(".match-status")?.textContent?.trim() || "";
-    const clock =
-      document.querySelector(".match-clock")?.textContent?.trim() || "";
+    // Score pattern like "88 - 74"
+    const scoreMatch = text.match(/(\d+)\s*-\s*(\d+)/);
+    const homeScore = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+    const awayScore = scoreMatch ? parseInt(scoreMatch[2], 10) : 0;
+
+    // Quarter: Q1/Q2/Q3/Q4 or Final
+    const quarterMatch = text.match(/\b(Q[1-4]|Final)\b/i);
+    const quarter = quarterMatch ? quarterMatch[1] : "";
+
+    // Clock: 12:34
+    const clockMatch = text.match(/\b(\d{1,2}:\d{2})\b/);
+    const clock = clockMatch ? clockMatch[1] : "";
 
     return {
       homeScore,
