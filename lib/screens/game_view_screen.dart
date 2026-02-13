@@ -97,73 +97,108 @@ class _GameViewScreenState extends State<GameViewScreen> {
   // ROUND-WIDE STATS
   // -------------------------------------------------------------
   Future<Map<String, AflPlayerMatchStats>> _fetchRoundStats() async {
-    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-      widget.season,
-      widget.round,
+  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+    widget.season,
+    widget.round,
+  );
+
+  final Map<String, AflPlayerMatchStats> roundStats = {};
+
+  for (final f in fixtures) {
+    final matchId = f.matchId?.trim();
+    if (matchId == null || matchId.isEmpty) continue;
+
+    // Fetch stats (may be empty)
+    final stats = await MatchStatsParser.fetchMatchStats(
+      matchId,
+      widget.playerRepo,
+      widget.fixtureRepo,
     );
 
-    final Map<String, AflPlayerMatchStats> roundStats = {};
+    // If stats are empty, still populate players for both clubs
+    if (stats.isEmpty) {
+      final seasonPlayers = await widget.playerRepo.playersForSeason(widget.season);
 
-    for (final f in fixtures) {
-      final matchId = f.matchId?.trim();
-      if (matchId == null || matchId.isEmpty) continue;
+      final homePlayers = seasonPlayers.where((p) => p.club == f.homeTeam);
+      final awayPlayers = seasonPlayers.where((p) => p.club == f.awayTeam);
 
-      final stats = await MatchStatsParser.fetchMatchStats(
-        matchId,
-        widget.playerRepo,
-        widget.fixtureRepo,
-      );
-
-      for (final s in stats) {
-        if (s.player != null) {
-          roundStats[s.player!.id] = s;
-        }
-      }
-    }
-
-    return roundStats;
-  }
-
-  Future<void> _refreshLive() async {
-    try {
-      final fixture = _selectedFixture;
-      final matchId = fixture?.matchId?.trim();
-
-      if (matchId != null && matchId.isNotEmpty) {
-        await widget.fixtureRepo.refreshLiveScores(
-          matchId: matchId,
-          selections: widget.selections,
+      for (final p in [...homePlayers, ...awayPlayers]) {
+        roundStats[p.id] = AflPlayerMatchStats(
+          player: p,
+          team: p.club,
+          kicks: 0,
+          handballs: 0,
+          disposals: 0,
+          marks: 0,
+          tackles: 0,
+          goals: 0,
+          behinds: 0,
+          hitouts: 0,
+          freesFor: 0,
+          freesAgainst: 0,
+          timeOnGroundPercentage: 0,
+          fantasyPoints: 0,
         );
       }
 
-      if (!mounted) return;
+      continue;
+    }
 
-      _checkRoundCompletion();
-
-      final roundStats = await _fetchRoundStats();
-      _applyLiveStats(roundStats.values.toList());
-
-      _checkAndCompleteWeekendQuadsRound();
-    } catch (e, st) {
-      debugPrint("❌ Live refresh error: $e\n$st");
+    // Normal case: stats exist
+    for (final s in stats) {
+      if (s.player != null) {
+        roundStats[s.player!.id] = s;
+      }
     }
   }
 
-  void _applyLiveStats(List<AflPlayerMatchStats> stats) {
-    _currentStatsByPlayerId = {
-      for (final s in stats)
-        if (s.player != null) s.player!.id: s
-    };
+  return roundStats;
+}
 
-    for (final selection in widget.selections) {
-      selection.liveScore = widget.fantasyService.calculatePunterScore(
-        selection: selection,
-        liveStatsByPlayerId: _currentStatsByPlayerId,
+  Future<void> _refreshLive() async {
+  try {
+    final fixture = _selectedFixture;
+    final matchId = fixture?.matchId?.trim();
+
+    // Update live scores for the selected fixture
+    if (matchId != null && matchId.isNotEmpty) {
+      await widget.fixtureRepo.refreshLiveScores(
+        matchId: matchId,
+        selections: widget.selections,
       );
     }
 
-    setState(() {});
+    if (!mounted) return;
+
+    _checkRoundCompletion();
+
+    // ⭐ Fetch stats for ALL matches in the round
+    final roundStats = await _fetchRoundStats();
+
+    // ⭐ Apply round-wide stats to punter table + overlay
+    _applyLiveStats(roundStats.values.toList());
+
+    _checkAndCompleteWeekendQuadsRound();
+  } catch (e, st) {
+    debugPrint("❌ Live refresh error: $e\n$st");
   }
+}
+
+  void _applyLiveStats(List<AflPlayerMatchStats> stats) {
+  _currentStatsByPlayerId = {
+    for (final s in stats)
+      if (s.player != null) s.player!.id: s
+  };
+
+  for (final selection in widget.selections) {
+    selection.liveScore = widget.fantasyService.calculatePunterScore(
+      selection: selection,
+      liveStatsByPlayerId: _currentStatsByPlayerId,
+    );
+  }
+
+  setState(() {});
+}
     void _checkRoundCompletion() {
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
       widget.season,
@@ -580,24 +615,23 @@ class _GameViewScreenState extends State<GameViewScreen> {
   final matchId = f.matchId?.trim();
   if (matchId == null || matchId.isEmpty) return;
 
-  // 1. Try to use round-wide stats first (instant)
+  // 1. Use round-wide stats first
   List<AflPlayerMatchStats> stats = _currentStatsByPlayerId.values.toList();
 
-  // 2. Filter to only players in this fixture
   final homeTeam = f.homeTeam;
   final awayTeam = f.awayTeam;
 
-  final rowsA = stats
+  List<Map<String, dynamic>> rowsA = stats
       .where((s) => s.player?.club == homeTeam)
       .map(_mapStats)
       .toList();
 
-  final rowsB = stats
+  List<Map<String, dynamic>> rowsB = stats
       .where((s) => s.player?.club == awayTeam)
       .map(_mapStats)
       .toList();
 
-  // 3. If round-wide stats don't include this match yet, fetch & cache
+  // 2. If round-wide stats don't include this match yet, fetch & cache
   if (rowsA.isEmpty && rowsB.isEmpty) {
     final freshStats = await MatchStatsParser.fetchMatchStats(
       matchId,
@@ -607,20 +641,15 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     stats = freshStats;
 
-    // Rebuild rows
-    rowsA.clear();
-    rowsA.addAll(
-      freshStats
-          .where((s) => s.player?.club == homeTeam)
-          .map(_mapStats),
-    );
+    rowsA = freshStats
+        .where((s) => s.player?.club == homeTeam)
+        .map(_mapStats)
+        .toList();
 
-    rowsB.clear();
-    rowsB.addAll(
-      freshStats
-          .where((s) => s.player?.club == awayTeam)
-          .map(_mapStats),
-    );
+    rowsB = freshStats
+        .where((s) => s.player?.club == awayTeam)
+        .map(_mapStats)
+        .toList();
   }
 
   final noStats = rowsA.isEmpty && rowsB.isEmpty;

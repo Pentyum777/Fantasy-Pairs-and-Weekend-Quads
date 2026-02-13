@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
 # DEPLOY SCRIPT FOR FLUTTER WEB → GITHUB PAGES
-# Deterministic, cache-busting, no merge conflicts
+# Deterministic, cache-busting, commits source + deploy, no merge conflicts
 # ---------------------------------------------------------------------------
 
 Write-Host "=== Starting Deployment ==="
@@ -17,22 +17,22 @@ flutter build web --release
 
 $webDir = "build\web"
 if (!(Test-Path $webDir)) {
-    Write-Host "❌ Flutter build failed — web directory not found."
+    Write-Host "Flutter build failed -- web directory not found."
     exit 1
 }
 
-Write-Host "✅ Flutter build complete."
+Write-Host "Flutter build complete."
 
 # ---------------------------------------------------------------------------
 # 1B. REMOVE SERVICE WORKER (HARD DELETE)
 # ---------------------------------------------------------------------------
 $swPath = Join-Path $webDir "flutter_service_worker.js"
 if (Test-Path $swPath) {
-    Write-Host "🧹 Removing flutter_service_worker.js to prevent stale caching..."
+    Write-Host "Removing flutter_service_worker.js to prevent stale caching..."
     Remove-Item -Force $swPath
-    Write-Host "✅ Service worker removed."
+    Write-Host "Service worker removed."
 } else {
-    Write-Host "ℹ️ No service worker found — nothing to remove."
+    Write-Host "No service worker found -- nothing to remove."
 }
 
 # ---------------------------------------------------------------------------
@@ -77,7 +77,7 @@ foreach ($file in $filesToHash) {
 }
 
 [System.IO.File]::WriteAllLines($indexPath, $index)
-Write-Host "✅ index.html updated with hashed JS references."
+Write-Host "index.html updated with hashed JS references."
 
 # ---------------------------------------------------------------------------
 # 4. CLEAN /docs COMPLETELY AND COPY BUILD
@@ -92,7 +92,7 @@ if (Test-Path $docsDir) {
 Write-Host "Creating /docs and copying build..."
 New-Item -ItemType Directory -Path $docsDir | Out-Null
 Copy-Item "$webDir\*" $docsDir -Recurse
-Write-Host "✅ Copied build to /docs."
+Write-Host "Copied build to /docs."
 
 # ---------------------------------------------------------------------------
 # 5. COPY MSAL.JS INTO /docs
@@ -103,22 +103,28 @@ $msalCopied = $false
 foreach ($path in $msalSourcePaths) {
     if (Test-Path $path) {
         Copy-Item $path "$docsDir/msal.js"
-        Write-Host "✅ msal.js copied from $path"
+        Write-Host "msal.js copied from $path"
         $msalCopied = $true
         break
     }
 }
 
 if (-not $msalCopied) {
-    Write-Host "⚠️ WARNING: msal.js not found — login will fail."
+    Write-Host "WARNING: msal.js not found -- login will fail."
 }
 
 # ---------------------------------------------------------------------------
-# 6. GIT COMMIT + FORCE PUSH (NO MERGE CONFLICTS EVER)
+# 6. GIT COMMIT + PUSH (SOURCE CODE FIRST, THEN DEPLOY)
 # ---------------------------------------------------------------------------
-Write-Host "Committing and pushing to GitHub..."
+
+Write-Host "Committing source code changes..."
+git add .
+git commit -m "Source update $versionHash" --allow-empty
+git push origin main
+
+Write-Host "Committing and pushing deploy build..."
 git add docs
 git commit -m "Deploy $versionHash" --allow-empty
 git push origin main --force
 
-Write-Host "✅ Deployment complete."
+Write-Host "Deployment complete."
