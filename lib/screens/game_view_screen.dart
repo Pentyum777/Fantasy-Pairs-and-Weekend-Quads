@@ -93,6 +93,37 @@ class _GameViewScreenState extends State<GameViewScreen> {
     );
   }
 
+  // -------------------------------------------------------------
+  // ROUND-WIDE STATS
+  // -------------------------------------------------------------
+  Future<Map<String, AflPlayerMatchStats>> _fetchRoundStats() async {
+    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+      widget.season,
+      widget.round,
+    );
+
+    final Map<String, AflPlayerMatchStats> roundStats = {};
+
+    for (final f in fixtures) {
+      final matchId = f.matchId?.trim();
+      if (matchId == null || matchId.isEmpty) continue;
+
+      final stats = await MatchStatsParser.fetchMatchStats(
+        matchId,
+        widget.playerRepo,
+        widget.fixtureRepo,
+      );
+
+      for (final s in stats) {
+        if (s.player != null) {
+          roundStats[s.player!.id] = s;
+        }
+      }
+    }
+
+    return roundStats;
+  }
+
   Future<void> _refreshLive() async {
     try {
       final fixture = _selectedFixture;
@@ -109,18 +140,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
       _checkRoundCompletion();
 
-      if (matchId != null && matchId.isNotEmpty) {
-        final stats = await MatchStatsParser.fetchMatchStats(
-          matchId,
-          widget.playerRepo,
-          widget.fixtureRepo,
-        );
-
-        if (!mounted) return;
-        _applyLiveStats(stats);
-      } else {
-        setState(() {});
-      }
+      final roundStats = await _fetchRoundStats();
+      _applyLiveStats(roundStats.values.toList());
 
       _checkAndCompleteWeekendQuadsRound();
     } catch (e, st) {
@@ -129,22 +150,21 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   void _applyLiveStats(List<AflPlayerMatchStats> stats) {
-  _currentStatsByPlayerId = {
-  for (final s in stats)
-    if (s.player != null) s.player!.id: s
-};
+    _currentStatsByPlayerId = {
+      for (final s in stats)
+        if (s.player != null) s.player!.id: s
+    };
 
-  for (final selection in widget.selections) {
-    selection.liveScore = widget.fantasyService.calculatePunterScore(
-      selection: selection,
-      liveStatsByPlayerId: _currentStatsByPlayerId,
-    );
+    for (final selection in widget.selections) {
+      selection.liveScore = widget.fantasyService.calculatePunterScore(
+        selection: selection,
+        liveStatsByPlayerId: _currentStatsByPlayerId,
+      );
+    }
+
+    setState(() {});
   }
-
-  setState(() {});
-}
-
-  void _checkRoundCompletion() {
+    void _checkRoundCompletion() {
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
       widget.season,
       widget.round,
@@ -281,20 +301,18 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Map<String, dynamic> _mapStats(AflPlayerMatchStats s) {
-  return {
-    "Player": s.player?.name ?? "Unknown",
-    "AF": s.fantasyPoints,
-    "K": s.kicks,
-    "HB": s.handballs,
-    "D": s.disposals,
-    "M": s.marks,
-    "T": s.tackles,
-    "G": s.goals,
-    "B": s.behinds,
-  };
-}
-
-
+    return {
+      "Player": s.player?.name ?? "Unknown",
+      "AF": s.fantasyPoints,
+      "K": s.kicks,
+      "HB": s.handballs,
+      "D": s.disposals,
+      "M": s.marks,
+      "T": s.tackles,
+      "G": s.goals,
+      "B": s.behinds,
+    };
+  }
 
   void _resetSelections() {
     if (widget.userRoleService.isReadOnly) return;
@@ -429,8 +447,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
       ),
     );
   }
-
-  Widget _buildFixtureStrip(List<AflFixture> fixtures) {
+    Widget _buildFixtureStrip(List<AflFixture> fixtures) {
     if (fixtures.isEmpty) {
       return const SizedBox(
         height: 95,
@@ -558,54 +575,81 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Future<void> _onFixtureTap(AflFixture f) async {
-    setState(() => _selectedFixture = f);
+  setState(() => _selectedFixture = f);
 
-    final matchId = f.matchId?.trim();
-    if (matchId == null || matchId.isEmpty) return;
+  final matchId = f.matchId?.trim();
+  if (matchId == null || matchId.isEmpty) return;
 
-    final stats = await MatchStatsParser.fetchMatchStats(
+  // 1. Try to use round-wide stats first (instant)
+  List<AflPlayerMatchStats> stats = _currentStatsByPlayerId.values.toList();
+
+  // 2. Filter to only players in this fixture
+  final homeTeam = f.homeTeam;
+  final awayTeam = f.awayTeam;
+
+  final rowsA = stats
+      .where((s) => s.player?.club == homeTeam)
+      .map(_mapStats)
+      .toList();
+
+  final rowsB = stats
+      .where((s) => s.player?.club == awayTeam)
+      .map(_mapStats)
+      .toList();
+
+  // 3. If round-wide stats don't include this match yet, fetch & cache
+  if (rowsA.isEmpty && rowsB.isEmpty) {
+    final freshStats = await MatchStatsParser.fetchMatchStats(
       matchId,
       widget.playerRepo,
       widget.fixtureRepo,
     );
 
-    _applyLiveStats(stats);
+    stats = freshStats;
 
-    final homeTeam = f.homeTeam;
-    final awayTeam = f.awayTeam;
+    // Rebuild rows
+    rowsA.clear();
+    rowsA.addAll(
+      freshStats
+          .where((s) => s.player?.club == homeTeam)
+          .map(_mapStats),
+    );
 
-    final rowsA =
-    stats.where((s) => s.player?.club == homeTeam).map(_mapStats).toList();
-
-final rowsB =
-    stats.where((s) => s.player?.club == awayTeam).map(_mapStats).toList();
-
-    final noStats = stats.isEmpty && rowsA.isEmpty && rowsB.isEmpty;
-
-    const columns = [
-      "Player",
-      "AF",
-      "K",
-      "HB",
-      "D",
-      "M",
-      "T",
-      "G",
-      "B",
-    ];
-
-    showDialog<void>(
-      context: context,
-      builder: (_) => StatsOverlay(
-        leftTitle: homeTeam,
-        rightTitle: awayTeam,
-        leftRows: noStats ? <Map<String, dynamic>>[] : rowsA,
-        rightRows: noStats ? <Map<String, dynamic>>[] : rowsB,
-        columns: noStats ? <String>[] : columns,
-        noStatsMessage: noStats ? "No stats available yet" : null,
-      ),
+    rowsB.clear();
+    rowsB.addAll(
+      freshStats
+          .where((s) => s.player?.club == awayTeam)
+          .map(_mapStats),
     );
   }
+
+  final noStats = rowsA.isEmpty && rowsB.isEmpty;
+
+  const columns = [
+    "Player",
+    "AF",
+    "K",
+    "HB",
+    "D",
+    "M",
+    "T",
+    "G",
+    "B",
+  ];
+
+  showDialog<void>(
+    context: context,
+    builder: (_) => StatsOverlay(
+      leftTitle: homeTeam,
+      rightTitle: awayTeam,
+      leftRows: noStats ? <Map<String, dynamic>>[] : rowsA,
+      rightRows: noStats ? <Map<String, dynamic>>[] : rowsB,
+      columns: noStats ? <String>[] : columns,
+      noStatsMessage: noStats ? "No stats available yet" : null,
+    ),
+  );
+}
+
 
   Widget _buildPunterControls() {
     final theme = Theme.of(context);
@@ -723,12 +767,8 @@ final rowsB =
                 UIDimensions.punterNameColumnWidth +
                 UIDimensions.totalColumnWidth;
 
-        
-
-final double punterTableWidth =
-    _leaderboardCollapsed
-        ? innerWidth
-        : innerWidth - leaderboardWidth;
+        final double punterTableWidth =
+            _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
 
         final fixtures = _fixturesForGameType();
         final clubs = <String>{
@@ -827,9 +867,6 @@ final double punterTableWidth =
     }
   }
 
-  // -------------------------------------------------------------
-  // OPTIONAL: AFL DATA VALIDATION
-  // -------------------------------------------------------------
   void validateAflData(
     List<AflFixture> fixtures,
     PlayerRepository repo,

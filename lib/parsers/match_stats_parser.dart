@@ -10,11 +10,21 @@ class MatchStatsParser {
   static const String baseUrl =
       "https://fantasy-pairs-and-weekend-quads-production.up.railway.app";
 
+  // ⭐ NEW: In-memory cache for match stats
+  static final Map<String, List<AflPlayerMatchStats>> _cache = {};
+
   static Future<List<AflPlayerMatchStats>> fetchMatchStats(
     String matchId,
     PlayerRepository repo,
     FixtureRepository fixtureRepo,
   ) async {
+
+    // ⭐ 1. Return cached stats instantly
+    if (_cache.containsKey(matchId)) {
+      return _cache[matchId]!;
+    }
+
+    // ⭐ 2. Fetch from backend
     final fantasyRes = await http.get(
       Uri.parse('$baseUrl/fantasy/$matchId'),
     );
@@ -88,6 +98,14 @@ class MatchStatsParser {
       );
     }
 
+    // ⭐ 3. Store in cache
+    _cache[matchId] = results;
+
     return results;
+  }
+
+  // ⭐ Optional: clear cache (useful when switching rounds)
+  static void clearCache() {
+    _cache.clear();
   }
 }

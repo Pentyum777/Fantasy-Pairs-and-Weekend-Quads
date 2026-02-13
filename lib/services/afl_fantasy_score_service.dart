@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AFLFantasyService {
-  static const String baseUrl = 'https://your-backend-url/api';
+  // Your real Railway backend root
+  static const String baseUrl =
+      'https://fantasy-pairs-and-weekend-quads-production.up.railway.app';
 
   /// Returns:
   /// {

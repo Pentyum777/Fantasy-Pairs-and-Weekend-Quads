@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
 # DEPLOY SCRIPT FOR FLUTTER WEB → GITHUB PAGES
-# Cache-busting (JS only), MSAL-safe, deterministic
+# Deterministic, cache-busting, no merge conflicts
 # ---------------------------------------------------------------------------
 
 Write-Host "=== Starting Deployment ==="
@@ -114,12 +114,11 @@ if (-not $msalCopied) {
 }
 
 # ---------------------------------------------------------------------------
-# 6. GIT COMMIT + PUSH
+# 6. GIT COMMIT + FORCE PUSH (NO MERGE CONFLICTS EVER)
 # ---------------------------------------------------------------------------
 Write-Host "Committing and pushing to GitHub..."
 git add docs
 git commit -m "Deploy $versionHash" --allow-empty
-git pull origin main
-git push origin main
+git push origin main --force
 
 Write-Host "✅ Deployment complete."
