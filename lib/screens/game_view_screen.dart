@@ -615,43 +615,24 @@ class _GameViewScreenState extends State<GameViewScreen> {
   final matchId = f.matchId?.trim();
   if (matchId == null || matchId.isEmpty) return;
 
-  // 1. Use round-wide stats first
-  List<AflPlayerMatchStats> stats = _currentStatsByPlayerId.values.toList();
+  // ⭐ Always use round‑wide stats (already fetched by _refreshLive)
+  final stats = _currentStatsByPlayerId.values.toList();
 
   final homeTeam = f.homeTeam;
   final awayTeam = f.awayTeam;
 
-  List<Map<String, dynamic>> rowsA = stats
+  // ⭐ Filter round‑wide stats for each club
+  final rowsA = stats
       .where((s) => s.player?.club == homeTeam)
       .map(_mapStats)
       .toList();
 
-  List<Map<String, dynamic>> rowsB = stats
+  final rowsB = stats
       .where((s) => s.player?.club == awayTeam)
       .map(_mapStats)
       .toList();
 
-  // 2. If round-wide stats don't include this match yet, fetch & cache
-  if (rowsA.isEmpty && rowsB.isEmpty) {
-    final freshStats = await MatchStatsParser.fetchMatchStats(
-      matchId,
-      widget.playerRepo,
-      widget.fixtureRepo,
-    );
-
-    stats = freshStats;
-
-    rowsA = freshStats
-        .where((s) => s.player?.club == homeTeam)
-        .map(_mapStats)
-        .toList();
-
-    rowsB = freshStats
-        .where((s) => s.player?.club == awayTeam)
-        .map(_mapStats)
-        .toList();
-  }
-
+  // ⭐ If round‑wide stats don't include this match yet → show "No stats"
   final noStats = rowsA.isEmpty && rowsB.isEmpty;
 
   const columns = [
@@ -785,83 +766,78 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Widget _buildPunterAndLeaderboard() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final innerWidth = constraints.maxWidth;
-        final picks = widget.gameType == "weekend_quads" ? 4 : 2;
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final innerWidth = constraints.maxWidth;
+      final picks = widget.gameType == "weekend_quads" ? 4 : 2;
 
-        final leaderboardWidth = _leaderboardCollapsed
-            ? UIDimensions.collapsedLeaderboardWidth
-            : UIDimensions.rankColumnWidth +
-                UIDimensions.punterNameColumnWidth +
-                UIDimensions.totalColumnWidth;
+      final leaderboardWidth = _leaderboardCollapsed
+          ? UIDimensions.collapsedLeaderboardWidth
+          : UIDimensions.rankColumnWidth +
+              UIDimensions.punterNameColumnWidth +
+              UIDimensions.totalColumnWidth;
 
-        final double punterTableWidth =
-            _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
+      final double punterTableWidth =
+          _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
 
-        final fixtures = _fixturesForGameType();
-        final clubs = <String>{
-          for (final f in fixtures) ...[f.homeTeam, f.awayTeam]
-        };
+      return FutureBuilder<List<AflPlayer>>(
+        future: widget.playerRepo.playersForSeason(widget.season),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        return FutureBuilder<List<AflPlayer>>(
-          future: widget.playerRepo.playersForSeason(widget.season),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
+          final seasonPlayers = snapshot.data!;
 
-            final seasonPlayers = snapshot.data!;
-            final availablePlayers = seasonPlayers
-                .where((p) => clubs.contains(p.club))
-                .toList();
+          // ⭐ FIX: Use ALL round players, not fixture-scoped players
+          final availablePlayers = seasonPlayers;
 
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: punterTableWidth,
-                  child: PunterSelectionTable(
-                    tableWidth: punterTableWidth,
-                    visiblePunterCount: _visiblePunterCount,
-                    playersPerPunter: picks,
-                    availablePlayers: availablePlayers,
-                    selections: widget.selections,
-                    isCompleted: _isCompleted,
-                    readOnly:
-                        widget.userRoleService.isReadOnly || _isSubmitted,
-                    onChanged: widget.userRoleService.isAdmin
-                        ? () {
-                            _applyLiveStats(
-                              _currentStatsByPlayerId.values.toList(),
-                            );
-                          }
-                        : null,
-                    collapsed: _leaderboardCollapsed,
-                    scrollController: _punterScrollController,
-                  ),
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: punterTableWidth,
+                child: PunterSelectionTable(
+                  tableWidth: punterTableWidth,
+                  visiblePunterCount: _visiblePunterCount,
+                  playersPerPunter: picks,
+                  availablePlayers: availablePlayers,
+                  selections: widget.selections,
+                  isCompleted: _isCompleted,
+                  readOnly:
+                      widget.userRoleService.isReadOnly || _isSubmitted,
+                  onChanged: widget.userRoleService.isAdmin
+                      ? () {
+                          _applyLiveStats(
+                            _currentStatsByPlayerId.values.toList(),
+                          );
+                        }
+                      : null,
+                  collapsed: _leaderboardCollapsed,
+                  scrollController: _punterScrollController,
                 ),
-                SizedBox(
-                  width: leaderboardWidth,
-                  child: LeaderboardPanel(
-                    punters: widget.selections
-                        .take(_visiblePunterCount)
-                        .toList(),
-                    rowHeight: 34,
-                    collapsed: _leaderboardCollapsed,
-                    scrollController: _punterScrollController,
-                    onCollapseChanged: (collapsed) {
-                      setState(() => _leaderboardCollapsed = collapsed);
-                    },
-                  ),
+              ),
+              SizedBox(
+                width: leaderboardWidth,
+                child: LeaderboardPanel(
+                  punters: widget.selections
+                      .take(_visiblePunterCount)
+                      .toList(),
+                  rowHeight: 34,
+                  collapsed: _leaderboardCollapsed,
+                  scrollController: _punterScrollController,
+                  onCollapseChanged: (collapsed) {
+                    setState(() => _leaderboardCollapsed = collapsed);
+                  },
                 ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
 
   Widget _buildMainContent() {
     return Padding(
