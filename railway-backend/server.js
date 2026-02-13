@@ -23,6 +23,8 @@ const app = express();
 
 // Enable CORS for Flutter Web
 app.use(cors({ origin: "*" }));
+app.options("*", cors());   // <-- REQUIRED FIX FOR GITHUB PAGES + FLUTTER WEB
+
 app.use(express.json());
 
 // Root route
