@@ -1,4 +1,3 @@
-
 import { chromium } from "playwright";
 
 let browser = null;
@@ -117,7 +116,7 @@ export async function scrapeDFS(dfsId) {
         return {
           id: playerId || name,
           name,
-          team: "",
+          team: "",   // <-- will be filled in below
           stats: {
             fantasyPoints,
             kicks,
