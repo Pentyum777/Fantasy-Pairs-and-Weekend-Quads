@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
-# DEPLOY SCRIPT FOR FLUTTER WEB → GITHUB PAGES
-# Deterministic, cache-busting, commits source + deploy, no merge conflicts
+# SIMPLE DEPLOY SCRIPT FOR FLUTTER WEB → GITHUB PAGES
+# Build → wipe /docs → copy → commit source + deploy → push
 # ---------------------------------------------------------------------------
 
 Write-Host "=== Starting Deployment ==="
@@ -36,51 +36,7 @@ if (Test-Path $swPath) {
 }
 
 # ---------------------------------------------------------------------------
-# 2. APPLY CACHE-BUSTING VERSION HASH (JS ONLY)
-# ---------------------------------------------------------------------------
-$timestamp = Get-Date -Format "yyyyMMddHHmmss"
-$versionHash = $timestamp
-Write-Host "Applying version hash: $versionHash"
-
-$filesToHash = @(
-    "flutter.js",
-    "main.dart.js"
-)
-
-foreach ($file in $filesToHash) {
-    $fullPath = Join-Path $webDir $file
-    if (Test-Path $fullPath) {
-        $dir = Split-Path $fullPath
-        $name = Split-Path $fullPath -Leaf
-        $newName = "$name.$versionHash"
-        $newFullPath = Join-Path $dir $newName
-
-        if ($fullPath -ne $newFullPath) {
-            if (Test-Path $newFullPath) {
-                Remove-Item $newFullPath -Force
-            }
-            Rename-Item -Path $fullPath -NewName $newName
-        }
-    }
-}
-
-# ---------------------------------------------------------------------------
-# 3. UPDATE INDEX.HTML REFERENCES
-# ---------------------------------------------------------------------------
-$indexPath = Join-Path $webDir "index.html"
-$index = Get-Content $indexPath
-
-foreach ($file in $filesToHash) {
-    $pattern = [regex]::Escape($file)
-    $replacement = "$file.$versionHash"
-    $index = $index -replace $pattern, $replacement
-}
-
-[System.IO.File]::WriteAllLines($indexPath, $index)
-Write-Host "index.html updated with hashed JS references."
-
-# ---------------------------------------------------------------------------
-# 4. CLEAN /docs COMPLETELY AND COPY BUILD
+# 2. CLEAN /docs COMPLETELY AND COPY BUILD
 # ---------------------------------------------------------------------------
 $docsDir = "docs"
 
@@ -95,7 +51,7 @@ Copy-Item "$webDir\*" $docsDir -Recurse
 Write-Host "Copied build to /docs."
 
 # ---------------------------------------------------------------------------
-# 5. COPY MSAL.JS INTO /docs
+# 3. COPY MSAL.JS INTO /docs
 # ---------------------------------------------------------------------------
 $msalSourcePaths = @("web/msal.js", "msal.js")
 $msalCopied = $false
@@ -114,17 +70,17 @@ if (-not $msalCopied) {
 }
 
 # ---------------------------------------------------------------------------
-# 6. GIT COMMIT + PUSH (SOURCE CODE FIRST, THEN DEPLOY)
+# 4. GIT COMMIT + PUSH (SOURCE CODE FIRST, THEN DEPLOY)
 # ---------------------------------------------------------------------------
 
 Write-Host "Committing source code changes..."
 git add .
-git commit -m "Source update $versionHash" --allow-empty
+git commit -m "Source update" --allow-empty
 git push origin main
 
 Write-Host "Committing and pushing deploy build..."
 git add docs
-git commit -m "Deploy $versionHash" --allow-empty
+git commit -m "Deploy" --allow-empty
 git push origin main --force
 
 Write-Host "Deployment complete."
