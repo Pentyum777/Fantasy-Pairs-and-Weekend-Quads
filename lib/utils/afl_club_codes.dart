@@ -1,110 +1,113 @@
 class AflClubCodes {
-  static String normalize(String input) {
-    final code = input.trim().toUpperCase();
+  static const Map<String, String> _map = {
+    // ADELAIDE
+    "ADE": "ADE",
+    "ADELAIDE": "ADE",
+    "ADELAIDE CROWS": "ADE",
 
-    const aliases = {
-      // ADELAIDE
-      "ADELAIDE": "ADE",
-      "ADELAIDE CROWS": "ADE",
-      "CROWS": "ADE",
+    // BRISBANE
+    "BRL": "BRL",
+    "BRISBANE": "BRL",
+    "BRISBANE LIONS": "BRL",
+    "LIONS": "BRL",
 
-      // BRISBANE
-      "BRISBANE": "BRL",
-      "BRISBANE LIONS": "BRL",
-      "LIONS": "BRL",
+    // CARLTON
+    "CAR": "CAR",
+    "CARL": "CAR",
+    "CARLTON": "CAR",
+    "CARLTON BLUES": "CAR",
 
-      // CARLTON
-      "CARLTON": "CAR",
-      "CARLTON BLUES": "CAR",
-      "BLUES": "CAR",
+    // COLLINGWOOD
+    "COL": "COL",
+    "COLL": "COL",
+    "COLLINGWOOD": "COL",
+    "COLLINGWOOD MAGPIES": "COL",
 
-      // COLLINGWOOD
-      "COLLINGWOOD": "COL",
-      "COLLINGWOOD MAGPIES": "COL",
-      "MAGPIES": "COL",
-      "PIES": "COL",
+    // ESSENDON
+    "ESS": "ESS",
+    "ESSENDON": "ESS",
+    "ESSENDON BOMBERS": "ESS",
 
-      // ESSENDON
-      "ESSENDON": "ESS",
-      "ESSENDON BOMBERS": "ESS",
-      "BOMBERS": "ESS",
-      "DONS": "ESS",
+    // FREMANTLE
+    "FRE": "FRE",
+    "FREMANTLE": "FRE",
+    "FREMANTLE DOCKERS": "FRE",
 
-      // FREMANTLE
-      "FREMANTLE": "FRE",
-      "FREMANTLE DOCKERS": "FRE",
-      "DOCKERS": "FRE",
+    // GEELONG
+    "GEE": "GEE",
+    "GEELONG": "GEE",
+    "GEELONG CATS": "GEE",
 
-      // GEELONG
-      "GEELONG": "GEE",
-      "GEELONG CATS": "GEE",
-      "CATS": "GEE",
+    // GOLD COAST
+    "GCS": "GCS",
+    "GOLD COAST": "GCS",
+    "GOLD COAST SUNS": "GCS",
+    "SUNS": "GCS",
 
-      // GOLD COAST
-      "GOLD COAST": "GCS",
-      "GOLD COAST SUNS": "GCS",
-      "SUNS": "GCS",
+    // GWS
+    "GWS": "GWS",
+    "GIANTS": "GWS",
+    "GWS GIANTS": "GWS",
+    "GREATER WESTERN SYDNEY": "GWS",
+    "GREATER WESTERN SYDNEY GIANTS": "GWS",
 
-      // GWS
-"GWS": "GWS",
-"GREATER WESTERN SYDNEY": "GWS",
-"GREATER WESTERN SYDNEY GIANTS": "GWS",
-"GWS GIANTS": "GWS", // <-- add this
-"GIANTS": "GWS",
+    // HAWTHORN
+    "HAW": "HAW",
+    "HAWTHORN": "HAW",
+    "HAWTHORN HAWKS": "HAW",
 
-      // HAWTHORN
-      "HAWTHORN": "HAW",
-      "HAWTHORN HAWKS": "HAW",
-      "HAWKS": "HAW",
+    // MELBOURNE  → MELB
+    "MEL": "MELB",
+    "MELB": "MELB",
+    "MELBOURNE": "MELB",
+    "MELBOURNE DEMONS": "MELB",
+    "DEMONS": "MELB",
 
-      // MELBOURNE
-      "MELBOURNE": "MELB",
-      "MELBOURNE DEMONS": "MELB",
-      "DEMONS": "MELB",
-      "DEES": "MELB",
+    // NORTH MELBOURNE
+    "NTH": "NTH",
+    "NORTH": "NTH",
+    "NORTH MELBOURNE": "NTH",
+    "NORTH MELBOURNE KANGAROOS": "NTH",
 
-      // NORTH MELBOURNE
-      "NORTH": "NTH",
-      "NORTH MELBOURNE": "NTH",
-      "NORTH MELBOURNE KANGAROOS": "NTH",
-      "KANGAROOS": "NTH",
-      "ROOS": "NTH",
+    // PORT ADELAIDE
+    "PTA": "PTA",
+    "PORT": "PTA",
+    "PORT ADELAIDE": "PTA",
+    "PORT ADELAIDE POWER": "PTA",
 
-      // PORT ADELAIDE
-      "PORT": "PTA",
-      "PORT ADELAIDE": "PTA",
-      "PORT ADELAIDE POWER": "PTA",
-      "POWER": "PTA",
+    // RICHMOND
+    "RIC": "RIC",
+    "RICHMOND": "RIC",
+    "RICHMOND TIGERS": "RIC",
 
-      // RICHMOND
-      "RICHMOND": "RIC",
-      "RICHMOND TIGERS": "RIC",
-      "TIGERS": "RIC",
-      "TIGES": "RIC",
+    // ST KILDA
+    "STK": "STK",
+    "SAINTS": "STK",
+    "ST KILDA": "STK",
+    "ST KILDA SAINTS": "STK",
 
-      // ST KILDA
-      "ST KILDA": "STK",
-      "STKILDA": "STK",
-      "ST KILDA SAINTS": "STK",
-      "SAINTS": "STK",
+    // SYDNEY
+    "SYD": "SYD",
+    "SWANS": "SYD",
+    "SYDNEY": "SYD",
+    "SYDNEY SWANS": "SYD",
 
-      // SYDNEY
-      "SYDNEY": "SYD",
-      "SYDNEY SWANS": "SYD",
-      "SWANS": "SYD",
+    // WEST COAST
+    "WCE": "WCE",
+    "WEST COAST": "WCE",
+    "WEST COAST EAGLES": "WCE",
+    "EAGLES": "WCE",
 
-      // WEST COAST
-      "WEST COAST": "WCE",
-      "WEST COAST EAGLES": "WCE",
-      "EAGLES": "WCE",
+    // WESTERN BULLDOGS
+    "WBD": "WBD",
+    "WB": "WBD",
+    "BULLDOGS": "WBD",
+    "WESTERN BULLDOGS": "WBD",
+  };
 
-      // WESTERN BULLDOGS
-      "WESTERN BULLDOGS": "WBD",
-      "BULLDOGS": "WBD",
-      "DOGS": "WBD",
-      "WB": "WBD",
-    };
-
-    return aliases[code] ?? code;
+  static String normalize(String raw) {
+    if (raw.isEmpty) return "";
+    final key = raw.trim().toUpperCase();
+    return _map[key] ?? "";
   }
 }

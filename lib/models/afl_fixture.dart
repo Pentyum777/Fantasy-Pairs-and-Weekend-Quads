@@ -11,6 +11,9 @@ class AflFixture {
   final String source;
   final String? matchId;
 
+  final String? footyInfoUrl;
+  final String? footyInfoId;
+
   final bool isPreseason;
 
   // Live / result data
@@ -18,6 +21,7 @@ class AflFixture {
   int awayScore;
   String quarterText;
   String timeText;
+  String status;   // ⭐ NEW FIELD
 
   AflFixture({
     required this.roundLabel,
@@ -30,10 +34,13 @@ class AflFixture {
     required this.source,
     required this.matchId,
     required this.isPreseason,
+    this.footyInfoUrl,
+    this.footyInfoId,
     this.homeScore = 0,
     this.awayScore = 0,
     this.quarterText = "",
     this.timeText = "",
+    this.status = "",   // ⭐ NEW DEFAULT
   });
 
   /// Backwards‑compatible flag used by GameViewScreen

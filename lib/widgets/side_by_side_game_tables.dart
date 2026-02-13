@@ -5,6 +5,9 @@ class SideBySideGameTables extends StatelessWidget {
   final String rightTitle;
   final List<Map<String, dynamic>> leftRows;
   final List<Map<String, dynamic>> rightRows;
+
+  /// Columns should be:
+  /// ["Player","K","H","M","T","HO","FF","FA","G","B","TOG"]
   final List<String> columns;
 
   const SideBySideGameTables({
@@ -16,23 +19,21 @@ class SideBySideGameTables extends StatelessWidget {
     required this.columns,
   });
 
-  static const double headerHeight = 40;
-  static const double rowHeight = 32;
+  static const double headerHeight = 32;
+  static const double rowHeight = 26;
+  static const double statColWidth = 40;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(child: _buildTable(context, leftTitle, leftRows)),
-        const SizedBox(width: 12),
+        const SizedBox(width: 6),
         Expanded(child: _buildTable(context, rightTitle, rightRows)),
       ],
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // SHARED TABLE BUILDER
-  // ---------------------------------------------------------------------------
   Widget _buildTable(
     BuildContext context,
     String title,
@@ -44,17 +45,16 @@ class SideBySideGameTables extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: cs.outlineVariant),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          // Title header
           Container(
             height: headerHeight,
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 2),
             alignment: Alignment.centerLeft,
             color: cs.surfaceContainerHighest,
             child: Text(
@@ -65,34 +65,41 @@ class SideBySideGameTables extends StatelessWidget {
               ),
             ),
           ),
-
           const Divider(height: 1),
-
-          // Column labels
           Container(
             height: headerHeight,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 2),
             color: cs.surfaceContainerHighest,
             child: Row(
-              children: columns
-                  .map(
-                    (c) => Expanded(
-                      child: Text(
-                        c,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: cs.onSurfaceVariant,
+              children: columns.map((c) {
+                final isPlayer = c == "Player";
+                return isPlayer
+                    ? Expanded(
+                        child: Text(
+                          c,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.onSurfaceVariant,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ),
-                  )
-                  .toList(),
+                      )
+                    : SizedBox(
+                        width: statColWidth,
+                        child: Text(
+                          c,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+              }).toList(),
             ),
           ),
-
           const Divider(height: 1),
-
-          // Data rows
           ...rows.asMap().entries.map((entry) {
             final index = entry.key;
             final row = entry.value;
@@ -100,22 +107,33 @@ class SideBySideGameTables extends StatelessWidget {
 
             return Container(
               height: rowHeight,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 2),
               color: isStriped
                   ? cs.surfaceContainerHighest.withValues(alpha: 0.30)
                   : cs.surface,
               child: Row(
-                children: columns
-                    .map(
-                      (c) => Expanded(
-                        child: Text(
-                          "${row[c]}",
-                          style: theme.textTheme.bodySmall,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    )
-                    .toList(),
+                children: columns.map((c) {
+                  final isPlayer = c == "Player";
+                  return isPlayer
+                      ? Expanded(
+                          child: Text(
+                            "${row[c]}",
+                            style: theme.textTheme.bodySmall,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        )
+                      : SizedBox(
+                          width: statColWidth,
+                          child: Text(
+                            "${row[c]}",
+                            style: theme.textTheme.bodySmall,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        );
+                }).toList(),
               ),
             );
           }),
@@ -124,93 +142,111 @@ class SideBySideGameTables extends StatelessWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // SINGLE TABLE BUILDER FOR RESPONSIVE OVERLAY
-  // ---------------------------------------------------------------------------
   static Widget buildSingleTable(
     BuildContext context,
     String title,
     List<Map<String, dynamic>> rows,
-    List<String> columns,
-  ) {
+    List<String> columns, {
+    bool compact = false,
+    Color? headerBg,
+    Color? headerFg,
+  }) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+
+    final headerStyle = TextStyle(
+      fontSize: compact ? 12 : 15,
+      fontWeight: FontWeight.bold,
+      color: headerFg ?? cs.onSurfaceVariant,
+    );
+
+    final cellStyle = TextStyle(
+      fontSize: compact ? 11 : 13,
+      height: 1.1,
+    );
 
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: cs.outlineVariant),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          // Title header
           Container(
-            height: headerHeight,
+            height: compact ? 28 : headerHeight,
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 3),
             alignment: Alignment.centerLeft,
-            color: cs.surfaceContainerHighest,
-            child: Text(
-              title,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: cs.onSurfaceVariant,
-              ),
-            ),
+            color: headerBg ?? cs.surfaceContainerHighest,
+            child: Text(title, style: headerStyle),
           ),
-
           const Divider(height: 1),
-
-          // Column labels
           Container(
-            height: headerHeight,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            color: cs.surfaceContainerHighest,
+            height: compact ? 26 : headerHeight,
+            padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 3),
+            color: headerBg ?? cs.surfaceContainerHighest,
             child: Row(
-              children: columns
-                  .map(
-                    (c) => Expanded(
-                      child: Text(
-                        c,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: cs.onSurfaceVariant,
+              children: columns.map((c) {
+                final isPlayer = c == "Player";
+                return isPlayer
+                    ? Expanded(
+                        child: Text(
+                          c,
+                          style: headerStyle,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ),
-                  )
-                  .toList(),
+                      )
+                    : SizedBox(
+                        width: statColWidth,
+                        child: Text(
+                          c,
+                          style: headerStyle,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+              }).toList(),
             ),
           ),
-
           const Divider(height: 1),
-
-          // Data rows
           ...rows.asMap().entries.map((entry) {
             final index = entry.key;
             final row = entry.value;
             final isStriped = index.isOdd;
 
             return Container(
-              height: rowHeight,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              height: compact ? 24 : rowHeight,
+              padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 3),
               color: isStriped
                   ? cs.surfaceContainerHighest.withValues(alpha: 0.30)
                   : cs.surface,
               child: Row(
-                children: columns
-                    .map(
-                      (c) => Expanded(
-                        child: Text(
-                          "${row[c]}",
-                          style: theme.textTheme.bodySmall,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    )
-                    .toList(),
+                children: columns.map((c) {
+                  final isPlayer = c == "Player";
+                  return isPlayer
+                      ? Expanded(
+                          child: Text(
+                            "${row[c]}",
+                            style: cellStyle,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            softWrap: false,
+                          ),
+                        )
+                      : SizedBox(
+                          width: statColWidth,
+                          child: Text(
+                            "${row[c]}",
+                            style: cellStyle,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            softWrap: false,
+                          ),
+                        );
+                }).toList(),
               ),
             );
           }),

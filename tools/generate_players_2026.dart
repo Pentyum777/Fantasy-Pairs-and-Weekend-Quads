@@ -7,23 +7,23 @@ void main() {
 
   const clubCodeMap = {
     "Adelaide Crows": "ADE",
-    "Brisbane Lions": "BRI",
-    "Carlton": "CARL",
-    "Collingwood": "COLL",
+    "Brisbane Lions": "BRL",
+    "Carlton": "CAR",
+    "Collingwood": "COL",
     "Essendon": "ESS",
     "Fremantle": "FRE",
     "Geelong Cats": "GEE",
     "Gold Coast Suns": "GCS",
-    "GWS Giants": "GWS GIANTS",
+    "GWS Giants": "GWS",
     "Hawthorn": "HAW",
     "Melbourne": "MELB",
     "North Melbourne": "NTH",
     "Port Adelaide": "PTA",
-    "Richmond": "RICH",
+    "Richmond": "RIC",
     "St Kilda": "STK",
     "Sydney Swans": "SYD",
     "West Coast Eagles": "WCE",
-    "Western Bulldogs": "WB",
+    "Western Bulldogs": "WBD",
   };
 
   final players = <Map<String, dynamic>>[];

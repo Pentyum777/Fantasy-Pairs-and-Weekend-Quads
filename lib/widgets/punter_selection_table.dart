@@ -95,8 +95,6 @@ class PunterSelectionTable extends StatefulWidget {
 class _PunterSelectionTableState extends State<PunterSelectionTable> {
   final Set<int> _punterListenerAdded = {};
 
-  
-
   final Map<int, TextEditingController> _controllers = {};
   final Map<int, FocusNode> _punterFocusNodes = {};
 
@@ -131,19 +129,28 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   int _historyIndex = -1;
 
   @override
-void didUpdateWidget(covariant PunterSelectionTable oldWidget) {
-  super.didUpdateWidget(oldWidget);
-
-  // Only re‑initialize if the selections list instance actually changed
-  final selectionsChanged = !identical(oldWidget.selections, widget.selections);
-
-  if (selectionsChanged) {
+  void initState() {
+    super.initState();
     _initControllers();
     _initFocusNodes();
     _saveSnapshot();
   }
-}
-    // ---------------------------------------------------------------------------
+
+  @override
+  void didUpdateWidget(covariant PunterSelectionTable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Only re‑initialize if the selections list instance actually changed
+    final selectionsChanged = !identical(oldWidget.selections, widget.selections);
+
+    if (selectionsChanged) {
+      _initControllers();
+      _initFocusNodes();
+      _saveSnapshot();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // INIT CONTROLLERS
   // ---------------------------------------------------------------------------
 
@@ -184,44 +191,73 @@ void didUpdateWidget(covariant PunterSelectionTable oldWidget) {
   // ---------------------------------------------------------------------------
 
   @override
-Widget build(BuildContext context) {
-  // Only clean invalid selections for read‑only users
-  if (widget.readOnly) {
-    _cleanInvalidSelectionsGlobal();
-  }
+  Widget build(BuildContext context) {
+    if (widget.readOnly) {
+      _cleanInvalidSelectionsGlobal();
+    }
 
-  final theme = Theme.of(context);
-  final cs = theme.colorScheme;
-  final visible = widget.selections.take(_punterCount).toList();
-  final pickCount = widget.selections.isNotEmpty
-      ? widget.selections.first.picks.length
-      : 0;
+    final double fontSize =
+        MediaQuery.of(context).size.width < 700 ? 11 : 12;
 
-  final tableWidth = widget.tableWidth;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final visible = widget.selections.take(_punterCount).toList();
+    final pickCount = widget.selections.isNotEmpty
+        ? widget.selections.first.picks.length
+        : 0;
+
+    final tableWidth = widget.tableWidth;
+
+    final bool isMobile = MediaQuery.of(context).size.width < 700;
+    final bool allowHorizontalScroll = isMobile || !widget.collapsed;
 
     return Column(
       children: [
-        _buildHeader(theme, cs, pickCount, tableWidth),
+        _buildHeader(theme, cs, pickCount, tableWidth, fontSize),
         Divider(height: 1, thickness: 1, color: cs.outlineVariant),
         Expanded(
-          child: _buildBody(theme, cs, visible, pickCount, tableWidth),
+          child: allowHorizontalScroll
+              ? SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: tableWidth,
+                    child: _buildBody(
+                      theme,
+                      cs,
+                      visible,
+                      pickCount,
+                      tableWidth,
+                      fontSize,
+                    ),
+                  ),
+                )
+              : _buildBody(
+                  theme,
+                  cs,
+                  visible,
+                  pickCount,
+                  tableWidth,
+                  fontSize,
+                ),
         ),
       ],
     );
   }
 
-// ---------------------------------------------------------------------------
-// NAME SHORTENER (e.g., "Alex Davies" → "A. Davies")
-// ---------------------------------------------------------------------------
-String shortName(String fullName) {
-  final parts = fullName.trim().split(RegExp(r'\s+'));
-  if (parts.length == 1) return parts.first;
+  // ---------------------------------------------------------------------------
+  // NAME SHORTENER (e.g., "Alex Davies" → "A. Davies")
+  // ---------------------------------------------------------------------------
 
-  final first = parts.first;
-  final last = parts.sublist(1).join(" ");
+  String shortName(String fullName) {
+    final parts = fullName.trim().split(RegExp(r'\s+'));
+    if (parts.length == 1) return parts.first;
 
-  return "${first[0]}. $last";
-}
+    final first = parts.first;
+    final last = parts.sublist(1).join(" ");
+
+    return "${first[0]}. $last";
+  }
 
   // ---------------------------------------------------------------------------
   // HEADER
@@ -232,6 +268,7 @@ String shortName(String fullName) {
     ColorScheme cs,
     int pickCount,
     double tableWidth,
+    double fontSize,
   ) {
     return SizedBox(
       height: UIDimensions.headerHeight,
@@ -276,6 +313,7 @@ String shortName(String fullName) {
     List<PunterSelection> visible,
     int pickCount,
     double tableWidth,
+    double fontSize,
   ) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -291,7 +329,6 @@ String shortName(String fullName) {
 
             final bg = invalid
                 ? Colors.red.withValues(alpha: 0.06)
-
                 : isStriped
                     ? cs.surfaceContainerHighest.withValues(alpha: 0.25)
                     : cs.surface;
@@ -335,7 +372,8 @@ String shortName(String fullName) {
       ),
     );
   }
-    // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
   // HEADER CELL
   // ---------------------------------------------------------------------------
 
@@ -367,8 +405,10 @@ String shortName(String fullName) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final controller = _controllers[row.punterNumber]!;
-    final focusNode = _punterFocusNodes[row.punterNumber]!;
+    // LAZY, SAFE INITIALISATION
+    final controller = _controllers[row.punterNumber] ??=
+        TextEditingController(text: row.punterName);
+    final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
 
     if (!_punterListenerAdded.contains(row.punterNumber)) {
       _punterListenerAdded.add(row.punterNumber);
@@ -427,7 +467,7 @@ String shortName(String fullName) {
 
     final visualRowIndex = row.punterNumber - 1;
     final colIndex = pick.pickNumber - 1;
-    final owner = widget.selections[visualRowIndex];
+    final owner = row;
 
     final globalTaken = <String>{};
     for (final r in widget.selections) {
@@ -574,7 +614,8 @@ String shortName(String fullName) {
       ),
     );
   }
-    // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
   // TEAM COLOURS
   // ---------------------------------------------------------------------------
 
@@ -604,7 +645,8 @@ String shortName(String fullName) {
 
     for (final row in widget.selections) {
       for (final pick in row.picks) {
-        if (pick.player != null && !validIds.contains(pick.player!.id)) {
+        final p = pick.player; // evaluate once, safely
+        if (p != null && !validIds.contains(p.id)) {
           pick.player = null;
           pick.stats = null;
         }
@@ -699,12 +741,24 @@ String shortName(String fullName) {
         final pick = row.picks[j];
         final snapPick = snap.picks[i][j];
 
+        // No player saved in snapshot → clear
         if (snapPick.playerId == null) {
           pick.player = null;
           pick.stats = null;
+          continue;
+        }
+
+        // Try to restore the player safely
+        final restored = widget.availablePlayers
+            .where((p) => p.id == snapPick.playerId)
+            .toList();
+
+        if (restored.isEmpty) {
+          // Player no longer available → clear safely
+          pick.player = null;
+          pick.stats = null;
         } else {
-          pick.player = widget.availablePlayers
-              .firstWhere((p) => p.id == snapPick.playerId);
+          pick.player = restored.first;
           pick.stats = snapPick.stats == null
               ? null
               : Map<String, dynamic>.from(snapPick.stats!);

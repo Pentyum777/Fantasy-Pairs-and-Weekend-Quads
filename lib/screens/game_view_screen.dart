@@ -61,9 +61,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   int _visiblePunterCount = 10;
   bool _isCompleted = false;
 
-  // Manual submission state
   bool _isSubmitted = false;
-
   bool _leaderboardCollapsed = false;
 
   AflFixture? _selectedFixture;
@@ -131,23 +129,27 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   void _applyLiveStats(List<AflPlayerMatchStats> stats) {
-    _currentStatsByPlayerId = {for (final s in stats) s.player.id: s};
+  _currentStatsByPlayerId = {
+  for (final s in stats)
+    if (s.player != null) s.player!.id: s
+};
 
-    for (final selection in widget.selections) {
-      selection.liveScore = widget.fantasyService.calculatePunterScore(
-        selection: selection,
-        liveStatsByPlayerId: _currentStatsByPlayerId,
-      );
-    }
-
-    setState(() {});
+  for (final selection in widget.selections) {
+    selection.liveScore = widget.fantasyService.calculatePunterScore(
+      selection: selection,
+      liveStatsByPlayerId: _currentStatsByPlayerId,
+    );
   }
+
+  setState(() {});
+}
 
   void _checkRoundCompletion() {
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
       widget.season,
       widget.round,
     );
+
     if (fixtures.isEmpty) return;
 
     if (fixtures.every((f) => f.complete)) {
@@ -279,18 +281,20 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Map<String, dynamic> _mapStats(AflPlayerMatchStats s) {
-    return {
-      "Player": s.player.name,
-      "AF": s.fantasyPoints,
-      "K": s.kicks,
-      "HB": s.handballs,
-      "D": s.disposals,
-      "M": s.marks,
-      "T": s.tackles,
-      "G": s.goals,
-      "B": s.behinds,
-    };
-  }
+  return {
+    "Player": s.player?.name ?? "Unknown",
+    "AF": s.fantasyPoints,
+    "K": s.kicks,
+    "HB": s.handballs,
+    "D": s.disposals,
+    "M": s.marks,
+    "T": s.tackles,
+    "G": s.goals,
+    "B": s.behinds,
+  };
+}
+
+
 
   void _resetSelections() {
     if (widget.userRoleService.isReadOnly) return;
@@ -571,9 +575,10 @@ class _GameViewScreenState extends State<GameViewScreen> {
     final awayTeam = f.awayTeam;
 
     final rowsA =
-        stats.where((s) => s.team == homeTeam).map(_mapStats).toList();
-    final rowsB =
-        stats.where((s) => s.team == awayTeam).map(_mapStats).toList();
+    stats.where((s) => s.player?.club == homeTeam).map(_mapStats).toList();
+
+final rowsB =
+    stats.where((s) => s.player?.club == awayTeam).map(_mapStats).toList();
 
     final noStats = stats.isEmpty && rowsA.isEmpty && rowsB.isEmpty;
 
@@ -718,7 +723,12 @@ class _GameViewScreenState extends State<GameViewScreen> {
                 UIDimensions.punterNameColumnWidth +
                 UIDimensions.totalColumnWidth;
 
-        final punterTableWidth = innerWidth - leaderboardWidth;
+        
+
+final double punterTableWidth =
+    _leaderboardCollapsed
+        ? innerWidth
+        : innerWidth - leaderboardWidth;
 
         final fixtures = _fixturesForGameType();
         final clubs = <String>{

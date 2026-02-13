@@ -1,63 +1,33 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:csv/csv.dart';
 
 void main() async {
   final input = File('afl_players_2025.csv');
-  final lines = await input.readAsLines();
+  final csv = const CsvToListConverter().convert(await input.readAsString());
 
-  if (lines.isEmpty) {
+  if (csv.isEmpty) {
     print("ERROR: CSV file is empty.");
     return;
   }
 
-  // Full club names only — PlayerRepository normalizes these later
-  const validClubNames = {
-    "Adelaide Crows",
-    "Brisbane Lions",
-    "Carlton",
-    "Collingwood",
-    "Essendon",
-    "Fremantle",
-    "Geelong Cats",
-    "Gold Coast Suns",
-    "GWS Giants",
-    "Hawthorn",
-    "Melbourne",
-    "North Melbourne",
-    "Port Adelaide",
-    "Richmond",
-    "St Kilda",
-    "Sydney Swans",
-    "West Coast Eagles",
-    "Western Bulldogs",
-  };
+  final players = <Map<String, dynamic>>[];
 
-  final List<Map<String, dynamic>> players = [];
+  for (var i = 1; i < csv.length; i++) {
+    final row = csv[i];
 
-  for (var i = 1; i < lines.length; i++) {
-    final row = lines[i].split(',');
-
-    if (row.length < 3) {
-      print("Skipping malformed row $i: ${lines[i]}");
-      continue;
-    }
-
-    final fullName = row[0].trim();
-    final clubFull = row[1].trim();
-    final numberStr = row[2].trim();
-
-    if (!validClubNames.contains(clubFull)) {
-      print("WARNING: Unknown club '$clubFull' for player '$fullName'");
-    }
-
-    final guernsey = int.tryParse(numberStr) ?? 0;
+    final fullName = row[0].toString().trim();
+    final clubFull = row[1].toString().trim();
+    final guernsey = int.tryParse(row[2].toString()) ?? 0;
+    final season = int.tryParse(row[3].toString()) ?? 2025;
+    final championId = row[4].toString().trim();   // DFS ID
 
     players.add({
-      "id": fullName,
+      "id": championId,          // ✔ DFS ID
       "name": fullName,
-      "club": clubFull,          // full club name (required)
+      "club": clubFull,
       "guernseyNumber": guernsey,
-      "season": 2025,
+      "season": season,
     });
   }
 

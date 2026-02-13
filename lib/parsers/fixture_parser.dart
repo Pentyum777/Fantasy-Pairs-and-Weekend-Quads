@@ -56,6 +56,10 @@ class FixtureParser {
     final idxMatchId = headerIndex["MATCH ID"];
     final idxIsPreseason = headerIndex["ISPRESEASON"];
 
+    // NEW FIELDS
+    final idxFootyInfo = headerIndex["FOOTY INFO"];
+    final idxFootyInfoId = headerIndex["FOOTY INFO ID"];
+
     if (idxRound == null ||
         idxDate == null ||
         idxHome == null ||
@@ -125,6 +129,7 @@ class FixtureParser {
           upperDate.contains("TBD");
 
       DateTime? parsedDate;
+
       if (!isTbcDate) {
         parsedDate = _parseDateWithoutYear(dateText, defaultYear);
 
@@ -136,10 +141,18 @@ class FixtureParser {
       final int? roundNumber =
           isPreseason ? null : _parseRound(roundLabel);
 
+      // NEW: Extract Footy Info fields
+      final footyInfoUrl =
+          idxFootyInfo != null ? _cellString(row, idxFootyInfo) : null;
+
+      final footyInfoId =
+          idxFootyInfoId != null ? _cellString(row, idxFootyInfoId) : null;
+
       print(
         "ROW $r | RAW_ROUND='$originalRoundLabel' → NORM_ROUND='$roundLabel' → round=${roundNumber ?? "null"} | "
         "DATE='$dateText' → $parsedDate | HOME='$homeTeamRaw' → '$homeTeam' | "
-        "AWAY='$awayTeamRaw' → '$awayTeam' | matchId='${matchId ?? ""}' isPreseason=$isPreseason",
+        "AWAY='$awayTeamRaw' → '$awayTeam' | matchId='${matchId ?? ""}' isPreseason=$isPreseason | "
+        "footyInfoUrl='$footyInfoUrl' footyInfoId='$footyInfoId'",
       );
 
       fixtures.add(
@@ -154,6 +167,8 @@ class FixtureParser {
           source: source,
           matchId: matchId,
           isPreseason: isPreseason,
+          footyInfoUrl: footyInfoUrl,
+          footyInfoId: footyInfoId,
         ),
       );
     }

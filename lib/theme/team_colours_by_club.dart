@@ -11,7 +11,7 @@ class TeamColoursByClub {
       "fg": Color(0xFFfdbe57),
     },
     "CAR": { // FIXED
-      "bg": Color(0xFF0e1e2d),
+      "bg": Color.fromARGB(255, 11, 56, 99),
       "fg": Colors.white,
     },
     "COL": { // FIXED
@@ -42,7 +42,7 @@ class TeamColoursByClub {
       "bg": Color(0xFF4d2004),
       "fg": Color(0xFFfbbf15),
     },
-    "MEL": { // FIXED
+    "MELB": { // FIXED
       "bg": Color(0xFF0f1131),
       "fg": Color(0xFFcc2031),
     },

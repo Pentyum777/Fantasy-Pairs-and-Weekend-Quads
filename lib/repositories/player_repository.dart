@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../models/afl_player.dart';
-import '../utils/afl_club_codes.dart'; // <-- ensure this exists
+import '../utils/afl_club_codes.dart';
 
 class PlayerRepository {
   final Map<int, List<AflPlayer>> _playersBySeason = {};
@@ -10,6 +10,9 @@ class PlayerRepository {
 
   bool _loaded = false;
 
+  // ------------------------------------------------------------
+  // LOAD SEASON
+  // ------------------------------------------------------------
   Future<List<AflPlayer>> _loadSeason(int season) async {
     if (_playersBySeason.containsKey(season)) {
       return _playersBySeason[season]!;
@@ -29,14 +32,14 @@ class PlayerRepository {
 
       final seasonValue = _asInt(map['season']);
 
-      // NORMALIZE CLUB NAME HERE
+      // Normalize club code
       final rawClub = (map['club'] ?? '').toString();
       final normalizedClub = AflClubCodes.normalize(rawClub);
 
       return AflPlayer(
         id: (map['id'] ?? '').toString(),
         name: (map['name'] ?? '').toString(),
-        club: normalizedClub, // <-- FIXED
+        club: normalizedClub,
         guernseyNumber: _asInt(map['guernseyNumber']),
         season: seasonValue == 0 ? season : seasonValue,
       );
@@ -44,6 +47,7 @@ class PlayerRepository {
 
     _playersBySeason[season] = players;
 
+    // Populate global ID map
     for (final p in players) {
       _playersById[p.id] = p;
     }
@@ -51,6 +55,9 @@ class PlayerRepository {
     return players;
   }
 
+  // ------------------------------------------------------------
+  // LOAD ALL
+  // ------------------------------------------------------------
   Future<void> loadAllPlayers() async {
     if (_loaded) return;
 
@@ -60,6 +67,9 @@ class PlayerRepository {
     _loaded = true;
   }
 
+  // ------------------------------------------------------------
+  // GETTERS
+  // ------------------------------------------------------------
   List<AflPlayer> get players {
     return _playersBySeason.values.expand((x) => x).toList();
   }
@@ -73,6 +83,22 @@ class PlayerRepository {
     return _playersById[id];
   }
 
+  // ------------------------------------------------------------
+  // ⭐ NEW: FIND BY ID + SEASON (required by MatchStatsParser)
+  // ------------------------------------------------------------
+  AflPlayer? findById(String id, int season) {
+    final seasonPlayers = _playersBySeason[season];
+    if (seasonPlayers == null) return null;
+
+    for (final p in seasonPlayers) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
+
+  // ------------------------------------------------------------
+  // UTIL
+  // ------------------------------------------------------------
   static int _asInt(dynamic v) {
     if (v is int) return v;
     return int.tryParse(v?.toString() ?? "") ?? 0;

@@ -4,7 +4,6 @@ import '../models/afl_fixture.dart';
 import '../utils/afl_club_codes.dart';
 import '../parsers/fixture_parser.dart';
 
-// CORRECT IMPORT
 import '../services/afl_fantasy_score_service.dart';
 import '../models/punter_selection.dart';
 
@@ -104,17 +103,43 @@ class FixtureRepository {
         [];
   }
 
+  /// Uses full match payload (metadata + players).
   Future<void> refreshLiveScores({
     required String matchId,
     required List<PunterSelection> selections,
   }) async {
-    final stats = await AFLFantasyService.fetchFantasyStats(matchId);
+    final payload = await AFLFantasyService.fetchFantasyMatchPayload(matchId);
 
-    final statsById = <String, int>{};
-    for (final p in stats) {
-      final id = p["id"] as String;
-      final fp = p["stats"]["fantasyPoints"] as int? ?? 0;
-      statsById[id] = fp;
+    final players = payload['players'] as List<dynamic>? ?? const [];
+    final homeScore = payload['homeScore'] as int?;
+    final awayScore = payload['awayScore'] as int?;
+    final quarter = payload['quarter'] as String?;
+    final clock = payload['clock'] as String?;
+    final status = payload['status'] as String?;
+
+    // Update fixture metadata if present.
+    if (homeScore != null &&
+        awayScore != null &&
+        (quarter != null || clock != null)) {
+      updateFixtureScores(
+        matchId: matchId,
+        homeScore: homeScore,
+        awayScore: awayScore,
+        quarter: quarter ?? 'Final',
+        clock: clock ?? 'FT',
+        status: status ?? '',
+      );
+    }
+
+    // Build DFS-ID → stats map.
+    final statsById = <String, Map<String, dynamic>>{};
+    for (final p in players) {
+      if (p is! Map<String, dynamic>) continue;
+      final id = p["id"] as String?;
+      final rawStats = p["stats"] as Map<String, dynamic>?;
+
+      if (id == null || rawStats == null) continue;
+      statsById[id] = rawStats;
     }
 
     for (final punter in selections) {
@@ -122,18 +147,35 @@ class FixtureRepository {
         final id = pick.player?.id;
 
         if (id == null) {
-          pick.stats = {"fantasyPoints": 0};
+          pick.fantasyPoints = 0;
+          pick.stats = {};
           continue;
         }
 
-        final fp = statsById[id] ?? 0;
+        final raw = statsById[id];
+
+        if (raw == null) {
+          pick.fantasyPoints = 0;
+          pick.stats = {};
+          continue;
+        }
+
+        pick.fantasyPoints = raw["fantasyPoints"] as int? ?? 0;
 
         pick.stats = {
-          "fantasyPoints": fp,
+          "kicks": raw["kicks"],
+          "handballs": raw["handballs"],
+          "marks": raw["marks"],
+          "tackles": raw["tackles"],
+          "hitouts": raw["hitouts"],
+          "freesFor": raw["freesFor"],
+          "freesAgainst": raw["freesAgainst"],
+          "goals": raw["goals"],
+          "behinds": raw["behinds"],
+          "timeOnGroundPercentage": raw["timeOnGroundPercentage"],
         };
       }
 
-      // Update liveScore (mutable field)
       punter.liveScore = punter.picks.fold<int>(
         0,
         (sum, p) => sum + p.fantasyPoints,
@@ -141,12 +183,14 @@ class FixtureRepository {
     }
   }
 
+  /// ⭐ FIXED: Now accepts `status`
   void updateFixtureScores({
     required String matchId,
     required int homeScore,
     required int awayScore,
     required String quarter,
     required String clock,
+    String? status,
   }) {
     for (final season in fixturesBySeason.keys) {
       for (final f in fixturesBySeason[season]!) {
@@ -155,6 +199,11 @@ class FixtureRepository {
           f.awayScore = awayScore;
           f.quarterText = quarter;
           f.timeText = clock;
+
+          if (status != null) {
+            f.status = status;
+          }
+
           return;
         }
       }

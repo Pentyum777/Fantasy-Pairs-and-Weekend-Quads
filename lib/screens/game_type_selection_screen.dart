@@ -44,28 +44,18 @@ class GameTypeSelectionScreen extends StatefulWidget {
 }
 
 class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
-  late List<PunterSelection> thursdayPairsSelections;
-  late List<PunterSelection> fridayPairsSelections;
-  late List<PunterSelection> saturdayPairsSelections;
-  late List<PunterSelection> sundayPairsSelections;
-  late List<PunterSelection> mondayPairsSelections;
-  late List<PunterSelection> weekendQuadsSelections;
+  /// Stores selections for ALL game types, keyed by:
+  /// "season-round-gameType"
+  final Map<String, List<PunterSelection>> _selectionCache = {};
 
   final ChampionshipService championshipService = ChampionshipService();
 
   @override
   void initState() {
     super.initState();
-
-    thursdayPairsSelections = _createEmptySelections(2);
-    fridayPairsSelections = _createEmptySelections(2);
-    saturdayPairsSelections = _createEmptySelections(2);
-    sundayPairsSelections = _createEmptySelections(2);
-    mondayPairsSelections = _createEmptySelections(2);
-
-    weekendQuadsSelections = _createEmptySelections(4);
   }
 
+  /// Creates a new empty selection list (only if not already cached)
   List<PunterSelection> _createEmptySelections(int playersPerPunter) {
     return List.generate(
       25,
@@ -82,6 +72,23 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
         ),
       ),
     );
+  }
+
+  /// Returns a stable, persistent selection list for the given game type.
+  List<PunterSelection> _getSelectionsForGameType(String type) {
+    final key = "${widget.season}-${widget.round}-$type";
+
+    if (_selectionCache.containsKey(key)) {
+      return _selectionCache[key]!;
+    }
+
+    // Create new only once
+    final playersPerPunter =
+        type == "weekend_quads" ? 4 : 2;
+
+    final newList = _createEmptySelections(playersPerPunter);
+    _selectionCache[key] = newList;
+    return newList;
   }
 
   void _openGame(String type) {
@@ -114,30 +121,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       return;
     }
 
-    late List<PunterSelection> selections;
-
-    switch (type) {
-      case "thursday_pairs":
-        selections = thursdayPairsSelections;
-        break;
-      case "friday_pairs":
-        selections = fridayPairsSelections;
-        break;
-      case "saturday_pairs":
-        selections = saturdayPairsSelections;
-        break;
-      case "sunday_pairs":
-        selections = sundayPairsSelections;
-        break;
-      case "monday_pairs":
-        selections = mondayPairsSelections;
-        break;
-      case "weekend_quads":
-        selections = weekendQuadsSelections;
-        break;
-      default:
-        selections = weekendQuadsSelections;
-    }
+    final selections = _getSelectionsForGameType(type);
 
     Navigator.push(
       context,
@@ -146,7 +130,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
           season: widget.season,
           round: widget.round,
           gameType: type,
-          selections: selections,
+          selections: selections, // persistent list
           fixtureRepo: widget.fixtureRepo,
           playerRepo: widget.playerRepo,
           fantasyService: widget.fantasyService,

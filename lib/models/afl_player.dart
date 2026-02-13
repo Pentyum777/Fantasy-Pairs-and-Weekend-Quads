@@ -1,46 +1,32 @@
 class AflPlayer {
-  /// Unique identifier used across:
-  /// - Player repository
-  /// - Live stats mapping
-  /// - Punter selections
-  /// - Match stats
   final String id;
-
-  /// Display name (e.g. "Marcus Bontempelli")
   final String name;
-
-  /// Club code (e.g. "WB", "COLL", "CARL")
   final String club;
-
-  /// Jumper number
   final int guernseyNumber;
-
-  /// Season year (default 2026)
   final int season;
 
-  /// Live AFL Fantasy score (updated every polling cycle)
+  /// Live fantasy score (updated externally)
   int fantasyScore;
 
   AflPlayer({
     required this.id,
     required String? name,
-    required this.club,
+    required String? club,
     this.guernseyNumber = 0,
     this.season = 2026,
     this.fantasyScore = 0,
-  }) : name = name ?? "";
+  })  : name = (name ?? "").trim(),
+        club = (club ?? "").trim();
 
-  /// Full name alias (kept for compatibility)
   String get fullName => name;
 
-  /// Short name used for dropdowns and compact UI
   String get shortName {
+    if (name.isEmpty) return "Unknown";
     final parts = name.split(" ");
     if (parts.length <= 1) return name;
     return "${parts.first} ${parts.last}";
   }
 
-  /// Fallback player used when no valid player is selected
   static AflPlayer empty() => AflPlayer(
         id: '',
         name: 'Unknown',
@@ -50,7 +36,6 @@ class AflPlayer {
         fantasyScore: 0,
       );
 
-  /// JSON serialization for batch export
   Map<String, dynamic> toJson() {
     return {
       "id": id,
