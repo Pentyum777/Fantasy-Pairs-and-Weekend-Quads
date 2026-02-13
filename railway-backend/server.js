@@ -21,9 +21,19 @@ const port = process.env.PORT || 8080;
 
 const app = express();
 
+// ------------------------------------------------------
+// GLOBAL CORS FALLBACK (fixes all CORS failures)
+// ------------------------------------------------------
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  next();
+});
+
 // Enable CORS for Flutter Web
 app.use(cors({ origin: "*" }));
-app.options("*", cors());   // <-- REQUIRED FIX FOR GITHUB PAGES + FLUTTER WEB
+app.options("*", cors());
 
 app.use(express.json());
 
@@ -43,7 +53,6 @@ async function fetchFootyInfoMeta(footyInfoId) {
 
   const $ = load(html);
 
-  // Scoreboard
   const homeScore = parseInt(
     $(".scoreboard .team.home .score").text().trim()
   ) || 0;
@@ -52,11 +61,8 @@ async function fetchFootyInfoMeta(footyInfoId) {
     $(".scoreboard .team.away .score").text().trim()
   ) || 0;
 
-  // Quarter + clock
   const quarter = $(".match-status .quarter").text().trim();
   const clock = $(".match-status .clock").text().trim();
-
-  // Status (Final, Live, Upcoming)
   const status = $(".match-status .status").text().trim();
 
   return {
@@ -104,7 +110,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
       players: dfsData.players,
     });
   } catch (err) {
-    console.error("❌ Combined DFS + FootyInfo error:", err);
+    console.error("Combined DFS + FootyInfo error:", err);
     res.status(500).json({ error: String(err) });
   }
 });
@@ -128,7 +134,7 @@ app.get("/meta/:matchId", async (req, res) => {
       match: meta,
     });
   } catch (err) {
-    console.error("❌ FootyInfo meta error:", err);
+    console.error("FootyInfo meta error:", err);
     res.status(500).json({ error: String(err) });
   }
 });
