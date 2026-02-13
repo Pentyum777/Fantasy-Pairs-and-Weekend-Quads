@@ -103,6 +103,19 @@ app.get("/fantasy/:matchId", async (req, res) => {
 
     const fiMeta = await fetchFootyInfoMeta(footyInfoId);
 
+    // ⭐ NEW: Assign correct AFL club to each player
+    // Load your season player list (JSON file or DB)
+    const seasonPlayers = JSON.parse(
+      fs.readFileSync("./players_2025.json", "utf8")
+    );
+
+    for (const p of dfsData.players) {
+      const match = seasonPlayers.find(sp => sp.id === p.id);
+      if (match) {
+        p.team = match.club;   // ⭐ FIX: Assign correct club
+      }
+    }
+
     res.json({
       matchId,
       homeScore: fiMeta.homeScore ?? 0,
@@ -110,7 +123,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
       quarter: fiMeta.quarter ?? "",
       clock: fiMeta.clock ?? "",
       status: fiMeta.status ?? "",
-      players: dfsData.players,
+      players: dfsData.players,   // now includes correct team
     });
   } catch (err) {
     console.error("Combined DFS + FootyInfo error:", err);
