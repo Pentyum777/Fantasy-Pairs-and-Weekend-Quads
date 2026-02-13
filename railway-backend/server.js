@@ -22,12 +22,15 @@ const port = process.env.PORT || 8080;
 const app = express();
 
 // ------------------------------------------------------
-// GLOBAL CORS FALLBACK (fixes all CORS failures)
+// OPTION 1: Explicit OPTIONS handler (fixes Railway preflight blocking)
 // ------------------------------------------------------
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
   next();
 });
 
