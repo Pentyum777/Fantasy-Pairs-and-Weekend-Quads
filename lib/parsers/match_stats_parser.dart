@@ -43,25 +43,36 @@ class MatchStatsParser {
       return int.tryParse(v?.toString() ?? '') ?? 0;
     }
 
-    Future<AflPlayer> _findPlayer(String name, int season) async {
-      final normalized = name.toLowerCase().trim();
-      final seasonPlayers = await repo.playersForSeason(season);
+    Future<AflPlayer> _findPlayer(Map<String, dynamic> raw, int season) async {
+  final id = raw['id']?.toString().trim() ?? "";
+  final name = raw['name']?.toString().trim() ?? "";
 
-      for (final p in seasonPlayers) {
-        if (p.name.toLowerCase().trim() == normalized) {
-          return p;
-        }
-      }
+  final seasonPlayers = await repo.playersForSeason(season);
 
-      return AflPlayer(
-        id: name,
-        name: name,
-        club: "",
-        guernseyNumber: 0,
-        season: season,
-        fantasyScore: 0,
-      );
+  // 1. Try ID match first (correct + reliable)
+  if (id.isNotEmpty) {
+    final byId = seasonPlayers.where((p) => p.id == id);
+    if (byId.isNotEmpty) return byId.first;
+  }
+
+  // 2. Fallback: name match
+  final normalized = name.toLowerCase();
+  for (final p in seasonPlayers) {
+    if (p.name.toLowerCase().trim() == normalized) {
+      return p;
     }
+  }
+
+  // 3. Final fallback: create placeholder but DO NOT lose club
+  return AflPlayer(
+    id: id.isNotEmpty ? id : name,
+    name: name,
+    club: "",
+    guernseyNumber: 0,
+    season: season,
+    fantasyScore: 0,
+  );
+}
 
     final season = int.tryParse(matchId.substring(4, 8)) ?? 2025;
 
@@ -75,7 +86,7 @@ class MatchStatsParser {
           ? Map<String, dynamic>.from(p['stats'])
           : <String, dynamic>{};
 
-      final player = await _findPlayer(name, season);
+      final player = await _findPlayer(p, season);
       final teamCode = player.club;
 
       results.add(
