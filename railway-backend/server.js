@@ -1,9 +1,9 @@
 import express from "express";
 import fs from "fs";
 import cors from "cors";
-import { load } from "cheerio";
 
 import { scrapeDFS } from "./dfs_scraper.js";
+import { scrapeFootyInfoMeta } from "./footyinfo_scraper.js";
 
 // Load FootyInfo map (Node 24-safe)
 const footyInfoMap = JSON.parse(
@@ -46,7 +46,7 @@ app.get("/", (req, res) => {
 });
 
 // ------------------------------------------------------
-// CACHING LAYER (5-minute TTL)
+// CACHING LAYER FOR FOOTYINFO META (5-minute TTL)
 // ------------------------------------------------------
 const metaCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -70,22 +70,16 @@ function setCachedMeta(id, data) {
   });
 }
 
-// ------------------------------------------------------
-// FootyInfo metadata scraper (with fallback + error tolerance)
-// ------------------------------------------------------
-async function fetchFootyInfoMeta(footyInfoId) {
-  // Check cache first
+async function getFootyInfoMetaCached(footyInfoId) {
   const cached = getCachedMeta(footyInfoId);
   if (cached) return cached;
 
-  const url = `https://www.footyinfo.com/match/${footyInfoId}`;
-
-  let html = "";
   try {
-    const response = await fetch(url, { timeout: 8000 });
-    html = await response.text();
+    const meta = await scrapeFootyInfoMeta(footyInfoId);
+    setCachedMeta(footyInfoId, meta);
+    return meta;
   } catch (err) {
-    console.error("FootyInfo fetch failed:", err);
+    console.error("FootyInfo Playwright scrape failed:", err);
     return {
       homeScore: 0,
       awayScore: 0,
@@ -94,76 +88,10 @@ async function fetchFootyInfoMeta(footyInfoId) {
       status: "",
     };
   }
-
-  const $ = load(html);
-
-  // -------------------------------
-  // PRIMARY PARSING (structured HTML)
-  // -------------------------------
-  let homeScore =
-    parseInt($(".scoreboard .team.home .score").text().trim()) || 0;
-
-  let awayScore =
-    parseInt($(".scoreboard .team.away .score").text().trim()) || 0;
-
-  let quarter = $(".match-status .quarter").text().trim();
-  let clock = $(".match-status .clock").text().trim();
-  let status = $(".match-status .status").text().trim();
-
-  // -------------------------------
-  // FALLBACK PARSING (regex)
-  // -------------------------------
-  const bodyText = $("body").text();
-
-  if (homeScore === 0 && awayScore === 0) {
-    const nums = [...bodyText.matchAll(/\b(\d{1,3})\b/g)].map(m =>
-      parseInt(m[1], 10)
-    );
-    if (nums.length >= 2) {
-      awayScore = nums[nums.length - 1];
-      homeScore = nums[nums.length - 2];
-    }
-  }
-
-  if (!quarter) {
-    const lower = bodyText.toLowerCase();
-    if (lower.includes("full time")) {
-      quarter = "Final";
-      status = "Full Time";
-      clock = "FT";
-    } else if (lower.includes("three quarter time") || lower.includes("3qt")) {
-      quarter = "Q4";
-      status = "3QT";
-    } else if (lower.includes("half time")) {
-      quarter = "Q3";
-      status = "Half Time";
-    } else if (lower.includes("quarter time")) {
-      quarter = "Q2";
-      status = "Quarter Time";
-    }
-  }
-
-  if (!clock) {
-    const clockMatch = bodyText.match(/\b(\d{1,2}:\d{2})\b/);
-    if (clockMatch) clock = clockMatch[1];
-  }
-
-  const meta = {
-    homeScore,
-    awayScore,
-    quarter,
-    clock,
-    status,
-  };
-
-  // Cache result
-  setCachedMeta(footyInfoId, meta);
-
-  return meta;
 }
 
 // ------------------------------------------------------
-// Fantasy stats endpoint (DFS + FootyInfo)
+// Fantasy stats endpoint (DFS + FootyInfo via Playwright)
 // ------------------------------------------------------
 app.get("/fantasy/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
@@ -186,12 +114,12 @@ app.get("/fantasy/:matchId", async (req, res) => {
       return res.status(500).json({ error: "DFS returned no player data" });
     }
 
-    const fiMeta = await fetchFootyInfoMeta(footyInfoId);
+    const fiMeta = await getFootyInfoMetaCached(footyInfoId);
 
     res.json({
       matchId,
       homeScore: fiMeta.homeScore ?? 0,
-      awayScore: fiMeta.awreScore ?? 0,
+      awayScore: fiMeta.awayScore ?? 0,
       quarter: fiMeta.quarter ?? "",
       clock: fiMeta.clock ?? "",
       status: fiMeta.status ?? "",
@@ -215,7 +143,7 @@ app.get("/meta/:matchId", async (req, res) => {
   }
 
   try {
-    const meta = await fetchFootyInfoMeta(footyInfoId);
+    const meta = await getFootyInfoMetaCached(footyInfoId);
 
     res.json({
       matchId,
