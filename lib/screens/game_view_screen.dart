@@ -521,107 +521,117 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Widget _buildFixtureCard(AflFixture f) {
-    final selected = f == _selectedFixture;
-    _handleFridayPairsTrigger(f);
+  final selected = f == _selectedFixture;
+  _handleFridayPairsTrigger(f);
 
-    final homeScore = f.homeScore;
-    final awayScore = f.awayScore;
-    final homeWinning = homeScore > awayScore;
-    final awayWinning = awayScore > homeScore;
+  final homeScore = f.homeScore;
+  final awayScore = f.awayScore;
+  final homeWinning = homeScore > awayScore;
+  final awayWinning = awayScore > homeScore;
 
-    final quarter = _quarterLabel(f);
-    final time = _timeLabel(f);
+  final quarter = _quarterLabel(f);
+  final time = _timeLabel(f);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _onFixtureTap(f),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          width: 125,
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+  // ⭐ Unified compact text styles
+  final scoreBaseStyle = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: Theme.of(context).colorScheme.onSurface,
+  );
+
+  final metaStyle = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    color: Colors.grey.shade700,
+    height: 1.1,
+  );
+
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _onFixtureTap(f),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: 125,
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: selected
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
+              : Theme.of(context).colorScheme.surface,
+          border: Border.all(
             color: selected
-                ? Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.08)
-                : Theme.of(context).colorScheme.surface,
-            border: Border.all(
-              color: selected
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey.shade400,
-              width: selected ? 2 : 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey.shade400,
+            width: selected ? 2 : 1,
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TeamLogo(f.homeTeam, size: 26),
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: RichText(
-                        text: TextSpan(
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Theme.of(context).colorScheme.onSurface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // ⭐ Top row: home logo + score + away logo
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TeamLogo(f.homeTeam, size: 26),
+
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text.rich(
+                      TextSpan(
+                        style: scoreBaseStyle,
+                        children: [
+                          TextSpan(
+                            text: "$homeScore",
+                            style: TextStyle(
+                              fontWeight: homeWinning
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
                           ),
-                          children: [
-                            TextSpan(
-                              text: "$homeScore",
-                              style: TextStyle(
-                                fontWeight: homeWinning
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
+                          const TextSpan(text: " – "),
+                          TextSpan(
+                            text: "$awayScore",
+                            style: TextStyle(
+                              fontWeight: awayWinning
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                             ),
-                            const TextSpan(text: " – "),
-                            TextSpan(
-                              text: "$awayScore",
-                              style: TextStyle(
-                                fontWeight: awayWinning
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  TeamLogo(f.awayTeam, size: 26),
-                ],
-              ),
-              Align(
-                alignment: Alignment.center,
-                child: Text(
-                  quarter.isEmpty ? time : "$quarter • $time",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade700,
-                  ),
-                  overflow: TextOverflow.ellipsis,
                 ),
+
+                TeamLogo(f.awayTeam, size: 26),
+              ],
+            ),
+
+            // ⭐ Quarter / Time
+            Align(
+              alignment: Alignment.center,
+              child: Text(
+                quarter.isEmpty ? time : "$quarter • $time",
+                style: metaStyle,
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Future<void> _onFixtureTap(AflFixture f) async {
   setState(() => _selectedFixture = f);
