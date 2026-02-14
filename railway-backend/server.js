@@ -3,22 +3,20 @@ import fs from "fs";
 import cors from "cors";
 
 import { scrapeDFS } from "./dfs_scraper.js";
-import { scrapeFootyInfoMeta } from "./footyinfo_scraper.js";
-
-// Load FootyInfo map (Node 24-safe)
-const footyInfoMap = JSON.parse(
-  fs.readFileSync("./footyinfo_map.json", "utf8")
-);
 
 // Load DFS mapping
 const dfsMap = JSON.parse(
   fs.readFileSync("./dfs_map.json", "utf8")
 );
 
-console.log("CORS-enabled DFS + FootyInfo backend starting...");
+// Load Squiggle mapping (your matchId → Squiggle gameId)
+const squiggleMap = JSON.parse(
+  fs.readFileSync("./squiggle_map.json", "utf8")
+);
+
+console.log("CORS-enabled DFS + Squiggle backend starting...");
 
 const port = process.env.PORT || 8080;
-
 const app = express();
 
 // ------------------------------------------------------
@@ -42,69 +40,118 @@ app.use(express.json());
 
 // Root route
 app.get("/", (req, res) => {
-  res.send("DFS backend is running");
+  res.send("DFS + Squiggle backend is running");
 });
 
 // ------------------------------------------------------
-// CACHING LAYER FOR FOOTYINFO META (5-minute TTL)
+// Simple in-memory cache (5-minute TTL)
 // ------------------------------------------------------
 const metaCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
-function getCachedMeta(id) {
-  const entry = metaCache.get(id);
+function getCachedMeta(key) {
+  const entry = metaCache.get(key);
   if (!entry) return null;
 
   const isExpired = Date.now() - entry.timestamp > CACHE_TTL_MS;
   if (isExpired) {
-    metaCache.delete(id);
+    metaCache.delete(key);
     return null;
   }
   return entry.data;
 }
 
-function setCachedMeta(id, data) {
-  metaCache.set(id, {
+function setCachedMeta(key, data) {
+  metaCache.set(key, {
     timestamp: Date.now(),
     data,
   });
 }
 
-async function getFootyInfoMetaCached(footyInfoId) {
-  const cached = getCachedMeta(footyInfoId);
+// ------------------------------------------------------
+// Squiggle metadata fetcher
+// ------------------------------------------------------
+async function fetchSquiggleMeta(gameId) {
+  const cached = getCachedMeta(`squiggle:${gameId}`);
   if (cached) return cached;
 
+  const url = `https://api.squiggle.com.au/?q=games;game=${gameId}`;
+
   try {
-    const meta = await scrapeFootyInfoMeta(footyInfoId);
-    setCachedMeta(footyInfoId, meta);
+    const response = await fetch(url, { timeout: 8000 });
+    const json = await response.json();
+
+    const games = json.games || [];
+    if (!games.length) {
+      console.warn("Squiggle returned no games for", gameId);
+      const empty = {
+        homeScore: 0,
+        awayScore: 0,
+        quarter: "",
+        clock: "",
+        status: "",
+      };
+      setCachedMeta(`squiggle:${gameId}`, empty);
+      return empty;
+    }
+
+    const g = games[0];
+
+    const homeScore = g.hscore ?? 0;
+    const awayScore = g.ascore ?? 0;
+
+    // Squiggle doesn't expose live clock/quarter like AFL.com,
+    // but we can derive a simple status for completed games.
+    const complete = g.complete ?? 0; // 100 = full time
+    let status = "";
+    let quarter = "";
+    let clock = "";
+
+    if (complete === 100) {
+      status = "Full Time";
+      quarter = "Final";
+      clock = "FT";
+    }
+
+    const meta = {
+      homeScore,
+      awayScore,
+      quarter,
+      clock,
+      status,
+    };
+
+    setCachedMeta(`squiggle:${gameId}`, meta);
     return meta;
   } catch (err) {
-    console.error("FootyInfo Playwright scrape failed:", err);
-    return {
+    console.error("Squiggle fetch failed:", err);
+    const empty = {
       homeScore: 0,
       awayScore: 0,
       quarter: "",
       clock: "",
       status: "",
     };
+    setCachedMeta(`squiggle:${gameId}`, empty);
+    return empty;
   }
 }
 
 // ------------------------------------------------------
-// Fantasy stats endpoint (DFS + FootyInfo via Playwright)
+// Fantasy stats endpoint (DFS + Squiggle)
 // ------------------------------------------------------
 app.get("/fantasy/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
 
   const dfsId = dfsMap[matchId];
-  const footyInfoId = footyInfoMap[matchId];
+  const squiggleGameId = squiggleMap[matchId];
 
   if (!dfsId) {
     return res.status(404).json({ error: "No DFS mapping for matchId" });
   }
 
-  if (!footyInfoId) {
-    return res.status(404).json({ error: "No FootyInfo mapping for matchId" });
+  if (!squiggleGameId) {
+    console.warn("No Squiggle mapping for matchId", matchId);
   }
 
   try {
@@ -114,47 +161,57 @@ app.get("/fantasy/:matchId", async (req, res) => {
       return res.status(500).json({ error: "DFS returned no player data" });
     }
 
-    const fiMeta = await getFootyInfoMetaCached(footyInfoId);
+    let meta = {
+      homeScore: 0,
+      awayScore: 0,
+      quarter: "",
+      clock: "",
+      status: "",
+    };
+
+    if (squiggleGameId) {
+      meta = await fetchSquiggleMeta(squiggleGameId);
+    }
 
     res.json({
       matchId,
-      homeScore: fiMeta.homeScore ?? 0,
-      awayScore: fiMeta.awayScore ?? 0,
-      quarter: fiMeta.quarter ?? "",
-      clock: fiMeta.clock ?? "",
-      status: fiMeta.status ?? "",
+      homeScore: meta.homeScore ?? 0,
+      awayScore: meta.awayScore ?? 0,
+      quarter: meta.quarter ?? "",
+      clock: meta.clock ?? "",
+      status: meta.status ?? "",
       players: dfsData.players,
     });
   } catch (err) {
-    console.error("Combined DFS + FootyInfo error:", err);
+    console.error("Combined DFS + Squiggle error:", err);
     res.status(500).json({ error: String(err) });
   }
 });
 
 // ------------------------------------------------------
-// Metadata-only endpoint
+// Metadata-only endpoint (Squiggle only)
 // ------------------------------------------------------
 app.get("/meta/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
 
-  const footyInfoId = footyInfoMap[matchId];
-  if (!footyInfoId) {
-    return res.status(404).json({ error: "No FootyInfo mapping for matchId" });
+  const squiggleGameId = squiggleMap[matchId];
+  if (!squiggleGameId) {
+    return res.status(404).json({ error: "No Squiggle mapping for matchId" });
   }
 
   try {
-    const meta = await getFootyInfoMetaCached(footyInfoId);
+    const meta = await fetchSquiggleMeta(squiggleGameId);
 
     res.json({
       matchId,
       match: meta,
     });
   } catch (err) {
-    console.error("FootyInfo meta error:", err);
+    console.error("Squiggle meta error:", err);
     res.status(500).json({ error: String(err) });
   }
 });
 
 app.listen(port, "0.0.0.0", () => {
-  console.log(`DFS backend running on port ${port}`);
+  console.log(`DFS + Squiggle backend running on port ${port}`);
 });
