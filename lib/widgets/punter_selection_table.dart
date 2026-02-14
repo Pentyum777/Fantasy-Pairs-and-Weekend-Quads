@@ -9,6 +9,17 @@ import '../models/player_pick.dart';
 import '../theme/team_colours_by_club.dart';
 import '../constants/ui_dimensions.dart';
 
+// Fits the longest AFL names comfortably
+const double kPickColumnWidth = 185;
+
+// Score column width
+const double kPickScoreColumnWidth = 40;
+
+// Punter name column width
+const double kPunterColumnWidth = 90;
+
+// Total column width
+const double kTotalColumnWidth = 60;
 // ---------------------------------------------------------------------------
 // SNAPSHOT MODELS (TOP‑LEVEL, CLEAN, FINAL)
 // ---------------------------------------------------------------------------
@@ -263,115 +274,124 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // HEADER
   // ---------------------------------------------------------------------------
 
+
   Widget _buildHeader(
-    ThemeData theme,
-    ColorScheme cs,
-    int pickCount,
-    double tableWidth,
-    double fontSize,
-  ) {
-    return SizedBox(
-      height: UIDimensions.headerHeight,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          width: tableWidth,
-          child: Row(
-            children: [
-              SizedBox(
-                width: UIDimensions.punterNameColumnWidth,
-                child: _headerCell(theme, "Punter", alignCenter: true),
-              ),
-              for (int i = 0; i < pickCount; i++) ...[
-                SizedBox(
-                  width: UIDimensions.pickColumnWidth,
-                  child: _headerCell(theme, "Pick ${i + 1}", alignCenter: true),
-                ),
-                SizedBox(
-                  width: UIDimensions.pickScoreColumnWidth,
-                  child: _headerCell(theme, "Score", alignCenter: true),
-                ),
-              ],
-              SizedBox(
-                width: UIDimensions.totalColumnWidth,
-                child: _headerCell(theme, "Total", alignCenter: true),
-              ),
-            ],
+  ThemeData theme,
+  ColorScheme cs,
+  int pickCount,
+  double tableWidth,
+  double fontSize,
+) {
+  return SizedBox(
+    height: UIDimensions.headerHeight,
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          // Punter column
+          SizedBox(
+            width: kPunterColumnWidth,
+            child: _headerCell(theme, "Punter", alignCenter: true),
           ),
-        ),
+
+          // Pick + Score columns
+          for (int i = 0; i < pickCount; i++) ...[
+            SizedBox(
+              width: kPickColumnWidth,
+              child: _headerCell(theme, "Pick ${i + 1}", alignCenter: true),
+            ),
+            SizedBox(
+              width: kPickScoreColumnWidth,
+              child: _headerCell(theme, "Score", alignCenter: true),
+            ),
+          ],
+
+          // Total column
+          SizedBox(
+            width: kTotalColumnWidth,
+            child: _headerCell(theme, "Total", alignCenter: true),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   // ---------------------------------------------------------------------------
   // BODY
   // ---------------------------------------------------------------------------
 
   Widget _buildBody(
-    ThemeData theme,
-    ColorScheme cs,
-    List<PunterSelection> visible,
-    int pickCount,
-    double tableWidth,
-    double fontSize,
-  ) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        width: tableWidth,
-        child: ListView.builder(
-          controller: widget.scrollController,
-          itemCount: visible.length,
-          itemBuilder: (context, index) {
-            final row = visible[index];
-            final isStriped = index.isOdd;
-            final invalid = _hasAnyGlobalDuplicate();
+  ThemeData theme,
+  ColorScheme cs,
+  List<PunterSelection> visible,
+  int pickCount,
+  double tableWidth,
+  double fontSize,
+) {
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: SizedBox(
+      width: tableWidth,
+      child: ListView.builder(
+        controller: widget.scrollController,
+        itemCount: visible.length,
+        itemBuilder: (context, index) {
+          final row = visible[index];
+          final isStriped = index.isOdd;
+          final invalid = _hasAnyGlobalDuplicate();
 
-            final bg = invalid
-                ? Colors.red.withValues(alpha: 0.06)
-                : isStriped
-                    ? cs.surfaceContainerHighest.withValues(alpha: 0.25)
-                    : cs.surface;
+          final bg = invalid
+              ? Colors.red.withValues(alpha: 0.06)
+              : isStriped
+                  ? cs.surfaceContainerHighest.withValues(alpha: 0.25)
+                  : cs.surface;
 
-            return Container(
-              height: UIDimensions.rowHeight,
-              decoration: BoxDecoration(
-                color: bg,
-                border: Border(
-                  bottom: BorderSide(
-                    color: cs.outlineVariant.withValues(alpha: 0.6),
-                    width: 0.5,
-                  ),
+          return Container(
+            height: UIDimensions.rowHeight,
+            decoration: BoxDecoration(
+              color: bg,
+              border: Border(
+                bottom: BorderSide(
+                  color: cs.outlineVariant.withValues(alpha: 0.6),
+                  width: 0.5,
                 ),
               ),
-              child: Row(
-                children: [
+            ),
+            child: Row(
+              children: [
+                // ⭐ Punter column
+                SizedBox(
+                  width: kPunterColumnWidth,
+                  child: _punterCell(context, row),
+                ),
+
+                // ⭐ Pick + Score columns
+                for (final pick in row.picks) ...[
                   SizedBox(
-                    width: UIDimensions.punterNameColumnWidth,
-                    child: _punterCell(context, row),
+                    width: kPickColumnWidth,
+                    child: _pickCell(context, row, pick),
                   ),
-                  for (final pick in row.picks) ...[
-                    SizedBox(
-                      width: UIDimensions.pickColumnWidth,
-                      child: _pickCell(context, row, pick),
-                    ),
-                    SizedBox(
-                      width: UIDimensions.pickScoreColumnWidth,
-                      child: _pickScoreCell(pick),
-                    ),
-                  ],
                   SizedBox(
-                    width: UIDimensions.totalColumnWidth,
-                    child: _totalCell(context, row),
+                    width: kPickScoreColumnWidth,
+                    child: _pickScoreCell(pick),
                   ),
                 ],
-              ),
-            );
-          },
-        ),
+
+                // ⭐ Total column
+                SizedBox(
+                  width: kTotalColumnWidth,
+                  child: _totalCell(context, row),
+                ),
+              ],
+            ),
+          );
+        },
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ---------------------------------------------------------------------------
   // HEADER CELL
