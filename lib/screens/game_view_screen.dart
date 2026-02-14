@@ -157,16 +157,16 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   Future<void> _refreshLive() async {
   try {
-    final fixture = _selectedFixture;
-    final matchId = fixture?.matchId?.trim();
-
-    // Update live scores for the selected fixture
-    if (matchId != null && matchId.isNotEmpty) {
-      await widget.fixtureRepo.refreshLiveScores(
-        matchId: matchId,
-        selections: widget.selections,
-      );
-    }
+    // ❌ Do NOT apply fixture-scoped scoring
+// We only use round-wide stats now.
+// final fixture = _selectedFixture;
+// final matchId = fixture?.matchId?.trim();
+// if (matchId != null && matchId.isNotEmpty) {
+//   await widget.fixtureRepo.refreshLiveScores(
+//     matchId: matchId,
+//     selections: widget.selections,
+//   );
+// }
 
     if (!mounted) return;
 
@@ -611,8 +611,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   Future<void> _onFixtureTap(AflFixture f) async {
   setState(() => _selectedFixture = f);
-  
-  _applyLiveStats(_currentStatsByPlayerId.values.toList());
 
   final matchId = f.matchId?.trim();
   if (matchId == null || matchId.isEmpty) return;
@@ -623,7 +621,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
   final homeTeam = f.homeTeam;
   final awayTeam = f.awayTeam;
 
-  // ⭐ Filter round‑wide stats for each club
   final rowsA = stats
       .where((s) => s.player?.club == homeTeam)
       .map(_mapStats)
@@ -634,7 +631,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
       .map(_mapStats)
       .toList();
 
-  // ⭐ If round‑wide stats don't include this match yet → show "No stats"
   final noStats = rowsA.isEmpty && rowsB.isEmpty;
 
   const columns = [
@@ -661,6 +657,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
     ),
   );
 }
+
 
 
   Widget _buildPunterControls() {
