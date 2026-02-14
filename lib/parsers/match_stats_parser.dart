@@ -10,7 +10,7 @@ class MatchStatsParser {
   static const String baseUrl =
       "https://fantasy-pairs-and-weekend-quads-production.up.railway.app";
 
-  // ⭐ NEW: In-memory cache for match stats
+  // ⭐ In-memory cache
   static final Map<String, List<AflPlayerMatchStats>> _cache = {};
 
   static Future<List<AflPlayerMatchStats>> fetchMatchStats(
@@ -18,7 +18,6 @@ class MatchStatsParser {
     PlayerRepository repo,
     FixtureRepository fixtureRepo,
   ) async {
-
     // ⭐ 1. Return cached stats instantly
     if (_cache.containsKey(matchId)) {
       return _cache[matchId]!;
@@ -43,55 +42,68 @@ class MatchStatsParser {
       return int.tryParse(v?.toString() ?? '') ?? 0;
     }
 
+    // ⭐ Correct player lookup (ID-first)
     Future<AflPlayer> _findPlayer(Map<String, dynamic> raw, int season) async {
-  final id = raw['id']?.toString().trim() ?? "";
-  final name = raw['name']?.toString().trim() ?? "";
+      final id = raw['id']?.toString().trim() ?? "";
+      final name = raw['name']?.toString().trim() ?? "";
 
-  final seasonPlayers = await repo.playersForSeason(season);
+      final seasonPlayers = await repo.playersForSeason(season);
 
-  // 1. Try ID match first (correct + reliable)
-  if (id.isNotEmpty) {
-    final byId = seasonPlayers.where((p) => p.id == id);
-    if (byId.isNotEmpty) return byId.first;
-  }
+      // 1. ID match
+      if (id.isNotEmpty) {
+        final byId = seasonPlayers.where((p) => p.id == id);
+        if (byId.isNotEmpty) return byId.first;
+      }
 
-  // 2. Fallback: name match
-  final normalized = name.toLowerCase();
-  for (final p in seasonPlayers) {
-    if (p.name.toLowerCase().trim() == normalized) {
-      return p;
+      // 2. Name match
+      final normalized = name.toLowerCase();
+      for (final p in seasonPlayers) {
+        if (p.name.toLowerCase().trim() == normalized) {
+          return p;
+        }
+      }
+
+      // 3. Fallback placeholder
+      return AflPlayer(
+        id: id.isNotEmpty ? id : name,
+        name: name,
+        club: "",
+        guernseyNumber: 0,
+        season: season,
+        fantasyScore: 0,
+      );
     }
-  }
-
-  // 3. Final fallback: create placeholder but DO NOT lose club
-  return AflPlayer(
-    id: id.isNotEmpty ? id : name,
-    name: name,
-    club: "",
-    guernseyNumber: 0,
-    season: season,
-    fantasyScore: 0,
-  );
-}
 
     final season = int.tryParse(matchId.substring(4, 8)) ?? 2025;
 
     for (final p in playersRaw) {
       if (p is! Map<String, dynamic>) continue;
 
-      final name = p['name']?.toString() ?? '';
-      if (name.isEmpty) continue;
-
       final stats = p['stats'] is Map
           ? Map<String, dynamic>.from(p['stats'])
           : <String, dynamic>{};
 
+      // ⭐ Find player using ID-first logic
       final player = await _findPlayer(p, season);
-      final teamCode = player.club;
 
+      // ⭐ Assign correct club using your PlayerRepository
+      final repoPlayer = await repo.findById(player.id, season);
+      final teamCode = repoPlayer?.club ?? player.club;
+
+      // ⭐ Build corrected player object (no copyWith)
+      final fixedPlayer = AflPlayer(
+        id: player.id,
+        name: player.name,
+        club: teamCode,
+        guernseyNumber: player.guernseyNumber,
+        season: player.season,
+        fantasyScore: player.fantasyScore,
+      );
+
+      // ⭐ Build final stats object
       results.add(
         AflPlayerMatchStats(
-          player: player,
+          player: fixedPlayer,
           team: teamCode,
           kicks: asInt(stats['kicks']),
           handballs: asInt(stats['handballs']),
@@ -109,13 +121,12 @@ class MatchStatsParser {
       );
     }
 
-    // ⭐ 3. Store in cache
+    // ⭐ 3. Cache results
     _cache[matchId] = results;
 
     return results;
   }
 
-  // ⭐ Optional: clear cache (useful when switching rounds)
   static void clearCache() {
     _cache.clear();
   }
