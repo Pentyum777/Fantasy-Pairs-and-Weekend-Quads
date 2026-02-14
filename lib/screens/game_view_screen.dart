@@ -185,12 +185,46 @@ class _GameViewScreenState extends State<GameViewScreen> {
 }
 
   void _applyLiveStats(List<AflPlayerMatchStats> stats) {
+  // Build lookup map
   _currentStatsByPlayerId = {
     for (final s in stats)
       if (s.player != null) s.player!.id: s
   };
 
+  // Apply stats to every punter selection + pick
   for (final selection in widget.selections) {
+    for (final pick in selection.picks) {
+      final id = pick.player?.id;
+
+      if (id == null) {
+        pick.fantasyPoints = 0;
+        pick.stats = null;
+        continue;
+      }
+
+      final s = _currentStatsByPlayerId[id];
+
+      if (s == null) {
+        pick.fantasyPoints = 0;
+        pick.stats = null;
+        continue;
+      }
+
+      // ⭐ Update pick stats for punter table
+      pick.fantasyPoints = s.fantasyPoints;
+      pick.stats = {
+        "AF": s.fantasyPoints,
+        "K": s.kicks,
+        "HB": s.handballs,
+        "D": s.disposals,
+        "M": s.marks,
+        "T": s.tackles,
+        "G": s.goals,
+        "B": s.behinds,
+      };
+    }
+
+    // ⭐ Update total score using round‑wide stats
     selection.liveScore = widget.fantasyService.calculatePunterScore(
       selection: selection,
       liveStatsByPlayerId: _currentStatsByPlayerId,
@@ -199,6 +233,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   setState(() {});
 }
+
     void _checkRoundCompletion() {
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
       widget.season,
