@@ -579,43 +579,43 @@ class _GameViewScreenState extends State<GameViewScreen> {
           children: [
             // ⭐ Top row: home logo + score + away logo
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TeamLogo(f.homeTeam, size: 26),
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    TeamLogo(f.homeTeam, size: 26),
 
-                Expanded(
-  child: Text.rich(
-    TextSpan(
-      style: scoreBaseStyle,
-      children: [
+    Expanded(
+      child: Text.rich(
         TextSpan(
-          text: "$homeScore",
-          style: TextStyle(
-            fontWeight: homeWinning ? FontWeight.w700 : FontWeight.w500,
-          ),
-        ),
-        const TextSpan(text: " – "),
-        TextSpan(
-          text: "$awayScore",
-          style: TextStyle(
-            fontWeight: awayWinning ? FontWeight.w700 : FontWeight.w500,
-          ),
-        ),
-      ],
-    ),
-    textAlign: TextAlign.center,
-    maxLines: 1,
-    overflow: TextOverflow.visible,
-    softWrap: false,
-  ),
-),
-
-TeamLogo(f.awayTeam, size: 26),
-              ],
+          style: scoreBaseStyle,
+          children: [
+            TextSpan(
+              text: "$homeScore",
+              style: TextStyle(
+                fontWeight: homeWinning ? FontWeight.w700 : FontWeight.w500,
+              ),
             ),
+            const TextSpan(text: "–"), // tighter spacing
+            TextSpan(
+              text: "$awayScore",
+              style: TextStyle(
+                fontWeight: awayWinning ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.visible,
+        softWrap: false,
+      ),
+    ),
+
+    TeamLogo(f.awayTeam, size: 26),
+  ],
+)
 
             // ⭐ Quarter / Time
-            Align(
+            ,Align(
               alignment: Alignment.center,
               child: Text(
                 quarter.isEmpty ? time : "$quarter • $time",

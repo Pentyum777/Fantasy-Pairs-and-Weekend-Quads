@@ -361,13 +361,13 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
             ),
             child: Row(
               children: [
-                // ⭐ Punter column
+                // Punter column
                 SizedBox(
                   width: kPunterColumnWidth,
                   child: _punterCell(context, row),
                 ),
 
-                // ⭐ Pick + Score columns
+                // Pick + Score columns
                 for (final pick in row.picks) ...[
                   SizedBox(
                     width: kPickColumnWidth,
@@ -379,7 +379,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                   ),
                 ],
 
-                // ⭐ Total column
+                // Total column
                 SizedBox(
                   width: kTotalColumnWidth,
                   child: _totalCell(context, row),
@@ -520,11 +520,11 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
   final hintText = "P$globalPickNumber";
 
   return SizedBox(
-    width: kPickColumnWidth, // ⭐ fixed width for full names
+    width: kPickColumnWidth,
     child: DropdownSearch<AflPlayer>(
       selectedItem: selectedPlayer,
       items: filteredPlayers,
-      itemAsString: (p) => p.fullName, // ⭐ full name in popup
+      itemAsString: (p) => p.fullName,
       enabled: !widget.isCompleted,
 
       popupProps: PopupProps.menu(
@@ -558,9 +558,8 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
 
       clearButtonProps: const ClearButtonProps(isVisible: false),
 
-      // ⭐ Custom displayed cell
       dropdownBuilder: (context, player) {
-        final text = player == null ? hintText : player.fullName; // ⭐ full name
+        final text = player == null ? hintText : player.fullName;
 
         final colours =
             player == null ? null : _getTeamColoursForPlayer(player);
@@ -581,7 +580,7 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
                   ),
             child: Text(
               text,
-              overflow: TextOverflow.visible, // ⭐ no truncation
+              overflow: TextOverflow.visible,
               softWrap: false,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
