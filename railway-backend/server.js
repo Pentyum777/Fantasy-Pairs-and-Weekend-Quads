@@ -78,11 +78,16 @@ async function fetchSquiggleMeta(gameId) {
   const url = `https://api.squiggle.com.au/?q=games;game=${gameId}`;
 
   try {
-    // Create a timeout controller
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      }
+    });
+
     clearTimeout(timeout);
 
     const json = await response.json();
@@ -141,6 +146,7 @@ async function fetchSquiggleMeta(gameId) {
     return empty;
   }
 }
+
 
 
 // ------------------------------------------------------
