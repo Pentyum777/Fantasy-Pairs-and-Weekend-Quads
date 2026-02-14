@@ -22,7 +22,7 @@ const port = process.env.PORT || 8080;
 const app = express();
 
 // ------------------------------------------------------
-// OPTION 1: Explicit OPTIONS handler (fixes Railway preflight blocking)
+// Explicit OPTIONS handler (fixes Railway preflight blocking)
 // ------------------------------------------------------
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -103,18 +103,8 @@ app.get("/fantasy/:matchId", async (req, res) => {
 
     const fiMeta = await fetchFootyInfoMeta(footyInfoId);
 
-    // ⭐ NEW: Assign correct AFL club to each player
-    // Load your season player list (JSON file or DB)
-    const seasonPlayers = JSON.parse(
-      fs.readFileSync("./players_2025.json", "utf8")
-    );
-
-    for (const p of dfsData.players) {
-      const match = seasonPlayers.find(sp => sp.id === p.id);
-      if (match) {
-        p.team = match.club;   // ⭐ FIX: Assign correct club
-      }
-    }
+    // ⭐ NO TEAM ASSIGNMENT HERE
+    // The frontend now handles club assignment using PlayerRepository.
 
     res.json({
       matchId,
@@ -123,7 +113,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
       quarter: fiMeta.quarter ?? "",
       clock: fiMeta.clock ?? "",
       status: fiMeta.status ?? "",
-      players: dfsData.players,   // now includes correct team
+      players: dfsData.players,
     });
   } catch (err) {
     console.error("Combined DFS + FootyInfo error:", err);
