@@ -611,6 +611,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   Future<void> _onFixtureTap(AflFixture f) async {
   setState(() => _selectedFixture = f);
+  
+  _applyLiveStats(_currentStatsByPlayerId.values.toList());
 
   final matchId = f.matchId?.trim();
   if (matchId == null || matchId.isEmpty) return;
