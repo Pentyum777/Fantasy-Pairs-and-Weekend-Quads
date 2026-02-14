@@ -584,36 +584,39 @@ class _GameViewScreenState extends State<GameViewScreen> {
                 TeamLogo(f.homeTeam, size: 26),
 
                 Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text.rich(
-                      TextSpan(
-                        style: scoreBaseStyle,
-                        children: [
-                          TextSpan(
-                            text: "$homeScore",
-                            style: TextStyle(
-                              fontWeight: homeWinning
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
-                          ),
-                          const TextSpan(text: " – "),
-                          TextSpan(
-                            text: "$awayScore",
-                            style: TextStyle(
-                              fontWeight: awayWinning
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+  child: SizedBox(
+    width: 52, // ⭐ fixed width ensures identical font size for 2‑digit & 3‑digit scores
+    child: Text.rich(
+      TextSpan(
+        style: scoreBaseStyle,
+        children: [
+          TextSpan(
+            text: "$homeScore",
+            style: TextStyle(
+              fontWeight: homeWinning
+                  ? FontWeight.w700
+                  : FontWeight.w500,
+            ),
+          ),
+          const TextSpan(text: " – "),
+          TextSpan(
+            text: "$awayScore",
+            style: TextStyle(
+              fontWeight: awayWinning
+                  ? FontWeight.w700
+                  : FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+      textAlign: TextAlign.center,
+      maxLines: 1,
+      overflow: TextOverflow.visible,
+    ),
+  ),
+),
 
-                TeamLogo(f.awayTeam, size: 26),
+TeamLogo(f.awayTeam, size: 26),
               ],
             ),
 

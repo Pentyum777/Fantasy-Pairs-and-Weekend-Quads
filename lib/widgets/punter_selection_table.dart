@@ -461,131 +461,132 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // PICK CELL
   // ---------------------------------------------------------------------------
 
-  Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+  static const double kPickColumnWidth = 185; // fits longest AFL names
 
-    final visualRowIndex = row.punterNumber - 1;
-    final colIndex = pick.pickNumber - 1;
-    final owner = row;
+Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    final globalTaken = <String>{};
-    for (final r in widget.selections) {
-      for (int i = 0; i < r.picks.length; i++) {
-        final p = r.picks[i].player;
-        if (p == null) continue;
-        if (identical(r, owner) && i == colIndex) continue;
-        globalTaken.add(p.id);
-      }
+  final visualRowIndex = row.punterNumber - 1;
+  final colIndex = pick.pickNumber - 1;
+  final owner = row;
+
+  // Build global taken list
+  final globalTaken = <String>{};
+  for (final r in widget.selections) {
+    for (int i = 0; i < r.picks.length; i++) {
+      final p = r.picks[i].player;
+      if (p == null) continue;
+      if (identical(r, owner) && i == colIndex) continue;
+      globalTaken.add(p.id);
     }
+  }
 
-    final selectedPlayer = owner.picks[colIndex].player;
-    final allPlayers = widget.availablePlayers;
+  final selectedPlayer = owner.picks[colIndex].player;
+  final allPlayers = widget.availablePlayers;
 
-    final filteredPlayers = allPlayers.where((p) {
-      final isTaken = globalTaken.contains(p.id);
-      final isCurrent = p == selectedPlayer;
-      return !isTaken || isCurrent;
-    }).toList()
-      ..sort((a, b) => a.fullName.compareTo(b.fullName));
+  final filteredPlayers = allPlayers.where((p) {
+    final isTaken = globalTaken.contains(p.id);
+    final isCurrent = p == selectedPlayer;
+    return !isTaken || isCurrent;
+  }).toList()
+    ..sort((a, b) => a.fullName.compareTo(b.fullName));
 
-    final globalPickNumber = _globalPickNumberForCell(
-      rowIndex: visualRowIndex,
-      colIndex: colIndex,
-    );
+  final globalPickNumber = _globalPickNumberForCell(
+    rowIndex: visualRowIndex,
+    colIndex: colIndex,
+  );
 
-    final hintText = "P$globalPickNumber";
+  final hintText = "P$globalPickNumber";
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cellWidth = constraints.maxWidth;
+  return SizedBox(
+    width: kPickColumnWidth, // ⭐ fixed width for full names
+    child: DropdownSearch<AflPlayer>(
+      selectedItem: selectedPlayer,
+      items: filteredPlayers,
+      itemAsString: (p) => p.fullName, // ⭐ full name in popup
+      enabled: !widget.isCompleted,
 
-        return SizedBox(
-          width: cellWidth,
-          child: DropdownSearch<AflPlayer>(
-            selectedItem: selectedPlayer,
-            items: filteredPlayers,
-            itemAsString: (p) => p.fullName,
-            enabled: !widget.isCompleted,
-            popupProps: PopupProps.menu(
-              constraints: BoxConstraints(
-                minWidth: cellWidth,
-                maxWidth: cellWidth,
-              ),
-              showSearchBox: true,
-              searchFieldProps: TextFieldProps(
-                decoration: const InputDecoration(
-                  hintText: "Search player...",
-                  isDense: true,
-                ),
-              ),
+      popupProps: PopupProps.menu(
+        constraints: BoxConstraints(
+          minWidth: kPickColumnWidth,
+          maxWidth: kPickColumnWidth,
+        ),
+        showSearchBox: true,
+        searchFieldProps: TextFieldProps(
+          decoration: const InputDecoration(
+            hintText: "Search player...",
+            isDense: true,
+          ),
+        ),
+      ),
+
+      dropdownDecoratorProps: DropDownDecoratorProps(
+        dropdownSearchDecoration: InputDecoration(
+          isDense: true,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 2,
+          ),
+        ),
+      ),
+
+      dropdownButtonProps: const DropdownButtonProps(
+        icon: SizedBox.shrink(),
+      ),
+
+      clearButtonProps: const ClearButtonProps(isVisible: false),
+
+      // ⭐ Custom displayed cell
+      dropdownBuilder: (context, player) {
+        final text = player == null ? hintText : player.fullName; // ⭐ full name
+
+        final colours =
+            player == null ? null : _getTeamColoursForPlayer(player);
+
+        return Container(
+          width: kPickColumnWidth,
+          alignment: Alignment.center,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 4,
+              vertical: 2,
             ),
-            dropdownDecoratorProps: DropDownDecoratorProps(
-              dropdownSearchDecoration: InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 2,
-                ),
-              ),
-            ),
-            dropdownButtonProps: const DropdownButtonProps(
-              icon: SizedBox.shrink(),
-            ),
-            clearButtonProps: const ClearButtonProps(isVisible: false),
-            dropdownBuilder: (context, player) {
-              final text = player == null
-                  ? hintText
-                  : shortName(player.fullName);
-
-              final colours =
-                  player == null ? null : _getTeamColoursForPlayer(player);
-
-              return Container(
-                width: cellWidth,
-                alignment: Alignment.center,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
+            decoration: colours == null
+                ? null
+                : BoxDecoration(
+                    color: colours["bg"]?.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(4),
                   ),
-                  decoration: colours == null
-                      ? null
-                      : BoxDecoration(
-                          color: colours["bg"]?.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                  child: Text(
-                    text,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colours == null
-                          ? cs.onSurfaceVariant
-                          : colours["fg"],
-                    ),
-                  ),
-                ),
-              );
-            },
-            onChanged: (player) {
-              if (player == null) return;
-
-              setState(() {
-                owner.picks[colIndex].player = player;
-                owner.picks[colIndex].stats = null;
-              });
-
-              widget.onChanged?.call();
-              _saveSnapshot();
-            },
+            child: Text(
+              text,
+              overflow: TextOverflow.visible, // ⭐ no truncation
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colours == null ? cs.onSurfaceVariant : colours["fg"],
+              ),
+            ),
           ),
         );
       },
-    );
-  }
+
+      onChanged: (player) {
+        if (player == null) return;
+
+        setState(() {
+          owner.picks[colIndex].player = player;
+          owner.picks[colIndex].stats = null;
+        });
+
+        widget.onChanged?.call();
+        _saveSnapshot();
+      },
+    ),
+  );
+}
 
   // ---------------------------------------------------------------------------
   // TOTAL CELL
