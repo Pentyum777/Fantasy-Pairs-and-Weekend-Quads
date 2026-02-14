@@ -117,32 +117,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     // If stats are empty, still populate players for both clubs
     if (stats.isEmpty) {
-      final seasonPlayers = await widget.playerRepo.playersForSeason(widget.season);
-
-      final homePlayers = seasonPlayers.where((p) => p.club == f.homeTeam);
-      final awayPlayers = seasonPlayers.where((p) => p.club == f.awayTeam);
-
-      for (final p in [...homePlayers, ...awayPlayers]) {
-        roundStats[p.id] = AflPlayerMatchStats(
-          player: p,
-          team: p.club,
-          kicks: 0,
-          handballs: 0,
-          disposals: 0,
-          marks: 0,
-          tackles: 0,
-          goals: 0,
-          behinds: 0,
-          hitouts: 0,
-          freesFor: 0,
-          freesAgainst: 0,
-          timeOnGroundPercentage: 0,
-          fantasyPoints: 0,
-        );
-      }
-
-      continue;
-    }
+  // ⭐ Do NOT overwrite real DFS stats with zeros
+  continue;
+}
 
     // Normal case: stats exist
     for (final s in stats) {
