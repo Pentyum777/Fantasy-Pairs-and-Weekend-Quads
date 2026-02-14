@@ -152,21 +152,27 @@ app.get("/fantasy/:matchId", async (req, res) => {
   const dfsId = dfsMap[matchId];
   const squiggleGameId = squiggleMap[matchId];
 
+  console.log("➡️ Incoming matchId:", matchId);
+  console.log("➡️ DFS ID:", dfsId);
+  console.log("➡️ Squiggle Game ID:", squiggleGameId);
+
   if (!dfsId) {
     return res.status(404).json({ error: "No DFS mapping for matchId" });
   }
 
   if (!squiggleGameId) {
-    console.warn("No Squiggle mapping for matchId", matchId);
+    console.warn("⚠️ No Squiggle mapping for matchId:", matchId);
   }
 
   try {
+    // Fetch DFS player stats
     const dfsData = await scrapeDFS(dfsId);
 
     if (!dfsData || !dfsData.players) {
       return res.status(500).json({ error: "DFS returned no player data" });
     }
 
+    // Default metadata
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -175,10 +181,16 @@ app.get("/fantasy/:matchId", async (req, res) => {
       status: "",
     };
 
+    // Fetch Squiggle metadata if mapping exists
     if (squiggleGameId) {
+      console.log("📡 Fetching Squiggle metadata for game:", squiggleGameId);
       meta = await fetchSquiggleMeta(squiggleGameId);
+      console.log("📊 Squiggle metadata returned:", meta);
+    } else {
+      console.log("❌ Skipping Squiggle fetch — no mapping for", matchId);
     }
 
+    // Final response
     res.json({
       matchId,
       homeScore: meta.homeScore ?? 0,
@@ -188,12 +200,12 @@ app.get("/fantasy/:matchId", async (req, res) => {
       status: meta.status ?? "",
       players: dfsData.players,
     });
+
   } catch (err) {
-    console.error("Combined DFS + Squiggle error:", err);
+    console.error("💥 Combined DFS + Squiggle error:", err);
     res.status(500).json({ error: String(err) });
   }
 });
-
 // ------------------------------------------------------
 // Metadata-only endpoint (Squiggle only)
 // ------------------------------------------------------
