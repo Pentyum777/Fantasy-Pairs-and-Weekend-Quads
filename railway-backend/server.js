@@ -46,35 +46,120 @@ app.get("/", (req, res) => {
 });
 
 // ------------------------------------------------------
-// REAL FootyInfo HTML parser
+// CACHING LAYER (5-minute TTL)
+// ------------------------------------------------------
+const metaCache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+function getCachedMeta(id) {
+  const entry = metaCache.get(id);
+  if (!entry) return null;
+
+  const isExpired = Date.now() - entry.timestamp > CACHE_TTL_MS;
+  if (isExpired) {
+    metaCache.delete(id);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedMeta(id, data) {
+  metaCache.set(id, {
+    timestamp: Date.now(),
+    data,
+  });
+}
+
+// ------------------------------------------------------
+// FootyInfo metadata scraper (with fallback + error tolerance)
 // ------------------------------------------------------
 async function fetchFootyInfoMeta(footyInfoId) {
+  // Check cache first
+  const cached = getCachedMeta(footyInfoId);
+  if (cached) return cached;
+
   const url = `https://www.footyinfo.com/match/${footyInfoId}`;
 
-  const response = await fetch(url);
-  const html = await response.text();
+  let html = "";
+  try {
+    const response = await fetch(url, { timeout: 8000 });
+    html = await response.text();
+  } catch (err) {
+    console.error("FootyInfo fetch failed:", err);
+    return {
+      homeScore: 0,
+      awayScore: 0,
+      quarter: "",
+      clock: "",
+      status: "",
+    };
+  }
 
   const $ = load(html);
 
-  const homeScore = parseInt(
-    $(".scoreboard .team.home .score").text().trim()
-  ) || 0;
+  // -------------------------------
+  // PRIMARY PARSING (structured HTML)
+  // -------------------------------
+  let homeScore =
+    parseInt($(".scoreboard .team.home .score").text().trim()) || 0;
 
-  const awayScore = parseInt(
-    $(".scoreboard .team.away .score").text().trim()
-  ) || 0;
+  let awayScore =
+    parseInt($(".scoreboard .team.away .score").text().trim()) || 0;
 
-  const quarter = $(".match-status .quarter").text().trim();
-  const clock = $(".match-status .clock").text().trim();
-  const status = $(".match-status .status").text().trim();
+  let quarter = $(".match-status .quarter").text().trim();
+  let clock = $(".match-status .clock").text().trim();
+  let status = $(".match-status .status").text().trim();
 
-  return {
+  // -------------------------------
+  // FALLBACK PARSING (regex)
+  // -------------------------------
+  const bodyText = $("body").text();
+
+  if (homeScore === 0 && awayScore === 0) {
+    const nums = [...bodyText.matchAll(/\b(\d{1,3})\b/g)].map(m =>
+      parseInt(m[1], 10)
+    );
+    if (nums.length >= 2) {
+      awayScore = nums[nums.length - 1];
+      homeScore = nums[nums.length - 2];
+    }
+  }
+
+  if (!quarter) {
+    const lower = bodyText.toLowerCase();
+    if (lower.includes("full time")) {
+      quarter = "Final";
+      status = "Full Time";
+      clock = "FT";
+    } else if (lower.includes("three quarter time") || lower.includes("3qt")) {
+      quarter = "Q4";
+      status = "3QT";
+    } else if (lower.includes("half time")) {
+      quarter = "Q3";
+      status = "Half Time";
+    } else if (lower.includes("quarter time")) {
+      quarter = "Q2";
+      status = "Quarter Time";
+    }
+  }
+
+  if (!clock) {
+    const clockMatch = bodyText.match(/\b(\d{1,2}:\d{2})\b/);
+    if (clockMatch) clock = clockMatch[1];
+  }
+
+  const meta = {
     homeScore,
     awayScore,
     quarter,
     clock,
     status,
   };
+
+  // Cache result
+  setCachedMeta(footyInfoId, meta);
+
+  return meta;
 }
 
 // ------------------------------------------------------
@@ -103,13 +188,10 @@ app.get("/fantasy/:matchId", async (req, res) => {
 
     const fiMeta = await fetchFootyInfoMeta(footyInfoId);
 
-    // ⭐ NO TEAM ASSIGNMENT HERE
-    // The frontend now handles club assignment using PlayerRepository.
-
     res.json({
       matchId,
       homeScore: fiMeta.homeScore ?? 0,
-      awayScore: fiMeta.awayScore ?? 0,
+      awayScore: fiMeta.awreScore ?? 0,
       quarter: fiMeta.quarter ?? "",
       clock: fiMeta.clock ?? "",
       status: fiMeta.status ?? "",
