@@ -78,10 +78,16 @@ async function fetchSquiggleMeta(gameId) {
   const url = `https://api.squiggle.com.au/?q=games;game=${gameId}`;
 
   try {
-    const response = await fetch(url, { timeout: 8000 });
-    const json = await response.json();
+    // Create a timeout controller
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
 
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    const json = await response.json();
     const games = json.games || [];
+
     if (!games.length) {
       console.warn("Squiggle returned no games for", gameId);
       const empty = {
@@ -100,9 +106,7 @@ async function fetchSquiggleMeta(gameId) {
     const homeScore = g.hscore ?? 0;
     const awayScore = g.ascore ?? 0;
 
-    // Squiggle doesn't expose live clock/quarter like AFL.com,
-    // but we can derive a simple status for completed games.
-    const complete = g.complete ?? 0; // 100 = full time
+    const complete = g.complete ?? 0;
     let status = "";
     let quarter = "";
     let clock = "";
@@ -123,6 +127,7 @@ async function fetchSquiggleMeta(gameId) {
 
     setCachedMeta(`squiggle:${gameId}`, meta);
     return meta;
+
   } catch (err) {
     console.error("Squiggle fetch failed:", err);
     const empty = {
@@ -136,6 +141,7 @@ async function fetchSquiggleMeta(gameId) {
     return empty;
   }
 }
+
 
 // ------------------------------------------------------
 // Fantasy stats endpoint (DFS + Squiggle)
