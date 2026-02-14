@@ -157,16 +157,18 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   Future<void> _refreshLive() async {
   try {
-    // ❌ Do NOT apply fixture-scoped scoring
-// We only use round-wide stats now.
-// final fixture = _selectedFixture;
-// final matchId = fixture?.matchId?.trim();
-// if (matchId != null && matchId.isNotEmpty) {
-//   await widget.fixtureRepo.refreshLiveScores(
-//     matchId: matchId,
-//     selections: widget.selections,
-//   );
-// }
+    // ⭐ Update fixture metadata (scores, quarter, clock, status)
+    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+      widget.season,
+      widget.round,
+    );
+
+    for (final f in fixtures) {
+      final matchId = f.matchId?.trim();
+      if (matchId != null && matchId.isNotEmpty) {
+        await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
+      }
+    }
 
     if (!mounted) return;
 
