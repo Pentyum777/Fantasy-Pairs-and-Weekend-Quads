@@ -91066,7 +91066,7 @@ return A.T($async$xQ,r)},
 xl(){var s=0,r=A.U(t.H),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d
 var $async$xl=A.V(function(a,b){if(a===1){o.push(b)
 s=p}for(;;)switch(s){case 0:p=4
-m=A.fK("https://your-backend/loadSelections?gameType="+n.a.as)
+m=A.fK("https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections?gameType="+n.a.as)
 s=7
 return A.X(A.aEi(m),$async$xl)
 case 7:l=b

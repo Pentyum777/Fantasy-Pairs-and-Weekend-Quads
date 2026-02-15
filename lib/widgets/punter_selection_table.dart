@@ -852,7 +852,7 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
   Future<void> _loadSnapshotFromBackend() async {
   try {
     final url = Uri.parse(
-  "https://your-backend/loadSelections?gameType=${widget.gameType}"
+  "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections?gameType=${widget.gameType}"
 );
 
     final res = await http.get(url);
