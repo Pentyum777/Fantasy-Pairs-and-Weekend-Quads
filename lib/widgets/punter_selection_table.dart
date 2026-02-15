@@ -145,6 +145,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
 
   List<_TableSnapshot> _history = [];
 int _historyIndex = -1;
+int? _lastUpdated;
 
 @override
 void initState() {
@@ -807,63 +808,84 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
   // ⭐ SAVE SNAPSHOT TO BACKEND (Admins only)
   // ---------------------------------------------------------------------------
   Future<void> _saveSnapshotToBackend(_TableSnapshot snap) async {
-    try {
-      final url = Uri.parse(
-        "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/saveSelections",
-      );
+  try {
+    final url = Uri.parse(
+      "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/saveSelections",
+    );
 
-      await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "punterNames": snap.punterNames,
-          "picks": snap.picks.map((row) {
-            return row.map((p) {
-              return {
-                "playerId": p.playerId,
-                "stats": p.stats,
-              };
-            }).toList();
-          }).toList(),
-        }),
-      );
-    } catch (e) {
-      debugPrint("❌ Failed to save selections: $e");
+    final res = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "punterNames": snap.punterNames,
+        "picks": snap.picks.map((row) {
+          return row.map((p) {
+            return {
+              "playerId": p.playerId,
+              "stats": p.stats,
+            };
+          }).toList();
+        }).toList(),
+      }),
+    );
+
+    final json = jsonDecode(res.body);
+
+    // Update timestamp from backend
+    if (json["lastUpdated"] != null) {
+      _lastUpdated = json["lastUpdated"];
     }
+  } catch (e) {
+    debugPrint("❌ Failed to save selections: $e");
   }
+}
 
   // ---------------------------------------------------------------------------
   // ⭐ LOAD SNAPSHOT FROM BACKEND (Admins + non-admins)
   // ---------------------------------------------------------------------------
   Future<void> _loadSnapshotFromBackend() async {
-    try {
-      final url = Uri.parse(
-        "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections",
-      );
-      final res = await http.get(url);
+  try {
+    final url = Uri.parse(
+      "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections",
+    );
 
-      final json = jsonDecode(res.body);
-      if (json["data"] == null) return;
+    final res = await http.get(url);
+    final json = jsonDecode(res.body);
 
-      final snap = _TableSnapshot(
-        punterNames: List<String>.from(json["data"]["punterNames"]),
-        picks: (json["data"]["picks"] as List)
-            .map((row) => (row as List)
-                .map((p) => _PickSnapshot(
-                      playerId: p["playerId"],
-                      stats: p["stats"] == null
-                          ? null
-                          : Map<String, dynamic>.from(p["stats"]),
-                    ))
-                .toList())
-            .toList(),
-      );
+    // If backend returns nothing, stop
+    if (json["data"] == null) return;
 
-      setState(() {
-        _applySnapshot(snap);
-      });
-    } catch (e) {
-      debugPrint("❌ Failed to load selections: $e");
+    final serverTimestamp = json["lastUpdated"];
+
+    // If timestamp unchanged → no update needed
+    if (_lastUpdated != null && serverTimestamp == _lastUpdated) {
+      return;
     }
+
+    // Update local timestamp
+    _lastUpdated = serverTimestamp;
+
+    // Build snapshot
+    final snap = _TableSnapshot(
+      punterNames: List<String>.from(json["data"]["punterNames"]),
+      picks: (json["data"]["picks"] as List)
+          .map((row) => (row as List)
+              .map((p) => _PickSnapshot(
+                    playerId: p["playerId"],
+                    stats: p["stats"] == null
+                        ? null
+                        : Map<String, dynamic>.from(p["stats"]),
+                  ))
+              .toList())
+          .toList(),
+    );
+
+    // Apply snapshot to UI
+    setState(() {
+      _applySnapshot(snap);
+    });
+  } catch (e) {
+    debugPrint("❌ Failed to load selections: $e");
   }
+}
 }

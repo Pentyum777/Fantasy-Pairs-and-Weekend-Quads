@@ -86,12 +86,15 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   void _startLivePolling() {
-    _liveTimer?.cancel();
-    _liveTimer = Timer.periodic(
-      const Duration(seconds: 15),
-      (_) => _refreshLive(),
-    );
-  }
+  _liveTimer?.cancel();
+  _liveTimer = Timer.periodic(
+    const Duration(seconds: 10),   // ⭐️ changed from 15 → 10
+    (_) async {
+      await _refreshLive();            // your existing live stats refresh
+      setState(() {});; // ⭐️ NEW: sync punter selections
+    },
+  );
+}
 
   // -------------------------------------------------------------
   // ROUND-WIDE STATS
