@@ -9,7 +9,7 @@ const dfsMap = JSON.parse(
   fs.readFileSync("./dfs_map.json", "utf8")
 );
 
-// Load Squiggle mapping (your matchId → Squiggle gameId)
+// Load Squiggle mapping
 const squiggleMap = JSON.parse(
   fs.readFileSync("./squiggle_map.json", "utf8")
 );
@@ -41,6 +41,23 @@ app.use(express.json());
 // Root route
 app.get("/", (req, res) => {
   res.send("DFS + Squiggle backend is running");
+});
+
+// ------------------------------------------------------
+// ⭐ NEW: In-memory persistence for punter selections
+// ------------------------------------------------------
+let savedSelections = null;
+
+// Save selections
+app.post("/saveSelections", (req, res) => {
+  savedSelections = req.body;
+  console.log("💾 Selections saved:", JSON.stringify(savedSelections).slice(0, 200));
+  res.json({ ok: true });
+});
+
+// Load selections
+app.get("/loadSelections", (req, res) => {
+  res.json({ ok: true, data: savedSelections });
 });
 
 // ------------------------------------------------------
@@ -147,8 +164,6 @@ async function fetchSquiggleMeta(gameId) {
   }
 }
 
-
-
 // ------------------------------------------------------
 // Fantasy stats endpoint (DFS + Squiggle)
 // ------------------------------------------------------
@@ -166,19 +181,13 @@ app.get("/fantasy/:matchId", async (req, res) => {
     return res.status(404).json({ error: "No DFS mapping for matchId" });
   }
 
-  if (!squiggleGameId) {
-    console.warn("⚠️ No Squiggle mapping for matchId:", matchId);
-  }
-
   try {
-    // Fetch DFS player stats
     const dfsData = await scrapeDFS(dfsId);
 
     if (!dfsData || !dfsData.players) {
       return res.status(500).json({ error: "DFS returned no player data" });
     }
 
-    // Default metadata
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -187,16 +196,12 @@ app.get("/fantasy/:matchId", async (req, res) => {
       status: "",
     };
 
-    // Fetch Squiggle metadata if mapping exists
     if (squiggleGameId) {
       console.log("📡 Fetching Squiggle metadata for game:", squiggleGameId);
       meta = await fetchSquiggleMeta(squiggleGameId);
       console.log("📊 Squiggle metadata returned:", meta);
-    } else {
-      console.log("❌ Skipping Squiggle fetch — no mapping for", matchId);
     }
 
-    // Final response
     res.json({
       matchId,
       homeScore: meta.homeScore ?? 0,
@@ -212,6 +217,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
     res.status(500).json({ error: String(err) });
   }
 });
+
 // ------------------------------------------------------
 // Metadata-only endpoint (Squiggle only)
 // ------------------------------------------------------

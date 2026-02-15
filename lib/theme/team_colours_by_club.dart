@@ -23,7 +23,7 @@ class TeamColoursByClub {
       "fg": Color(0xFFcc2031),
     },
     "FRE": {
-      "bg": Color(0xFF2a1a54),
+      "bg": Color.fromARGB(255, 103, 84, 150),
       "fg": Colors.white,
     },
     "GEE": {
@@ -71,8 +71,8 @@ class TeamColoursByClub {
       "fg": Color(0xFF062ee2),
     },
     "WBD": {
-      "bg": Color(0xFF014896),
-      "fg": Color(0xFFc70136),
+      "bg": Color.fromARGB(255, 59, 142, 231),
+      "fg": Color.fromARGB(255, 163, 10, 51),
     },
   };
 }

@@ -1,13 +1,16 @@
 // ignore_for_file: unused_element
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:http/http.dart' as http;
 
 import '../models/afl_player.dart';
 import '../models/punter_selection.dart';
 import '../models/player_pick.dart';
 import '../theme/team_colours_by_club.dart';
 import '../constants/ui_dimensions.dart';
+import '../services/user_role_service.dart';
 
 // Fits the longest AFL names comfortably
 const double kPickColumnWidth = 185;
@@ -81,6 +84,9 @@ class PunterSelectionTable extends StatefulWidget {
   final bool collapsed;
   final ScrollController? scrollController;
 
+  // ⭐ NEW: required for admin-only persistence
+  final UserRoleService userRoleService;
+
   const PunterSelectionTable({
     super.key,
     required this.tableWidth,
@@ -90,6 +96,7 @@ class PunterSelectionTable extends StatefulWidget {
     required this.selections,
     required this.isCompleted,
     required this.readOnly,
+    required this.userRoleService,   // ⭐ NEW
     this.onChanged,
     required this.collapsed,
     this.scrollController,
@@ -137,29 +144,31 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
 
   List<_TableSnapshot> _history = [];
-  int _historyIndex = -1;
+int _historyIndex = -1;
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
+  _initControllers();
+  _initFocusNodes();
+
+  // ⭐ Load saved selections from backend (admins + non-admins)
+  _loadSnapshotFromBackend();
+}
+
+@override
+void didUpdateWidget(covariant PunterSelectionTable oldWidget) {
+  super.didUpdateWidget(oldWidget);
+
+  // Only re‑initialize if the selections list instance actually changed
+  final selectionsChanged = !identical(oldWidget.selections, widget.selections);
+
+  if (selectionsChanged) {
     _initControllers();
     _initFocusNodes();
-    _saveSnapshot();
+    _saveSnapshot();   // ⭐ This now also saves to backend for admins
   }
-
-  @override
-  void didUpdateWidget(covariant PunterSelectionTable oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // Only re‑initialize if the selections list instance actually changed
-    final selectionsChanged = !identical(oldWidget.selections, widget.selections);
-
-    if (selectionsChanged) {
-      _initControllers();
-      _initFocusNodes();
-      _saveSnapshot();
-    }
-  }
+}
 
   // ---------------------------------------------------------------------------
   // INIT CONTROLLERS
@@ -481,8 +490,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // PICK CELL
   // ---------------------------------------------------------------------------
 
-  static const double kPickColumnWidth = 185; // fits longest AFL names
-
+  
 Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
   final theme = Theme.of(context);
   final cs = theme.colorScheme;
@@ -568,6 +576,7 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
           width: kPickColumnWidth,
           alignment: Alignment.center,
           child: Container(
+            width: double.infinity,   // ⭐ FIX: full-width chip background
             padding: const EdgeInsets.symmetric(
               horizontal: 4,
               vertical: 2,
@@ -731,13 +740,19 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
   // ---------------------------------------------------------------------------
 
   void _saveSnapshot() {
-    if (_historyIndex < _history.length - 1) {
-      _history.removeRange(_historyIndex + 1, _history.length);
-    }
-
-    _history.add(_TableSnapshot.fromSelections(widget.selections));
-    _historyIndex = _history.length - 1;
+  if (_historyIndex < _history.length - 1) {
+    _history.removeRange(_historyIndex + 1, _history.length);
   }
+
+  final snap = _TableSnapshot.fromSelections(widget.selections);
+  _history.add(snap);
+  _historyIndex = _history.length - 1;
+
+  // ⭐ Only admins persist to backend
+  if (widget.userRoleService.isAdmin) {
+    _saveSnapshotToBackend(snap);
+  }
+}
 
   void _restoreSnapshot(int index) {
     if (index < 0 || index >= _history.length) return;
@@ -751,11 +766,12 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
     widget.onChanged?.call();
   }
 
-  void _applySnapshot(_TableSnapshot snap) {
+    void _applySnapshot(_TableSnapshot snap) {
     for (int i = 0; i < widget.selections.length; i++) {
       final row = widget.selections[i];
 
       row.punterName = snap.punterNames[i];
+      _controllers[row.punterNumber]?.text = row.punterName;
 
       for (int j = 0; j < row.picks.length; j++) {
         final pick = row.picks[j];
@@ -784,6 +800,70 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
               : Map<String, dynamic>.from(snapPick.stats!);
         }
       }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // ⭐ SAVE SNAPSHOT TO BACKEND (Admins only)
+  // ---------------------------------------------------------------------------
+  Future<void> _saveSnapshotToBackend(_TableSnapshot snap) async {
+    try {
+      final url = Uri.parse(
+        "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/saveSelections",
+      );
+
+      await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "punterNames": snap.punterNames,
+          "picks": snap.picks.map((row) {
+            return row.map((p) {
+              return {
+                "playerId": p.playerId,
+                "stats": p.stats,
+              };
+            }).toList();
+          }).toList(),
+        }),
+      );
+    } catch (e) {
+      debugPrint("❌ Failed to save selections: $e");
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // ⭐ LOAD SNAPSHOT FROM BACKEND (Admins + non-admins)
+  // ---------------------------------------------------------------------------
+  Future<void> _loadSnapshotFromBackend() async {
+    try {
+      final url = Uri.parse(
+        "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections",
+      );
+      final res = await http.get(url);
+
+      final json = jsonDecode(res.body);
+      if (json["data"] == null) return;
+
+      final snap = _TableSnapshot(
+        punterNames: List<String>.from(json["data"]["punterNames"]),
+        picks: (json["data"]["picks"] as List)
+            .map((row) => (row as List)
+                .map((p) => _PickSnapshot(
+                      playerId: p["playerId"],
+                      stats: p["stats"] == null
+                          ? null
+                          : Map<String, dynamic>.from(p["stats"]),
+                    ))
+                .toList())
+            .toList(),
+      );
+
+      setState(() {
+        _applySnapshot(snap);
+      });
+    } catch (e) {
+      debugPrint("❌ Failed to load selections: $e");
     }
   }
 }

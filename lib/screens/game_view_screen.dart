@@ -809,8 +809,16 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
           final seasonPlayers = snapshot.data!;
 
-          // ⭐ FIX: Use ALL round players, not fixture-scoped players
-          final availablePlayers = seasonPlayers;
+          // ⭐ FIX: Only players from the fixtures involved in this game
+final fixtures = _fixturesForGameType();
+
+final fixtureClubCodes = fixtures
+    .expand((f) => [f.homeTeam, f.awayTeam])
+    .toSet();
+
+final availablePlayers = seasonPlayers
+    .where((p) => fixtureClubCodes.contains(p.club))
+    .toList();
 
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -818,24 +826,18 @@ class _GameViewScreenState extends State<GameViewScreen> {
               SizedBox(
                 width: punterTableWidth,
                 child: PunterSelectionTable(
-                  tableWidth: punterTableWidth,
-                  visiblePunterCount: _visiblePunterCount,
-                  playersPerPunter: picks,
-                  availablePlayers: availablePlayers,
-                  selections: widget.selections,
-                  isCompleted: _isCompleted,
-                  readOnly:
-                      widget.userRoleService.isReadOnly || _isSubmitted,
-                  onChanged: widget.userRoleService.isAdmin
-                      ? () {
-                          _applyLiveStats(
-                            _currentStatsByPlayerId.values.toList(),
-                          );
-                        }
-                      : null,
-                  collapsed: _leaderboardCollapsed,
-                  scrollController: _punterScrollController,
-                ),
+  tableWidth: punterTableWidth,
+  visiblePunterCount: _visiblePunterCount,
+  playersPerPunter: picks,
+  availablePlayers: availablePlayers,
+  selections: widget.selections,
+  isCompleted: _isCompleted,
+  readOnly: widget.userRoleService.isReadOnly || _isSubmitted,
+  onChanged: widget.userRoleService.isAdmin ? () { ; } : null,
+  collapsed: _leaderboardCollapsed,
+  scrollController: _punterScrollController,
+  userRoleService: widget.userRoleService,
+),
               ),
               SizedBox(
                 width: leaderboardWidth,
