@@ -83,6 +83,7 @@ class PunterSelectionTable extends StatefulWidget {
   final bool readOnly;
   final bool collapsed;
   final ScrollController? scrollController;
+  final String gameType; // e.g. "saturday_pairs", "weekend_pairs"
 
   // ⭐ NEW: required for admin-only persistence
   final UserRoleService userRoleService;
@@ -96,6 +97,7 @@ class PunterSelectionTable extends StatefulWidget {
     required this.selections,
     required this.isCompleted,
     required this.readOnly,
+    required this.gameType,
     required this.userRoleService,   // ⭐ NEW
     this.onChanged,
     required this.collapsed,
@@ -113,8 +115,10 @@ class PunterSelectionTable extends StatefulWidget {
 class _PunterSelectionTableState extends State<PunterSelectionTable> {
   final Set<int> _punterListenerAdded = {};
 
+
   final Map<int, TextEditingController> _controllers = {};
   final Map<int, FocusNode> _punterFocusNodes = {};
+
 
   // ---------------------------------------------------------------------------
   // SCORE CELL

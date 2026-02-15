@@ -118,11 +118,10 @@ class _GameViewScreenState extends State<GameViewScreen> {
       widget.fixtureRepo,
     );
 
-    // If stats are empty, still populate players for both clubs
+    // ⭐ If stats are empty → skip (do NOT overwrite with zeros)
     if (stats.isEmpty) {
-  // ⭐ Do NOT overwrite real DFS stats with zeros
-  continue;
-}
+      continue;
+    }
 
     // Normal case: stats exist
     for (final s in stats) {
@@ -829,6 +828,7 @@ final availablePlayers = seasonPlayers
               SizedBox(
                 width: punterTableWidth,
                 child: PunterSelectionTable(
+  gameType: widget.gameType,                 // ⭐ REQUIRED FIX
   tableWidth: punterTableWidth,
   visiblePunterCount: _visiblePunterCount,
   playersPerPunter: picks,
