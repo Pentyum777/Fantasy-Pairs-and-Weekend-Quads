@@ -1,5 +1,6 @@
 import express from "express";
 import fs from "fs";
+import path from "path";
 import cors from "cors";
 
 import { scrapeDFS } from "./dfs_scraper.js";
@@ -44,24 +45,185 @@ app.get("/", (req, res) => {
 });
 
 // ------------------------------------------------------
-// ⭐ NEW: In-memory persistence for punter selections
+// In-memory per-game-type selections (live snapshot)
 // ------------------------------------------------------
-let savedSelections = null;
+let selectionsByGameType = {};
 
-// Save selections
+// Save selections for a specific game type (live state)
 app.post("/saveSelections", (req, res) => {
-  savedSelections = req.body;
-  console.log("💾 Selections saved:", JSON.stringify(savedSelections).slice(0, 200));
-  res.json({ ok: true });
+  const { gameType, punterNames, picks } = req.body;
+
+  if (!gameType) {
+    return res.status(400).json({ error: "gameType is required" });
+  }
+
+  selectionsByGameType[gameType] = {
+    lastUpdated: Date.now(),
+    data: {
+      punterNames,
+      picks,
+    },
+  };
+
+  console.log(`💾 Saved selections for ${gameType}`);
+  res.json({
+    ok: true,
+    lastUpdated: selectionsByGameType[gameType].lastUpdated,
+  });
 });
 
-// Load selections
+// Load selections for a specific game type (live state)
 app.get("/loadSelections", (req, res) => {
-  res.json({ ok: true, data: savedSelections });
+  const gameType = req.query.gameType;
+
+  if (!gameType) {
+    return res.status(400).json({ error: "gameType is required" });
+  }
+
+  const snapshot = selectionsByGameType[gameType];
+
+  if (!snapshot) {
+    return res.json({
+      ok: true,
+      lastUpdated: 0,
+      data: null,
+    });
+  }
+
+  res.json({
+    ok: true,
+    lastUpdated: snapshot.lastUpdated,
+    data: snapshot.data,
+  });
 });
 
 // ------------------------------------------------------
-// Simple in-memory cache (5-minute TTL)
+// Persistent season results (future-proof, skips 2025)
+// ------------------------------------------------------
+
+// Base folder for season results
+const SEASON_RESULTS_ROOT = path.join(process.cwd(), "season_results");
+
+// Ensure directory exists
+function ensureDir(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+}
+
+// Normalise gameType keys (frontend should already send canonical keys)
+function normalizeGameType(gameType) {
+  if (!gameType) return null;
+  return String(gameType).trim().toLowerCase();
+}
+
+// Save round results for a given season + gameType
+// This is called when a round is "completed" in your app.
+app.post("/saveRoundResults", (req, res) => {
+  try {
+    const {
+      season,
+      round,
+      gameType,
+      punters, // [{ name, total, picks: [{ playerId, score, ... }] }]
+    } = req.body;
+
+    if (season == null || round == null || !gameType) {
+      return res.status(400).json({
+        error: "season, round and gameType are required",
+      });
+    }
+
+    const numericSeason = Number(season);
+    const numericRound = Number(round);
+    const normalizedGameType = normalizeGameType(gameType);
+
+    if (!normalizedGameType) {
+      return res.status(400).json({ error: "Invalid gameType" });
+    }
+
+    // Skip 2025 test data; allow 2026 and beyond
+    if (numericSeason <= 2025) {
+      console.log(
+        `⚠️ Skipping persistent save for test season ${numericSeason}, gameType=${normalizedGameType}, round=${numericRound}`
+      );
+      return res.json({ ok: true, skipped: true });
+    }
+
+    const seasonDir = path.join(SEASON_RESULTS_ROOT, String(numericSeason));
+    const gameTypeDir = path.join(seasonDir, normalizedGameType);
+
+    ensureDir(gameTypeDir);
+
+    const fileName = `round_${numericRound}.json`;
+    const filePath = path.join(gameTypeDir, fileName);
+
+    const payload = {
+      season: numericSeason,
+      round: numericRound,
+      gameType: normalizedGameType,
+      timestamp: Date.now(),
+      punters: Array.isArray(punters) ? punters : [],
+    };
+
+    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf8");
+
+    console.log(
+      `📁 Saved season result: season=${numericSeason}, gameType=${normalizedGameType}, round=${numericRound}`
+    );
+
+    res.json({ ok: true, path: filePath });
+  } catch (err) {
+    console.error("💥 saveRoundResults error:", err);
+    res.status(500).json({ error: "Failed to save round results" });
+  }
+});
+
+// (Optional) Fetch all results for a season + gameType
+// You may not use this immediately, but it's ready for Season Review UI.
+app.get("/seasonResults", (req, res) => {
+  try {
+    const { season, gameType } = req.query;
+
+    if (!season || !gameType) {
+      return res.status(400).json({
+        error: "season and gameType are required",
+      });
+    }
+
+    const numericSeason = Number(season);
+    const normalizedGameType = normalizeGameType(gameType);
+
+    const gameTypeDir = path.join(
+      SEASON_RESULTS_ROOT,
+      String(numericSeason),
+      normalizedGameType
+    );
+
+    if (!fs.existsSync(gameTypeDir)) {
+      return res.json({ ok: true, results: [] });
+    }
+
+    const files = fs
+      .readdirSync(gameTypeDir)
+      .filter((f) => f.startsWith("round_") && f.endsWith(".json"))
+      .sort();
+
+    const results = files.map((file) => {
+      const fullPath = path.join(gameTypeDir, file);
+      const json = JSON.parse(fs.readFileSync(fullPath, "utf8"));
+      return json;
+    });
+
+    res.json({ ok: true, results });
+  } catch (err) {
+    console.error("💥 seasonResults error:", err);
+    res.status(500).json({ error: "Failed to load season results" });
+  }
+});
+
+// ------------------------------------------------------
+// Simple in-memory cache (5-minute TTL) for Squiggle meta
 // ------------------------------------------------------
 const metaCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -101,8 +263,8 @@ async function fetchSquiggleMeta(gameId) {
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-      }
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      },
     });
 
     clearTimeout(timeout);
@@ -149,7 +311,6 @@ async function fetchSquiggleMeta(gameId) {
 
     setCachedMeta(`squiggle:${gameId}`, meta);
     return meta;
-
   } catch (err) {
     console.error("Squiggle fetch failed:", err);
     const empty = {
@@ -211,7 +372,6 @@ app.get("/fantasy/:matchId", async (req, res) => {
       status: meta.status ?? "",
       players: dfsData.players,
     });
-
   } catch (err) {
     console.error("💥 Combined DFS + Squiggle error:", err);
     res.status(500).json({ error: String(err) });

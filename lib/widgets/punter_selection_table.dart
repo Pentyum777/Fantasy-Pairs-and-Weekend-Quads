@@ -821,6 +821,7 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
       url,
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
+        "gameType": widget.gameType,
         "punterNames": snap.punterNames,
         "picks": snap.picks.map((row) {
           return row.map((p) {
@@ -835,7 +836,6 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
 
     final json = jsonDecode(res.body);
 
-    // Update timestamp from backend
     if (json["lastUpdated"] != null) {
       _lastUpdated = json["lastUpdated"];
     }
@@ -844,14 +844,16 @@ Widget _pickCell(BuildContext context, PunterSelection row, PlayerPick pick) {
   }
 }
 
+
+
   // ---------------------------------------------------------------------------
   // ⭐ LOAD SNAPSHOT FROM BACKEND (Admins + non-admins)
   // ---------------------------------------------------------------------------
   Future<void> _loadSnapshotFromBackend() async {
   try {
     final url = Uri.parse(
-      "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections",
-    );
+  "https://your-backend/loadSelections?gameType=${widget.gameType}"
+);
 
     final res = await http.get(url);
     final json = jsonDecode(res.body);

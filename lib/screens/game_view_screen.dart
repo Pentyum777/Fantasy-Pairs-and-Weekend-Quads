@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import '../helpers/round_helper.dart';
 import '../repositories/fixture_repository.dart';
@@ -72,6 +74,43 @@ class _GameViewScreenState extends State<GameViewScreen> {
   final FridayPairsService _fridayPairsService = FridayPairsService();
   bool _fridayWinnerSelected = false;
 
+  // ------------------------------------------------------------
+  // ⭐ NEW: Save round results for season-long storage
+  // ------------------------------------------------------------
+  Future<void> _saveRoundResultsToBackend(List<PunterSelection> punters) async {
+    try {
+      final url = Uri.parse(
+        "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/saveRoundResults",
+      );
+
+      final body = jsonEncode({
+        "season": widget.season,
+        "round": widget.round,
+        "gameType": widget.gameType,
+        "punters": punters.map((p) {
+          return {
+            "name": p.punterName,
+            "total": p.totalScore,
+            "picks": p.picks.map((pick) {
+              return {
+                "playerId": pick.player?.id,
+                "score": pick.stats?["score"] ?? 0,
+              };
+            }).toList(),
+          };
+        }).toList(),
+      });
+
+      await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: body,
+      );
+    } catch (e) {
+      debugPrint("❌ Failed to save round results: $e");
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -86,57 +125,53 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   void _startLivePolling() {
-  _liveTimer?.cancel();
-  _liveTimer = Timer.periodic(
-    const Duration(seconds: 10),   // ⭐️ changed from 15 → 10
-    (_) async {
-      await _refreshLive();            // your existing live stats refresh
-      setState(() {});; // ⭐️ NEW: sync punter selections
-    },
-  );
-}
+    _liveTimer?.cancel();
+    _liveTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) async {
+        await _refreshLive();
+        setState(() {});
+      },
+    );
+  }
 
   // -------------------------------------------------------------
   // ROUND-WIDE STATS
   // -------------------------------------------------------------
   Future<Map<String, AflPlayerMatchStats>> _fetchRoundStats() async {
-  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-    widget.season,
-    widget.round,
-  );
-
-  final Map<String, AflPlayerMatchStats> roundStats = {};
-
-  for (final f in fixtures) {
-    final matchId = f.matchId?.trim();
-    if (matchId == null || matchId.isEmpty) continue;
-
-    // Fetch stats (may be empty)
-    final stats = await MatchStatsParser.fetchMatchStats(
-      matchId,
-      widget.playerRepo,
-      widget.fixtureRepo,
+    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+      widget.season,
+      widget.round,
     );
 
-    // ⭐ If stats are empty → skip (do NOT overwrite with zeros)
-    if (stats.isEmpty) {
-      continue;
-    }
+    final Map<String, AflPlayerMatchStats> roundStats = {};
 
-    // Normal case: stats exist
-    for (final s in stats) {
-      if (s.player != null) {
-        roundStats[s.player!.id] = s;
+    for (final f in fixtures) {
+      final matchId = f.matchId?.trim();
+      if (matchId == null || matchId.isEmpty) continue;
+
+      final stats = await MatchStatsParser.fetchMatchStats(
+        matchId,
+        widget.playerRepo,
+        widget.fixtureRepo,
+      );
+
+      if (stats.isEmpty) {
+        continue;
+      }
+
+      for (final s in stats) {
+        if (s.player != null) {
+          roundStats[s.player!.id] = s;
+        }
       }
     }
-  }
 
-  return roundStats;
-}
+    return roundStats;
+  }
 
   Future<void> _refreshLive() async {
   try {
-    // ⭐ Update fixture metadata (scores, quarter, clock, status)
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
       widget.season,
       widget.round,
@@ -151,111 +186,117 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     if (!mounted) return;
 
+    // ⭐ This will now save round results when complete
     _checkRoundCompletion();
 
-    // ⭐ Fetch stats for ALL matches in the round
     final roundStats = await _fetchRoundStats();
 
-    // ⭐ Apply round-wide stats to punter table + overlay
     _applyLiveStats(roundStats.values.toList());
 
+    // ⭐ This will now save Quads results when complete
     _checkAndCompleteWeekendQuadsRound();
+
   } catch (e, st) {
     debugPrint("❌ Live refresh error: $e\n$st");
   }
 }
 
   void _applyLiveStats(List<AflPlayerMatchStats> stats) {
-  // Build lookup map
-  _currentStatsByPlayerId = {
-    for (final s in stats)
-      if (s.player != null) s.player!.id: s
-  };
+    _currentStatsByPlayerId = {
+      for (final s in stats)
+        if (s.player != null) s.player!.id: s
+    };
 
-  // Apply stats to every punter selection + pick
-  for (final selection in widget.selections) {
-    for (final pick in selection.picks) {
-      final id = pick.player?.id;
+    for (final selection in widget.selections) {
+      for (final pick in selection.picks) {
+        final id = pick.player?.id;
 
-      if (id == null) {
-        pick.fantasyPoints = 0;
-        pick.stats = null;
-        continue;
+        if (id == null) {
+          pick.fantasyPoints = 0;
+          pick.stats = null;
+          continue;
+        }
+
+        final s = _currentStatsByPlayerId[id];
+
+        if (s == null) {
+          pick.fantasyPoints = 0;
+          pick.stats = null;
+          continue;
+        }
+
+        pick.fantasyPoints = s.fantasyPoints;
+        pick.stats = {
+          "AF": s.fantasyPoints,
+          "K": s.kicks,
+          "HB": s.handballs,
+          "D": s.disposals,
+          "M": s.marks,
+          "T": s.tackles,
+          "G": s.goals,
+          "B": s.behinds,
+        };
       }
 
-      final s = _currentStatsByPlayerId[id];
-
-      if (s == null) {
-        pick.fantasyPoints = 0;
-        pick.stats = null;
-        continue;
-      }
-
-      // ⭐ Update pick stats for punter table
-      pick.fantasyPoints = s.fantasyPoints;
-      pick.stats = {
-        "AF": s.fantasyPoints,
-        "K": s.kicks,
-        "HB": s.handballs,
-        "D": s.disposals,
-        "M": s.marks,
-        "T": s.tackles,
-        "G": s.goals,
-        "B": s.behinds,
-      };
+      selection.liveScore = widget.fantasyService.calculatePunterScore(
+        selection: selection,
+        liveStatsByPlayerId: _currentStatsByPlayerId,
+      );
     }
 
-    // ⭐ Update total score using round‑wide stats
-    selection.liveScore = widget.fantasyService.calculatePunterScore(
-      selection: selection,
-      liveStatsByPlayerId: _currentStatsByPlayerId,
-    );
+    setState(() {});
   }
 
-  setState(() {});
+  void _checkRoundCompletion() {
+  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+    widget.season,
+    widget.round,
+  );
+
+  if (fixtures.isEmpty) return;
+
+  final allComplete = fixtures.every((f) => f.complete);
+
+  if (allComplete) {
+    widget.roundCompletionService.markCompleted(widget.round);
+
+    // ⭐ NEW: Save season results for Pairs games
+    _saveRoundResultsToBackend(widget.selections);
+  }
 }
 
-    void _checkRoundCompletion() {
-    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-      widget.season,
-      widget.round,
-    );
-
-    if (fixtures.isEmpty) return;
-
-    if (fixtures.every((f) => f.complete)) {
-      widget.roundCompletionService.markCompleted(widget.round);
-    }
-  }
-
   void _checkAndCompleteWeekendQuadsRound() {
-    if (widget.gameType != "weekend_quads") return;
-    if (_isCompleted) return;
+  if (widget.gameType != "weekend_quads") return;
+  if (_isCompleted) return;
 
-    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-      widget.season,
-      widget.round,
-    );
+  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+    widget.season,
+    widget.round,
+  );
 
-    final allComplete =
-        fixtures.isNotEmpty && fixtures.every((f) => f.complete);
+  final allComplete =
+      fixtures.isNotEmpty && fixtures.every((f) => f.complete);
 
-    if (!allComplete) return;
+  if (!allComplete) return;
 
-    setState(() => _isCompleted = true);
+  setState(() => _isCompleted = true);
 
-    final firstFixture = fixtures.firstWhere(
-      (f) => f.date != null,
-      orElse: () => fixtures.first,
-    );
+  final firstFixture = fixtures.firstWhere(
+    (f) => f.date != null,
+    orElse: () => fixtures.first,
+  );
 
-    final month = firstFixture.date == null
-        ? "Unknown"
-        : _monthName(firstFixture.date!.month);
+  final month = firstFixture.date == null
+      ? "Unknown"
+      : _monthName(firstFixture.date!.month);
 
-    widget.championshipService.addRound(month, widget.selections);
-    debugPrint("🏆 Weekend Quads completed for $month");
-  }
+  widget.championshipService.addRound(month, widget.selections);
+
+  // ⭐ NEW: Save season results for Weekend Quads
+  _saveRoundResultsToBackend(widget.selections);
+
+  debugPrint("🏆 Weekend Quads completed for $month");
+}
 
   List<AflFixture> _fixturesForGameType() {
     final all = widget.round == null
@@ -498,7 +539,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
       ),
     );
   }
-    Widget _buildFixtureStrip(List<AflFixture> fixtures) {
+
+  Widget _buildFixtureStrip(List<AflFixture> fixtures) {
     if (fixtures.isEmpty) {
       return const SizedBox(
         height: 95,
@@ -523,165 +565,160 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Widget _buildFixtureCard(AflFixture f) {
-  final selected = f == _selectedFixture;
-  _handleFridayPairsTrigger(f);
+    final selected = f == _selectedFixture;
+    _handleFridayPairsTrigger(f);
 
-  final homeScore = f.homeScore;
-  final awayScore = f.awayScore;
-  final homeWinning = homeScore > awayScore;
-  final awayWinning = awayScore > homeScore;
+    final homeScore = f.homeScore;
+    final awayScore = f.awayScore;
+    final homeWinning = homeScore > awayScore;
+    final awayWinning = awayScore > homeScore;
 
-  final quarter = _quarterLabel(f);
-  final time = _timeLabel(f);
+    final quarter = _quarterLabel(f);
+    final time = _timeLabel(f);
 
-  // ⭐ Unified compact text styles
-  final scoreBaseStyle = TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w500,
-    color: Theme.of(context).colorScheme.onSurface,
-  );
+    final scoreBaseStyle = TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      color: Theme.of(context).colorScheme.onSurface,
+    );
 
-  final metaStyle = TextStyle(
-    fontSize: 11,
-    fontWeight: FontWeight.w500,
-    color: Colors.grey.shade700,
-    height: 1.1,
-  );
+    final metaStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w500,
+      color: Colors.grey.shade700,
+      height: 1.1,
+    );
 
-  return Material(
-    color: Colors.transparent,
-    child: InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => _onFixtureTap(f),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        width: 125,
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: selected
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
-              : Theme.of(context).colorScheme.surface,
-          border: Border.all(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _onFixtureTap(f),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 125,
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
             color: selected
-                ? Theme.of(context).colorScheme.primary
-                : Colors.grey.shade400,
-            width: selected ? 2 : 1,
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
+                : Theme.of(context).colorScheme.surface,
+            border: Border.all(
+              color: selected
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey.shade400,
+              width: selected ? 2 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // ⭐ Top row: home logo + score + away logo
-            Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    TeamLogo(f.homeTeam, size: 26),
-
-    Expanded(
-      child: Text.rich(
-        TextSpan(
-          style: scoreBaseStyle,
-          children: [
-            TextSpan(
-              text: "$homeScore",
-              style: TextStyle(
-                fontWeight: homeWinning ? FontWeight.w700 : FontWeight.w500,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TeamLogo(f.homeTeam, size: 26),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        style: scoreBaseStyle,
+                        children: [
+                          TextSpan(
+                            text: "$homeScore",
+                            style: TextStyle(
+                              fontWeight: homeWinning
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                          const TextSpan(text: "–"),
+                          TextSpan(
+                            text: "$awayScore",
+                            style: TextStyle(
+                              fontWeight: awayWinning
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
+                      softWrap: false,
+                    ),
+                  ),
+                  TeamLogo(f.awayTeam, size: 26),
+                ],
               ),
-            ),
-            const TextSpan(text: "–"), // tighter spacing
-            TextSpan(
-              text: "$awayScore",
-              style: TextStyle(
-                fontWeight: awayWinning ? FontWeight.w700 : FontWeight.w500,
+              Align(
+                alignment: Alignment.center,
+                child: Text(
+                  quarter.isEmpty ? time : "$quarter • $time",
+                  style: metaStyle,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
-        ),
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.visible,
-        softWrap: false,
-      ),
-    ),
-
-    TeamLogo(f.awayTeam, size: 26),
-  ],
-)
-
-            // ⭐ Quarter / Time
-            ,Align(
-              alignment: Alignment.center,
-              child: Text(
-                quarter.isEmpty ? time : "$quarter • $time",
-                style: metaStyle,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Future<void> _onFixtureTap(AflFixture f) async {
-  setState(() => _selectedFixture = f);
+    setState(() => _selectedFixture = f);
 
-  final matchId = f.matchId?.trim();
-  if (matchId == null || matchId.isEmpty) return;
+    final matchId = f.matchId?.trim();
+    if (matchId == null || matchId.isEmpty) return;
 
-  // ⭐ Always use round‑wide stats (already fetched by _refreshLive)
-  final stats = _currentStatsByPlayerId.values.toList();
+    final stats = _currentStatsByPlayerId.values.toList();
 
-  final homeTeam = f.homeTeam;
-  final awayTeam = f.awayTeam;
+    final homeTeam = f.homeTeam;
+    final awayTeam = f.awayTeam;
 
-  final rowsA = stats
-      .where((s) => s.player?.club == homeTeam)
-      .map(_mapStats)
-      .toList();
+    final rowsA = stats
+        .where((s) => s.player?.club == homeTeam)
+        .map(_mapStats)
+        .toList();
 
-  final rowsB = stats
-      .where((s) => s.player?.club == awayTeam)
-      .map(_mapStats)
-      .toList();
+    final rowsB = stats
+        .where((s) => s.player?.club == awayTeam)
+        .map(_mapStats)
+        .toList();
 
-  final noStats = rowsA.isEmpty && rowsB.isEmpty;
+    final noStats = rowsA.isEmpty && rowsB.isEmpty;
 
-  const columns = [
-    "Player",
-    "AF",
-    "K",
-    "HB",
-    "D",
-    "M",
-    "T",
-    "G",
-    "B",
-  ];
+    const columns = [
+      "Player",
+      "AF",
+      "K",
+      "HB",
+      "D",
+      "M",
+      "T",
+      "G",
+      "B",
+    ];
 
-  showDialog<void>(
-    context: context,
-    builder: (_) => StatsOverlay(
-      leftTitle: homeTeam,
-      rightTitle: awayTeam,
-      leftRows: noStats ? <Map<String, dynamic>>[] : rowsA,
-      rightRows: noStats ? <Map<String, dynamic>>[] : rowsB,
-      columns: noStats ? <String>[] : columns,
-      noStatsMessage: noStats ? "No stats available yet" : null,
-    ),
-  );
-}
-
-
+    showDialog<void>(
+      context: context,
+      builder: (_) => StatsOverlay(
+        leftTitle: homeTeam,
+        rightTitle: awayTeam,
+        leftRows: noStats ? <Map<String, dynamic>>[] : rowsA,
+        rightRows: noStats ? <Map<String, dynamic>>[] : rowsB,
+        columns: noStats ? <String>[] : columns,
+        noStatsMessage: noStats ? "No stats available yet" : null,
+      ),
+    );
+  }
 
   Widget _buildPunterControls() {
     final theme = Theme.of(context);
@@ -788,81 +825,81 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Widget _buildPunterAndLeaderboard() {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final innerWidth = constraints.maxWidth;
-      final picks = widget.gameType == "weekend_quads" ? 4 : 2;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final innerWidth = constraints.maxWidth;
+        final picks = widget.gameType == "weekend_quads" ? 4 : 2;
 
-      final leaderboardWidth = _leaderboardCollapsed
-          ? UIDimensions.collapsedLeaderboardWidth
-          : UIDimensions.rankColumnWidth +
-              UIDimensions.punterNameColumnWidth +
-              UIDimensions.totalColumnWidth;
+        final leaderboardWidth = _leaderboardCollapsed
+            ? UIDimensions.collapsedLeaderboardWidth
+            : UIDimensions.rankColumnWidth +
+                UIDimensions.punterNameColumnWidth +
+                UIDimensions.totalColumnWidth;
 
-      final double punterTableWidth =
-          _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
+        final double punterTableWidth =
+            _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
 
-      return FutureBuilder<List<AflPlayer>>(
-        future: widget.playerRepo.playersForSeason(widget.season),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        return FutureBuilder<List<AflPlayer>>(
+          future: widget.playerRepo.playersForSeason(widget.season),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final seasonPlayers = snapshot.data!;
+            final seasonPlayers = snapshot.data!;
 
-          // ⭐ FIX: Only players from the fixtures involved in this game
-final fixtures = _fixturesForGameType();
+            final fixtures = _fixturesForGameType();
 
-final fixtureClubCodes = fixtures
-    .expand((f) => [f.homeTeam, f.awayTeam])
-    .toSet();
+            final fixtureClubCodes = fixtures
+                .expand((f) => [f.homeTeam, f.awayTeam])
+                .toSet();
 
-final availablePlayers = seasonPlayers
-    .where((p) => fixtureClubCodes.contains(p.club))
-    .toList();
+            final availablePlayers = seasonPlayers
+                .where((p) => fixtureClubCodes.contains(p.club))
+                .toList();
 
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: punterTableWidth,
-                child: PunterSelectionTable(
-  gameType: widget.gameType,                 // ⭐ REQUIRED FIX
-  tableWidth: punterTableWidth,
-  visiblePunterCount: _visiblePunterCount,
-  playersPerPunter: picks,
-  availablePlayers: availablePlayers,
-  selections: widget.selections,
-  isCompleted: _isCompleted,
-  readOnly: widget.userRoleService.isReadOnly || _isSubmitted,
-  onChanged: widget.userRoleService.isAdmin ? () { ; } : null,
-  collapsed: _leaderboardCollapsed,
-  scrollController: _punterScrollController,
-  userRoleService: widget.userRoleService,
-),
-              ),
-              SizedBox(
-                width: leaderboardWidth,
-                child: LeaderboardPanel(
-                  punters: widget.selections
-                      .take(_visiblePunterCount)
-                      .toList(),
-                  rowHeight: 34,
-                  collapsed: _leaderboardCollapsed,
-                  scrollController: _punterScrollController,
-                  onCollapseChanged: (collapsed) {
-                    setState(() => _leaderboardCollapsed = collapsed);
-                  },
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: punterTableWidth,
+                  child: PunterSelectionTable(
+                    gameType: widget.gameType,
+                    tableWidth: punterTableWidth,
+                    visiblePunterCount: _visiblePunterCount,
+                    playersPerPunter: picks,
+                    availablePlayers: availablePlayers,
+                    selections: widget.selections,
+                    isCompleted: _isCompleted,
+                    readOnly:
+                        widget.userRoleService.isReadOnly || _isSubmitted,
+                    onChanged: widget.userRoleService.isAdmin ? () {} : null,
+                    collapsed: _leaderboardCollapsed,
+                    scrollController: _punterScrollController,
+                    userRoleService: widget.userRoleService,
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
+                SizedBox(
+                  width: leaderboardWidth,
+                  child: LeaderboardPanel(
+                    punters: widget.selections
+                        .take(_visiblePunterCount)
+                        .toList(),
+                    rowHeight: 34,
+                    collapsed: _leaderboardCollapsed,
+                    scrollController: _punterScrollController,
+                    onCollapseChanged: (collapsed) {
+                      setState(() => _leaderboardCollapsed = collapsed);
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   Widget _buildMainContent() {
     return Padding(
