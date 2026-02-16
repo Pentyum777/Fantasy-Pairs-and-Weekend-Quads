@@ -50,6 +50,8 @@ flutter:
     - assets/afl_fixtures_2025_round_24.xlsx
     - assets/data/
     - assets/images/stadium_glow.png
+    - assets/images/Football.Logo.png
+
 
 
 # ⭐ Critical fix for Flutter Web JSObject errors
