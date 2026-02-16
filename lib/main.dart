@@ -11,6 +11,7 @@ import 'services/user_role_service.dart';
 
 import 'screens/round_selection_screen.dart';
 import 'screens/game_type_selection_screen.dart';
+import 'screens/season_selection_screen.dart';
 
 import 'debug/afl_data_validator.dart';
 
@@ -54,16 +55,34 @@ class _MyAppState extends State<MyApp> {
     MsalService.listenForToken((token, account) {
       if (!mounted) return;
 
-      final email = account.username;
-      print("MSAL(Dart): Logged in as $email");
+      try {
+        final email = account.username;
+        print("MSAL(Dart): Logged in as $email");
 
-      // Set user role based on email
-      userRoleService.setUser(email);
+        // Safely assign user role
+        try {
+          userRoleService.setUser(email);
+        } catch (e, st) {
+          print("MSAL(Dart): ERROR in setUser($email) → $e");
+          print(st);
+        }
 
-      setState(() {
-        _token = token;
-        _fixtureLoadFuture = _loadAllFixtures();
-      });
+        // Update UI + start fixture loading
+        setState(() {
+          _token = token;
+
+          try {
+            _fixtureLoadFuture = _loadAllFixtures();
+          } catch (e, st) {
+            print("MSAL(Dart): ERROR starting _loadAllFixtures() → $e");
+            print(st);
+            _fixtureLoadFuture = Future.value(); // prevent crash
+          }
+        });
+      } catch (e, st) {
+        print("MSAL(Dart): ERROR in listenForToken callback → $e");
+        print(st);
+      }
     });
   }
 
@@ -83,30 +102,39 @@ class _MyAppState extends State<MyApp> {
             center: Alignment.topCenter,
             radius: 1.2,
             colors: [
-              Color(0xFFE8ECF7), // soft bluish-grey
-              Color(0xFFF7F9FC), // near-white
+              Color(0xFFE8ECF7),
+              Color(0xFFF7F9FC),
             ],
           ),
         ),
         child: _token == null
             ? LoginScreen(
                 onLoggedIn: () {
-                  setState(() {
-                    _token = "local-login";
-                    _fixtureLoadFuture = _loadAllFixtures();
-                  });
+                  if (!mounted) return;
 
-                  MsalService.startLogin(["User.Read"]);
+                  try {
+                    setState(() {
+                      _token = "local-login";
+
+                      try {
+                        _fixtureLoadFuture = _loadAllFixtures();
+                      } catch (e, st) {
+                        print("ERROR starting _loadAllFixtures() → $e");
+                        print(st);
+                        _fixtureLoadFuture = Future.value();
+                      }
+                    });
+                  } catch (e, st) {
+                    print("ERROR in onLoggedIn callback → $e");
+                    print(st);
+                  }
                 },
               )
             : FutureBuilder(
                 future: _fixtureLoadFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
-                    return const Scaffold(
-                      backgroundColor: Colors.transparent,
-                      body: Center(child: CircularProgressIndicator()),
-                    );
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   validateAflData(
@@ -127,7 +155,9 @@ class _MyAppState extends State<MyApp> {
                         rounds.add(null);
                       }
 
-                      rounds.addAll(fixtureRepo.allRoundsForSeason(season));
+                      rounds.addAll(
+                        fixtureRepo.allRoundsForSeason(season),
+                      );
 
                       Navigator.push(
                         context,
@@ -165,116 +195,6 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// ⭐ UPDATED SEASON SELECTION SCREEN (PRO TILE SYSTEM)
-// ---------------------------------------------------------------------------
-
-class SeasonSelectionScreen extends StatelessWidget {
-  final List<int> seasons;
-  final void Function(int season) onSelect;
-
-  const SeasonSelectionScreen({
-    super.key,
-    required this.seasons,
-    required this.onSelect,
-  });
-
-  bool isPortraitPhone(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    return size.height > size.width && size.width < 600;
-  }
-
-  Widget buildProTile({
-  required BuildContext context,
-  required String label,
-  required VoidCallback onTap,
-}) {
-  final bool mobile = isPortraitPhone(context);
-
-  return Material(
-    color: Colors.transparent,
-    child: InkWell(
-      borderRadius: BorderRadius.circular(mobile ? 14 : 20),
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: EdgeInsets.symmetric(
-          vertical: mobile ? 8 : 12,
-          horizontal: mobile ? 6 : 10,
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(mobile ? 14 : 20),
-
-          // ⭐ Correct alpha handling (non-deprecated, works everywhere)
-          color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
-
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha((255 * 0.18).round()),
-              blurRadius: mobile ? 4 : 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-          border: Border.all(
-            color: Colors.grey.shade300.withAlpha((255 * 0.6).round()),
-            width: mobile ? 1.1 : 1.4,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: mobile ? 12 : 16,
-              color: Colors.grey.shade100,
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-@override
-Widget build(BuildContext context) {
-  final bool mobile = isPortraitPhone(context);
-
-  return Scaffold(
-    backgroundColor: Colors.transparent,
-    appBar: AppBar(
-      title: const Text("Select Season"),
-      centerTitle: true,
-      backgroundColor: Colors.blue.shade700,
-    ),
-    body: Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: mobile ? 3 : 5,
-            mainAxisSpacing: mobile ? 10 : 12,
-            crossAxisSpacing: mobile ? 10 : 12,
-            childAspectRatio: mobile ? 2.4 : 4.2,
-          ),
-          itemCount: seasons.length,
-          itemBuilder: (context, index) {
-            final season = seasons[index];
-
-            return buildProTile(
-              context: context,
-              label: "$season",
-              onTap: () => onSelect(season),
-            );
-          },
-        ),
-      ),
-    ),
-  );
-}
 }
 
 // ---------------------------------------------------------------------------
@@ -325,12 +245,12 @@ class _LoginScreenState extends State<LoginScreen> {
             color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
             borderRadius: BorderRadius.circular(mobile ? 16 : 22),
             border: Border.all(
-              color: Colors.grey.shade300.withAlpha(153), // 0.6 * 255 ≈ 153
+              color: Colors.grey.shade300.withAlpha(153),
               width: mobile ? 1.1 : 1.4,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(46), // 0.18 * 255 ≈ 46
+                color: Colors.black.withAlpha(46),
                 blurRadius: mobile ? 6 : 12,
                 offset: const Offset(0, 4),
               ),

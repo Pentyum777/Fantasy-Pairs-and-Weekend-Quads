@@ -27,16 +27,21 @@ class MsalService {
 
     // JS → Dart callback
     js.context['onMsalToken'] = (token, accountObj) {
-      print("MSAL(Dart): Token received from JS → $token");
+  try {
+    print("MSAL(Dart): Token received from JS → $token");
 
-      if (token is! String) {
-        print("MSAL(Dart): ERROR — token was not a string: $token");
-        return;
-      }
+    if (token is! String) {
+      print("MSAL(Dart): ERROR — token was not a string: $token");
+      return;
+    }
 
-      final account = MsalAccount.fromJsObject(accountObj);
-      onTokenReceived(token, account);
-    };
+    final account = MsalAccount.fromJsObject(accountObj);
+    onTokenReceived(token, account);
+  } catch (e, st) {
+    print("MSAL(Dart): ERROR inside onMsalToken → $e");
+    print(st);
+  }
+};
 
     // Check for pending token (page reload scenario)
     final pendingToken = js.context['__pendingMsalToken'];
