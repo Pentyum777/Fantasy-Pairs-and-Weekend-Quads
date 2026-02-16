@@ -49,6 +49,8 @@ flutter:
     - assets/afl_players_2026.xlsx
     - assets/afl_fixtures_2025_round_24.xlsx
     - assets/data/
+    - assets/images/stadium_glow.png
+
 
 # ⭐ Critical fix for Flutter Web JSObject errors
 dependency_overrides:
