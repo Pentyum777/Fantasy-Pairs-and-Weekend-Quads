@@ -110,10 +110,29 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   // Responsive column widths (instance-level so they can use MediaQuery)
-  double get kPickColumnWidth => isLandscapePhone ? 140 : 185;
-  double get kPickScoreColumnWidth => isLandscapePhone ? 34 : 40;
-  double get kPunterColumnWidth => isLandscapePhone ? 70 : 90;
-  double get kTotalColumnWidth => isLandscapePhone ? 50 : 60;
+  double get kPunterColumnWidth {
+  if (isPortraitPhone) return 60;
+  if (isLandscapePhone) return 70;
+  return 90;
+}
+
+double get kPickColumnWidth {
+  if (isPortraitPhone) return 120;
+  if (isLandscapePhone) return 140;
+  return 185;
+}
+
+double get kPickScoreColumnWidth {
+  if (isPortraitPhone) return 30;
+  if (isLandscapePhone) return 34;
+  return 40;
+}
+
+double get kTotalColumnWidth {
+  if (isPortraitPhone) return 45;
+  if (isLandscapePhone) return 50;
+  return 60;
+}
 
   final Map<int, TextEditingController> _controllers = {};
   final Map<int, FocusNode> _punterFocusNodes = {};
@@ -203,6 +222,11 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     return width < 700;
   }
 
+  bool get isPortraitPhone {
+  final size = MediaQuery.of(context).size;
+  return size.height > size.width && size.width < 600;
+}
+
   List<String> _pickLabels() =>
       List.generate(_roundCount, (i) => 'P${i + 1}');
 
@@ -219,7 +243,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       _cleanInvalidSelectionsGlobal();
     }
 
-    final double fontSize = isLandscapePhone ? 11 : 12;
+    final double fontSize = isPortraitPhone ? 10 : (isLandscapePhone ? 11 : 12);
 
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -232,7 +256,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     final tableWidth = widget.tableWidth;
 
     final bool isMobile = MediaQuery.of(context).size.width < 700;
-    final bool allowHorizontalScroll = isMobile || !widget.collapsed;
+    final bool allowHorizontalScroll =
+    isPortraitPhone || isMobile || !widget.collapsed;
 
     return Column(
       children: [
@@ -293,7 +318,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     double fontSize,
   ) {
     return SizedBox(
-      height: UIDimensions.headerHeight,
+      height: isPortraitPhone ? 34 : UIDimensions.headerHeight,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -358,7 +383,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                     : cs.surface;
 
             return Container(
-              height: isLandscapePhone ? 34 : UIDimensions.rowHeight,
+              height: isPortraitPhone ? 32 : (isLandscapePhone ? 34 : UIDimensions.rowHeight),
               decoration: BoxDecoration(
                 color: bg,
                 border: Border(
