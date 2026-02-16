@@ -66,6 +66,11 @@ class _GameViewScreenState extends State<GameViewScreen> {
   bool _isSubmitted = false;
   bool _leaderboardCollapsed = false;
 
+bool get isLandscapePhone {
+  final size = MediaQuery.of(context).size;
+  return size.width > size.height && size.width < 900;
+}
+
   AflFixture? _selectedFixture;
   Timer? _liveTimer;
   final ScrollController _punterScrollController = ScrollController();
@@ -520,16 +525,17 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 44,
-        titleSpacing: 0,
-        title: Text(
-          _appBarTitle(),
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+  toolbarHeight: isLandscapePhone ? 36 : 44,
+  titleSpacing: 0,
+  title: Text(
+    _appBarTitle(),
+    style: TextStyle(
+      fontSize: isLandscapePhone ? 13 : 15,
+      fontWeight: FontWeight.w600,
+    ),
+  ),
+),
+
       body: Column(
         children: [
           _buildFixtureStrip(fixtures),
@@ -565,49 +571,50 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Widget _buildFixtureCard(AflFixture f) {
-    final selected = f == _selectedFixture;
-    _handleFridayPairsTrigger(f);
+  final selected = f == _selectedFixture;
+  _handleFridayPairsTrigger(f);
 
-    final homeScore = f.homeScore;
-    final awayScore = f.awayScore;
-    final homeWinning = homeScore > awayScore;
-    final awayWinning = awayScore > homeScore;
+  final homeScore = f.homeScore;
+  final awayScore = f.awayScore;
+  final homeWinning = homeScore > awayScore;
+  final awayWinning = awayScore > homeScore;
 
-    final quarter = _quarterLabel(f);
-    final time = _timeLabel(f);
+  final quarter = _quarterLabel(f);
+  final time = _timeLabel(f);
 
-    final scoreBaseStyle = TextStyle(
-      fontSize: 13,
-      fontWeight: FontWeight.w500,
-      color: Theme.of(context).colorScheme.onSurface,
-    );
+  final scoreBaseStyle = TextStyle(
+    fontSize: isLandscapePhone ? 12 : 13,
+    fontWeight: FontWeight.w500,
+    color: Theme.of(context).colorScheme.onSurface,
+  );
 
-    final metaStyle = TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w500,
-      color: Colors.grey.shade700,
-      height: 1.1,
-    );
+  final metaStyle = TextStyle(
+    fontSize: isLandscapePhone ? 10 : 11,
+    fontWeight: FontWeight.w500,
+    color: Colors.grey.shade700,
+    height: 1.1,
+  );
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _onFixtureTap(f),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          width: 125,
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _onFixtureTap(f),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: isLandscapePhone ? 100 : 125,
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: selected
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
+              : Theme.of(context).colorScheme.surface,
+          border: Border.all(
             color: selected
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
-                : Theme.of(context).colorScheme.surface,
-            border: Border.all(
-              color: selected
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey.shade400,
-              width: selected ? 2 : 1,
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey.shade400,
+            width: selected ? 
+2 : 1,
             ),
             boxShadow: [
               BoxShadow(
@@ -623,7 +630,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TeamLogo(f.homeTeam, size: 26),
+                  TeamLogo(f.homeTeam, size: isLandscapePhone ? 22 : 26),
+
                   Expanded(
                     child: Text.rich(
                       TextSpan(
@@ -654,7 +662,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
                       softWrap: false,
                     ),
                   ),
-                  TeamLogo(f.awayTeam, size: 26),
+                  TeamLogo(f.awayTeam, size: isLandscapePhone ? 22 : 26),
+
                 ],
               ),
               Align(
@@ -724,8 +733,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+      padding: EdgeInsets.symmetric(vertical: isLandscapePhone ? 2 : 4),
+child: Row(
         children: [
           Text("Punters Playing", style: theme.textTheme.bodyMedium),
           const SizedBox(width: 6),
@@ -825,62 +834,66 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Widget _buildPunterAndLeaderboard() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final innerWidth = constraints.maxWidth;
-        final picks = widget.gameType == "weekend_quads" ? 4 : 2;
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final innerWidth = constraints.maxWidth;
+      final picks = widget.gameType == "weekend_quads" ? 4 : 2;
 
-        final leaderboardWidth = _leaderboardCollapsed
-            ? UIDimensions.collapsedLeaderboardWidth
-            : UIDimensions.rankColumnWidth +
-                UIDimensions.punterNameColumnWidth +
-                UIDimensions.totalColumnWidth;
+      final leaderboardWidth = _leaderboardCollapsed
+          ? UIDimensions.collapsedLeaderboardWidth
+          : UIDimensions.rankColumnWidth +
+              UIDimensions.punterNameColumnWidth +
+              UIDimensions.totalColumnWidth;
 
-        final double punterTableWidth =
-            _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
+      final double punterTableWidth =
+          _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
 
-        return FutureBuilder<List<AflPlayer>>(
-          future: widget.playerRepo.playersForSeason(widget.season),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
+      return FutureBuilder<List<AflPlayer>>(
+        future: widget.playerRepo.playersForSeason(widget.season),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            final seasonPlayers = snapshot.data!;
+          final seasonPlayers = snapshot.data!;
+          final fixtures = _fixturesForGameType();
 
-            final fixtures = _fixturesForGameType();
+          final fixtureClubCodes = fixtures
+              .expand((f) => [f.homeTeam, f.awayTeam])
+              .toSet();
 
-            final fixtureClubCodes = fixtures
-                .expand((f) => [f.homeTeam, f.awayTeam])
-                .toSet();
+          final availablePlayers = seasonPlayers
+              .where((p) => fixtureClubCodes.contains(p.club))
+              .toList();
 
-            final availablePlayers = seasonPlayers
-                .where((p) => fixtureClubCodes.contains(p.club))
-                .toList();
-
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // ⭐ Landscape phone overlay mode
+          if (isLandscapePhone) {
+            return Stack(
               children: [
                 SizedBox(
-                  width: punterTableWidth,
+                  width: innerWidth,
                   child: PunterSelectionTable(
                     gameType: widget.gameType,
-                    tableWidth: punterTableWidth,
+                    tableWidth: innerWidth,
                     visiblePunterCount: _visiblePunterCount,
                     playersPerPunter: picks,
                     availablePlayers: availablePlayers,
                     selections: widget.selections,
                     isCompleted: _isCompleted,
-                    readOnly:
-                        widget.userRoleService.isReadOnly || _isSubmitted,
+                    readOnly: widget.userRoleService.isReadOnly || _isSubmitted,
                     onChanged: widget.userRoleService.isAdmin ? () {} : null,
                     collapsed: _leaderboardCollapsed,
                     scrollController: _punterScrollController,
                     userRoleService: widget.userRoleService,
                   ),
                 ),
-                SizedBox(
-                  width: leaderboardWidth,
+
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 200),
+                  right: _leaderboardCollapsed ? -260 : 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 260,
                   child: LeaderboardPanel(
                     punters: widget.selections
                         .take(_visiblePunterCount)
@@ -895,88 +908,129 @@ class _GameViewScreenState extends State<GameViewScreen> {
                 ),
               ],
             );
-          },
-        );
-      },
-    );
-  }
+          }
 
-  Widget _buildMainContent() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildPunterControls(),
-          const SizedBox(height: 6),
-          Expanded(child: _buildPunterAndLeaderboard()),
-        ],
-      ),
-    );
-  }
+          // ⭐ Desktop / iPad layout
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: punterTableWidth,
+                child: PunterSelectionTable(
+                  gameType: widget.gameType,
+                  tableWidth: punterTableWidth,
+                  visiblePunterCount: _visiblePunterCount,
+                  playersPerPunter: picks,
+                  availablePlayers: availablePlayers,
+                  selections: widget.selections,
+                  isCompleted: _isCompleted,
+                  readOnly:
+                      widget.userRoleService.isReadOnly || _isSubmitted,
+                  onChanged: widget.userRoleService.isAdmin ? () {} : null,
+                  collapsed: _leaderboardCollapsed,
+                  scrollController: _punterScrollController,
+                  userRoleService: widget.userRoleService,
+                ),
+              ),
+              SizedBox(
+                width: leaderboardWidth,
+                child: LeaderboardPanel(
+                  punters: widget.selections
+                      .take(_visiblePunterCount)
+                      .toList(),
+                  rowHeight: 34,
+                  collapsed: _leaderboardCollapsed,
+                  scrollController: _punterScrollController,
+                  onCollapseChanged: (collapsed) {
+                    setState(() => _leaderboardCollapsed = collapsed);
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
 
-  void _handleFridayPairsTrigger(AflFixture fixture) {
-    if (widget.gameType != "friday_pairs") return;
-    if (_fridayWinnerSelected) return;
+Widget _buildMainContent() {
+  return Padding(
+    padding: const EdgeInsets.all(12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildPunterControls(),
+        const SizedBox(height: 6),
+        Expanded(child: _buildPunterAndLeaderboard()),
+      ],
+    ),
+  );
+}
 
-    final isLive = !fixture.complete && fixture.time.isNotEmpty;
+void _handleFridayPairsTrigger(AflFixture fixture) {
+  if (widget.gameType != "friday_pairs") return;
+  if (_fridayWinnerSelected) return;
 
-    if (isLive) {
-      final winner =
-          _fridayPairsService.selectRandomBottomHalf(widget.selections);
+  final isLive = !fixture.complete && fixture.time.isNotEmpty;
 
-      setState(() {
-        for (final s in widget.selections) {
-          s.isPrizeWinner = (s.punterName == winner.punterName);
-        }
-        _fridayWinnerSelected = true;
-      });
-    }
-  }
+  if (isLive) {
+    final winner =
+        _fridayPairsService.selectRandomBottomHalf(widget.selections);
 
-  void validateAflData(
-    List<AflFixture> fixtures,
-    PlayerRepository repo,
-  ) {
-    final fixtureClubs = fixtures
-        .expand((f) => [
-              f.homeTeam.trim().toUpperCase(),
-              f.awayTeam.trim().toUpperCase(),
-            ])
-        .toSet();
-
-    final playerClubs = repo.players
-        .map((p) => p.club.trim().toUpperCase())
-        .toSet();
-
-    final missingInPlayers = fixtureClubs.difference(playerClubs);
-    final missingInFixtures = playerClubs.difference(fixtureClubs);
-
-    debugPrint("=== AFL DATA VALIDATION ===");
-
-    if (missingInPlayers.isNotEmpty) {
-      debugPrint("❌ Clubs in FIXTURES but NOT in PLAYERS:");
-      debugPrint(missingInPlayers.toString());
-    }
-
-    if (missingInFixtures.isNotEmpty) {
-      debugPrint("❌ Clubs in PLAYERS but NOT in FIXTURES:");
-      debugPrint(missingInFixtures.toString());
-    }
-
-    if (missingInPlayers.isEmpty && missingInFixtures.isEmpty) {
-      debugPrint("✔ All clubs aligned between fixtures and players");
-    }
-
-    final emptyClubs =
-        repo.players.where((p) => p.club.trim().isEmpty).toList();
-    if (emptyClubs.isNotEmpty) {
-      debugPrint("❌ Players with empty club codes:");
-      for (final p in emptyClubs) {
-        debugPrint(" - ${p.name}");
+    setState(() {
+      for (final s in widget.selections) {
+        s.isPrizeWinner = (s.punterName == winner.punterName);
       }
-    }
-
-    debugPrint("=== END AFL VALIDATION ===");
+      _fridayWinnerSelected = true;
+    });
   }
+}
+
+void validateAflData(
+  List<AflFixture> fixtures,
+  PlayerRepository repo,
+) {
+  final fixtureClubs = fixtures
+      .expand((f) => [
+            f.homeTeam.trim().toUpperCase(),
+            f.awayTeam.trim().toUpperCase(),
+          ])
+      .toSet();
+
+  final playerClubs = repo.players
+      .map((p) => p.club.trim().toUpperCase())
+      .toSet();
+
+  final missingInPlayers = fixtureClubs.difference(playerClubs);
+  final missingInFixtures = playerClubs.difference(fixtureClubs);
+
+  debugPrint("=== AFL DATA VALIDATION ===");
+
+  if (missingInPlayers.isNotEmpty) {
+    debugPrint("❌ Clubs in FIXTURES but NOT in PLAYERS:");
+    debugPrint(missingInPlayers.toString());
+  }
+
+  if (missingInFixtures.isNotEmpty) {
+    debugPrint("❌ Clubs in PLAYERS but NOT in FIXTURES:");
+    debugPrint(missingInFixtures.toString());
+  }
+
+  if (missingInPlayers.isEmpty && missingInFixtures.isEmpty) {
+    debugPrint("✔ All clubs aligned between fixtures and players");
+  }
+
+  final emptyClubs =
+      repo.players.where((p) => p.club.trim().isEmpty).toList();
+  if (emptyClubs.isNotEmpty) {
+    debugPrint("❌ Players with empty club codes:");
+    for (final p in emptyClubs) {
+      debugPrint(" - ${p.name}");
+    }
+  }
+
+  debugPrint("=== END AFL VALIDATION ===");
+}
+
 }
