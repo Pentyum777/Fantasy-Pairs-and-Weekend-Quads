@@ -213,6 +213,9 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
 
+  bool _hovering = false;
+
+
   void _login() {
     setState(() => _loading = true);
     widget.onLoggedIn();
@@ -224,64 +227,78 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final bool mobile = isPortraitPhone(context);
+  @override
+Widget build(BuildContext context) {
+  final bool mobile = isPortraitPhone(context);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text("AFL Login"),
-        centerTitle: true,
-        backgroundColor: Colors.blue.shade700,
-      ),
-      body: Center(
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: mobile ? 24 : 40,
-            vertical: mobile ? 28 : 40,
+  return Scaffold(
+    backgroundColor: Colors.transparent,
+    appBar: AppBar(
+      title: const Text("AFL Login"),
+      centerTitle: true,
+      backgroundColor: Colors.blue.shade700,
+    ),
+    body: Center(
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: mobile ? 24 : 40,
+          vertical: mobile ? 28 : 40,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
+          borderRadius: BorderRadius.circular(mobile ? 16 : 22),
+          border: Border.all(
+            color: Colors.grey.shade300.withAlpha(153),
+            width: mobile ? 1.1 : 1.4,
           ),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
-            borderRadius: BorderRadius.circular(mobile ? 16 : 22),
-            border: Border.all(
-              color: Colors.grey.shade300.withAlpha(153),
-              width: mobile ? 1.1 : 1.4,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(46),
+              blurRadius: mobile ? 6 : 12,
+              offset: const Offset(0, 4),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(46),
-                blurRadius: mobile ? 6 : 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: _loading
-              ? const CircularProgressIndicator()
-              : ElevatedButton.icon(
-                  icon: const Icon(Icons.login, size: 20),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: mobile ? 20 : 32,
-                      vertical: mobile ? 12 : 16,
+          ],
+        ),
+
+        // ⭐ FOOTBALL LOGIN BUTTON WITH HOVER GLOW
+        child: _loading
+            ? const CircularProgressIndicator()
+            : MouseRegion(
+                onEnter: (_) => setState(() => _hovering = true),
+                onExit: (_) => setState(() => _hovering = false),
+                child: GestureDetector(
+                  onTap: _login,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: EdgeInsets.all(mobile ? 12 : 20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(mobile ? 16 : 22),
+                      boxShadow: _hovering
+                          ? [
+                              BoxShadow(
+                                color: Colors.blueAccent.withValues(alpha: 255 * 0.55),
+                                blurRadius: 25,
+                                spreadRadius: 4,
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(46),
+                                blurRadius: mobile ? 6 : 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                     ),
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(mobile ? 12 : 16),
-                    ),
-                  ),
-                  onPressed: _login,
-                  label: Text(
-                    "Login with Microsoft",
-                    style: TextStyle(
-                      fontSize: mobile ? 14 : 18,
-                      fontWeight: FontWeight.w700,
+                    child: Image.asset(
+                      "assets/images/FootballLogo.png",
+                      height: mobile ? 100 : 150,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
-        ),
+              ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
