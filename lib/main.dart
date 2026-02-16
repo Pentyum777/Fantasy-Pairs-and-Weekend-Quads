@@ -13,6 +13,7 @@ import 'screens/round_selection_screen.dart';
 import 'screens/game_type_selection_screen.dart';
 import 'screens/season_selection_screen.dart';
 
+
 import 'debug/afl_data_validator.dart';
 
 void main() {
@@ -29,6 +30,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String? _token;
+
+  
 
   int selectedSeason = 2026;
 
@@ -219,85 +222,77 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final bool mobile = isPortraitPhone(context);
+Widget build(BuildContext context) {
+  final bool mobile = isPortraitPhone(context);
 
-    return Container(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage("assets/images/stadium_glow.png"),
-          fit: BoxFit.cover,
+  return Scaffold(
+    backgroundColor: Colors.transparent,
+    appBar: AppBar(
+      title: const Text(""),
+      centerTitle: true,
+      backgroundColor: Colors.blue.shade700,
+    ),
+    body: Center(
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: mobile ? 24 : 40,
+          vertical: mobile ? 28 : 40,
         ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text(""),
-          centerTitle: true,
-          backgroundColor: Colors.blue.shade700,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
+          borderRadius: BorderRadius.circular(mobile ? 16 : 22),
+          border: Border.all(
+            color: Colors.grey.shade300.withAlpha(153),
+            width: mobile ? 1.1 : 1.4,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(46),
+              blurRadius: mobile ? 6 : 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        body: Center(
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: mobile ? 24 : 40,
-              vertical: mobile ? 28 : 40,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
-              borderRadius: BorderRadius.circular(mobile ? 16 : 22),
-              border: Border.all(
-                color: Colors.grey.shade300.withAlpha(153),
-                width: mobile ? 1.1 : 1.4,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(46),
-                  blurRadius: mobile ? 6 : 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: _loading
-                ? const CircularProgressIndicator()
-                : MouseRegion(
-                    onEnter: (_) => setState(() => _hovering = true),
-                    onExit: (_) => setState(() => _hovering = false),
-                    child: GestureDetector(
-                      onTap: _login,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: EdgeInsets.all(mobile ? 12 : 20),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(mobile ? 16 : 22),
-                          boxShadow: _hovering
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.blueAccent.withValues(
-                                      alpha: 255 * 0.55,
-                                    ),
-                                    blurRadius: 25,
-                                    spreadRadius: 4,
-                                  ),
-                                ]
-                              : [
-                                  BoxShadow(
-                                    color: Colors.black.withAlpha(46),
-                                    blurRadius: mobile ? 6 : 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                        ),
-                        child: Image.asset(
-                          "assets/images/Football.Logo.png",
-                          height: mobile ? 100 : 150,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
+        child: _loading
+            ? const CircularProgressIndicator()
+            : MouseRegion(
+                onEnter: (_) => setState(() => _hovering = true),
+                onExit: (_) => setState(() => _hovering = false),
+                child: GestureDetector(
+                  onTap: _login,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: EdgeInsets.all(mobile ? 12 : 20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(mobile ? 16 : 22),
+                      boxShadow: _hovering
+                          ? [
+                              BoxShadow(
+                                color: Colors.blueAccent.withValues(
+                                  alpha: 255 * 0.55,
+                                ),
+                                blurRadius: 25,
+                                spreadRadius: 4,
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(46),
+                                blurRadius: mobile ? 6 : 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                    ),
+                    child: Image.asset(
+                      "assets/images/Football.Logo.png",
+                      height: mobile ? 100 : 150,
+                      fit: BoxFit.contain,
                     ),
                   ),
-          ),
-        ),
+                ),
+              ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

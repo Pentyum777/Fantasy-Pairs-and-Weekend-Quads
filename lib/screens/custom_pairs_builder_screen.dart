@@ -14,6 +14,7 @@ import '../services/round_completion_service.dart';
 import '../services/user_role_service.dart';
 
 import '../widgets/team_logo.dart';
+import '../widgets/background_container.dart';   // ⭐ REQUIRED
 import 'game_view_screen.dart';
 
 class CustomPairsBuilderScreen extends StatefulWidget {
@@ -58,132 +59,132 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
 
     final roundLabel = RoundHelper.label(widget.round);
 
-    return Scaffold(
-  backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text("Custom Pairs Builder"),
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Text(
-                  "Select fixtures for $roundLabel",
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
+    return BackgroundContainer(                     // ⭐ WRAP THE SCREEN
+      child: Scaffold(
+        backgroundColor: Colors.transparent,        // ⭐ KEEP TRANSPARENT
+        appBar: AppBar(
+          title: const Text("Custom Pairs Builder"),
+        ),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    "Select fixtures for $roundLabel",
+                    style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
 
-                // FIXTURE LIST
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: fixtures.length,
-                    itemBuilder: (context, index) {
-                      final f = fixtures[index];
-                      final fixtureId = f.matchId ?? index.toString();
-                      final selected = _selectedFixtureIds.contains(fixtureId);
-                      final label = _buildFixtureLabel(index, f.date);
+                  // FIXTURE LIST
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: fixtures.length,
+                      itemBuilder: (context, index) {
+                        final f = fixtures[index];
+                        final fixtureId = f.matchId ?? index.toString();
+                        final selected = _selectedFixtureIds.contains(fixtureId);
+                        final label = _buildFixtureLabel(index, f.date);
 
-                      return Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(18),
-                          onTap: widget.userRoleService.isAdmin
-                              ? () {
-                                  setState(() {
-                                    selected
-                                        ? _selectedFixtureIds.remove(fixtureId)
-                                        : _selectedFixtureIds.add(fixtureId);
-                                  });
-                                }
-                              : null,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(18),
-
-                              // ⭐ Correct alpha handling
-                              color: selected
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withAlpha(20) // 0.08 opacity
-                                  : Theme.of(context).colorScheme.surface,
-
-                              border: Border.all(
-                                color: selected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Colors.grey.shade400,
-                                width: selected ? 2 : 1,
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: widget.userRoleService.isAdmin
+                                ? () {
+                                    setState(() {
+                                      selected
+                                          ? _selectedFixtureIds.remove(fixtureId)
+                                          : _selectedFixtureIds.add(fixtureId);
+                                    });
+                                  }
+                                : null,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 14,
                               ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(18),
 
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withAlpha(13), // 0.05 opacity
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
+                                color: selected
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withAlpha(20)
+                                    : Theme.of(context).colorScheme.surface,
+
+                                border: Border.all(
+                                  color: selected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.grey.shade400,
+                                  width: selected ? 2 : 1,
                                 ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                TeamLogo(f.homeTeam, size: 34),
-                                const SizedBox(width: 12),
 
-                                // LABEL
-                                Expanded(
-                                  child: Text(
-                                    label,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withAlpha(13),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  TeamLogo(f.homeTeam, size: 34),
+                                  const SizedBox(width: 12),
+
+                                  Expanded(
+                                    child: Text(
+                                      label,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                      ),
                                     ),
                                   ),
-                                ),
 
-                                const SizedBox(width: 12),
-                                TeamLogo(f.awayTeam, size: 34),
-                              ],
+                                  const SizedBox(width: 12),
+                                  TeamLogo(f.awayTeam, size: 34),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // START BUTTON
-                ElevatedButton(
-                  onPressed: widget.userRoleService.isAdmin &&
-                          _selectedFixtureIds.isNotEmpty
-                      ? () => _startCustomPairs(context, fixtures)
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 24,
+                        );
+                      },
                     ),
                   ),
-                  child: const Text(
-                    "Start Custom Pairs",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+
+                  const SizedBox(height: 16),
+
+                  ElevatedButton(
+                    onPressed: widget.userRoleService.isAdmin &&
+                            _selectedFixtureIds.isNotEmpty
+                        ? () => _startCustomPairs(context, fixtures)
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 24,
+                      ),
+                    ),
+                    child: const Text(
+                      "Start Custom Pairs",
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

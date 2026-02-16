@@ -21,6 +21,7 @@ import '../widgets/punter_selection_table.dart';
 import '../widgets/stats_overlay.dart';
 import '../widgets/team_logo.dart';
 import '../widgets/leaderboard_panel.dart';
+import '../widgets/background_container.dart';
 
 import '../parsers/match_stats_parser.dart';
 import '../constants/ui_dimensions.dart';
@@ -490,35 +491,37 @@ bool get isLandscapePhone {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final allFixtures = _fixturesForGameType();
+Widget build(BuildContext context) {
+  final allFixtures = _fixturesForGameType();
 
-    var fixtures = allFixtures;
-    if (widget.selectedFixtureIds != null) {
-      fixtures = allFixtures.where((f) {
-        final id = f.matchId ?? allFixtures.indexOf(f).toString();
-        return widget.selectedFixtureIds!.contains(id);
-      }).toList();
-    }
+  var fixtures = allFixtures;
+  if (widget.selectedFixtureIds != null) {
+    fixtures = allFixtures.where((f) {
+      final id = f.matchId ?? allFixtures.indexOf(f).toString();
+      return widget.selectedFixtureIds!.contains(id);
+    }).toList();
+  }
 
-    if (_selectedFixture == null && fixtures.isNotEmpty) {
-      _selectedFixture = fixtures.first;
-    }
+  if (_selectedFixture == null && fixtures.isNotEmpty) {
+    _selectedFixture = fixtures.first;
+  }
 
-    return Scaffold(
-  backgroundColor: Colors.transparent,
+  return BackgroundContainer(
+    child: Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-  toolbarHeight: isLandscapePhone ? 36 : 44,
-  titleSpacing: 0,
-  title: Text(
-    _appBarTitle(),
-    style: TextStyle(
-      fontSize: isLandscapePhone ? 13 : 15,
-      fontWeight: FontWeight.w600,
-    ),
-  ),
-),
+        toolbarHeight: isLandscapePhone ? 36 : 44,
+        titleSpacing: 0,
+        title: Text(
+          _appBarTitle(),
+          style: TextStyle(
+            fontSize: isLandscapePhone ? 13 : 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
 
+      // ⭐ Your body belongs INSIDE the Scaffold
       body: Column(
         children: [
           _buildFixtureStrip(fixtures),
@@ -526,8 +529,10 @@ bool get isLandscapePhone {
           Expanded(child: _buildMainContent()),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildFixtureStrip(List<AflFixture> fixtures) {
   if (fixtures.isEmpty) {
@@ -548,7 +553,10 @@ bool get isLandscapePhone {
           child: Container(
             height: 36,
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            color: Theme.of(context).colorScheme.surface,
+
+            // ⭐ FIXED: remove opaque background
+            color: Colors.black.withAlpha(51),
+
             child: Row(
               children: [
                 Text(
@@ -587,6 +595,7 @@ bool get isLandscapePhone {
     ),
   );
 }
+
 
 
   Widget _buildFixtureCard(AflFixture f) {

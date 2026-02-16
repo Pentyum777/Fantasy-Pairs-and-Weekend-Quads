@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/background_container.dart';   // ⭐ Add this import
 
 class SeasonSelectionScreen extends StatelessWidget {
   final List<int> seasons;
@@ -67,35 +68,37 @@ class SeasonSelectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool mobile = isPortraitPhone(context);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text("Select Season"),
-        centerTitle: true,
-        backgroundColor: Colors.blue.shade700,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: mobile ? 3 : 5,
-              mainAxisSpacing: mobile ? 10 : 12,
-              crossAxisSpacing: mobile ? 10 : 12,
-              childAspectRatio: mobile ? 2.4 : 4.2,
-            ),
-            itemCount: seasons.length,
-            itemBuilder: (context, index) {
-              final season = seasons[index];
+    return BackgroundContainer(                    // ⭐ Wrap the entire screen
+      child: Scaffold(
+        backgroundColor: Colors.transparent,       // ⭐ Must stay transparent
+        appBar: AppBar(
+          title: const Text("Select Season"),
+          centerTitle: true,
+          backgroundColor: Colors.blue.shade700,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: mobile ? 3 : 5,
+                mainAxisSpacing: mobile ? 10 : 12,
+                crossAxisSpacing: mobile ? 10 : 12,
+                childAspectRatio: mobile ? 2.4 : 4.2,
+              ),
+              itemCount: seasons.length,
+              itemBuilder: (context, index) {
+                final season = seasons[index];
 
-              return buildProTile(
-                context: context,
-                label: "$season",
-                onTap: () => onSelect(season),
-              );
-            },
+                return buildProTile(
+                  context: context,
+                  label: "$season",
+                  onTap: () => onSelect(season),
+                );
+              },
+            ),
           ),
         ),
       ),

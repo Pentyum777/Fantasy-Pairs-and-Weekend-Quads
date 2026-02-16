@@ -16,6 +16,8 @@ import '../screens/game_view_screen.dart';
 import 'championship_screen.dart';
 import 'custom_pairs_builder_screen.dart';
 
+import '../widgets/background_container.dart';   // ⭐ REQUIRED
+
 class GameTypeSelectionScreen extends StatefulWidget {
   final int season;
   final int? round;
@@ -44,10 +46,7 @@ class GameTypeSelectionScreen extends StatefulWidget {
 }
 
 class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
-  /// Stores selections for ALL game types, keyed by:
-  /// "season-round-gameType"
   final Map<String, List<PunterSelection>> _selectionCache = {};
-
   final ChampionshipService championshipService = ChampionshipService();
 
   bool isPortraitPhone(BuildContext context) {
@@ -55,7 +54,6 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     return size.height > size.width && size.width < 600;
   }
 
-  /// Creates a new empty selection list (only if not already cached)
   List<PunterSelection> _createEmptySelections(int playersPerPunter) {
     return List.generate(
       25,
@@ -74,7 +72,6 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     );
   }
 
-  /// Returns a stable, persistent selection list for the given game type.
   List<PunterSelection> _getSelectionsForGameType(String type) {
     final key = "${widget.season}-${widget.round}-$type";
 
@@ -140,9 +137,6 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // ⭐ Professional Tile Builder (shared across all screens)
-  // ---------------------------------------------------------------------------
   Widget buildProTile({
     required BuildContext context,
     required String label,
@@ -151,47 +145,44 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     final bool mobile = isPortraitPhone(context);
 
     return Material(
-  color: Colors.transparent,
-  child: InkWell(
-    borderRadius: BorderRadius.circular(mobile ? 14 : 20),
-    onTap: onTap,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      padding: EdgeInsets.symmetric(
-        vertical: mobile ? 8 : 14,
-        horizontal: mobile ? 6 : 10,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(mobile ? 14 : 22),
-
-        // ⭐ Correct alpha handling (non-deprecated, works everywhere)
-        color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
-
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha((255 * 0.18).round()),
-            blurRadius: mobile ? 4 : 8,
-            offset: const Offset(0, 3),
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(
+            vertical: mobile ? 8 : 14,
+            horizontal: mobile ? 6 : 10,
           ),
-        ],
-        border: Border.all(
-          color: Colors.grey.shade300.withAlpha((255 * 0.6).round()),
-          width: mobile ? 1.1 : 1.4,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(mobile ? 14 : 22),
+            color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha((255 * 0.18).round()),
+                blurRadius: mobile ? 4 : 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+            border: Border.all(
+              color: Colors.grey.shade300.withAlpha((255 * 0.6).round()),
+              width: mobile ? 1.1 : 1.4,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: mobile ? 12 : 16,
+                color: Colors.grey.shade100,
+              ),
+            ),
+          ),
         ),
       ),
-      child: Center(
-        child: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: mobile ? 12 : 16,
-            color: Colors.grey.shade100,
-          ),
-        ),
-      ),
-    ),
-  ),
-);
+    );
   }
 
   @override
@@ -233,33 +224,35 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     final String roundLabel = RoundHelper.label(widget.round);
     final bool mobile = isPortraitPhone(context);
 
-    return Scaffold(
-  backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text("$roundLabel – Select Game Type"),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: mobile ? 2 : 3,
-              mainAxisSpacing: mobile ? 10 : 16,
-              crossAxisSpacing: mobile ? 10 : 16,
-              childAspectRatio: mobile ? 2.2 : 2.6,
-            ),
-            itemCount: gameTypes.length,
-            itemBuilder: (context, i) {
-              final type = gameTypes[i];
+    return BackgroundContainer(                     // ⭐ WRAP THE SCREEN
+      child: Scaffold(
+        backgroundColor: Colors.transparent,        // ⭐ KEEP TRANSPARENT
+        appBar: AppBar(
+          title: Text("$roundLabel – Select Game Type"),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: mobile ? 2 : 3,
+                mainAxisSpacing: mobile ? 10 : 16,
+                crossAxisSpacing: mobile ? 10 : 16,
+                childAspectRatio: mobile ? 2.2 : 2.6,
+              ),
+              itemCount: gameTypes.length,
+              itemBuilder: (context, i) {
+                final type = gameTypes[i];
 
-              return buildProTile(
-                context: context,
-                label: shortLabel(type),
-                onTap: () => _openGame(type),
-              );
-            },
+                return buildProTile(
+                  context: context,
+                  label: shortLabel(type),
+                  onTap: () => _openGame(type),
+                );
+              },
+            ),
           ),
         ),
       ),

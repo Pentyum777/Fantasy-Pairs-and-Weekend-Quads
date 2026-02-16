@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../helpers/round_helper.dart';
+import '../widgets/background_container.dart';   // ⭐ Add this import
 
 class RoundSelectionScreen extends StatelessWidget {
   final List<int?> rounds;
@@ -39,24 +40,20 @@ class RoundSelectionScreen extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(mobile ? 14 : 20),
-
-            // ⭐ Correct alpha handling (non‑deprecated)
             color: completed
-                ? Colors.grey.shade700.withAlpha(64)   // 0.25 opacity
-                : Colors.grey.shade900.withAlpha(38),  // 0.15 opacity
-
+                ? Colors.grey.shade700.withAlpha(64)
+                : Colors.grey.shade900.withAlpha(38),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(46),      // 0.18 opacity
+                color: Colors.black.withAlpha(46),
                 blurRadius: mobile ? 4 : 6,
                 offset: const Offset(0, 3),
               ),
             ],
-
             border: Border.all(
               color: completed
                   ? Colors.grey.shade500
-                  : Colors.grey.shade300.withAlpha(153), // 0.6 opacity
+                  : Colors.grey.shade300.withAlpha(153),
               width: mobile ? 1.1 : 1.6,
             ),
           ),
@@ -82,40 +79,42 @@ class RoundSelectionScreen extends StatelessWidget {
     final bool mobile = isPortraitPhone(context);
     final items = rounds.map(RoundHelper.toToken).toList();
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text("Select Round"),
-        centerTitle: true,
-        backgroundColor: Colors.blue.shade700,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: mobile ? 3 : 5,
-              mainAxisSpacing: mobile ? 10 : 12,
-              crossAxisSpacing: mobile ? 10 : 12,
-              childAspectRatio: mobile ? 2.0 : 2.8,
+    return BackgroundContainer(                      // ⭐ Wrap the whole screen
+      child: Scaffold(
+        backgroundColor: Colors.transparent,         // ⭐ Must stay transparent
+        appBar: AppBar(
+          title: const Text("Select Round"),
+          centerTitle: true,
+          backgroundColor: Colors.blue.shade700,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: mobile ? 3 : 5,
+                mainAxisSpacing: mobile ? 10 : 12,
+                crossAxisSpacing: mobile ? 10 : 12,
+                childAspectRatio: mobile ? 2.0 : 2.8,
+              ),
+              itemCount: items.length,
+              itemBuilder: (context, i) {
+                final token = items[i];
+                final round = RoundHelper.fromToken(token);
+
+                final isCompleted =
+                    round != null && completedRounds.contains(round);
+
+                return buildProTile(
+                  context: context,
+                  label: RoundHelper.label(round),
+                  completed: isCompleted,
+                  onTap: () => onRoundSelected(round),
+                );
+              },
             ),
-            itemCount: items.length,
-            itemBuilder: (context, i) {
-              final token = items[i];
-              final round = RoundHelper.fromToken(token);
-
-              final isCompleted =
-                  round != null && completedRounds.contains(round);
-
-              return buildProTile(
-                context: context,
-                label: RoundHelper.label(round),
-                completed: isCompleted,
-                onTap: () => onRoundSelected(round),
-              );
-            },
           ),
         ),
       ),
