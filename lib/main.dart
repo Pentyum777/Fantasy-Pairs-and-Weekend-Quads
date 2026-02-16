@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 // ignore: deprecated_member_use
-
-
 import 'services/msal_service.dart';
 
 import 'repositories/fixture_repository.dart';
@@ -18,11 +16,6 @@ import 'debug/afl_data_validator.dart';
 
 void main() {
   print("🔥 MAIN EXECUTED — CLEAN VERSION");
-
-  // IMPORTANT:
-  // We do NOT override js.context['onMsalToken'] anymore.
-  // msal.js already delivers tokens into MsalService internally.
-
   runApp(const MyApp());
 }
 
@@ -56,13 +49,16 @@ class _MyAppState extends State<MyApp> {
     fantasyService = PunterScoreService();
 
     playerRepo.loadAllPlayers();
-    userRoleService.setRole(UserRole.admin);
 
-    // MSAL → Dart token callback
-    MsalService.listenForToken((token) {
-      print("MSAL(Dart): Token received → $token");
-
+    // MSAL → Dart token + account callback
+    MsalService.listenForToken((token, account) {
       if (!mounted) return;
+
+      final email = account.username;
+      print("MSAL(Dart): Logged in as $email");
+
+      // Set user role based on email
+      userRoleService.setUser(email);
 
       setState(() {
         _token = token;
@@ -81,85 +77,99 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'AFL App',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: _token == null
-          ? LoginScreen(
-              onLoggedIn: () {
-                // User pressed login → mark as logged in immediately
-                // so FutureBuilder can run and fixtures can load.
-                setState(() {
-                  _token = "local-login";
-                  _fixtureLoadFuture = _loadAllFixtures();
-                });
+      home: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topCenter,
+            radius: 1.2,
+            colors: [
+              Color(0xFFE8ECF7), // soft bluish-grey
+              Color(0xFFF7F9FC), // near-white
+            ],
+          ),
+        ),
+        child: _token == null
+            ? LoginScreen(
+                onLoggedIn: () {
+                  setState(() {
+                    _token = "local-login";
+                    _fixtureLoadFuture = _loadAllFixtures();
+                  });
 
-                // Also start MSAL login flow (optional for real auth)
-                MsalService.startLogin(["User.Read"]);
-              },
-            )
-          : FutureBuilder(
-              future: _fixtureLoadFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
-                }
-
-                validateAflData(
-                  fixtureRepo: fixtureRepo,
-                  playerRepo: playerRepo,
-                );
-
-                return SeasonSelectionScreen(
-                  seasons: const [2025, 2026],
-                  onSelect: (season) {
-                    setState(() {
-                      selectedSeason = season;
-                    });
-
-                    final List<int?> rounds = [];
-
-                    if (fixtureRepo.preseasonFixturesForSeason(season).isNotEmpty) {
-                      rounds.add(null);
-                    }
-
-                    rounds.addAll(fixtureRepo.allRoundsForSeason(season));
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        settings: const RouteSettings(name: "round_selection"),
-                        builder: (_) => RoundSelectionScreen(
-                          rounds: rounds,
-                          completedRounds: roundCompletionService.completedRounds,
-                          onRoundSelected: (int? round) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                settings: RouteSettings(
-                                  name: "game_type_${round ?? 'ps'}",
-                                ),
-                                builder: (_) => GameTypeSelectionScreen(
-                                  season: season,
-                                  round: round,
-                                  fixtureRepo: fixtureRepo,
-                                  playerRepo: playerRepo,
-                                  fantasyService: fantasyService,
-                                  roundCompletionService: roundCompletionService,
-                                  userRoleService: userRoleService,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                  MsalService.startLogin(["User.Read"]);
+                },
+              )
+            : FutureBuilder(
+                future: _fixtureLoadFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Scaffold(
+                      backgroundColor: Colors.transparent,
+                      body: Center(child: CircularProgressIndicator()),
                     );
-                  },
-                );
-              },
-            ),
+                  }
+
+                  validateAflData(
+                    fixtureRepo: fixtureRepo,
+                    playerRepo: playerRepo,
+                  );
+
+                  return SeasonSelectionScreen(
+                    seasons: const [2025, 2026],
+                    onSelect: (season) {
+                      setState(() {
+                        selectedSeason = season;
+                      });
+
+                      final List<int?> rounds = [];
+
+                      if (fixtureRepo.preseasonFixturesForSeason(season).isNotEmpty) {
+                        rounds.add(null);
+                      }
+
+                      rounds.addAll(fixtureRepo.allRoundsForSeason(season));
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          settings: const RouteSettings(name: "round_selection"),
+                          builder: (_) => RoundSelectionScreen(
+                            rounds: rounds,
+                            completedRounds: roundCompletionService.completedRounds,
+                            onRoundSelected: (int? round) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  settings: RouteSettings(
+                                    name: "game_type_${round ?? 'ps'}",
+                                  ),
+                                  builder: (_) => GameTypeSelectionScreen(
+                                    season: season,
+                                    round: round,
+                                    fixtureRepo: fixtureRepo,
+                                    playerRepo: playerRepo,
+                                    fantasyService: fantasyService,
+                                    roundCompletionService: roundCompletionService,
+                                    userRoleService: userRoleService,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+      ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// ⭐ UPDATED SEASON SELECTION SCREEN (PRO TILE SYSTEM)
+// ---------------------------------------------------------------------------
 
 class SeasonSelectionScreen extends StatelessWidget {
   final List<int> seasons;
@@ -171,25 +181,102 @@ class SeasonSelectionScreen extends StatelessWidget {
     required this.onSelect,
   });
 
+  bool isPortraitPhone(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return size.height > size.width && size.width < 600;
+  }
+
+  Widget buildProTile({
+    required BuildContext context,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final bool mobile = isPortraitPhone(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(
+            vertical: mobile ? 8 : 12,
+            horizontal: mobile ? 6 : 10,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+            color: Colors.grey.shade900.withValues(alpha: 0.15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: mobile ? 4 : 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+            border: Border.all(
+              color: Colors.grey.shade300.withValues(alpha: 0.6),
+              width: mobile ? 1.1 : 1.4,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: mobile ? 12 : 16,
+                color: Colors.grey.shade100,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool mobile = isPortraitPhone(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Select Season")),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: seasons.map((season) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: ElevatedButton(
-              onPressed: () => onSelect(season),
-              child: Text("$season Season"),
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text("Select Season"),
+        centerTitle: true,
+        backgroundColor: Colors.blue.shade700,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: mobile ? 3 : 5,
+              mainAxisSpacing: mobile ? 10 : 12,
+              crossAxisSpacing: mobile ? 10 : 12,
+              childAspectRatio: mobile ? 2.4 : 4.2,
             ),
-          );
-        }).toList(),
+            itemCount: seasons.length,
+            itemBuilder: (context, index) {
+              final season = seasons[index];
+
+              return buildProTile(
+                context: context,
+                label: "$season",
+                onTap: () => onSelect(season),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// ⭐ UPDATED LOGIN SCREEN (PRO TILE SYSTEM)
+// ---------------------------------------------------------------------------
 
 class LoginScreen extends StatefulWidget {
   final void Function() onLoggedIn;
@@ -208,17 +295,69 @@ class _LoginScreenState extends State<LoginScreen> {
     widget.onLoggedIn();
   }
 
+  bool isPortraitPhone(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return size.height > size.width && size.width < 600;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bool mobile = isPortraitPhone(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("AFL Login")),
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text("AFL Login"),
+        centerTitle: true,
+        backgroundColor: Colors.blue.shade700,
+      ),
       body: Center(
-        child: _loading
-            ? const CircularProgressIndicator()
-            : ElevatedButton(
-                onPressed: _login,
-                child: const Text("Login with Microsoft"),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: mobile ? 24 : 40,
+            vertical: mobile ? 28 : 40,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade900.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(mobile ? 16 : 22),
+            border: Border.all(
+              color: Colors.grey.shade300.withValues(alpha: 0.6),
+              width: mobile ? 1.1 : 1.4,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: mobile ? 6 : 12,
+                offset: const Offset(0, 4),
               ),
+            ],
+          ),
+          child: _loading
+              ? const CircularProgressIndicator()
+              : ElevatedButton.icon(
+                  icon: const Icon(Icons.login, size: 20),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: mobile ? 20 : 32,
+                      vertical: mobile ? 12 : 16,
+                    ),
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(mobile ? 12 : 16),
+                    ),
+                  ),
+                  onPressed: _login,
+                  label: Text(
+                    "Login with Microsoft",
+                    style: TextStyle(
+                      fontSize: mobile ? 14 : 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+        ),
       ),
     );
   }

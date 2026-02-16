@@ -36,18 +36,15 @@ class SeasonSelectionScreen extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(mobile ? 14 : 20),
             color: Colors.grey.shade900.withValues(alpha: 0.15),
-
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.18),
-
                 blurRadius: mobile ? 4 : 8,
                 offset: const Offset(0, 3),
               ),
             ],
             border: Border.all(
               color: Colors.grey.shade300.withValues(alpha: 0.6),
-
               width: mobile ? 1.1 : 1.4,
             ),
           ),
@@ -71,9 +68,11 @@ class SeasonSelectionScreen extends StatelessWidget {
     final bool mobile = isPortraitPhone(context);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text("Select Season"),
         centerTitle: true,
+        backgroundColor: Colors.blue.shade700,
       ),
       body: Center(
         child: Padding(

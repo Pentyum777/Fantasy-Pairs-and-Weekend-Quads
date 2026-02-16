@@ -1,29 +1,55 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:convert';
-// ignore: deprecated_member_use
 import 'dart:js' as js;
 
+class MsalAccount {
+  final String username;
+
+  MsalAccount(this.username);
+
+  factory MsalAccount.fromJsObject(dynamic obj) {
+    if (obj == null) return MsalAccount("unknown");
+    try {
+      return MsalAccount(obj["username"] ?? "unknown");
+    } catch (_) {
+      return MsalAccount("unknown");
+    }
+  }
+}
+
 class MsalService {
-  /// Listen for token via JS callback (no DOM events)
-  static void listenForToken(void Function(String token) onTokenReceived) {
+  /// Listen for token + account via JS callback
+  static void listenForToken(
+    void Function(String token, MsalAccount account) onTokenReceived,
+  ) {
     print("MSAL(Dart): Registering onMsalToken callback");
 
-    // Register callback for JS → Dart token delivery
-    js.context['onMsalToken'] = (token) {
+    // JS → Dart callback
+    js.context['onMsalToken'] = (token, accountObj) {
       print("MSAL(Dart): Token received from JS → $token");
 
-      if (token is String) {
-        onTokenReceived(token);
-      } else {
+      if (token is! String) {
         print("MSAL(Dart): ERROR — token was not a string: $token");
+        return;
       }
+
+      final account = MsalAccount.fromJsObject(accountObj);
+      onTokenReceived(token, account);
     };
 
-    // Check for pending token
-    final pending = js.context['__pendingMsalToken'];
-    if (pending != null && pending is String) {
+    // Check for pending token (page reload scenario)
+    final pendingToken = js.context['__pendingMsalToken'];
+    final pendingAccount = js.context['__pendingMsalAccount'];
+
+    if (pendingToken != null && pendingToken is String) {
       print("MSAL(Dart): Found pending token → delivering immediately");
-      onTokenReceived(pending);
+
+      final account = MsalAccount.fromJsObject(pendingAccount);
+      onTokenReceived(pendingToken, account);
+
       js.context['__pendingMsalToken'] = null;
+      js.context['__pendingMsalAccount'] = null;
     }
   }
 

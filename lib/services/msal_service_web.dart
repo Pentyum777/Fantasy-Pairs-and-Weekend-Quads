@@ -1,35 +1,68 @@
-@JS()
-library msal_web;
-
 import 'dart:convert';
-import 'package:js/js.dart';
+// ignore: deprecated_member_use
+import 'dart:js' as js;
 
-// These functions map directly to your MSAL JavaScript functions
-@JS('msalLogin')
-external void _msalLogin(String scopesJson);
+class MsalAccount {
+  final String username;
 
-@JS('msalGetToken')
-external void _msalGetToken(String scopesJson);
+  MsalAccount(this.username);
 
-// ---------------------------------------------------------------------------
-// Web implementation of MSAL service
-// ---------------------------------------------------------------------------
-void initMsal({
-  required String clientId,
-  required String tenantId,
-  required String redirectUri,
-}) {
-  // Your JS file already initializes MSAL automatically.
-  // Nothing is required here.
-  print("MSAL Web: initMsal() called (JS handles actual init)");
+  factory MsalAccount.fromJsObject(dynamic obj) {
+    if (obj == null) return MsalAccount("unknown");
+    try {
+      return MsalAccount(obj["username"] ?? "unknown");
+    } catch (_) {
+      return MsalAccount("unknown");
+    }
+  }
 }
 
-Future<String> loginWithMsal(List<String> scopes) async {
-  _msalLogin(jsonEncode(scopes));
-  return "";
-}
+class MsalService {
+  /// Listen for token + account via JS callback
+  static void listenForToken(
+    void Function(String token, MsalAccount account) onTokenReceived,
+  ) {
+    print("MSAL(Dart): Registering onMsalToken callback");
 
-Future<String> acquireTokenWithMsal(List<String> scopes) async {
-  _msalGetToken(jsonEncode(scopes));
-  return "";
+    // JS → Dart callback
+    js.context['onMsalToken'] = (token, accountObj) {
+      print("MSAL(Dart): Token received from JS → $token");
+
+      if (token is! String) {
+        print("MSAL(Dart): ERROR — token was not a string: $token");
+        return;
+      }
+
+      final account = MsalAccount.fromJsObject(accountObj);
+      onTokenReceived(token, account);
+    };
+
+    // Check for pending token (page reload scenario)
+    final pendingToken = js.context['__pendingMsalToken'];
+    final pendingAccount = js.context['__pendingMsalAccount'];
+
+    if (pendingToken != null && pendingToken is String) {
+      print("MSAL(Dart): Found pending token → delivering immediately");
+
+      final account = MsalAccount.fromJsObject(pendingAccount);
+      onTokenReceived(pendingToken, account);
+
+      js.context['__pendingMsalToken'] = null;
+      js.context['__pendingMsalAccount'] = null;
+    }
+  }
+
+  /// Trigger login in JS
+  static void startLogin(List<String> scopes) {
+    final scopesJson = jsonEncode(scopes);
+    print("MSAL(Dart): startLogin with $scopesJson");
+    js.context.callMethod('msalLogin', [scopesJson]);
+  }
+
+  /// Optional: silent token acquisition
+  static void startGetToken(List<String> scopes) {
+    final scopesJson = jsonEncode(scopes);
+    print("MSAL(Dart): startGetToken with $scopesJson");
+    js.context.callMethod('msalGetToken', [scopesJson]);
+  }
 }
