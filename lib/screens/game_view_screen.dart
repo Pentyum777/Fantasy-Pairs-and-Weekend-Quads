@@ -65,6 +65,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   bool _isSubmitted = false;
   bool _leaderboardCollapsed = false;
+  bool _fixturesCollapsed = false;
+bool _controlsCollapsed = false;
 
 bool get isLandscapePhone {
   final size = MediaQuery.of(context).size;
@@ -547,28 +549,64 @@ bool get isLandscapePhone {
   }
 
   Widget _buildFixtureStrip(List<AflFixture> fixtures) {
-    if (fixtures.isEmpty) {
-      return const SizedBox(
-        height: 95,
-        child: Center(child: Text("No fixtures")),
-      );
-    }
-
-    return Container(
-      color: Theme.of(context).colorScheme.surface,
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: SizedBox(
-        height: 88,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          itemCount: fixtures.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (_, i) => _buildFixtureCard(fixtures[i]),
-        ),
-      ),
+  if (fixtures.isEmpty) {
+    return const SizedBox(
+      height: 95,
+      child: Center(child: Text("No fixtures")),
     );
   }
+
+  return AnimatedContainer(
+    duration: const Duration(milliseconds: 200),
+    height: _fixturesCollapsed ? 36 : 88,
+    child: Column(
+      children: [
+        // Collapse toggle bar
+        InkWell(
+          onTap: () => setState(() => _fixturesCollapsed = !_fixturesCollapsed),
+          child: Container(
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            color: Theme.of(context).colorScheme.surface,
+            child: Row(
+              children: [
+                Text(
+                  "Fixtures",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  _fixturesCollapsed
+                      ? Icons.keyboard_arrow_down
+                      : Icons.keyboard_arrow_up,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Expanded fixture list
+        if (!_fixturesCollapsed)
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              itemCount: fixtures.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) => _buildFixtureCard(fixtures[i]),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildFixtureCard(AflFixture f) {
   final selected = f == _selectedFixture;
@@ -730,108 +768,148 @@ bool get isLandscapePhone {
   }
 
   Widget _buildPunterControls() {
-    final theme = Theme.of(context);
+  final theme = Theme.of(context);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: isLandscapePhone ? 2 : 4),
-child: Row(
-        children: [
-          Text("Punters Playing", style: theme.textTheme.bodyMedium),
-          const SizedBox(width: 6),
-          DropdownButtonHideUnderline(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: theme.colorScheme.outlineVariant,
-                  width: 1,
+  return AnimatedContainer(
+    duration: const Duration(milliseconds: 200),
+    height: _controlsCollapsed ? 32 : null,
+    padding: EdgeInsets.symmetric(
+      vertical: _controlsCollapsed ? 0 : (isLandscapePhone ? 2 : 4),
+    ),
+    child: Column(
+      children: [
+        // Collapse toggle bar
+        InkWell(
+          onTap: () => setState(() => _controlsCollapsed = !_controlsCollapsed),
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Text(
+                  "Punter Controls",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
-                color: theme.colorScheme.surface,
-              ),
-              child: DropdownButton<int>(
-                value: _visiblePunterCount,
-                isDense: true,
-                menuMaxHeight: 280,
-                itemHeight: 32,
-                style: theme.textTheme.bodyMedium,
-                items: List.generate(25, (i) => i + 1)
-                    .map(
-                      (v) => DropdownMenuItem<int>(
-                        value: v,
-                        child: Text("$v"),
-                      ),
-                    )
-                    .toList(),
-                onChanged: widget.userRoleService.isAdmin
-                    ? (value) {
-                        if (value == null) return;
-                        setState(() => _visiblePunterCount = value);
-                      }
-                    : null,
-              ),
+                const Spacer(),
+                Icon(
+                  _controlsCollapsed
+                      ? Icons.keyboard_arrow_down
+                      : Icons.keyboard_arrow_up,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 10),
-          ElevatedButton(
-            onPressed:
-                widget.userRoleService.isAdmin ? _resetSelections : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              minimumSize: const Size(0, 28),
-              visualDensity: VisualDensity.compact,
-            ),
-            child: const Text(
-              "Reset Selections",
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          if (widget.userRoleService.isAdmin) ...[
-            const SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: _canSubmit() ? _toggleSubmit : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    _isSubmitted ? Colors.orange : Colors.green,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                minimumSize: const Size(0, 28),
-                visualDensity: VisualDensity.compact,
-              ),
-              child: Text(
-                _isSubmitted ? "Unsubmit" : "Submit",
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
+        ),
+
+        if (!_controlsCollapsed)
+          Row(
+            children: [
+              Text("Punters Playing", style: theme.textTheme.bodyMedium),
+              const SizedBox(width: 6),
+              DropdownButtonHideUnderline(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant,
+                      width: 1,
+                    ),
+                    color: theme.colorScheme.surface,
+                  ),
+                  child: DropdownButton<int>(
+                    value: _visiblePunterCount,
+                    isDense: true,
+                    menuMaxHeight: 280,
+                    itemHeight: 32,
+                    style: theme.textTheme.bodyMedium,
+                    items: List.generate(25, (i) => i + 1)
+                        .map(
+                          (v) => DropdownMenuItem<int>(
+                            value: v,
+                            child: Text("$v"),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: widget.userRoleService.isAdmin
+                        ? (value) {
+                            if (value == null) return;
+                            setState(() => _visiblePunterCount = value);
+                          }
+                        : null,
+                  ),
                 ),
               ),
-            ),
-          ],
-          const Spacer(),
-          IconButton(
-            iconSize: 20,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: Icon(
-              _leaderboardCollapsed
-                  ? Icons.chevron_left
-                  : Icons.chevron_right,
-              color: theme.colorScheme.primary,
-            ),
-            onPressed: () {
-              setState(() => _leaderboardCollapsed = !_leaderboardCollapsed);
-            },
+              const SizedBox(width: 10),
+              ElevatedButton(
+                onPressed:
+                    widget.userRoleService.isAdmin ? _resetSelections : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade600,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  minimumSize: const Size(0, 28),
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Text(
+                  "Reset Selections",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              if (widget.userRoleService.isAdmin) ...[
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: _canSubmit() ? _toggleSubmit : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        _isSubmitted ? Colors.orange : Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 4),
+                    minimumSize: const Size(0, 28),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: Text(
+                    _isSubmitted ? "Unsubmit" : "Submit",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+              const Spacer(),
+              IconButton(
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(
+                  _leaderboardCollapsed
+                      ? Icons.chevron_left
+                      : Icons.chevron_right,
+                  color: theme.colorScheme.primary,
+                ),
+                onPressed: () {
+                  setState(() => _leaderboardCollapsed = !_leaderboardCollapsed);
+                },
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
+
 
   Widget _buildPunterAndLeaderboard() {
   return LayoutBuilder(
