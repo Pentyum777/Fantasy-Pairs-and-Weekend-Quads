@@ -234,6 +234,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     final bool mobile = isPortraitPhone(context);
 
     return Scaffold(
+  backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text("$roundLabel – Select Game Type"),
       ),

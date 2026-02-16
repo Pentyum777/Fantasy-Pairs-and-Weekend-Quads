@@ -59,6 +59,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
     final roundLabel = RoundHelper.label(widget.round);
 
     return Scaffold(
+  backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text("Custom Pairs Builder"),
       ),

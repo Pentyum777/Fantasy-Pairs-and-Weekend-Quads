@@ -46,6 +46,7 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
         UIDimensions.totalColumnWidth;
 
     return Scaffold(
+  backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text("Championship"),
       ),

@@ -506,6 +506,7 @@ bool get isLandscapePhone {
     }
 
     return Scaffold(
+  backgroundColor: Colors.transparent,
       appBar: AppBar(
   toolbarHeight: isLandscapePhone ? 36 : 44,
   titleSpacing: 0,
