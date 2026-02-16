@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:http/http.dart' as http;
+import 'dart:math' as math;
 
 import '../models/afl_player.dart';
 import '../models/punter_selection.dart';
@@ -114,6 +115,12 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   if (isPortraitPhone) return 60;
   if (isLandscapePhone) return 70;
   return 90;
+}
+
+double _minTableWidth(int pickCount) {
+  return kPunterColumnWidth +
+      pickCount * (kPickColumnWidth + kPickScoreColumnWidth) +
+      kTotalColumnWidth;
 }
 
 double get kPickColumnWidth {
@@ -253,7 +260,8 @@ double get kTotalColumnWidth {
         ? widget.selections.first.picks.length
         : 0;
 
-    final tableWidth = widget.tableWidth;
+    final baseWidth = widget.tableWidth;
+final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
 
     final bool isMobile = MediaQuery.of(context).size.width < 700;
     final bool allowHorizontalScroll =
