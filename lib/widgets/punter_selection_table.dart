@@ -1,10 +1,10 @@
 // ignore_for_file: unused_element
 
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:http/http.dart' as http;
-import 'dart:math' as math;
 
 import '../models/afl_player.dart';
 import '../models/punter_selection.dart';
@@ -14,7 +14,7 @@ import '../constants/ui_dimensions.dart';
 import '../services/user_role_service.dart';
 
 // ---------------------------------------------------------------------------
-// SNAPSHOT MODELS (TOP‑LEVEL, CLEAN, FINAL)
+// SNAPSHOT MODELS
 // ---------------------------------------------------------------------------
 
 class _PickSnapshot {
@@ -73,9 +73,8 @@ class PunterSelectionTable extends StatefulWidget {
   final bool readOnly;
   final bool collapsed;
   final ScrollController? scrollController;
-  final String gameType; // e.g. "saturday_pairs", "weekend_pairs"
+  final String gameType;
 
-  // ⭐ NEW: required for admin-only persistence
   final UserRoleService userRoleService;
 
   const PunterSelectionTable({
@@ -103,73 +102,54 @@ class PunterSelectionTable extends StatefulWidget {
 // ---------------------------------------------------------------------------
 
 class _PunterSelectionTableState extends State<PunterSelectionTable> {
-  final Set<int> _punterListenerAdded = {};
+  final ScrollController _horizontalController = ScrollController();
 
   bool get isLandscapePhone {
     final size = MediaQuery.of(context).size;
     return size.width > size.height && size.width < 900;
   }
 
-  // Responsive column widths (instance-level so they can use MediaQuery)
+  bool isPortraitPhone(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return size.height > size.width && size.width < 600;
+  }
+
+  int get _punterCount => widget.visiblePunterCount;
+
+  // Responsive column widths
   double get kPunterColumnWidth {
-  if (isPortraitPhone) return 60;
-  if (isLandscapePhone) return 70;
-  return 90;
-}
+    if (isPortraitPhone(context)) return 60;
+    if (isLandscapePhone) return 70;
+    return 90;
+  }
 
-double _minTableWidth(int pickCount) {
-  return kPunterColumnWidth +
-      pickCount * (kPickColumnWidth + kPickScoreColumnWidth) +
-      kTotalColumnWidth;
-}
+  double get kPickColumnWidth {
+    if (isPortraitPhone(context)) return 120;
+    if (isLandscapePhone) return 140;
+    return 185;
+  }
 
-double get kPickColumnWidth {
-  if (isPortraitPhone) return 120;
-  if (isLandscapePhone) return 140;
-  return 185;
-}
+  double get kPickScoreColumnWidth {
+    if (isPortraitPhone(context)) return 30;
+    if (isLandscapePhone) return 34;
+    return 40;
+  }
 
-double get kPickScoreColumnWidth {
-  if (isPortraitPhone) return 30;
-  if (isLandscapePhone) return 34;
-  return 40;
-}
+  double get kTotalColumnWidth {
+    if (isPortraitPhone(context)) return 45;
+    if (isLandscapePhone) return 50;
+    return 60;
+  }
 
-double get kTotalColumnWidth {
-  if (isPortraitPhone) return 45;
-  if (isLandscapePhone) return 50;
-  return 60;
-}
+  double _minTableWidth(int pickCount) {
+    return kPunterColumnWidth +
+        pickCount * (kPickColumnWidth + kPickScoreColumnWidth) +
+        kTotalColumnWidth;
+  }
 
   final Map<int, TextEditingController> _controllers = {};
   final Map<int, FocusNode> _punterFocusNodes = {};
-
-  // ---------------------------------------------------------------------------
-  // SCORE CELL
-  // ---------------------------------------------------------------------------
-
-  Widget _pickScoreCell(PlayerPick pick) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Container(
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Text(
-        "${pick.fantasyPoints}",
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: cs.onSurface,
-        ),
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // HISTORY
-  // ---------------------------------------------------------------------------
+  final Set<int> _punterListenerAdded = {};
 
   List<_TableSnapshot> _history = [];
   int _historyIndex = -1;
@@ -180,8 +160,6 @@ double get kTotalColumnWidth {
     super.initState();
     _initControllers();
     _initFocusNodes();
-
-    // ⭐ Load saved selections from backend (admins + non-admins)
     _loadSnapshotFromBackend();
   }
 
@@ -189,18 +167,23 @@ double get kTotalColumnWidth {
   void didUpdateWidget(covariant PunterSelectionTable oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Only re‑initialize if the selections list instance actually changed
     final selectionsChanged = !identical(oldWidget.selections, widget.selections);
 
     if (selectionsChanged) {
       _initControllers();
       _initFocusNodes();
-      _saveSnapshot(); // ⭐ This now also saves to backend for admins
+      _saveSnapshot();
     }
   }
 
+  @override
+  void dispose() {
+    _horizontalController.dispose();
+    super.dispose();
+  }
+
   // ---------------------------------------------------------------------------
-  // INIT CONTROLLERS
+  // INIT
   // ---------------------------------------------------------------------------
 
   void _initControllers() {
@@ -210,35 +193,11 @@ double get kTotalColumnWidth {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // INIT FOCUS NODES
-  // ---------------------------------------------------------------------------
-
   void _initFocusNodes() {
     for (final row in widget.selections) {
       _punterFocusNodes[row.punterNumber] ??= FocusNode();
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // RESPONSIVE
-  // ---------------------------------------------------------------------------
-
-  bool get _isMobile {
-    final width = MediaQuery.of(context).size.width;
-    return width < 700;
-  }
-
-  bool get isPortraitPhone {
-  final size = MediaQuery.of(context).size;
-  return size.height > size.width && size.width < 600;
-}
-
-  List<String> _pickLabels() =>
-      List.generate(_roundCount, (i) => 'P${i + 1}');
-
-  int get _punterCount => widget.visiblePunterCount;
-  int get _roundCount => widget.playersPerPunter;
 
   // ---------------------------------------------------------------------------
   // BUILD
@@ -250,30 +209,42 @@ double get kTotalColumnWidth {
       _cleanInvalidSelectionsGlobal();
     }
 
-    final double fontSize = isPortraitPhone ? 10 : (isLandscapePhone ? 11 : 12);
+    final double fontSize =
+        isPortraitPhone(context) ? 10 : (isLandscapePhone ? 11 : 12);
 
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final visible = widget.selections.take(_punterCount).toList();
+    final visible = widget.selections.take(widget.visiblePunterCount).toList();
     final pickCount = widget.selections.isNotEmpty
         ? widget.selections.first.picks.length
         : 0;
 
     final baseWidth = widget.tableWidth;
-final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
+    final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
 
     final bool isMobile = MediaQuery.of(context).size.width < 700;
     final bool allowHorizontalScroll =
-    isPortraitPhone || isMobile || !widget.collapsed;
+        isPortraitPhone(context) || isMobile || !widget.collapsed;
 
     return Column(
       children: [
-        _buildTableHeader(theme, cs, pickCount, tableWidth, fontSize),
+        // HEADER — linked scroll
+        SingleChildScrollView(
+          controller: _horizontalController,
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: tableWidth,
+            child: _buildTableHeader(theme, cs, pickCount, tableWidth, fontSize),
+          ),
+        ),
+
         Divider(height: 1, thickness: 1, color: cs.outlineVariant),
+
         Expanded(
           child: allowHorizontalScroll
               ? SingleChildScrollView(
+                  controller: _horizontalController,
                   scrollDirection: Axis.horizontal,
                   child: SizedBox(
                     width: tableWidth,
@@ -301,20 +272,6 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
   }
 
   // ---------------------------------------------------------------------------
-  // NAME SHORTENER (e.g., "Alex Davies" → "A. Davies")
-  // ---------------------------------------------------------------------------
-
-  String shortName(String fullName) {
-    final parts = fullName.trim().split(RegExp(r'\s+'));
-    if (parts.length == 1) return parts.first;
-
-    final first = parts.first;
-    final last = parts.sublist(1).join(" ");
-
-    return "${first[0]}. $last";
-  }
-
-  // ---------------------------------------------------------------------------
   // HEADER
   // ---------------------------------------------------------------------------
 
@@ -326,118 +283,31 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
     double fontSize,
   ) {
     return SizedBox(
-      height: isPortraitPhone ? 34 : UIDimensions.headerHeight,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            // Punter column
+      height: isPortraitPhone(context) ? 34 : UIDimensions.headerHeight,
+      child: Row(
+        children: [
+          SizedBox(
+            width: kPunterColumnWidth,
+            child: _headerCell(theme, "Punter", alignCenter: true),
+          ),
+          for (int i = 0; i < pickCount; i++) ...[
             SizedBox(
-              width: kPunterColumnWidth,
-              child: _headerCell(theme, "Punter", alignCenter: true),
+              width: kPickColumnWidth,
+              child: _headerCell(theme, "Pick ${i + 1}", alignCenter: true),
             ),
-
-            // Pick + Score columns
-            for (int i = 0; i < pickCount; i++) ...[
-              SizedBox(
-                width: kPickColumnWidth,
-                child: _headerCell(theme, "Pick ${i + 1}", alignCenter: true),
-              ),
-              SizedBox(
-                width: kPickScoreColumnWidth,
-                child: _headerCell(theme, "Score", alignCenter: true),
-              ),
-            ],
-
-            // Total column
             SizedBox(
-              width: kTotalColumnWidth,
-              child: _headerCell(theme, "Total", alignCenter: true),
+              width: kPickScoreColumnWidth,
+              child: _headerCell(theme, "Score", alignCenter: true),
             ),
           ],
-        ),
+          SizedBox(
+            width: kTotalColumnWidth,
+            child: _headerCell(theme, "Total", alignCenter: true),
+          ),
+        ],
       ),
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // BODY
-  // ---------------------------------------------------------------------------
-
-  Widget _buildBody(
-    ThemeData theme,
-    ColorScheme cs,
-    List<PunterSelection> visible,
-    int pickCount,
-    double tableWidth,
-    double fontSize,
-  ) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        width: tableWidth,
-        child: ListView.builder(
-          controller: widget.scrollController,
-          itemCount: visible.length,
-          itemBuilder: (context, index) {
-            final row = visible[index];
-            final isStriped = index.isOdd;
-            final invalid = _hasAnyGlobalDuplicate();
-
-            final bg = invalid
-                ? Colors.red.withValues(alpha: 0.06)
-                : isStriped
-                    ? cs.surfaceContainerHighest.withValues(alpha: 0.25)
-                    : cs.surface;
-
-            return Container(
-              height: isPortraitPhone ? 32 : (isLandscapePhone ? 34 : UIDimensions.rowHeight),
-              decoration: BoxDecoration(
-                color: bg,
-                border: Border(
-                  bottom: BorderSide(
-                    color: cs.outlineVariant.withValues(alpha: 0.6),
-                    width: 0.5,
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Punter column
-                  SizedBox(
-                    width: kPunterColumnWidth,
-                    child: _punterCell(context, row),
-                  ),
-
-                  // Pick + Score columns
-                  for (final pick in row.picks) ...[
-                    SizedBox(
-                      width: kPickColumnWidth,
-                      child: _buildPickCell(context, row, pick),
-                    ),
-                    SizedBox(
-                      width: kPickScoreColumnWidth,
-                      child: _pickScoreCell(pick),
-                    ),
-                  ],
-
-                  // Total column
-                  SizedBox(
-                    width: kTotalColumnWidth,
-                    child: _totalCell(context, row),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // HEADER CELL
-  // ---------------------------------------------------------------------------
 
   Widget _headerCell(
     ThemeData theme,
@@ -460,6 +330,72 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
   }
 
   // ---------------------------------------------------------------------------
+  // BODY
+  // ---------------------------------------------------------------------------
+
+  Widget _buildBody(
+    ThemeData theme,
+    ColorScheme cs,
+    List<PunterSelection> visible,
+    int pickCount,
+    double tableWidth,
+    double fontSize,
+  ) {
+    return ListView.builder(
+      controller: widget.scrollController,
+      itemCount: visible.length,
+      itemBuilder: (context, index) {
+        final row = visible[index];
+        final isStriped = index.isOdd;
+        final invalid = _hasAnyGlobalDuplicate();
+
+        final bg = invalid
+            ? Colors.red.withValues(alpha: 0.06)
+            : isStriped
+                ? cs.surfaceContainerHighest.withValues(alpha: 0.25)
+                : cs.surface;
+
+        return Container(
+          height: isPortraitPhone(context)
+              ? 32
+              : (isLandscapePhone ? 34 : UIDimensions.rowHeight),
+          decoration: BoxDecoration(
+            color: bg,
+            border: Border(
+              bottom: BorderSide(
+                color: cs.outlineVariant.withValues(alpha: 0.6),
+                width: 0.5,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: kPunterColumnWidth,
+                child: _punterCell(context, row),
+              ),
+              for (final pick in row.picks) ...[
+                SizedBox(
+                  width: kPickColumnWidth,
+                  child: _buildPickCell(context, row, pick),
+                ),
+                SizedBox(
+                  width: kPickScoreColumnWidth,
+                  child: _pickScoreCell(pick),
+                ),
+              ],
+              SizedBox(
+                width: kTotalColumnWidth,
+                child: _totalCell(context, row),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // PUNTER CELL
   // ---------------------------------------------------------------------------
 
@@ -467,7 +403,6 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    // LAZY, SAFE INITIALISATION
     final controller = _controllers[row.punterNumber] ??=
         TextEditingController(text: row.punterName);
     final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
@@ -492,8 +427,8 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: TextField(
-        enabled: !widget.isCompleted,
-        controller: controller,
+        enabled: widget.userRoleService.isAdmin && !widget.isCompleted
+        ,controller: controller,
         focusNode: focusNode,
         textAlign: TextAlign.left,
         style: theme.textTheme.bodySmall?.copyWith(
@@ -535,7 +470,6 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
     final colIndex = pick.pickNumber - 1;
     final owner = row;
 
-    // Build global taken list
     final globalTaken = <String>{};
     for (final r in widget.selections) {
       for (int i = 0; i < r.picks.length; i++) {
@@ -565,90 +499,106 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
 
     final hintText = "P$globalPickNumber";
 
-    return SizedBox(
-      width: kPickColumnWidth,
-      child: DropdownSearch<AflPlayer>(
-        selectedItem: selectedPlayer,
-        items: filteredPlayers,
-        itemAsString: (p) => p.fullName,
-        enabled: !widget.isCompleted,
-        popupProps: isLandscapePhone
-            ? PopupProps.bottomSheet(
-                showSearchBox: true,
-                constraints: const BoxConstraints(maxHeight: 300),
-              )
-            : PopupProps.menu(
-                constraints: BoxConstraints(
-                  minWidth: kPickColumnWidth,
-                  maxWidth: kPickColumnWidth,
-                ),
-                showSearchBox: true,
-                searchFieldProps: TextFieldProps(
-                  decoration: const InputDecoration(
-                    hintText: "Search player...",
-                    isDense: true,
-                  ),
+    return DropdownSearch<AflPlayer>(
+      selectedItem: selectedPlayer,
+      items: filteredPlayers,
+      itemAsString: (p) => p.fullName,
+      enabled: widget.userRoleService.isAdmin && !widget.isCompleted
+      ,popupProps: isLandscapePhone
+          ? PopupProps.bottomSheet(
+              showSearchBox: true,
+              constraints: const BoxConstraints(maxHeight: 300),
+            )
+          : PopupProps.menu(
+              constraints: BoxConstraints(
+                minWidth: kPickColumnWidth,
+                maxWidth: kPickColumnWidth,
+              ),
+              showSearchBox: true,
+              searchFieldProps: TextFieldProps(
+                decoration: const InputDecoration(
+                  hintText: "Search player...",
+                  isDense: true,
                 ),
               ),
-        dropdownDecoratorProps: DropDownDecoratorProps(
-          dropdownSearchDecoration: InputDecoration(
-            isDense: true,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 4,
-              vertical: 2,
             ),
+      dropdownDecoratorProps: DropDownDecoratorProps(
+        dropdownSearchDecoration: InputDecoration(
+          isDense: true,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 2,
           ),
         ),
-        dropdownButtonProps: const DropdownButtonProps(
-          icon: SizedBox.shrink(),
-        ),
-        clearButtonProps: const ClearButtonProps(isVisible: false),
-        dropdownBuilder: (context, player) {
-          final text = player == null ? hintText : player.fullName;
+      ),
+      dropdownButtonProps: const DropdownButtonProps(
+        icon: SizedBox.shrink(),
+      ),
+      clearButtonProps: const ClearButtonProps(isVisible: false),
+      dropdownBuilder: (context, player) {
+        final text = player == null ? hintText : player.fullName;
+        final colours =
+            player == null ? null : _getTeamColoursForPlayer(player);
 
-          final colours =
-              player == null ? null : _getTeamColoursForPlayer(player);
-
-          return Container(
-            width: kPickColumnWidth,
-            alignment: Alignment.center,
-            child: Container(
-              width: double.infinity, // full-width chip background
-              padding: const EdgeInsets.symmetric(
-                horizontal: 4,
-                vertical: 2,
-              ),
-              decoration: colours == null
-                  ? null
-                  : BoxDecoration(
-                      color: colours["bg"]?.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-              child: Text(
-                text,
-                overflow: TextOverflow.visible,
-                softWrap: false,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: colours == null ? cs.onSurfaceVariant : colours["fg"],
-                ),
+        return Container(
+          width: kPickColumnWidth,
+          alignment: Alignment.center,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: colours == null
+                ? null
+                : BoxDecoration(
+                    color: colours["bg"]?.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+            child: Text(
+              text,
+              overflow: TextOverflow.visible,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colours == null ? cs.onSurfaceVariant : colours["fg"],
               ),
             ),
-          );
-        },
-        onChanged: (player) {
-          if (player == null) return;
+          ),
+        );
+      },
+      onChanged: (player) {
+        if (player == null) return;
 
-          setState(() {
-            owner.picks[colIndex].player = player;
-            owner.picks[colIndex].stats = null;
-          });
+        setState(() {
+          owner.picks[colIndex].player = player;
+          owner.picks[colIndex].stats = null;
+        });
 
-          widget.onChanged?.call();
-          _saveSnapshot();
-        },
+        widget.onChanged?.call();
+        _saveSnapshot();
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SCORE CELL
+  // ---------------------------------------------------------------------------
+
+  Widget _pickScoreCell(PlayerPick pick) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Text(
+        "${pick.fantasyPoints}",
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: cs.onSurface,
+        ),
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -711,7 +661,7 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
 
     for (final row in widget.selections) {
       for (final pick in row.picks) {
-        final p = pick.player; // evaluate once, safely
+        final p = pick.player;
         if (p != null && !validIds.contains(p.id)) {
           pick.player = null;
           pick.stats = null;
@@ -785,7 +735,6 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
     _history.add(snap);
     _historyIndex = _history.length - 1;
 
-    // ⭐ Only admins persist to backend
     if (widget.userRoleService.isAdmin) {
       _saveSnapshotToBackend(snap);
     }
@@ -814,20 +763,17 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
         final pick = row.picks[j];
         final snapPick = snap.picks[i][j];
 
-        // No player saved in snapshot → clear
         if (snapPick.playerId == null) {
           pick.player = null;
           pick.stats = null;
           continue;
         }
 
-        // Try to restore the player safely
         final restored = widget.availablePlayers
             .where((p) => p.id == snapPick.playerId)
             .toList();
 
         if (restored.isEmpty) {
-          // Player no longer available → clear safely
           pick.player = null;
           pick.stats = null;
         } else {
@@ -841,7 +787,7 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
   }
 
   // ---------------------------------------------------------------------------
-  // ⭐ SAVE SNAPSHOT TO BACKEND (Admins only)
+  // SAVE SNAPSHOT TO BACKEND (Admins only)
   // ---------------------------------------------------------------------------
 
   Future<void> _saveSnapshotToBackend(_TableSnapshot snap) async {
@@ -878,7 +824,7 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
   }
 
   // ---------------------------------------------------------------------------
-  // ⭐ LOAD SNAPSHOT FROM BACKEND (Admins + non-admins)
+  // LOAD SNAPSHOT FROM BACKEND
   // ---------------------------------------------------------------------------
 
   Future<void> _loadSnapshotFromBackend() async {
@@ -890,20 +836,16 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
       final res = await http.get(url);
       final json = jsonDecode(res.body);
 
-      // If backend returns nothing, stop
       if (json["data"] == null) return;
 
       final serverTimestamp = json["lastUpdated"];
 
-      // If timestamp unchanged → no update needed
       if (_lastUpdated != null && serverTimestamp == _lastUpdated) {
         return;
       }
 
-      // Update local timestamp
       _lastUpdated = serverTimestamp;
 
-      // Build snapshot
       final snap = _TableSnapshot(
         punterNames: List<String>.from(json["data"]["punterNames"]),
         picks: (json["data"]["picks"] as List)
@@ -922,7 +864,6 @@ final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
             .toList(),
       );
 
-      // Apply snapshot to UI
       setState(() {
         _applySnapshot(snap);
       });

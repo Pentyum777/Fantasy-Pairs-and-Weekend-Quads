@@ -400,39 +400,19 @@ bool get isLandscapePhone {
   }
 
   Map<String, dynamic> _mapStats(AflPlayerMatchStats s) {
-    return {
-      "Player": s.player?.name ?? "Unknown",
-      "AF": s.fantasyPoints,
-      "K": s.kicks,
-      "HB": s.handballs,
-      "D": s.disposals,
-      "M": s.marks,
-      "T": s.tackles,
-      "G": s.goals,
-      "B": s.behinds,
-    };
-  }
+  return {
+    "Player": s.player?.name ?? "Unknown",
+    "AF": s.fantasyPoints,
+    "K": s.kicks,
+    "HB": s.handballs,
+    "D": s.disposals,
+    "M": s.marks,
+    "T": s.tackles,
+    "G": s.goals,
+    "B": s.behinds,
+  };
+}
 
-  void _resetSelections() {
-    if (widget.userRoleService.isReadOnly) return;
-
-    final picks = widget.gameType == "weekend_quads" ? 4 : 2;
-
-    for (final punter in widget.selections) {
-      for (var i = 0; i < picks; i++) {
-        punter.picks[i].player = null;
-        punter.picks[i].stats = null;
-      }
-      punter.isPrizeWinner = false;
-    }
-
-    setState(() {
-      _isCompleted = false;
-      _isSubmitted = false;
-    });
-
-    _applyLiveStats(_currentStatsByPlayerId.values.toList());
-  }
 
   bool _canSubmit() {
     if (_isSubmitted) return true;
@@ -778,46 +758,46 @@ bool get isLandscapePhone {
     ),
     child: Column(
       children: [
-        // Collapse toggle bar
         InkWell(
           onTap: () => setState(() => _controlsCollapsed = !_controlsCollapsed),
           child: Container(
             height: 32,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
-  children: [
-    Text(
-      "Punter Controls",
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: theme.colorScheme.primary,
-      ),
-    ),
-    const Spacer(),
-    // ⭐ Always-visible leaderboard collapse arrow
-    IconButton(
-      iconSize: 18,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-      icon: Icon(
-        _leaderboardCollapsed ? Icons.chevron_left : Icons.chevron_right,
-        color: theme.colorScheme.primary,
-      ),
-      onPressed: () {
-        setState(() => _leaderboardCollapsed = !_leaderboardCollapsed);
-      },
-    ),
-    const SizedBox(width: 4),
-    Icon(
-      _controlsCollapsed
-          ? Icons.keyboard_arrow_down
-          : Icons.keyboard_arrow_up,
-      size: 20,
-      color: theme.colorScheme.primary,
-    ),
-  ],
-),
+              children: [
+                Text(
+                  "Punter Controls",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  iconSize: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Icon(
+                    _leaderboardCollapsed
+                        ? Icons.chevron_left
+                        : Icons.chevron_right,
+                    color: theme.colorScheme.primary,
+                  ),
+                  onPressed: () {
+                    setState(() => _leaderboardCollapsed = !_leaderboardCollapsed);
+                  },
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _controlsCollapsed
+                      ? Icons.keyboard_arrow_down
+                      : Icons.keyboard_arrow_up,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -826,6 +806,7 @@ bool get isLandscapePhone {
             children: [
               Text("Punters Playing", style: theme.textTheme.bodyMedium),
               const SizedBox(width: 6),
+
               DropdownButtonHideUnderline(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -860,28 +841,10 @@ bool get isLandscapePhone {
                   ),
                 ),
               ),
+
               const SizedBox(width: 10),
-              ElevatedButton(
-                onPressed:
-                    widget.userRoleService.isAdmin ? _resetSelections : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade600,
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  minimumSize: const Size(0, 28),
-                  visualDensity: VisualDensity.compact,
-                ),
-                child: const Text(
-                  "Reset Selections",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              if (widget.userRoleService.isAdmin) ...[
-                const SizedBox(width: 10),
+
+              if (widget.userRoleService.isAdmin)
                 ElevatedButton(
                   onPressed: _canSubmit() ? _toggleSubmit : null,
                   style: ElevatedButton.styleFrom(
@@ -901,15 +864,15 @@ bool get isLandscapePhone {
                     ),
                   ),
                 ),
-              ],
+
               const Spacer(),
-              
             ],
           ),
       ],
     ),
   );
 }
+
 
 
   Widget _buildPunterAndLeaderboard() {
