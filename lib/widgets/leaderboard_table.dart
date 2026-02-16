@@ -34,7 +34,7 @@ class LeaderboardTable extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: Colors.black.withAlpha(15), // 0.06 opacity
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -56,7 +56,7 @@ class LeaderboardTable extends StatelessWidget {
                   color: cs.surfaceContainerHighest,
                   border: Border(
                     bottom: BorderSide(
-                      color: cs.primary.withValues(alpha: 0.12),
+                      color: cs.primary.withAlpha(31), // 0.12 opacity
                       width: 0.75,
                     ),
                   ),

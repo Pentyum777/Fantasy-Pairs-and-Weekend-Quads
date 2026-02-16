@@ -108,21 +108,25 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                             ),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(18),
+
+                              // ⭐ Correct alpha handling
                               color: selected
                                   ? Theme.of(context)
                                       .colorScheme
                                       .primary
-                                      .withValues(alpha: 0.08)
+                                      .withAlpha(20) // 0.08 opacity
                                   : Theme.of(context).colorScheme.surface,
+
                               border: Border.all(
                                 color: selected
                                     ? Theme.of(context).colorScheme.primary
                                     : Colors.grey.shade400,
                                 width: selected ? 2 : 1,
                               ),
+
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
+                                  color: Colors.black.withAlpha(13), // 0.05 opacity
                                   blurRadius: 6,
                                   offset: const Offset(0, 3),
                                 ),

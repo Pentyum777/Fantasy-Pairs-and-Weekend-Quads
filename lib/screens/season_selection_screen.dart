@@ -35,16 +35,20 @@ class SeasonSelectionScreen extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(mobile ? 14 : 20),
-            color: Colors.grey.shade900.withValues(alpha: 0.15),
+
+            // ⭐ Correct alpha handling (non‑deprecated)
+            color: Colors.grey.shade900.withAlpha(38), // 0.15 opacity
+
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
+                color: Colors.black.withAlpha(46), // 0.18 opacity
                 blurRadius: mobile ? 4 : 8,
                 offset: const Offset(0, 3),
               ),
             ],
+
             border: Border.all(
-              color: Colors.grey.shade300.withValues(alpha: 0.6),
+              color: Colors.grey.shade300.withAlpha(153), // 0.6 opacity
               width: mobile ? 1.1 : 1.4,
             ),
           ),

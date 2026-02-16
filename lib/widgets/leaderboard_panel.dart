@@ -23,7 +23,8 @@ class LeaderboardPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     const double collapsedWidth = 40.0;
 
-    final double expandedWidth = UIDimensions.rankColumnWidth +
+    final double expandedWidth =
+        UIDimensions.rankColumnWidth +
         UIDimensions.punterNameColumnWidth +
         UIDimensions.totalColumnWidth;
 
@@ -36,7 +37,7 @@ class LeaderboardPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: Colors.black.withAlpha(15), // 0.06 opacity
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

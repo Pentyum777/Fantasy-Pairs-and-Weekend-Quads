@@ -334,66 +334,66 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
 
   Widget _buildBody(
-    ThemeData theme,
-    ColorScheme cs,
-    List<PunterSelection> visible,
-    int pickCount,
-    double tableWidth,
-    double fontSize,
-  ) {
-    return ListView.builder(
-      controller: widget.scrollController,
-      itemCount: visible.length,
-      itemBuilder: (context, index) {
-        final row = visible[index];
-        final isStriped = index.isOdd;
-        final invalid = _hasAnyGlobalDuplicate();
+  ThemeData theme,
+  ColorScheme cs,
+  List<PunterSelection> visible,
+  int pickCount,
+  double tableWidth,
+  double fontSize,
+) {
+  return ListView.builder(
+    controller: widget.scrollController,
+    itemCount: visible.length,
+    itemBuilder: (context, index) {
+      final row = visible[index];
+      final isStriped = index.isOdd;
+      final invalid = _hasAnyGlobalDuplicate();
 
-        final bg = invalid
-            ? Colors.red.withValues(alpha: 0.06)
-            : isStriped
-                ? cs.surfaceContainerHighest.withValues(alpha: 0.25)
-                : cs.surface;
+      final bg = invalid
+          ? Colors.red.withAlpha(15)                     // 0.06 opacity
+          : isStriped
+              ? cs.surfaceContainerHighest.withAlpha(64) // 0.25 opacity
+              : cs.surface;
 
-        return Container(
-          height: isPortraitPhone(context)
-              ? 32
-              : (isLandscapePhone ? 34 : UIDimensions.rowHeight),
-          decoration: BoxDecoration(
-            color: bg,
-            border: Border(
-              bottom: BorderSide(
-                color: cs.outlineVariant.withValues(alpha: 0.6),
-                width: 0.5,
-              ),
+      return Container(
+        height: isPortraitPhone(context)
+            ? 32
+            : (isLandscapePhone ? 34 : UIDimensions.rowHeight),
+        decoration: BoxDecoration(
+          color: bg,
+          border: Border(
+            bottom: BorderSide(
+              color: cs.outlineVariant.withAlpha(153),   // 0.6 opacity
+              width: 0.5,
             ),
           ),
-          child: Row(
-            children: [
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: kPunterColumnWidth,
+              child: _punterCell(context, row),
+            ),
+            for (final pick in row.picks) ...[
               SizedBox(
-                width: kPunterColumnWidth,
-                child: _punterCell(context, row),
+                width: kPickColumnWidth,
+                child: _buildPickCell(context, row, pick),
               ),
-              for (final pick in row.picks) ...[
-                SizedBox(
-                  width: kPickColumnWidth,
-                  child: _buildPickCell(context, row, pick),
-                ),
-                SizedBox(
-                  width: kPickScoreColumnWidth,
-                  child: _pickScoreCell(pick),
-                ),
-              ],
               SizedBox(
-                width: kTotalColumnWidth,
-                child: _totalCell(context, row),
+                width: kPickScoreColumnWidth,
+                child: _pickScoreCell(pick),
               ),
             ],
-          ),
-        );
-      },
-    );
-  }
+            SizedBox(
+              width: kTotalColumnWidth,
+              child: _totalCell(context, row),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   // ---------------------------------------------------------------------------
   // PUNTER CELL
@@ -537,35 +537,35 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       ),
       clearButtonProps: const ClearButtonProps(isVisible: false),
       dropdownBuilder: (context, player) {
-        final text = player == null ? hintText : player.fullName;
-        final colours =
-            player == null ? null : _getTeamColoursForPlayer(player);
+  final text = player == null ? hintText : player.fullName;
+  final colours =
+      player == null ? null : _getTeamColoursForPlayer(player);
 
-        return Container(
-          width: kPickColumnWidth,
-          alignment: Alignment.center,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: colours == null
-                ? null
-                : BoxDecoration(
-                    color: colours["bg"]?.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-            child: Text(
-              text,
-              overflow: TextOverflow.visible,
-              softWrap: false,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colours == null ? cs.onSurfaceVariant : colours["fg"],
-              ),
+  return Container(
+    width: kPickColumnWidth,
+    alignment: Alignment.center,
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: colours == null
+          ? null
+          : BoxDecoration(
+              color: colours["bg"]?.withAlpha(230), // 0.9 opacity
+              borderRadius: BorderRadius.circular(4),
             ),
-          ),
-        );
-      },
+      child: Text(
+        text,
+        overflow: TextOverflow.visible,
+        softWrap: false,
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: colours == null ? cs.onSurfaceVariant : colours["fg"],
+        ),
+      ),
+    ),
+  );
+},
       onChanged: (player) {
         if (player == null) return;
 
@@ -608,28 +608,28 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
 
   Widget _totalCell(BuildContext context, PunterSelection row) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    return Container(
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        decoration: BoxDecoration(
-          color: cs.primary.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          "${row.totalScore}",
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: cs.primary,
-          ),
+  return Container(
+    alignment: Alignment.center,
+    padding: const EdgeInsets.symmetric(horizontal: 2),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: cs.primary.withAlpha(15), // 0.06 opacity
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        "${row.totalScore}",
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: cs.primary,
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ---------------------------------------------------------------------------
   // TEAM COLOURS

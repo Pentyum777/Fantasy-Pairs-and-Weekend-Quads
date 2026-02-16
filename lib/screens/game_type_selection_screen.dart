@@ -151,48 +151,47 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     final bool mobile = isPortraitPhone(context);
 
     return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(mobile ? 14 : 20),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: EdgeInsets.symmetric(
-            vertical: mobile ? 8 : 14,
-            horizontal: mobile ? 6 : 10,
+  color: Colors.transparent,
+  child: InkWell(
+    borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: EdgeInsets.symmetric(
+        vertical: mobile ? 8 : 14,
+        horizontal: mobile ? 6 : 10,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(mobile ? 14 : 22),
+
+        // ⭐ Correct alpha handling (non-deprecated, works everywhere)
+        color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
+
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha((255 * 0.18).round()),
+            blurRadius: mobile ? 4 : 8,
+            offset: const Offset(0, 3),
           ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(mobile ? 14 : 22),
-            color: Colors.grey.shade900.withValues(alpha: 0.15),
-
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-
-                blurRadius: mobile ? 4 : 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-            border: Border.all(
-              color: Colors.grey.shade300.withValues(alpha: 0.6),
-
-              width: mobile ? 1.1 : 1.6,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: mobile ? 11 : 15,
-                color: Colors.grey.shade100,
-              ),
-            ),
+        ],
+        border: Border.all(
+          color: Colors.grey.shade300.withAlpha((255 * 0.6).round()),
+          width: mobile ? 1.1 : 1.4,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: mobile ? 12 : 16,
+            color: Colors.grey.shade100,
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   @override

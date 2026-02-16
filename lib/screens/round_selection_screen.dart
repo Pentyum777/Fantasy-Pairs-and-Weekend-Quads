@@ -39,22 +39,24 @@ class RoundSelectionScreen extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+
+            // ⭐ Correct alpha handling (non‑deprecated)
             color: completed
-                ? Colors.grey.shade700.withValues(alpha: 0.25)
-                 :Colors.grey.shade900.withValues(alpha: 0.15),
+                ? Colors.grey.shade700.withAlpha(64)   // 0.25 opacity
+                : Colors.grey.shade900.withAlpha(38),  // 0.15 opacity
 
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
+                color: Colors.black.withAlpha(46),      // 0.18 opacity
                 blurRadius: mobile ? 4 : 6,
                 offset: const Offset(0, 3),
               ),
             ],
+
             border: Border.all(
               color: completed
                   ? Colors.grey.shade500
-                  : Colors.grey.shade300.withValues(alpha: 0.6),
-
+                  : Colors.grey.shade300.withAlpha(153), // 0.6 opacity
               width: mobile ? 1.1 : 1.6,
             ),
           ),
@@ -81,7 +83,12 @@ class RoundSelectionScreen extends StatelessWidget {
     final items = rounds.map(RoundHelper.toToken).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Select Round")),
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text("Select Round"),
+        centerTitle: true,
+        backgroundColor: Colors.blue.shade700,
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16),

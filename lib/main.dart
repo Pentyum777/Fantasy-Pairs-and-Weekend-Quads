@@ -187,91 +187,94 @@ class SeasonSelectionScreen extends StatelessWidget {
   }
 
   Widget buildProTile({
-    required BuildContext context,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    final bool mobile = isPortraitPhone(context);
+  required BuildContext context,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  final bool mobile = isPortraitPhone(context);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(mobile ? 14 : 20),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: EdgeInsets.symmetric(
-            vertical: mobile ? 8 : 12,
-            horizontal: mobile ? 6 : 10,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(mobile ? 14 : 20),
-            color: Colors.grey.shade900.withValues(alpha: 0.15),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: mobile ? 4 : 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-            border: Border.all(
-              color: Colors.grey.shade300.withValues(alpha: 0.6),
-              width: mobile ? 1.1 : 1.4,
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: EdgeInsets.symmetric(
+          vertical: mobile ? 8 : 12,
+          horizontal: mobile ? 6 : 10,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+
+          // ⭐ Correct alpha handling (non-deprecated, works everywhere)
+          color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
+
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha((255 * 0.18).round()),
+              blurRadius: mobile ? 4 : 8,
+              offset: const Offset(0, 3),
             ),
+          ],
+          border: Border.all(
+            color: Colors.grey.shade300.withAlpha((255 * 0.6).round()),
+            width: mobile ? 1.1 : 1.4,
           ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: mobile ? 12 : 16,
-                color: Colors.grey.shade100,
-              ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: mobile ? 12 : 16,
+              color: Colors.grey.shade100,
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  @override
-  Widget build(BuildContext context) {
-    final bool mobile = isPortraitPhone(context);
+@override
+Widget build(BuildContext context) {
+  final bool mobile = isPortraitPhone(context);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text("Select Season"),
-        centerTitle: true,
-        backgroundColor: Colors.blue.shade700,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: mobile ? 3 : 5,
-              mainAxisSpacing: mobile ? 10 : 12,
-              crossAxisSpacing: mobile ? 10 : 12,
-              childAspectRatio: mobile ? 2.4 : 4.2,
-            ),
-            itemCount: seasons.length,
-            itemBuilder: (context, index) {
-              final season = seasons[index];
-
-              return buildProTile(
-                context: context,
-                label: "$season",
-                onTap: () => onSelect(season),
-              );
-            },
+  return Scaffold(
+    backgroundColor: Colors.transparent,
+    appBar: AppBar(
+      title: const Text("Select Season"),
+      centerTitle: true,
+      backgroundColor: Colors.blue.shade700,
+    ),
+    body: Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: mobile ? 3 : 5,
+            mainAxisSpacing: mobile ? 10 : 12,
+            crossAxisSpacing: mobile ? 10 : 12,
+            childAspectRatio: mobile ? 2.4 : 4.2,
           ),
+          itemCount: seasons.length,
+          itemBuilder: (context, index) {
+            final season = seasons[index];
+
+            return buildProTile(
+              context: context,
+              label: "$season",
+              onTap: () => onSelect(season),
+            );
+          },
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ---------------------------------------------------------------------------
@@ -319,15 +322,15 @@ class _LoginScreenState extends State<LoginScreen> {
             vertical: mobile ? 28 : 40,
           ),
           decoration: BoxDecoration(
-            color: Colors.grey.shade900.withValues(alpha: 0.15),
+            color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
             borderRadius: BorderRadius.circular(mobile ? 16 : 22),
             border: Border.all(
-              color: Colors.grey.shade300.withValues(alpha: 0.6),
+              color: Colors.grey.shade300.withAlpha(153), // 0.6 * 255 ≈ 153
               width: mobile ? 1.1 : 1.4,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
+                color: Colors.black.withAlpha(46), // 0.18 * 255 ≈ 46
                 blurRadius: mobile ? 6 : 12,
                 offset: const Offset(0, 4),
               ),

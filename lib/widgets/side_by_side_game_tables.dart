@@ -109,7 +109,7 @@ class SideBySideGameTables extends StatelessWidget {
               height: rowHeight,
               padding: const EdgeInsets.symmetric(horizontal: 2),
               color: isStriped
-                  ? cs.surfaceContainerHighest.withValues(alpha: 0.30)
+                  ? cs.surfaceContainerHighest.withAlpha(76) // 0.30 opacity
                   : cs.surface,
               child: Row(
                 children: columns.map((c) {
@@ -220,7 +220,7 @@ class SideBySideGameTables extends StatelessWidget {
               height: compact ? 24 : rowHeight,
               padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 3),
               color: isStriped
-                  ? cs.surfaceContainerHighest.withValues(alpha: 0.30)
+                  ? cs.surfaceContainerHighest.withAlpha(76) // 0.30 opacity
                   : cs.surface,
               child: Row(
                 children: columns.map((c) {

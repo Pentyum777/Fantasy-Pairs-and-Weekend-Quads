@@ -623,26 +623,25 @@ bool get isLandscapePhone {
         width: isLandscapePhone ? 100 : 125,
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: selected
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
-              : Theme.of(context).colorScheme.surface,
-          border: Border.all(
-            color: selected
-                ? Theme.of(context).colorScheme.primary
-                : Colors.grey.shade400,
-            width: selected ? 
-2 : 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
+  borderRadius: BorderRadius.circular(12),
+  color: selected
+      ? Theme.of(context).colorScheme.primary.withAlpha(20)   // 0.08 opacity
+      : Theme.of(context).colorScheme.surface,
+  border: Border.all(
+    color: selected
+        ? Theme.of(context).colorScheme.primary
+        : Colors.grey.shade400,
+    width: selected ? 2 : 1,
+  ),
+  boxShadow: [
+    BoxShadow(
+      color: Colors.black.withAlpha(15), // 0.06 opacity
+      blurRadius: 6,
+      offset: const Offset(0, 3),
+    ),
+  ],
+)
+          ,child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(

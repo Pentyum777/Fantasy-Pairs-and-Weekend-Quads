@@ -25,9 +25,9 @@ Widget buildSharedTableRow({
   final cs = Theme.of(context).colorScheme;
 
   final Color bg = isHighlighted
-      ? Colors.amber.withValues(alpha: 0.15)
+      ? Colors.amber.withAlpha(38)                     // 0.15 opacity
       : index.isOdd
-          ? cs.surfaceContainerHighest.withValues(alpha: 0.25)
+          ? cs.surfaceContainerHighest.withAlpha(64)   // 0.25 opacity
           : cs.surface;
 
   return SizedBox(
@@ -38,7 +38,7 @@ Widget buildSharedTableRow({
         color: bg,
         border: Border(
           bottom: BorderSide(
-            color: cs.outlineVariant.withValues(alpha: 0.6),
+            color: cs.outlineVariant.withAlpha(153),   // 0.6 opacity
             width: 0.5,
           ),
         ),

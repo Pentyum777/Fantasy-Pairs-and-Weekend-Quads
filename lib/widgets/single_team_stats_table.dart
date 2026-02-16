@@ -118,7 +118,7 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
                   height: rowHeight,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   color: isStriped
-                      ? cs.surfaceContainerHighest.withValues(alpha: 0.30)
+                      ? cs.surfaceContainerHighest.withAlpha(76) // 0.30 opacity
                       : cs.surface,
                   child: Row(
                     children: widget.columns
