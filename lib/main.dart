@@ -59,7 +59,6 @@ class _MyAppState extends State<MyApp> {
         final email = account.username;
         print("MSAL(Dart): Logged in as $email");
 
-        // Safely assign user role
         try {
           userRoleService.setUser(email);
         } catch (e, st) {
@@ -67,7 +66,6 @@ class _MyAppState extends State<MyApp> {
           print(st);
         }
 
-        // Update UI + start fixture loading
         setState(() {
           _token = token;
 
@@ -76,7 +74,7 @@ class _MyAppState extends State<MyApp> {
           } catch (e, st) {
             print("MSAL(Dart): ERROR starting _loadAllFixtures() → $e");
             print(st);
-            _fixtureLoadFuture = Future.value(); // prevent crash
+            _fixtureLoadFuture = Future.value();
           }
         });
       } catch (e, st) {
@@ -98,13 +96,9 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(primarySwatch: Colors.blue),
       home: Container(
         decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.topCenter,
-            radius: 1.2,
-            colors: [
-              Color(0xFFE8ECF7),
-              Color(0xFFF7F9FC),
-            ],
+          image: DecorationImage(
+            image: AssetImage("assets/images/stadium_glow.png"),
+            fit: BoxFit.cover,
           ),
         ),
         child: _token == null
@@ -198,7 +192,7 @@ class _MyAppState extends State<MyApp> {
 }
 
 // ---------------------------------------------------------------------------
-// ⭐ UPDATED LOGIN SCREEN (PRO TILE SYSTEM)
+// ⭐ LOGIN SCREEN WITH GLOBAL BACKGROUND + FOOTBALL BUTTON + HOVER GLOW
 // ---------------------------------------------------------------------------
 
 class LoginScreen extends StatefulWidget {
@@ -212,9 +206,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
-
   bool _hovering = false;
-
 
   void _login() {
     setState(() => _loading = true);
@@ -226,87 +218,86 @@ class _LoginScreenState extends State<LoginScreen> {
     return size.height > size.width && size.width < 600;
   }
 
-  
   @override
-Widget build(BuildContext context) {
-  final bool mobile = isPortraitPhone(context);
+  Widget build(BuildContext context) {
+    final bool mobile = isPortraitPhone(context);
 
-  return Container(
-    decoration: const BoxDecoration(
-      image: DecorationImage(
-        image: AssetImage("assets/images/stadium_glow.png"),
-        fit: BoxFit.cover,
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage("assets/images/stadium_glow.png"),
+          fit: BoxFit.cover,
+        ),
       ),
-    ),
-    child: Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text("AFL Login"),
-        centerTitle: true,
-        backgroundColor: Colors.blue.shade700,
-      ),
-      body: Center(
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: mobile ? 24 : 40,
-            vertical: mobile ? 28 : 40,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
-            borderRadius: BorderRadius.circular(mobile ? 16 : 22),
-            border: Border.all(
-              color: Colors.grey.shade300.withAlpha(153),
-              width: mobile ? 1.1 : 1.4,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text(""),
+          centerTitle: true,
+          backgroundColor: Colors.blue.shade700,
+        ),
+        body: Center(
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: mobile ? 24 : 40,
+              vertical: mobile ? 28 : 40,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(46),
-                blurRadius: mobile ? 6 : 12,
-                offset: const Offset(0, 4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade900.withAlpha((255 * 0.15).round()),
+              borderRadius: BorderRadius.circular(mobile ? 16 : 22),
+              border: Border.all(
+                color: Colors.grey.shade300.withAlpha(153),
+                width: mobile ? 1.1 : 1.4,
               ),
-            ],
-          ),
-
-          child: _loading
-              ? const CircularProgressIndicator()
-              : MouseRegion(
-                  onEnter: (_) => setState(() => _hovering = true),
-                  onExit: (_) => setState(() => _hovering = false),
-                  child: GestureDetector(
-                    onTap: _login,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: EdgeInsets.all(mobile ? 12 : 20),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(mobile ? 16 : 22),
-                        boxShadow: _hovering
-                            ? [
-                                BoxShadow(
-                                  color: Colors.blueAccent.withValues(
-                                      alpha: 255 * 0.55),
-                                  blurRadius: 25,
-                                  spreadRadius: 4,
-                                ),
-                              ]
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withAlpha(46),
-                                  blurRadius: mobile ? 6 : 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                      ),
-                      child: Image.asset(
-                        "assets/images/Football.Logo.png",
-                        height: mobile ? 100 : 150,
-                        fit: BoxFit.contain,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(46),
+                  blurRadius: mobile ? 6 : 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: _loading
+                ? const CircularProgressIndicator()
+                : MouseRegion(
+                    onEnter: (_) => setState(() => _hovering = true),
+                    onExit: (_) => setState(() => _hovering = false),
+                    child: GestureDetector(
+                      onTap: _login,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: EdgeInsets.all(mobile ? 12 : 20),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(mobile ? 16 : 22),
+                          boxShadow: _hovering
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.blueAccent.withValues(
+                                      alpha: 255 * 0.55,
+                                    ),
+                                    blurRadius: 25,
+                                    spreadRadius: 4,
+                                  ),
+                                ]
+                              : [
+                                  BoxShadow(
+                                    color: Colors.black.withAlpha(46),
+                                    blurRadius: mobile ? 6 : 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                        ),
+                        child: Image.asset(
+                          "assets/images/Football.Logo.png",
+                          height: mobile ? 100 : 150,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                   ),
-                ),
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
