@@ -2,15 +2,8 @@ import 'package:flutter/material.dart';
 import '../helpers/round_helper.dart';
 
 class RoundSelectionScreen extends StatelessWidget {
-  /// Main‑season rounds: null (PS), 0–24
   final List<int?> rounds;
-
-  /// Callback receives:
-  ///   - null → Pre‑Season (PS)
-  ///   - int  → R0–R24
   final void Function(int? round) onRoundSelected;
-
-  /// Completed main‑season rounds only
   final Set<int> completedRounds;
 
   const RoundSelectionScreen({
@@ -20,8 +13,71 @@ class RoundSelectionScreen extends StatelessWidget {
     required this.completedRounds,
   });
 
+  bool isPortraitPhone(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return size.height > size.width && size.width < 600;
+  }
+
+  Widget buildProTile({
+    required BuildContext context,
+    required String label,
+    required VoidCallback onTap,
+    bool completed = false,
+  }) {
+    final bool mobile = isPortraitPhone(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(
+            vertical: mobile ? 8 : 10,
+            horizontal: mobile ? 6 : 8,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+            color: completed
+                ? Colors.grey.shade700.withValues(alpha: 0.25)
+                 :Colors.grey.shade900.withValues(alpha: 0.15),
+
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: mobile ? 4 : 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+            border: Border.all(
+              color: completed
+                  ? Colors.grey.shade500
+                  : Colors.grey.shade300.withValues(alpha: 0.6),
+
+              width: mobile ? 1.1 : 1.6,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: mobile ? 11 : 15,
+                color: completed
+                    ? Colors.grey.shade300
+                    : Colors.grey.shade100,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool mobile = isPortraitPhone(context);
     final items = rounds.map(RoundHelper.toToken).toList();
 
     return Scaffold(
@@ -32,65 +88,25 @@ class RoundSelectionScreen extends StatelessWidget {
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 5,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 2.8,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: mobile ? 3 : 5,
+              mainAxisSpacing: mobile ? 10 : 12,
+              crossAxisSpacing: mobile ? 10 : 12,
+              childAspectRatio: mobile ? 2.0 : 2.8,
             ),
             itemCount: items.length,
             itemBuilder: (context, i) {
               final token = items[i];
               final round = RoundHelper.fromToken(token);
 
-              // ⭐ Null‑safe: only real rounds can be completed
               final isCompleted =
                   round != null && completedRounds.contains(round);
 
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(20),
-                  onTap: () => onRoundSelected(round),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: isCompleted
-                          ? Colors.grey.shade300
-                          : Theme.of(context).colorScheme.surface,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: isCompleted
-                            ? Colors.grey.shade500
-                            : Theme.of(context).colorScheme.primary,
-                        width: 1.6,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        RoundHelper.label(round),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: isCompleted
-                              ? Colors.grey.shade700
-                              : Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              return buildProTile(
+                context: context,
+                label: RoundHelper.label(round),
+                completed: isCompleted,
+                onTap: () => onRoundSelected(round),
               );
             },
           ),

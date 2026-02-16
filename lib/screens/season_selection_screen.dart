@@ -10,8 +10,66 @@ class SeasonSelectionScreen extends StatelessWidget {
     required this.onSelect,
   });
 
+  bool isPortraitPhone(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return size.height > size.width && size.width < 600;
+  }
+
+  Widget buildProTile({
+    required BuildContext context,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final bool mobile = isPortraitPhone(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(
+            vertical: mobile ? 8 : 12,
+            horizontal: mobile ? 6 : 10,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+            color: Colors.grey.shade900.withValues(alpha: 0.15),
+
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+
+                blurRadius: mobile ? 4 : 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+            border: Border.all(
+              color: Colors.grey.shade300.withValues(alpha: 0.6),
+
+              width: mobile ? 1.1 : 1.4,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: mobile ? 12 : 16,
+                color: Colors.grey.shade100,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool mobile = isPortraitPhone(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Select Season"),
@@ -23,67 +81,20 @@ class SeasonSelectionScreen extends StatelessWidget {
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 5,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 4.2,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: mobile ? 3 : 5,
+              mainAxisSpacing: mobile ? 10 : 12,
+              crossAxisSpacing: mobile ? 10 : 12,
+              childAspectRatio: mobile ? 2.4 : 4.2,
             ),
             itemCount: seasons.length,
             itemBuilder: (context, index) {
               final season = seasons[index];
 
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-
-                  onTap: () {
-                    print("🟥 DEBUG: Season tile tapped → $season");
-
-                    try {
-                      print("🟥 DEBUG: Calling onSelect($season)...");
-                      onSelect(season);
-                      print("🟥 DEBUG: onSelect($season) completed without throwing.");
-                    } catch (e, st) {
-                      print("🟥 ERROR inside onSelect($season) → $e");
-                      print(st);
-                    }
-                  },
-
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: Theme.of(context).colorScheme.surface,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 1.4,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        "$season",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              return buildProTile(
+                context: context,
+                label: "$season",
+                onTap: () => onSelect(season),
               );
             },
           ),

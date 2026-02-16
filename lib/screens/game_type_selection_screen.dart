@@ -50,9 +50,9 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
 
   final ChampionshipService championshipService = ChampionshipService();
 
-  @override
-  void initState() {
-    super.initState();
+  bool isPortraitPhone(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return size.height > size.width && size.width < 600;
   }
 
   /// Creates a new empty selection list (only if not already cached)
@@ -82,9 +82,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       return _selectionCache[key]!;
     }
 
-    // Create new only once
-    final playersPerPunter =
-        type == "weekend_quads" ? 4 : 2;
+    final playersPerPunter = type == "weekend_quads" ? 4 : 2;
 
     final newList = _createEmptySelections(playersPerPunter);
     _selectionCache[key] = newList;
@@ -130,13 +128,68 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
           season: widget.season,
           round: widget.round,
           gameType: type,
-          selections: selections, // persistent list
+          selections: selections,
           fixtureRepo: widget.fixtureRepo,
           playerRepo: widget.playerRepo,
           fantasyService: widget.fantasyService,
           championshipService: championshipService,
           roundCompletionService: widget.roundCompletionService,
           userRoleService: widget.userRoleService,
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // ⭐ Professional Tile Builder (shared across all screens)
+  // ---------------------------------------------------------------------------
+  Widget buildProTile({
+    required BuildContext context,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final bool mobile = isPortraitPhone(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(mobile ? 14 : 20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(
+            vertical: mobile ? 8 : 14,
+            horizontal: mobile ? 6 : 10,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(mobile ? 14 : 22),
+            color: Colors.grey.shade900.withValues(alpha: 0.15),
+
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+
+                blurRadius: mobile ? 4 : 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+            border: Border.all(
+              color: Colors.grey.shade300.withValues(alpha: 0.6),
+
+              width: mobile ? 1.1 : 1.6,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: mobile ? 11 : 15,
+                color: Colors.grey.shade100,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -179,6 +232,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     }
 
     final String roundLabel = RoundHelper.label(widget.round);
+    final bool mobile = isPortraitPhone(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -190,55 +244,20 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 2.6,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: mobile ? 2 : 3,
+              mainAxisSpacing: mobile ? 10 : 16,
+              crossAxisSpacing: mobile ? 10 : 16,
+              childAspectRatio: mobile ? 2.2 : 2.6,
             ),
             itemCount: gameTypes.length,
             itemBuilder: (context, i) {
               final type = gameTypes[i];
 
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(22),
-                  onTap: () => _openGame(type),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(22),
-                      color: Theme.of(context).colorScheme.surface,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 1.6,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        shortLabel(type),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              return buildProTile(
+                context: context,
+                label: shortLabel(type),
+                onTap: () => _openGame(type),
               );
             },
           ),

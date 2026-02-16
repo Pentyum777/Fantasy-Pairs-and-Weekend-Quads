@@ -785,25 +785,39 @@ bool get isLandscapePhone {
             height: 32,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
-              children: [
-                Text(
-                  "Punter Controls",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  _controlsCollapsed
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_up,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-              ],
-            ),
+  children: [
+    Text(
+      "Punter Controls",
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: theme.colorScheme.primary,
+      ),
+    ),
+    const Spacer(),
+    // ⭐ Always-visible leaderboard collapse arrow
+    IconButton(
+      iconSize: 18,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      icon: Icon(
+        _leaderboardCollapsed ? Icons.chevron_left : Icons.chevron_right,
+        color: theme.colorScheme.primary,
+      ),
+      onPressed: () {
+        setState(() => _leaderboardCollapsed = !_leaderboardCollapsed);
+      },
+    ),
+    const SizedBox(width: 4),
+    Icon(
+      _controlsCollapsed
+          ? Icons.keyboard_arrow_down
+          : Icons.keyboard_arrow_up,
+      size: 20,
+      color: theme.colorScheme.primary,
+    ),
+  ],
+),
           ),
         ),
 
@@ -889,20 +903,7 @@ bool get isLandscapePhone {
                 ),
               ],
               const Spacer(),
-              IconButton(
-                iconSize: 20,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Icon(
-                  _leaderboardCollapsed
-                      ? Icons.chevron_left
-                      : Icons.chevron_right,
-                  color: theme.colorScheme.primary,
-                ),
-                onPressed: () {
-                  setState(() => _leaderboardCollapsed = !_leaderboardCollapsed);
-                },
-              ),
+              
             ],
           ),
       ],
