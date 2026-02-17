@@ -457,34 +457,34 @@ Widget build(BuildContext context) {
     }
 
     return Container(
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: TextField(
-        enabled: widget.userRoleService.isAdmin,
-        controller: controller,
-        focusNode: focusNode,
-        textAlign: TextAlign.left,
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-        ),
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 2),
-          hintText: "P${row.punterNumber}",
-          hintStyle: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        onChanged: (value) {
-          row.punterName = value;
-          widget.onChanged?.call();
-          _saveSnapshot();
-        },
+  alignment: Alignment.centerLeft,
+  padding: const EdgeInsets.symmetric(horizontal: 4),
+  child: TextField(
+    enabled: widget.userRoleService.isAdmin,   // ⭐ Admin-only editing
+    controller: controller,
+    focusNode: focusNode,
+    textAlign: TextAlign.left,
+    style: theme.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.1,
+    ),
+    decoration: InputDecoration(
+      border: InputBorder.none,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(vertical: 2),
+      hintText: "P${row.punterNumber}",
+      hintStyle: theme.textTheme.bodySmall?.copyWith(
+        color: cs.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
       ),
-    );
+    ),
+    onChanged: (value) {
+      row.punterName = value;
+      widget.onChanged?.call();
+      _saveSnapshot();
+    },
+  ),
+);
   }
 
   // ---------------------------------------------------------------------------
@@ -533,28 +533,31 @@ Widget build(BuildContext context) {
     final hintText = "P$globalPickNumber";
 
     return DropdownSearch<AflPlayer>(
-      selectedItem: selectedPlayer,
-      items: filteredPlayers,
-      itemAsString: (p) => p.fullName,
-      enabled: widget.userRoleService.isAdmin,
-      popupProps: isLandscapePhone
-          ? PopupProps.bottomSheet(
-              showSearchBox: true,
-              constraints: const BoxConstraints(maxHeight: 300),
-            )
-          : PopupProps.menu(
-              constraints: BoxConstraints(
-                minWidth: kPickColumnWidth,
-                maxWidth: kPickColumnWidth,
-              ),
-              showSearchBox: true,
-              searchFieldProps: TextFieldProps(
-                decoration: const InputDecoration(
-                  hintText: "Search player...",
-                  isDense: true,
-                ),
-              ),
+  selectedItem: selectedPlayer,
+  items: filteredPlayers,
+  itemAsString: (p) => p.fullName,
+
+  // ⭐ Admin-only editing (no hidden isCompleted lock)
+  enabled: widget.userRoleService.isAdmin,
+
+  popupProps: isLandscapePhone
+      ? PopupProps.bottomSheet(
+          showSearchBox: true,
+          constraints: const BoxConstraints(maxHeight: 300),
+        )
+      : PopupProps.menu(
+          constraints: BoxConstraints(
+            minWidth: kPickColumnWidth,
+            maxWidth: kPickColumnWidth,
+          ),
+          showSearchBox: true,
+          searchFieldProps: TextFieldProps(
+            decoration: const InputDecoration(
+              hintText: "Search player...",
+              isDense: true,
             ),
+          ),
+        ),
       dropdownDecoratorProps: DropDownDecoratorProps(
         dropdownSearchDecoration: InputDecoration(
           isDense: true,
