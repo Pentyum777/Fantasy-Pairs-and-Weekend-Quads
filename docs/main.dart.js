@@ -27218,7 +27218,7 @@ r=A.O(new A.a_(a,new A.axS(),r),r.h("al.E"))
 s=s.h("a_<1,p<eu>>")
 s=A.O(new A.a_(a,new A.axT(),s),s.h("al.E"))
 return new A.Io(r,s)},
-aIn(a,b,c,d,e,f,g,h,i,j,k,l){return new A.Cl(j,l,a,i,d,e,g,h,c,k,null)},
+aIn(a,b,c,d,e,f,g,h,i,j,k,l,m,n){return new A.Cl(l,n,a,k,d,e,g,i,c,j,h,m,null)},
 eu:function eu(a,b){this.a=a
 this.b=b},
 Io:function Io(a,b){this.a=a
@@ -27226,7 +27226,7 @@ this.b=b},
 axS:function axS(){},
 axT:function axT(){},
 axR:function axR(){},
-Cl:function Cl(a,b,c,d,e,f,g,h,i,j,k){var _=this
+Cl:function Cl(a,b,c,d,e,f,g,h,i,j,k,l,m){var _=this
 _.c=a
 _.d=b
 _.f=c
@@ -27237,7 +27237,9 @@ _.y=g
 _.Q=h
 _.as=i
 _.at=j
-_.a=k},
+_.ax=k
+_.ay=l
+_.a=m},
 XV:function XV(a,b,c,d,e){var _=this
 _.d=a
 _.e=b
@@ -90787,7 +90789,7 @@ if(q==null)q=h
 q=A.ae(64,q.q()>>>16&255,q.q()>>>8&255,q.q()&255)
 j=A.cI(6)
 o=o.Q
-n.push(A.f_(A.b([k,B.zB,new A.zW(l,a0),B.ih,A.ca(a0,A.bN("Refresh",a0,a0,a0,a0,o==null?a0:o.qD(p,B.bt),a0,a0),B.m,a0,a0,new A.cc(q,a0,a0,j,a0,a0,B.V),a0,a0,a0,B.nM,a0,a0,a0),B.lA],m),B.Y,B.M,B.a_))}return A.nf(A.eV(n,B.Y,B.M,B.a_),B.P,a0,B.R,r,a0,new A.ay(0,a1,0,a1),a0)},
+n.push(A.f_(A.b([k,B.zB,new A.zW(l,a0),B.ih,A.ca(a0,A.bN("Updated 14:32",a0,a0,a0,a0,o==null?a0:o.qD(p,B.bt),a0,a0),B.m,a0,a0,new A.cc(q,a0,a0,j,a0,a0,B.V),a0,a0,a0,B.nM,a0,a0,a0),B.lA],m),B.Y,B.M,B.a_))}return A.nf(A.eV(n,B.Y,B.M,B.a_),B.P,a0,B.R,r,a0,new A.ay(0,a1,0,a1),a0)},
 a5u(){return A.aHv(new A.asO(this))},
 aai(a){var s=this
 if(s.a.e!=="friday_pairs")return
@@ -90932,37 +90934,43 @@ $2(a,b){var s=b.b,r=this.a,q=r.a,p=q.e==="weekend_quads"?4:2,o=r.r,n=o?40:172,m=
 return A.aGT(new A.asN(r,s,p,m,n),q.w.vI(q.c),t.NU)},
 $S:565}
 A.asN.prototype={
-$2(a,b){var s,r,q,p,o,n,m,l,k,j,i,h,g=this,f=null,e=b.b
-if(e==null)return B.n5
-s=g.a
+$2(a,b){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e=this,d=null,c=b.b
+if(c==null)return B.n5
+s=e.a
 r=s.Oi()
 q=A.M(r).h("dI<1,f>")
-q=J.a2L(e,new A.asJ(A.eq(new A.dI(r,new A.asK(),q),q.h("l.E"))))
+q=J.a2L(c,new A.asJ(A.eq(new A.dI(r,new A.asK(),q),q.h("l.E"))))
 p=A.O(q,q.$ti.h("l.E"))
-if(s.gfB()){e=g.b
+if(s.gfB()){c=e.b
 q=s.a
 o=q.e
-n=s.d
-m=q.f
-l=s.e
+n=B.e.k(q.c)
+m=q.d
+m.toString
+l=s.d
+k=q.f
+j=s.e
 q=q.Q
-k=q.a===B.cr
-j=k?new A.asL():f
-i=s.r
-h=s.Q
-e=A.cN(A.aIn(p,i,o,l,j,g.c,!k,h,m,e,q,n),f,e)
-q=i?-260:0
-return A.mA(B.cv,A.b([e,A.aBA(0,new A.B5(A.es(m,0,A.k8(n,"count",t.S),A.M(m).c).e0(0),34,s.r,h,f),B.P,B.R,f,q,0,260)],t.p),B.S,B.c3,f)}e=g.d
+i=q.a===B.cr
+h=i?new A.asL():d
+g=s.r
+f=s.Q
+c=A.cN(A.aIn(p,g,o,j,h,e.c,!i,m,f,n,k,c,q,l),d,c)
+q=g?-260:0
+return A.mA(B.cv,A.b([c,A.aBA(0,new A.B5(A.es(k,0,A.k8(l,"count",t.S),A.M(k).c).e0(0),34,s.r,f,d),B.P,B.R,d,q,0,260)],t.p),B.S,B.c3,d)}c=e.d
 q=s.a
 o=q.e
-n=s.d
-m=q.f
-l=s.e
+n=B.e.k(q.c)
+m=q.d
+m.toString
+l=s.d
+k=q.f
+j=s.e
 q=q.Q
-k=q.a
-j=k===B.cr?new A.asM():f
-i=s.Q
-return A.f_(A.b([A.cN(A.aIn(p,s.r,o,l,j,g.c,k===B.lW,i,m,e,q,n),f,e),A.cN(new A.B5(A.es(m,0,A.k8(n,"count",t.S),A.M(m).c).e0(0),34,s.r,i,f),f,g.e)],t.p),B.br,B.M,B.a_)},
+i=q.a
+h=i===B.cr?new A.asM():d
+g=s.Q
+return A.f_(A.b([A.cN(A.aIn(p,s.r,o,j,h,e.c,i===B.lW,m,g,n,k,c,q,l),d,c),A.cN(new A.B5(A.es(k,0,A.k8(l,"count",t.S),A.M(k).c).e0(0),34,s.r,g,d),d,e.e)],t.p),B.br,B.M,B.a_)},
 $S:566}
 A.asK.prototype={
 $1(a){return A.b([a.d,a.e],t.s)},
@@ -91266,7 +91274,7 @@ if(r==null){r=A.uF(!0,n,!0,!0,n,n,!1)
 k.m(0,j,r)}k=o.r
 if(!k.u(0,j)){k.D(0,j)
 r.a0(0,new A.avI(r,i,b))}k=o.a
-k=k.at.a===B.cr&&!k.w
+k=k.ay.a===B.cr&&!k.w
 s=m.ok.Q
 q=s==null
 p=q?n:s.H4(B.bt,0.1)
@@ -91285,7 +91293,7 @@ i=A.O(new A.ab(j,new A.avy(c,k),s),s.h("l.E"))
 B.b.d1(i,new A.avz())
 h=g.a9h(d,b.a-1)
 s=g.a
-s=s.at.a===B.cr&&!s.w
+s=s.ay.a===B.cr&&!s.w
 r=t.rU
 r=g.gfB()?new A.r8(f,!0,f,B.RN,B.mT,B.n_,B.eD,f,f,f,f,f,B.uR,!1,!1,B.mP,B.mL,B.mI,B.mV,B.mU,B.hk,f,B.BC,!1,r):new A.r8(f,!0,f,new A.RF(B.Hq),B.mT,B.n_,B.eD,f,f,f,f,f,B.uQ,!1,!1,B.mP,B.mL,B.mI,B.mV,B.mU,B.hk,f,new A.ah(g.grd(),g.grd(),0,1/0),!1,r)
 return new A.ux(i,k,new A.avA(g,b,d),new A.avB(g,"P"+h,e,e.ax),new A.avC(),s,B.DF,B.FR,new A.Cc(f,f,f,f,B.aq,r.a,r.b,r.c,r.d,r.e,r.f,r.r,r.w,r.x,r.y,r.z,r.Q,r.as,!1,!1,r.ay,r.ch,r.CW,r.cx,r.cy,r.db,r.dx,r.dy,!1,t.xa),new A.a6t(A.aCt(f,B.iG,f,B.h9,f,f,f,f,!0,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,!0,f,f,f,!0,!0,f,f,f,f,f,f,f,f,f,f,f,f,f,f)),f,t.ZU)},
@@ -91312,7 +91320,7 @@ if(q<o-1)B.b.Yo(p,q+1,o)
 s=A.aXL(r.a.r)
 r.w.push(s)
 r.x=r.w.length-1
-if(r.a.at.a===B.cr)r.y0(s)},
+if(r.a.ay.a===B.cr)r.y0(s)},
 a54(a){var s,r,q,p,o,n,m,l,k,j,i,h,g,f
 for(s=t.N,r=t.z,q=a.b,p=a.a,o=this.e,n=0;m=this.a.r,n<m.length;++n){l=m[n]
 l.c=p[n]
@@ -91329,19 +91337,22 @@ else{i.b=B.b.gO(f)
 k=h.b
 i.c=k==null?null:A.qv(k,s,r)}}}},
 y0(a){return this.agO(a)},
-agO(a){var s=0,r=A.U(t.H),q=1,p=[],o=this,n,m,l,k,j,i,h,g,f,e,d
-var $async$y0=A.V(function(b,c){if(b===1){p.push(c)
+agO(a){var s=0,r=A.U(t.H),q=1,p=[],o=this,n,m,l,k,j,i,h,g,f,e,d,c,b
+var $async$y0=A.V(function(a0,a1){if(a0===1){p.push(a1)
 s=q}for(;;)switch(s){case 0:q=3
 n=A.fM("https://fantasy-pairs-and-weekend-quads-production.up.railway.app/saveSelections")
 j=t.N
 i=A.ax(["Content-Type","application/json"],j,j)
-h=o.a.as
-g=a.b
-f=A.M(g).h("a_<1,p<au<f,E?>>>")
-g=A.O(new A.a_(g,new A.avL(),f),f.h("al.E"))
+h=o.a
+g=h.as
+f=h.at
+h=h.ax
+e=a.b
+d=A.M(e).h("a_<1,p<au<f,E?>>>")
+e=A.O(new A.a_(e,new A.avL(),d),d.h("al.E"))
 s=6
-return A.X(A.aMw(n,B.bp.HI(A.ax(["gameType",h,"punterNames",a.a,"picks",g],j,t.K),null),i),$async$y0)
-case 6:m=c
+return A.X(A.aMw(n,B.bp.HI(A.ax(["gameType",g,"season",f,"round",h,"punterNames",a.a,"picks",e],j,t.K),null),i),$async$y0)
+case 6:m=a1
 j=m
 l=B.bp.zq(0,A.a2o(A.a25(j.e).c.a.i(0,"charset")).cA(0,j.w),null)
 if(J.bo(l,"lastUpdated")!=null)J.bo(l,"lastUpdated")
@@ -91349,8 +91360,8 @@ q=1
 s=5
 break
 case 3:q=2
-d=p.pop()
-k=A.aw(d)
+b=p.pop()
+k=A.aw(b)
 A.tu().$1("\u274c Failed to save selections: "+A.o(k))
 s=5
 break
@@ -91362,7 +91373,8 @@ return A.T($async$y0,r)},
 xx(){var s=0,r=A.U(t.H),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b,a
 var $async$xx=A.V(function(a0,a1){if(a0===1){o.push(a1)
 s=p}for(;;)switch(s){case 0:p=4
-m=A.fM("https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections")
+f=n.a
+m=A.fM("https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections?gameType="+f.as+"&season="+f.at+"&round="+f.ax)
 s=7
 return A.X(A.aEo(m),$async$xx)
 case 7:l=a1

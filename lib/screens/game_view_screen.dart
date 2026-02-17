@@ -863,7 +863,7 @@ Widget build(BuildContext context) {
     borderRadius: BorderRadius.circular(6),
   ),
   child: Text(
-    "Refresh", // <-- put whatever text you actually want here
+    "Updated 14:32",   // <-- Replace with your actual hh:mm string
     style: theme.textTheme.bodySmall?.copyWith(
       fontWeight: FontWeight.w600,
       color: theme.colorScheme.primary,
@@ -922,6 +922,8 @@ Widget build(BuildContext context) {
                   width: innerWidth,
                   child: PunterSelectionTable(
                     gameType: widget.gameType,
+                    season: widget.season.toString(),
+round: widget.round!,
                     tableWidth: innerWidth,
                     visiblePunterCount: _visiblePunterCount,
                     playersPerPunter: picks,
@@ -933,7 +935,6 @@ Widget build(BuildContext context) {
                     collapsed: _leaderboardCollapsed,
                     scrollController: _punterScrollController,
                     userRoleService: widget.userRoleService,
-                    
                   ),
                 ),
 
@@ -967,14 +968,15 @@ Widget build(BuildContext context) {
                 width: punterTableWidth,
                 child: PunterSelectionTable(
                   gameType: widget.gameType,
+                  season: widget.season.toString(),
+round: widget.round!,
                   tableWidth: punterTableWidth,
                   visiblePunterCount: _visiblePunterCount,
                   playersPerPunter: picks,
                   availablePlayers: availablePlayers,
                   selections: widget.selections,
                   isCompleted: _isCompleted,
-                  readOnly:
-                      widget.userRoleService.isReadOnly || _isSubmitted,
+                  readOnly: widget.userRoleService.isReadOnly || _isSubmitted,
                   onChanged: widget.userRoleService.isAdmin ? () {} : null,
                   collapsed: _leaderboardCollapsed,
                   scrollController: _punterScrollController,

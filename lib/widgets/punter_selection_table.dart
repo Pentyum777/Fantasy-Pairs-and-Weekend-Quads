@@ -74,25 +74,29 @@ class PunterSelectionTable extends StatefulWidget {
   final bool collapsed;
   final ScrollController? scrollController;
   final String gameType;
+  final String season;
+final int round;
   
 
   final UserRoleService userRoleService;
 
   const PunterSelectionTable({
-    super.key,
-    required this.tableWidth,
-    required this.visiblePunterCount,
-    required this.playersPerPunter,
-    required this.availablePlayers,
-    required this.selections,
-    required this.isCompleted,
-    required this.readOnly,
-    required this.gameType,
-    required this.userRoleService,
-    this.onChanged,
-    required this.collapsed,
-    this.scrollController,
-  });
+  super.key,
+  required this.gameType,
+  required this.season,     // ⭐ ADD THIS
+  required this.round,      // ⭐ ADD THIS
+  required this.tableWidth,
+  required this.visiblePunterCount,
+  required this.playersPerPunter,
+  required this.availablePlayers,
+  required this.selections,
+  required this.isCompleted,
+  required this.readOnly,
+  required this.onChanged,
+  required this.collapsed,
+  required this.scrollController,
+  required this.userRoleService,
+});
 
   @override
   State<PunterSelectionTable> createState() => _PunterSelectionTableState();
@@ -820,86 +824,91 @@ int? _lastUpdated;
   // ---------------------------------------------------------------------------
 
   Future<void> _saveSnapshotToBackend(_TableSnapshot snap) async {
-    try {
-      final url = Uri.parse(
-        "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/saveSelections",
-      );
+  try {
+    final url = Uri.parse(
+      "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/saveSelections",
+    );
 
-      final res = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "gameType": widget.gameType,
-          "punterNames": snap.punterNames,
-          "picks": snap.picks.map((row) {
-            return row.map((p) {
-              return {
-                "playerId": p.playerId,
-                "stats": p.stats,
-              };
-            }).toList();
-          }).toList(),
-        }),
-      );
+    final res = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "gameType": widget.gameType,
+        "season": widget.season,   // ⭐ REQUIRED
+        "round": widget.round,     // ⭐ REQUIRED
+        "punterNames": snap.punterNames,
+        "picks": snap.picks.map((row) {
+          return row.map((p) {
+            return {
+              "playerId": p.playerId,
+              "stats": p.stats,
+            };
+          }).toList();
+        }).toList(),
+      }),
+    );
 
-      final json = jsonDecode(res.body);
+    final json = jsonDecode(res.body);
 
-      if (json["lastUpdated"] != null) {
-        _lastUpdated = json["lastUpdated"];
-      }
-    } catch (e) {
-      debugPrint("❌ Failed to save selections: $e");
+    if (json["lastUpdated"] != null) {
+      _lastUpdated = json["lastUpdated"];
     }
+  } catch (e) {
+    debugPrint("❌ Failed to save selections: $e");
   }
+}
 
   // ---------------------------------------------------------------------------
   // LOAD SNAPSHOT FROM BACKEND
   // ---------------------------------------------------------------------------
 
   Future<void> _loadSnapshotFromBackend() async {
-    try {
-      final url = Uri.parse(
-        "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections",
-      );
+  try {
+    final url = Uri.parse(
+      "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections"
+      "?gameType=${widget.gameType}"
+      "&season=${widget.season}"
+      "&round=${widget.round}",
+    );
 
-      final res = await http.get(url);
-      if (res.statusCode != 200) return;
+    final res = await http.get(url);
+    if (res.statusCode != 200) return;
 
-      final json = jsonDecode(res.body);
-      if (json == null || json is! Map<String, dynamic>) return;
+    final json = jsonDecode(res.body);
+    if (json == null || json is! Map<String, dynamic>) return;
 
-      if (json["picks"] == null || json["punterNames"] == null) return;
+    if (json["picks"] == null || json["punterNames"] == null) return;
 
-      final punterNames = (json["punterNames"] as List<dynamic>)
-          .map((e) => e.toString())
-          .toList();
+    final punterNames = (json["punterNames"] as List<dynamic>)
+        .map((e) => e.toString())
+        .toList();
 
-      final picksJson = (json["picks"] as List<dynamic>)
-          .map<List<_PickSnapshot>>((row) {
-        return (row as List<dynamic>).map<_PickSnapshot>((p) {
-          return _PickSnapshot(
-            playerId: p["playerId"] as String?,
-            stats: p["stats"] == null
-                ? null
-                : Map<String, dynamic>.from(p["stats"] as Map),
-          );
-        }).toList();
+    final picksJson = (json["picks"] as List<dynamic>)
+        .map<List<_PickSnapshot>>((row) {
+      return (row as List<dynamic>).map<_PickSnapshot>((p) {
+        return _PickSnapshot(
+          playerId: p["playerId"] as String?,
+          stats: p["stats"] == null
+              ? null
+              : Map<String, dynamic>.from(p["stats"] as Map),
+        );
       }).toList();
+    }).toList();
 
-      final snap = _TableSnapshot(
-        punterNames: punterNames,
-        picks: picksJson,
-      );
+    final snap = _TableSnapshot(
+      punterNames: punterNames,
+      picks: picksJson,
+    );
 
-      setState(() {
-        _applySnapshot(snap);
-        _history = [snap];
-        _historyIndex = 0;
-      });
+    setState(() {
+      _applySnapshot(snap);
+      _history = [snap];
+      _historyIndex = 0;
+    });
 
-      widget.onChanged?.call();
-    } catch (e) {
-      debugPrint("❌ Failed to load selections: $e");
-    }
+    widget.onChanged?.call();
+  } catch (e) {
+    debugPrint("❌ Failed to load selections: $e");
   }
+}
 }
