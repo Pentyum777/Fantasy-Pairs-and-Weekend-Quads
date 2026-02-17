@@ -1,9 +1,3 @@
-// ❌ No more Playwright
-// import { chromium } from "playwright";
-
-// ✅ Pure HTTP fetch
-import fetch from "node-fetch";
-
 export async function scrapeDFS(dfsId) {
   const url = `https://dfsaustralia.com/wp-json/dfs/v1/afl-game-stats?gameId=${dfsId}`;
 
@@ -23,7 +17,6 @@ export async function scrapeDFS(dfsId) {
 
     const json = await response.json();
 
-    // DFS returns an array of players with stats
     const rows = json?.players || [];
 
     const players = rows
@@ -40,7 +33,7 @@ export async function scrapeDFS(dfsId) {
           freesAgainst,
           goals,
           behinds,
-          tog, // time on ground %
+          tog,
           startingPosition,
           benchReason,
         } = p;
@@ -86,7 +79,6 @@ export async function scrapeDFS(dfsId) {
       })
       .filter(Boolean);
 
-    // Metadata (DFS includes this too)
     const meta = {
       homeScore: json?.homeScore ?? 0,
       awayScore: json?.awayScore ?? 0,

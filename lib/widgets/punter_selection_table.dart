@@ -157,6 +157,7 @@ final Map<String, FocusNode> _pickFocusNodes = {};   // ⭐ Correct: String keys
 final Map<int, TextEditingController> _controllers = {};
 final Map<int, FocusNode> _punterFocusNodes = {};
 final Set<int> _punterListenerAdded = {};
+final Map<String, FocusNode> _searchFocusNodes = {};
 
   List<_TableSnapshot> _history = [];
   int _historyIndex = -1;
@@ -226,6 +227,7 @@ int? _lastUpdated;
   // ---------------------------------------------------------------------------
 
   @override
+@override
 Widget build(BuildContext context) {
   if (widget.readOnly) {
     _cleanInvalidSelectionsGlobal();
@@ -245,11 +247,6 @@ Widget build(BuildContext context) {
   final baseWidth = widget.tableWidth;
   final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
 
-  // ⭐ Dynamic height so table does NOT stretch to bottom of screen
-  final double tableHeight =
-      UIDimensions.headerHeight +
-      (visible.length * UIDimensions.rowHeight);
-
   return Container(
     width: tableWidth,
     decoration: BoxDecoration(
@@ -259,14 +256,14 @@ Widget build(BuildContext context) {
     child: ClipRRect(
       borderRadius: BorderRadius.circular(8),
 
-      // ⭐ One horizontal scroll view for BOTH header + body
+      // ⭐ Horizontal scroll for entire table
       child: SingleChildScrollView(
         controller: _horizontalController,
         scrollDirection: Axis.horizontal,
         child: Column(
           children: [
             // -------------------------
-            // HEADER (scrolls with body)
+            // HEADER
             // -------------------------
             SizedBox(
               width: tableWidth,
@@ -282,18 +279,19 @@ Widget build(BuildContext context) {
             Divider(height: 1, thickness: 1, color: cs.outlineVariant),
 
             // -------------------------
-            // BODY (dynamic height)
+            // BODY — ⭐ FIXED: vertical scroll enabled
             // -------------------------
             SizedBox(
               width: tableWidth,
-              height: tableHeight,
-              child: _buildBody(
-                theme,
-                cs,
-                visible,
-                pickCount,
-                tableWidth,
-                fontSize,
+              child: SingleChildScrollView(
+                child: _buildBody(
+                  theme,
+                  cs,
+                  visible,
+                  pickCount,
+                  tableWidth,
+                  fontSize,
+                ),
               ),
             ),
           ],
@@ -302,6 +300,7 @@ Widget build(BuildContext context) {
     ),
   );
 }
+
 
 
   // ---------------------------------------------------------------------------
@@ -584,7 +583,13 @@ Widget build(BuildContext context) {
   ),
   showSearchBox: true,
   searchFieldProps: TextFieldProps(
-    autofocus: true,   // ⭐ Correct autofocus
+    autofocus: true,
+    focusNode: _searchFocusNodes[pickKey] ??= FocusNode(),
+    onTap: () {
+      Future.delayed(const Duration(milliseconds: 50), () {
+        _searchFocusNodes[pickKey]?.requestFocus();
+      });
+    },
     decoration: const InputDecoration(
       hintText: "Search player...",
       isDense: true,
@@ -592,22 +597,26 @@ Widget build(BuildContext context) {
   ),
 ),
 
+ 
+
     dropdownDecoratorProps: DropDownDecoratorProps(
-      dropdownSearchDecoration: InputDecoration(
-        isDense: true,
-        border: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 4,
-          vertical: 2,
-        ),
-      ),
+  dropdownSearchDecoration: InputDecoration(
+    isDense: true,
+    border: InputBorder.none,
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: 4,
+      vertical: 2,
     ),
+  ),
+),
 
-    dropdownButtonProps: const DropdownButtonProps(
-      icon: SizedBox.shrink(),
-    ),
+dropdownButtonProps: const DropdownButtonProps(
+  icon: SizedBox.shrink(),
+),
 
-    clearButtonProps: const ClearButtonProps(isVisible: false),
+clearButtonProps: const ClearButtonProps(
+  isVisible: false,
+),
 
     // -----------------------------
     // ⭐ Custom cell builder
@@ -618,35 +627,36 @@ Widget build(BuildContext context) {
       final colours = player == null ? null : _getTeamColoursForPlayer(player);
 
       return Container(
-        width: kPickColumnWidth,
-        alignment: Alignment.center,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          decoration: colours == null
-              ? null
-              : BoxDecoration(
-                  color: colours["bg"]?.withAlpha(230),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-          child: Text(
-            text,
-            softWrap: true,                 // ⭐ allow wrapping
-            overflow: TextOverflow.visible, // ⭐ background grows with text
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colours == null ? cs.onSurfaceVariant : colours["fg"],
-            ),
+  width: kPickColumnWidth,
+  alignment: Alignment.center,
+  child: Container(
+    width: double.infinity, // background always spans full pick column
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+    decoration: colours == null
+        ? null
+        : BoxDecoration(
+            color: colours["bg"]?.withAlpha(230),
+            borderRadius: BorderRadius.circular(4),
           ),
-        ),
-      );
-    },
+    child: Text(
+      text,
+      softWrap: false,                 // no wrapping anywhere
+      overflow: TextOverflow.ellipsis, // clean truncation
+      maxLines: 1,                     // force single line
+      textAlign: TextAlign.center,
+      style: theme.textTheme.bodySmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: colours == null ? cs.onSurfaceVariant : colours["fg"],
+      ),
+    ),
+  ),
+);
+    }
 
     // -----------------------------
     // ⭐ TAB navigation
     // -----------------------------
-    onChanged: (player) {
+    ,onChanged: (player) {
       setState(() {
         owner.picks[colIndex].player = player;
         owner.picks[colIndex].stats = null;
