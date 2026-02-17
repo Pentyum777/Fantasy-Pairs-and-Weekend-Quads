@@ -884,6 +884,7 @@ Widget build(BuildContext context) {
   Widget _buildPunterAndLeaderboard() {
   return LayoutBuilder(
     builder: (context, constraints) {
+      final theme = Theme.of(context);
       final innerWidth = constraints.maxWidth;
       final picks = widget.gameType == "weekend_quads" ? 4 : 2;
 
@@ -918,19 +919,24 @@ Widget build(BuildContext context) {
           if (isLandscapePhone) {
             return Stack(
               children: [
-                SizedBox(
+                Container(
                   width: innerWidth,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.all(8),
                   child: PunterSelectionTable(
                     gameType: widget.gameType,
                     season: widget.season.toString(),
-round: widget.round!,
+                    round: widget.round!,
                     tableWidth: innerWidth,
                     visiblePunterCount: _visiblePunterCount,
                     playersPerPunter: picks,
                     availablePlayers: availablePlayers,
                     selections: widget.selections,
                     isCompleted: _isCompleted,
-                    readOnly: widget.userRoleService.isAdmin == false || _isSubmitted,
+                    readOnly: !widget.userRoleService.isAdmin,
                     onChanged: widget.userRoleService.isAdmin ? () {} : null,
                     collapsed: _leaderboardCollapsed,
                     scrollController: _punterScrollController,
@@ -964,25 +970,31 @@ round: widget.round!,
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
+              Container(
                 width: punterTableWidth,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.all(8),
                 child: PunterSelectionTable(
                   gameType: widget.gameType,
                   season: widget.season.toString(),
-round: widget.round!,
+                  round: widget.round!,
                   tableWidth: punterTableWidth,
                   visiblePunterCount: _visiblePunterCount,
                   playersPerPunter: picks,
                   availablePlayers: availablePlayers,
                   selections: widget.selections,
                   isCompleted: _isCompleted,
-                  readOnly: widget.userRoleService.isReadOnly || _isSubmitted,
+                  readOnly: !widget.userRoleService.isAdmin,
                   onChanged: widget.userRoleService.isAdmin ? () {} : null,
                   collapsed: _leaderboardCollapsed,
                   scrollController: _punterScrollController,
                   userRoleService: widget.userRoleService,
                 ),
               ),
+
               SizedBox(
                 width: leaderboardWidth,
                 child: LeaderboardPanel(

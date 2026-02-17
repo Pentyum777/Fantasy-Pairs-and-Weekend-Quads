@@ -24,11 +24,12 @@ Widget buildSharedTableRow({
 }) {
   final cs = Theme.of(context).colorScheme;
 
+  // ⭐ Unified tile background system
   final Color bg = isHighlighted
-      ? Colors.amber.withAlpha(38)                     // 0.15 opacity
+      ? Colors.amber.withAlpha(48) // subtle highlight
       : index.isOdd
-          ? cs.surfaceContainerHighest.withAlpha(64)   // 0.25 opacity
-          : cs.surface;
+          ? cs.surfaceContainerHighest.withAlpha(32) // striped row
+          : cs.surfaceContainerHighest.withAlpha(20);
 
   return SizedBox(
     width: totalWidth,
@@ -38,7 +39,7 @@ Widget buildSharedTableRow({
         color: bg,
         border: Border(
           bottom: BorderSide(
-            color: cs.outlineVariant.withAlpha(153),   // 0.6 opacity
+            color: cs.outlineVariant.withAlpha(120),
             width: 0.5,
           ),
         ),

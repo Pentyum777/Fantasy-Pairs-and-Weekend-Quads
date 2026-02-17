@@ -30,17 +30,13 @@ class LeaderboardTable extends StatelessWidget {
     return Container(
       width: totalWidth,
       decoration: BoxDecoration(
-        color: Colors.black.withAlpha(38), // dark tile
+        color: cs.surfaceContainerHighest.withAlpha(64),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.grey.shade300.withAlpha(153),
-          width: 1.2,
-        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(46),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
+            color: Colors.black.withAlpha(15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -66,7 +62,7 @@ class LeaderboardTable extends StatelessWidget {
                   height: UIDimensions.headerHeight,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(64),
+                      color: cs.surfaceContainerHighest.withAlpha(96),
                       border: Border(
                         bottom: BorderSide(
                           color: cs.primary.withAlpha(31),
@@ -104,16 +100,21 @@ class LeaderboardTable extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final p = sorted[index];
 
-                      return buildSharedTableRow(
-                        context: context,
-                        index: index,
-                        rowHeight: rowHeight,
-                        totalWidth: totalWidth,
-                        isInvalid: false,
-                        isHighlighted: p.isPrizeWinner,
-                        leftCell: _rankCell(context, index),
-                        middleCells: [_punterNameCell(context, p)],
-                        rightCell: _scoreCell(context, p),
+                      return Container(
+                        color: cs.surfaceContainerHighest.withAlpha(
+                          index.isEven ? 32 : 20,
+                        ),
+                        child: buildSharedTableRow(
+                          context: context,
+                          index: index,
+                          rowHeight: rowHeight,
+                          totalWidth: totalWidth,
+                          isInvalid: false,
+                          isHighlighted: p.isPrizeWinner,
+                          leftCell: _rankCell(context, index),
+                          middleCells: [_punterNameCell(context, p)],
+                          rightCell: _scoreCell(context, p),
+                        ),
                       );
                     },
                   ),

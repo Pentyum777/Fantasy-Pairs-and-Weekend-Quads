@@ -21,6 +21,8 @@ class LeaderboardPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     const double collapsedWidth = 40.0;
 
     final double expandedWidth =
@@ -33,11 +35,11 @@ class LeaderboardPanel extends StatelessWidget {
       curve: Curves.easeOut,
       width: collapsed ? collapsedWidth : expandedWidth,
       decoration: BoxDecoration(
-        color: Colors.blue.shade700,
+        color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(15), // 0.06 opacity
+            color: Colors.black.withAlpha(15),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -51,7 +53,7 @@ class LeaderboardPanel extends StatelessWidget {
                 punters: punters,
                 rowHeight: rowHeight,
                 totalWidth: expandedWidth,
-                scrollController: scrollController, // ⭐ keep sync
+                scrollController: scrollController,
               ),
       ),
     );
