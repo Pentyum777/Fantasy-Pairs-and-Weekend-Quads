@@ -863,8 +863,8 @@ Widget build(BuildContext context) {
     borderRadius: BorderRadius.circular(6),
   ),
   child: Text(
-    "Updated 14:32",   // <-- Replace with your actual hh:mm string
-    style: theme.textTheme.bodySmall?.copyWith(
+    "Updated Testing"  // <-- Replace with your actual hh:mm string
+    ,style: theme.textTheme.bodySmall?.copyWith(
       fontWeight: FontWeight.w600,
       color: theme.colorScheme.primary,
     ),
