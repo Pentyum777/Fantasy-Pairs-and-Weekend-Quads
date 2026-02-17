@@ -601,6 +601,9 @@ Widget build(BuildContext context) {
 
 
   Widget _buildFixtureCard(AflFixture f) {
+  final theme = Theme.of(context);        // ⭐ REQUIRED
+  final cs = theme.colorScheme;           // optional shortcut
+
   final selected = f == _selectedFixture;
   _handleFridayPairsTrigger(f);
 
@@ -615,7 +618,7 @@ Widget build(BuildContext context) {
   final scoreBaseStyle = TextStyle(
     fontSize: isLandscapePhone ? 12 : 13,
     fontWeight: FontWeight.w500,
-    color: Theme.of(context).colorScheme.onSurface,
+    color: cs.onSurface,
   );
 
   final metaStyle = TextStyle(
@@ -634,81 +637,84 @@ Widget build(BuildContext context) {
         duration: const Duration(milliseconds: 160),
         width: isLandscapePhone ? 100 : 125,
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+
+        // ⭐ FIXED: lighter, unified tile background
         decoration: BoxDecoration(
-  borderRadius: BorderRadius.circular(12),
-  color: selected
-      ? Colors.black.withAlpha(64)   // selected tile
-      : Colors.black.withAlpha(38),  // unselected tile
-  border: Border.all(
-    color: selected
-        ? Theme.of(context).colorScheme.primary
-        : Colors.grey.shade400,
-    width: selected ? 2 : 1,
-  ),
-  boxShadow: [
-    BoxShadow(
-      color: Colors.black.withAlpha(46),
-      blurRadius: 6,
-      offset: const Offset(0, 3),
-    ),
-  ],
-)
-          ,child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TeamLogo(f.homeTeam, size: isLandscapePhone ? 22 : 26),
-
-                  Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        style: scoreBaseStyle,
-                        children: [
-                          TextSpan(
-                            text: "$homeScore",
-                            style: TextStyle(
-                              fontWeight: homeWinning
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
-                          ),
-                          const TextSpan(text: "–"),
-                          TextSpan(
-                            text: "$awayScore",
-                            style: TextStyle(
-                              fontWeight: awayWinning
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.visible,
-                      softWrap: false,
-                    ),
-                  ),
-                  TeamLogo(f.awayTeam, size: isLandscapePhone ? 22 : 26),
-
-                ],
-              ),
-              Align(
-                alignment: Alignment.center,
-                child: Text(
-                  quarter.isEmpty ? time : "$quarter • $time",
-                  style: metaStyle,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+          borderRadius: BorderRadius.circular(12),
+          color: selected
+              ? cs.surfaceContainerHighest.withAlpha(72)
+              : cs.surfaceContainerHighest.withAlpha(40),
+          border: Border.all(
+            color: selected ? cs.primary : cs.outlineVariant,
+            width: selected ? 2 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(20),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TeamLogo(f.homeTeam, size: isLandscapePhone ? 22 : 26),
+
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      style: scoreBaseStyle,
+                      children: [
+                        TextSpan(
+                          text: "$homeScore",
+                          style: TextStyle(
+                            fontWeight: homeWinning
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                        const TextSpan(text: "–"),
+                        TextSpan(
+                          text: "$awayScore",
+                          style: TextStyle(
+                            fontWeight: awayWinning
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
+                    softWrap: false,
+                  ),
+                ),
+
+                TeamLogo(f.awayTeam, size: isLandscapePhone ? 22 : 26),
+              ],
+            ),
+
+            Align(
+              alignment: Alignment.center,
+              child: Text(
+                quarter.isEmpty ? time : "$quarter • $time",
+                style: metaStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Future<void> _onFixtureTap(AflFixture f) async {
     setState(() => _selectedFixture = f);
@@ -863,12 +869,12 @@ Widget build(BuildContext context) {
     borderRadius: BorderRadius.circular(6),
   ),
   child: Text(
-    "Updated Testing"  // <-- Replace with your actual hh:mm string
-    ,style: theme.textTheme.bodySmall?.copyWith(
-      fontWeight: FontWeight.w600,
-      color: theme.colorScheme.primary,
-    ),
+  "Updated $_timestampLabel",
+  style: theme.textTheme.bodySmall?.copyWith(
+    fontWeight: FontWeight.w600,
+    color: theme.colorScheme.primary,
   ),
+),
 ),
 
       const Spacer(),
@@ -879,7 +885,7 @@ Widget build(BuildContext context) {
   );
 }
 
-
+String _timestampLabel = "--:--";
 
   Widget _buildPunterAndLeaderboard() {
   return LayoutBuilder(
@@ -915,101 +921,69 @@ Widget build(BuildContext context) {
               .where((p) => fixtureClubCodes.contains(p.club))
               .toList();
 
-          // ⭐ Landscape phone overlay mode
-          if (isLandscapePhone) {
-            return Stack(
+          // ⭐ Unified tile wrapper for BOTH punter table + leaderboard
+          return Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(8),
+
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: innerWidth,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.all(8),
+                // ⭐ Punter Table (no Expanded → no vertical stretching)
+                SizedBox(
+                  width: punterTableWidth,
                   child: PunterSelectionTable(
                     gameType: widget.gameType,
                     season: widget.season.toString(),
                     round: widget.round!,
-                    tableWidth: innerWidth,
+                    tableWidth: punterTableWidth,
                     visiblePunterCount: _visiblePunterCount,
                     playersPerPunter: picks,
                     availablePlayers: availablePlayers,
                     selections: widget.selections,
                     isCompleted: _isCompleted,
+
+                    // ⭐ Admin-only editing (correct)
                     readOnly: !widget.userRoleService.isAdmin,
+
                     onChanged: widget.userRoleService.isAdmin ? () {} : null,
                     collapsed: _leaderboardCollapsed,
+
+                    // ⭐ Shared scroll controller for perfect sync
                     scrollController: _punterScrollController,
+
                     userRoleService: widget.userRoleService,
+
+                    // ⭐ NEW: Timestamp callback (Option A)
+                    onTimestampChanged: (t) {
+                      setState(() => _timestampLabel = t);
+                    },
                   ),
                 ),
 
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 200),
-                  right: _leaderboardCollapsed ? -260 : 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 260,
+                // ⭐ Leaderboard (same tile container)
+                SizedBox(
+                  width: leaderboardWidth,
                   child: LeaderboardPanel(
                     punters: widget.selections
                         .take(_visiblePunterCount)
                         .toList(),
                     rowHeight: 34,
                     collapsed: _leaderboardCollapsed,
+
+                    // ⭐ Same scroll controller for horizontal sync
                     scrollController: _punterScrollController,
+
                     onCollapseChanged: (collapsed) {
                       setState(() => _leaderboardCollapsed = collapsed);
                     },
                   ),
                 ),
               ],
-            );
-          }
-
-          // ⭐ Desktop / iPad layout
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: punterTableWidth,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.all(8),
-                child: PunterSelectionTable(
-                  gameType: widget.gameType,
-                  season: widget.season.toString(),
-                  round: widget.round!,
-                  tableWidth: punterTableWidth,
-                  visiblePunterCount: _visiblePunterCount,
-                  playersPerPunter: picks,
-                  availablePlayers: availablePlayers,
-                  selections: widget.selections,
-                  isCompleted: _isCompleted,
-                  readOnly: !widget.userRoleService.isAdmin,
-                  onChanged: widget.userRoleService.isAdmin ? () {} : null,
-                  collapsed: _leaderboardCollapsed,
-                  scrollController: _punterScrollController,
-                  userRoleService: widget.userRoleService,
-                ),
-              ),
-
-              SizedBox(
-                width: leaderboardWidth,
-                child: LeaderboardPanel(
-                  punters: widget.selections
-                      .take(_visiblePunterCount)
-                      .toList(),
-                  rowHeight: 34,
-                  collapsed: _leaderboardCollapsed,
-                  scrollController: _punterScrollController,
-                  onCollapseChanged: (collapsed) {
-                    setState(() => _leaderboardCollapsed = collapsed);
-                  },
-                ),
-              ),
-            ],
+            ),
           );
         },
       );

@@ -76,6 +76,7 @@ class PunterSelectionTable extends StatefulWidget {
   final String gameType;
   final String season;
 final int round;
+final void Function(String time)? onTimestampChanged;
   
 
   final UserRoleService userRoleService;
@@ -95,6 +96,7 @@ final int round;
   required this.onChanged,
   required this.collapsed,
   required this.scrollController,
+  required this.onTimestampChanged,
   required this.userRoleService,
 });
 
@@ -458,7 +460,7 @@ Widget build(BuildContext context) {
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: TextField(
-        enabled: widget.userRoleService.isAdmin && !widget.isCompleted,
+        enabled: widget.userRoleService.isAdmin,
         controller: controller,
         focusNode: focusNode,
         textAlign: TextAlign.left,
@@ -534,7 +536,7 @@ Widget build(BuildContext context) {
       selectedItem: selectedPlayer,
       items: filteredPlayers,
       itemAsString: (p) => p.fullName,
-      enabled: widget.userRoleService.isAdmin && !widget.isCompleted,
+      enabled: widget.userRoleService.isAdmin,
       popupProps: isLandscapePhone
           ? PopupProps.bottomSheet(
               showSearchBox: true,
@@ -847,8 +849,9 @@ Widget build(BuildContext context) {
     final json = jsonDecode(res.body);
 
     if (json["lastUpdated"] != null) {
-      _lastUpdated = json["lastUpdated"];
-    }
+  _lastUpdated = json["lastUpdated"];
+  widget.onTimestampChanged?.call(lastUpdatedLabel);
+}
   } catch (e) {
     debugPrint("❌ Failed to save selections: $e");
   }
