@@ -224,87 +224,83 @@ int? _lastUpdated;
   // ---------------------------------------------------------------------------
 
   @override
-  Widget build(BuildContext context) {
-    if (widget.readOnly) {
-      _cleanInvalidSelectionsGlobal();
-    }
+Widget build(BuildContext context) {
+  if (widget.readOnly) {
+    _cleanInvalidSelectionsGlobal();
+  }
 
-    final double fontSize =
-        isPortraitPhone(context) ? 10 : (isLandscapePhone ? 11 : 12);
+  final double fontSize =
+      isPortraitPhone(context) ? 10 : (isLandscapePhone ? 11 : 12);
 
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    final visible = widget.selections.take(widget.visiblePunterCount).toList();
-    final pickCount = widget.selections.isNotEmpty
-        ? widget.selections.first.picks.length
-        : 0;
+  final visible = widget.selections.take(widget.visiblePunterCount).toList();
+  final pickCount = widget.selections.isNotEmpty
+      ? widget.selections.first.picks.length
+      : 0;
 
-    final baseWidth = widget.tableWidth;
-    final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
+  final baseWidth = widget.tableWidth;
+  final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
 
-    return Container(
-      width: tableWidth,
-      decoration: BoxDecoration(
-        color: Colors.black.withAlpha(38), // dark tile
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.grey.shade300.withAlpha(153),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(46),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+  // ⭐ Dynamic height so table does NOT stretch to bottom of screen
+  final double tableHeight =
+      UIDimensions.headerHeight +
+      (visible.length * UIDimensions.rowHeight);
+
+  return Container(
+    width: tableWidth,
+    decoration: BoxDecoration(
+      color: cs.surfaceContainerHighest.withAlpha(64),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+
+      // ⭐ One horizontal scroll view for BOTH header + body
+      child: SingleChildScrollView(
+        controller: _horizontalController,
+        scrollDirection: Axis.horizontal,
         child: Column(
           children: [
-            // HEADER — linked horizontal scroll
-            SingleChildScrollView(
-              controller: _horizontalController,
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: tableWidth,
-                child: _buildTableHeader(
-                  theme,
-                  cs,
-                  pickCount,
-                  tableWidth,
-                  fontSize,
-                ),
+            // -------------------------
+            // HEADER (scrolls with body)
+            // -------------------------
+            SizedBox(
+              width: tableWidth,
+              child: _buildTableHeader(
+                theme,
+                cs,
+                pickCount,
+                tableWidth,
+                fontSize,
               ),
             ),
 
             Divider(height: 1, thickness: 1, color: cs.outlineVariant),
 
-            // BODY — linked horizontal scroll + vertical ListView
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _horizontalController,
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: tableWidth,
-                  child: _buildBody(
-                    theme,
-                    cs,
-                    visible,
-                    pickCount,
-                    tableWidth,
-                    fontSize,
-                  ),
-                ),
+            // -------------------------
+            // BODY (dynamic height)
+            // -------------------------
+            SizedBox(
+              width: tableWidth,
+              height: tableHeight,
+              child: _buildBody(
+                theme,
+                cs,
+                visible,
+                pickCount,
+                tableWidth,
+                fontSize,
               ),
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   // ---------------------------------------------------------------------------
   // HEADER
