@@ -561,60 +561,57 @@ Widget build(BuildContext context) {
 
   final hintText = "P$globalPickNumber";
 
-  
-// -----------------------------// -----------------------------
-// ⭐ Ensure FocusNode exists for TAB navigation
-// -----------------------------
-final pickKey = "${row.punterNumber}_${pick.pickNumber}";
-_pickFocusNodes.putIfAbsent(pickKey, () => FocusNode());
+  // -----------------------------
+  // ⭐ Ensure FocusNode exists for TAB navigation
+  // -----------------------------
+  final pickKey = "${row.punterNumber}_${pick.pickNumber}";
+  _pickFocusNodes.putIfAbsent(pickKey, () => FocusNode());
 
-return DropdownSearch<AflPlayer>(
-  selectedItem: selectedPlayer,
-  items: filteredPlayers,
-  itemAsString: (p) => p.fullName,
+  return DropdownSearch<AflPlayer>(
+    selectedItem: selectedPlayer,
+    items: filteredPlayers,
+    itemAsString: (p) => p.fullName,
 
-  // ⭐ Admin-only editing
-  enabled: widget.userRoleService.isAdmin,
-
-  popupProps: isLandscapePhone
-      ? PopupProps.bottomSheet(
-          showSearchBox: true,
-          constraints: const BoxConstraints(maxHeight: 300),
-        )
-      : PopupProps.menu(
-          constraints: BoxConstraints(
-            minWidth: kPickColumnWidth,
-            maxWidth: kPickColumnWidth,
-          ),
-          showSearchBox: true,
-          searchFieldProps: TextFieldProps(
-            decoration: const InputDecoration(
-              hintText: "Search player...",
-              isDense: true,
-            ),
-          ),
-        ),
-
-  dropdownDecoratorProps: DropDownDecoratorProps(
-    dropdownSearchDecoration: InputDecoration(
-      isDense: true,
-      border: InputBorder.none,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 4,
-        vertical: 2,
-      ),
-    ),
-  ),
-
-  dropdownButtonProps: const DropdownButtonProps(
-    icon: SizedBox.shrink(),
-  ),
-
-  clearButtonProps: const ClearButtonProps(isVisible: false),
-
+    enabled: widget.userRoleService.isAdmin,
 
     // -----------------------------
-    // ⭐ Custom cell builder (center aligned)
+    // ⭐ Auto-focus search box
+    // -----------------------------
+    popupProps: PopupProps.menu(
+  constraints: BoxConstraints(
+    minWidth: kPickColumnWidth,
+    maxWidth: kPickColumnWidth,
+  ),
+  showSearchBox: true,
+  searchFieldProps: TextFieldProps(
+    autofocus: true,   // ⭐ Correct autofocus
+    decoration: const InputDecoration(
+      hintText: "Search player...",
+      isDense: true,
+    ),
+  ),
+),
+
+    dropdownDecoratorProps: DropDownDecoratorProps(
+      dropdownSearchDecoration: InputDecoration(
+        isDense: true,
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 4,
+          vertical: 2,
+        ),
+      ),
+    ),
+
+    dropdownButtonProps: const DropdownButtonProps(
+      icon: SizedBox.shrink(),
+    ),
+
+    clearButtonProps: const ClearButtonProps(isVisible: false),
+
+    // -----------------------------
+    // ⭐ Custom cell builder
+    //    Proper wrapping + background sizing
     // -----------------------------
     dropdownBuilder: (context, player) {
       final text = player == null ? hintText : player.fullName;
@@ -622,7 +619,7 @@ return DropdownSearch<AflPlayer>(
 
       return Container(
         width: kPickColumnWidth,
-        alignment: Alignment.center,          // ⭐ CENTER ALIGNMENT
+        alignment: Alignment.center,
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -634,9 +631,9 @@ return DropdownSearch<AflPlayer>(
                 ),
           child: Text(
             text,
-            overflow: TextOverflow.visible,
-            softWrap: false,
-            textAlign: TextAlign.center,      // ⭐ CENTER ALIGNMENT
+            softWrap: true,                 // ⭐ allow wrapping
+            overflow: TextOverflow.visible, // ⭐ background grows with text
+            textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
               color: colours == null ? cs.onSurfaceVariant : colours["fg"],
@@ -647,7 +644,7 @@ return DropdownSearch<AflPlayer>(
     },
 
     // -----------------------------
-    // ⭐ Handle selection + TAB navigation
+    // ⭐ TAB navigation
     // -----------------------------
     onChanged: (player) {
       setState(() {
@@ -658,23 +655,20 @@ return DropdownSearch<AflPlayer>(
       widget.onChanged?.call();
       _saveSnapshot();
 
-      // ⭐ Move focus to next pick automatically
       final picks = row.picks;
       final isLastPickInRow = colIndex == picks.length - 1;
 
       if (!isLastPickInRow) {
-  // Move to next pick in same row
-  final nextPick = picks[colIndex + 1];
-  final nextKey = "${row.punterNumber}_${nextPick.pickNumber}";
-  final nextNode = _pickFocusNodes[nextKey];
+        final nextPick = picks[colIndex + 1];
+        final nextKey = "${row.punterNumber}_${nextPick.pickNumber}";
+        final nextNode = _pickFocusNodes[nextKey];
 
-  if (nextNode != null) {
-    FocusScope.of(context).requestFocus(nextNode);
-    return;
-  }
-}
+        if (nextNode != null) {
+          FocusScope.of(context).requestFocus(nextNode);
+          return;
+        }
+      }
 
-      // Last pick → move to next punter
       final nextPunterIndex = row.punterNumber + 1;
       final nextPunterNode = _punterFocusNodes[nextPunterIndex];
 
@@ -686,6 +680,7 @@ return DropdownSearch<AflPlayer>(
     },
   );
 }
+
 
   // ---------------------------------------------------------------------------
   // SCORE CELL
