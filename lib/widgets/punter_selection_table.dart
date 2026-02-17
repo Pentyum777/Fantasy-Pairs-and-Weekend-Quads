@@ -153,10 +153,10 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
         pickCount * (kPickColumnWidth + kPickScoreColumnWidth) +
         kTotalColumnWidth;
   }
-
-  final Map<int, TextEditingController> _controllers = {};
-  final Map<int, FocusNode> _punterFocusNodes = {};
-  final Set<int> _punterListenerAdded = {};
+final Map<String, FocusNode> _pickFocusNodes = {};   // ⭐ Correct: String keys
+final Map<int, TextEditingController> _controllers = {};
+final Map<int, FocusNode> _punterFocusNodes = {};
+final Set<int> _punterListenerAdded = {};
 
   List<_TableSnapshot> _history = [];
   int _historyIndex = -1;
@@ -433,111 +433,147 @@ Widget build(BuildContext context) {
   // ---------------------------------------------------------------------------
 
   Widget _punterCell(BuildContext context, PunterSelection row) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    final controller = _controllers[row.punterNumber] ??=
-        TextEditingController(text: row.punterName);
-    final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
+  final controller = _controllers[row.punterNumber] ??=
+      TextEditingController(text: row.punterName);
+  final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
 
-    if (!_punterListenerAdded.contains(row.punterNumber)) {
-      _punterListenerAdded.add(row.punterNumber);
+  if (!_punterListenerAdded.contains(row.punterNumber)) {
+    _punterListenerAdded.add(row.punterNumber);
 
-      focusNode.addListener(() {
-        if (focusNode.hasFocus) {
-          if (controller.text.trim() == "P${row.punterNumber}") {
-            controller.clear();
-          }
-        } else {
-          if (controller.text.trim().isEmpty) {
-            controller.text = "P${row.punterNumber}";
-          }
+    focusNode.addListener(() {
+      if (focusNode.hasFocus) {
+        if (controller.text.trim() == "P${row.punterNumber}") {
+          controller.clear();
         }
-      });
-    }
-
-    return Container(
-  alignment: Alignment.centerLeft,
-  padding: const EdgeInsets.symmetric(horizontal: 4),
-  child: TextField(
-    enabled: widget.userRoleService.isAdmin,   // ⭐ Admin-only editing
-    controller: controller,
-    focusNode: focusNode,
-    textAlign: TextAlign.left,
-    style: theme.textTheme.bodySmall?.copyWith(
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.1,
-    ),
-    decoration: InputDecoration(
-      border: InputBorder.none,
-      isDense: true,
-      contentPadding: const EdgeInsets.symmetric(vertical: 2),
-      hintText: "P${row.punterNumber}",
-      hintStyle: theme.textTheme.bodySmall?.copyWith(
-        color: cs.onSurfaceVariant,
-        fontWeight: FontWeight.w600,
-      ),
-    ),
-    onChanged: (value) {
-      row.punterName = value;
-      widget.onChanged?.call();
-      _saveSnapshot();
-    },
-  ),
-);
+      } else {
+        if (controller.text.trim().isEmpty) {
+          controller.text = "P${row.punterNumber}";
+        }
+      }
+    });
   }
+
+  return Container(
+    alignment: Alignment.centerLeft,
+    padding: const EdgeInsets.symmetric(horizontal: 4),
+    child: TextField(
+      enabled: widget.userRoleService.isAdmin,   // ⭐ Admin-only editing
+      controller: controller,
+      focusNode: focusNode,
+      textAlign: TextAlign.left,
+      style: theme.textTheme.bodySmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+      ),
+      decoration: InputDecoration(
+        border: InputBorder.none,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 2),
+        hintText: "P${row.punterNumber}",
+        hintStyle: theme.textTheme.bodySmall?.copyWith(
+          color: cs.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+
+      // ⭐ Auto-capitalise first letter
+      onChanged: (value) {
+        final formatted = value.isEmpty
+            ? value
+            : value[0].toUpperCase() + value.substring(1);
+
+        if (formatted != value) {
+          controller.value = controller.value.copyWith(
+            text: formatted,
+            selection: TextSelection.collapsed(offset: formatted.length),
+          );
+        }
+
+        row.punterName = formatted;
+        widget.onChanged?.call();
+        _saveSnapshot();
+      },
+
+      // ⭐ TAB or ENTER → move to next punter
+      onEditingComplete: () {
+        final nextIndex = row.punterNumber + 1;
+        final nextNode = _punterFocusNodes[nextIndex];
+
+        if (nextNode != null) {
+          FocusScope.of(context).requestFocus(nextNode);
+        } else {
+          FocusScope.of(context).unfocus();
+        }
+      },
+    ),
+  );
+}
+
 
   // ---------------------------------------------------------------------------
   // PICK CELL
   // ---------------------------------------------------------------------------
 
   Widget _buildPickCell(
-    BuildContext context,
-    PunterSelection row,
-    PlayerPick pick,
-  ) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+  BuildContext context,
+  PunterSelection row,
+  PlayerPick pick,
+) {
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    final visualRowIndex = row.punterNumber - 1;
-    final colIndex = pick.pickNumber - 1;
-    final owner = row;
+  final visualRowIndex = row.punterNumber - 1;
+  final colIndex = pick.pickNumber - 1;
+  final owner = row;
 
-    final globalTaken = <String>{};
-    for (final r in widget.selections) {
-      for (int i = 0; i < r.picks.length; i++) {
-        final p = r.picks[i].player;
-        if (p == null) continue;
-        if (identical(r, owner) && i == colIndex) continue;
-        globalTaken.add(p.id);
-      }
+  // -----------------------------
+  // Build globalTaken set
+  // -----------------------------
+  final globalTaken = <String>{};
+  for (final r in widget.selections) {
+    for (int i = 0; i < r.picks.length; i++) {
+      final p = r.picks[i].player;
+      if (p == null) continue;
+      if (identical(r, owner) && i == colIndex) continue;
+      globalTaken.add(p.id);
     }
+  }
 
-    final selectedPlayer = owner.picks[colIndex].player;
-    final allPlayers = widget.availablePlayers;
+  final selectedPlayer = owner.picks[colIndex].player;
+  final allPlayers = widget.availablePlayers;
 
-    final filteredPlayers = allPlayers
-        .where((p) {
-          final isTaken = globalTaken.contains(p.id);
-          final isCurrent = p == selectedPlayer;
-          return !isTaken || isCurrent;
-        })
-        .toList()
-      ..sort((a, b) => a.fullName.compareTo(b.fullName));
+  final filteredPlayers = allPlayers
+      .where((p) {
+        final isTaken = globalTaken.contains(p.id);
+        final isCurrent = p == selectedPlayer;
+        return !isTaken || isCurrent;
+      })
+      .toList()
+    ..sort((a, b) => a.fullName.compareTo(b.fullName));
 
-    final globalPickNumber = _globalPickNumberForCell(
-      rowIndex: visualRowIndex,
-      colIndex: colIndex,
-    );
+  final globalPickNumber = _globalPickNumberForCell(
+    rowIndex: visualRowIndex,
+    colIndex: colIndex,
+  );
 
-    final hintText = "P$globalPickNumber";
+  final hintText = "P$globalPickNumber";
 
-    return DropdownSearch<AflPlayer>(
+  
+// -----------------------------// -----------------------------
+// ⭐ Ensure FocusNode exists for TAB navigation
+// -----------------------------
+final pickKey = "${row.punterNumber}_${pick.pickNumber}";
+_pickFocusNodes.putIfAbsent(pickKey, () => FocusNode());
+
+return DropdownSearch<AflPlayer>(
   selectedItem: selectedPlayer,
   items: filteredPlayers,
   itemAsString: (p) => p.fullName,
 
-  // ⭐ Admin-only editing (no hidden isCompleted lock)
+  // ⭐ Admin-only editing
   enabled: widget.userRoleService.isAdmin,
 
   popupProps: isLandscapePhone
@@ -558,61 +594,98 @@ Widget build(BuildContext context) {
             ),
           ),
         ),
-      dropdownDecoratorProps: DropDownDecoratorProps(
-        dropdownSearchDecoration: InputDecoration(
-          isDense: true,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 4,
-            vertical: 2,
-          ),
-        ),
-      ),
-      dropdownButtonProps: const DropdownButtonProps(
-        icon: SizedBox.shrink(),
-      ),
-      clearButtonProps: const ClearButtonProps(isVisible: false),
-      dropdownBuilder: (context, player) {
-        final text = player == null ? hintText : player.fullName;
-        final colours =
-            player == null ? null : _getTeamColoursForPlayer(player);
 
-        return Container(
-          width: kPickColumnWidth,
-          alignment: Alignment.center,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: colours == null
-                ? null
-                : BoxDecoration(
-                    color: colours["bg"]?.withAlpha(230),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-            child: Text(
-              text,
-              overflow: TextOverflow.visible,
-              softWrap: false,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colours == null ? cs.onSurfaceVariant : colours["fg"],
-              ),
+  dropdownDecoratorProps: DropDownDecoratorProps(
+    dropdownSearchDecoration: InputDecoration(
+      isDense: true,
+      border: InputBorder.none,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 4,
+        vertical: 2,
+      ),
+    ),
+  ),
+
+  dropdownButtonProps: const DropdownButtonProps(
+    icon: SizedBox.shrink(),
+  ),
+
+  clearButtonProps: const ClearButtonProps(isVisible: false),
+
+
+    // -----------------------------
+    // ⭐ Custom cell builder (center aligned)
+    // -----------------------------
+    dropdownBuilder: (context, player) {
+      final text = player == null ? hintText : player.fullName;
+      final colours = player == null ? null : _getTeamColoursForPlayer(player);
+
+      return Container(
+        width: kPickColumnWidth,
+        alignment: Alignment.center,          // ⭐ CENTER ALIGNMENT
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          decoration: colours == null
+              ? null
+              : BoxDecoration(
+                  color: colours["bg"]?.withAlpha(230),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+          child: Text(
+            text,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            textAlign: TextAlign.center,      // ⭐ CENTER ALIGNMENT
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colours == null ? cs.onSurfaceVariant : colours["fg"],
             ),
           ),
-        );
-      },
-      onChanged: (player) {
-        setState(() {
-          owner.picks[colIndex].player = player;
-          owner.picks[colIndex].stats = null;
-        });
+        ),
+      );
+    },
 
-        widget.onChanged?.call();
-        _saveSnapshot();
-      },
-    );
+    // -----------------------------
+    // ⭐ Handle selection + TAB navigation
+    // -----------------------------
+    onChanged: (player) {
+      setState(() {
+        owner.picks[colIndex].player = player;
+        owner.picks[colIndex].stats = null;
+      });
+
+      widget.onChanged?.call();
+      _saveSnapshot();
+
+      // ⭐ Move focus to next pick automatically
+      final picks = row.picks;
+      final isLastPickInRow = colIndex == picks.length - 1;
+
+      if (!isLastPickInRow) {
+  // Move to next pick in same row
+  final nextPick = picks[colIndex + 1];
+  final nextKey = "${row.punterNumber}_${nextPick.pickNumber}";
+  final nextNode = _pickFocusNodes[nextKey];
+
+  if (nextNode != null) {
+    FocusScope.of(context).requestFocus(nextNode);
+    return;
   }
+}
+
+      // Last pick → move to next punter
+      final nextPunterIndex = row.punterNumber + 1;
+      final nextPunterNode = _punterFocusNodes[nextPunterIndex];
+
+      if (nextPunterNode != null) {
+        FocusScope.of(context).requestFocus(nextPunterNode);
+      } else {
+        FocusScope.of(context).unfocus();
+      }
+    },
+  );
+}
 
   // ---------------------------------------------------------------------------
   // SCORE CELL
