@@ -415,6 +415,7 @@ bool get isLandscapePhone {
 }
 
 
+  // ignore: unused_element
   bool _canSubmit() {
     if (_isSubmitted) return true;
     if (!widget.userRoleService.isAdmin) return false;
@@ -437,6 +438,7 @@ bool get isLandscapePhone {
     return true;
   }
 
+  // ignore: unused_element
   void _toggleSubmit() {
     setState(() => _isSubmitted = !_isSubmitted);
 
@@ -635,8 +637,8 @@ Widget build(BuildContext context) {
         decoration: BoxDecoration(
   borderRadius: BorderRadius.circular(12),
   color: selected
-      ? Theme.of(context).colorScheme.primary.withAlpha(20)   // 0.08 opacity
-      : Theme.of(context).colorScheme.surface,
+      ? Colors.black.withAlpha(64)   // selected tile
+      : Colors.black.withAlpha(38),  // unselected tile
   border: Border.all(
     color: selected
         ? Theme.of(context).colorScheme.primary
@@ -645,7 +647,7 @@ Widget build(BuildContext context) {
   ),
   boxShadow: [
     BoxShadow(
-      color: Colors.black.withAlpha(15), // 0.06 opacity
+      color: Colors.black.withAlpha(46),
       blurRadius: 6,
       offset: const Offset(0, 3),
     ),
@@ -811,72 +813,67 @@ Widget build(BuildContext context) {
         ),
 
         if (!_controlsCollapsed)
-          Row(
-            children: [
-              Text("Punters Playing", style: theme.textTheme.bodyMedium),
-              const SizedBox(width: 6),
+  Row(
+    children: [
+      Text("Punters Playing", style: theme.textTheme.bodyMedium),
+      const SizedBox(width: 6),
 
-              DropdownButtonHideUnderline(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: theme.colorScheme.outlineVariant,
-                      width: 1,
-                    ),
-                    color: theme.colorScheme.surface,
-                  ),
-                  child: DropdownButton<int>(
-                    value: _visiblePunterCount,
-                    isDense: true,
-                    menuMaxHeight: 280,
-                    itemHeight: 32,
-                    style: theme.textTheme.bodyMedium,
-                    items: List.generate(25, (i) => i + 1)
-                        .map(
-                          (v) => DropdownMenuItem<int>(
-                            value: v,
-                            child: Text("$v"),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: widget.userRoleService.isAdmin
-                        ? (value) {
-                            if (value == null) return;
-                            setState(() => _visiblePunterCount = value);
-                          }
-                        : null,
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              if (widget.userRoleService.isAdmin)
-                ElevatedButton(
-                  onPressed: _canSubmit() ? _toggleSubmit : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        _isSubmitted ? Colors.orange : Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 4),
-                    minimumSize: const Size(0, 28),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  child: Text(
-                    _isSubmitted ? "Unsubmit" : "Submit",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-
-              const Spacer(),
-            ],
+      DropdownButtonHideUnderline(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant,
+              width: 1,
+            ),
+            color: theme.colorScheme.surface,
           ),
+          child: DropdownButton<int>(
+            value: _visiblePunterCount,
+            isDense: true,
+            menuMaxHeight: 280,
+            itemHeight: 32,
+            style: theme.textTheme.bodyMedium,
+            items: List.generate(25, (i) => i + 1)
+                .map(
+                  (v) => DropdownMenuItem<int>(
+                    value: v,
+                    child: Text("$v"),
+                  ),
+                )
+                .toList(),
+            onChanged: widget.userRoleService.isAdmin
+                ? (value) {
+                    if (value == null) return;
+                    setState(() => _visiblePunterCount = value);
+                  }
+                : null,
+          ),
+        ),
+      ),
+
+      const SizedBox(width: 12),
+
+      // ⭐ NEW: Last Updated Timestamp Badge
+      Container(
+  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  decoration: BoxDecoration(
+    color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
+    borderRadius: BorderRadius.circular(6),
+  ),
+  child: Text(
+    "Refresh", // <-- put whatever text you actually want here
+    style: theme.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: theme.colorScheme.primary,
+    ),
+  ),
+),
+
+      const Spacer(),
+    ],
+  ),
       ],
     ),
   );
@@ -931,11 +928,12 @@ Widget build(BuildContext context) {
                     availablePlayers: availablePlayers,
                     selections: widget.selections,
                     isCompleted: _isCompleted,
-                    readOnly: widget.userRoleService.isReadOnly || _isSubmitted,
+                    readOnly: widget.userRoleService.isAdmin == false || _isSubmitted,
                     onChanged: widget.userRoleService.isAdmin ? () {} : null,
                     collapsed: _leaderboardCollapsed,
                     scrollController: _punterScrollController,
                     userRoleService: widget.userRoleService,
+                    
                   ),
                 ),
 

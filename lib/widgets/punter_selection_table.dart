@@ -74,6 +74,7 @@ class PunterSelectionTable extends StatefulWidget {
   final bool collapsed;
   final ScrollController? scrollController;
   final String gameType;
+  
 
   final UserRoleService userRoleService;
 
@@ -153,7 +154,21 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
 
   List<_TableSnapshot> _history = [];
   int _historyIndex = -1;
-  int? _lastUpdated;
+  // ignore: unused_field
+int? _lastUpdated;
+
+  // Human‑readable timestamp for UI
+  String get lastUpdatedLabel {
+    if (_lastUpdated == null) return "Never";
+
+    final dt = DateTime.fromMillisecondsSinceEpoch(_lastUpdated!);
+    final hh = dt.hour.toString().padLeft(2, '0');
+    final mm = dt.minute.toString().padLeft(2, '0');
+    final ss = dt.second.toString().padLeft(2, '0');
+
+    return "$hh:$mm:$ss";
+  }
+
 
   @override
   void initState() {
@@ -167,7 +182,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   void didUpdateWidget(covariant PunterSelectionTable oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    final selectionsChanged = !identical(oldWidget.selections, widget.selections);
+    final selectionsChanged =
+        !identical(oldWidget.selections, widget.selections);
 
     if (selectionsChanged) {
       _initControllers();
@@ -223,51 +239,66 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     final baseWidth = widget.tableWidth;
     final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
 
-    final bool isMobile = MediaQuery.of(context).size.width < 700;
-    final bool allowHorizontalScroll =
-        isPortraitPhone(context) || isMobile || !widget.collapsed;
-
-    return Column(
-      children: [
-        // HEADER — linked scroll
-        SingleChildScrollView(
-          controller: _horizontalController,
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: tableWidth,
-            child: _buildTableHeader(theme, cs, pickCount, tableWidth, fontSize),
-          ),
+    return Container(
+      width: tableWidth,
+      decoration: BoxDecoration(
+        color: Colors.black.withAlpha(38), // dark tile
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.shade300.withAlpha(153),
+          width: 1.2,
         ),
-
-        Divider(height: 1, thickness: 1, color: cs.outlineVariant),
-
-        Expanded(
-          child: allowHorizontalScroll
-              ? SingleChildScrollView(
-                  controller: _horizontalController,
-                  scrollDirection: Axis.horizontal,
-                  child: SizedBox(
-                    width: tableWidth,
-                    child: _buildBody(
-                      theme,
-                      cs,
-                      visible,
-                      pickCount,
-                      tableWidth,
-                      fontSize,
-                    ),
-                  ),
-                )
-              : _buildBody(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(46),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Column(
+          children: [
+            // HEADER — linked horizontal scroll
+            SingleChildScrollView(
+              controller: _horizontalController,
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: tableWidth,
+                child: _buildTableHeader(
                   theme,
                   cs,
-                  visible,
                   pickCount,
                   tableWidth,
                   fontSize,
                 ),
+              ),
+            ),
+
+            Divider(height: 1, thickness: 1, color: cs.outlineVariant),
+
+            // BODY — linked horizontal scroll + vertical ListView
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _horizontalController,
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: tableWidth,
+                  child: _buildBody(
+                    theme,
+                    cs,
+                    visible,
+                    pickCount,
+                    tableWidth,
+                    fontSize,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -334,66 +365,66 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
 
   Widget _buildBody(
-  ThemeData theme,
-  ColorScheme cs,
-  List<PunterSelection> visible,
-  int pickCount,
-  double tableWidth,
-  double fontSize,
-) {
-  return ListView.builder(
-    controller: widget.scrollController,
-    itemCount: visible.length,
-    itemBuilder: (context, index) {
-      final row = visible[index];
-      final isStriped = index.isOdd;
-      final invalid = _hasAnyGlobalDuplicate();
+    ThemeData theme,
+    ColorScheme cs,
+    List<PunterSelection> visible,
+    int pickCount,
+    double tableWidth,
+    double fontSize,
+  ) {
+    return ListView.builder(
+      controller: widget.scrollController,
+      itemCount: visible.length,
+      itemBuilder: (context, index) {
+        final row = visible[index];
+        final isStriped = index.isOdd;
+        final invalid = _hasAnyGlobalDuplicate();
 
-      final bg = invalid
-          ? Colors.red.withAlpha(15)                     // 0.06 opacity
-          : isStriped
-              ? cs.surfaceContainerHighest.withAlpha(64) // 0.25 opacity
-              : cs.surface;
+        final bg = invalid
+            ? Colors.red.withAlpha(15)
+            : isStriped
+                ? cs.surfaceContainerHighest.withAlpha(64)
+                : cs.surface;
 
-      return Container(
-        height: isPortraitPhone(context)
-            ? 32
-            : (isLandscapePhone ? 34 : UIDimensions.rowHeight),
-        decoration: BoxDecoration(
-          color: bg,
-          border: Border(
-            bottom: BorderSide(
-              color: cs.outlineVariant.withAlpha(153),   // 0.6 opacity
-              width: 0.5,
+        return Container(
+          height: isPortraitPhone(context)
+              ? 32
+              : (isLandscapePhone ? 34 : UIDimensions.rowHeight),
+          decoration: BoxDecoration(
+            color: bg,
+            border: Border(
+              bottom: BorderSide(
+                color: cs.outlineVariant.withAlpha(153),
+                width: 0.5,
+              ),
             ),
           ),
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: kPunterColumnWidth,
-              child: _punterCell(context, row),
-            ),
-            for (final pick in row.picks) ...[
+          child: Row(
+            children: [
               SizedBox(
-                width: kPickColumnWidth,
-                child: _buildPickCell(context, row, pick),
+                width: kPunterColumnWidth,
+                child: _punterCell(context, row),
               ),
+              for (final pick in row.picks) ...[
+                SizedBox(
+                  width: kPickColumnWidth,
+                  child: _buildPickCell(context, row, pick),
+                ),
+                SizedBox(
+                  width: kPickScoreColumnWidth,
+                  child: _pickScoreCell(pick),
+                ),
+              ],
               SizedBox(
-                width: kPickScoreColumnWidth,
-                child: _pickScoreCell(pick),
+                width: kTotalColumnWidth,
+                child: _totalCell(context, row),
               ),
             ],
-            SizedBox(
-              width: kTotalColumnWidth,
-              child: _totalCell(context, row),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+          ),
+        );
+      },
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // PUNTER CELL
@@ -427,8 +458,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: TextField(
-        enabled: widget.userRoleService.isAdmin && !widget.isCompleted
-        ,controller: controller,
+        enabled: widget.userRoleService.isAdmin && !widget.isCompleted,
+        controller: controller,
         focusNode: focusNode,
         textAlign: TextAlign.left,
         style: theme.textTheme.bodySmall?.copyWith(
@@ -503,8 +534,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       selectedItem: selectedPlayer,
       items: filteredPlayers,
       itemAsString: (p) => p.fullName,
-      enabled: widget.userRoleService.isAdmin && !widget.isCompleted
-      ,popupProps: isLandscapePhone
+      enabled: widget.userRoleService.isAdmin && !widget.isCompleted,
+      popupProps: isLandscapePhone
           ? PopupProps.bottomSheet(
               showSearchBox: true,
               constraints: const BoxConstraints(maxHeight: 300),
@@ -537,38 +568,36 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       ),
       clearButtonProps: const ClearButtonProps(isVisible: false),
       dropdownBuilder: (context, player) {
-  final text = player == null ? hintText : player.fullName;
-  final colours =
-      player == null ? null : _getTeamColoursForPlayer(player);
+        final text = player == null ? hintText : player.fullName;
+        final colours =
+            player == null ? null : _getTeamColoursForPlayer(player);
 
-  return Container(
-    width: kPickColumnWidth,
-    alignment: Alignment.center,
-    child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: colours == null
-          ? null
-          : BoxDecoration(
-              color: colours["bg"]?.withAlpha(230), // 0.9 opacity
-              borderRadius: BorderRadius.circular(4),
+        return Container(
+          width: kPickColumnWidth,
+          alignment: Alignment.center,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: colours == null
+                ? null
+                : BoxDecoration(
+                    color: colours["bg"]?.withAlpha(230),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+            child: Text(
+              text,
+              overflow: TextOverflow.visible,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colours == null ? cs.onSurfaceVariant : colours["fg"],
+              ),
             ),
-      child: Text(
-        text,
-        overflow: TextOverflow.visible,
-        softWrap: false,
-        textAlign: TextAlign.center,
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: colours == null ? cs.onSurfaceVariant : colours["fg"],
-        ),
-      ),
-    ),
-  );
-},
+          ),
+        );
+      },
       onChanged: (player) {
-        if (player == null) return;
-
         setState(() {
           owner.picks[colIndex].player = player;
           owner.picks[colIndex].stats = null;
@@ -608,28 +637,28 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
 
   Widget _totalCell(BuildContext context, PunterSelection row) {
-  final theme = Theme.of(context);
-  final cs = theme.colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
-  return Container(
-    alignment: Alignment.center,
-    padding: const EdgeInsets.symmetric(horizontal: 2),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        color: cs.primary.withAlpha(15), // 0.06 opacity
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        "${row.totalScore}",
-        style: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: cs.primary,
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        decoration: BoxDecoration(
+          color: cs.primary.withAlpha(15),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          "${row.totalScore}",
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: cs.primary,
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // TEAM COLOURS
@@ -830,43 +859,45 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   Future<void> _loadSnapshotFromBackend() async {
     try {
       final url = Uri.parse(
-        "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections?gameType=${widget.gameType}",
+        "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections",
       );
 
       final res = await http.get(url);
+      if (res.statusCode != 200) return;
+
       final json = jsonDecode(res.body);
+      if (json == null || json is! Map<String, dynamic>) return;
 
-      if (json["data"] == null) return;
+      if (json["picks"] == null || json["punterNames"] == null) return;
 
-      final serverTimestamp = json["lastUpdated"];
+      final punterNames = (json["punterNames"] as List<dynamic>)
+          .map((e) => e.toString())
+          .toList();
 
-      if (_lastUpdated != null && serverTimestamp == _lastUpdated) {
-        return;
-      }
-
-      _lastUpdated = serverTimestamp;
+      final picksJson = (json["picks"] as List<dynamic>)
+          .map<List<_PickSnapshot>>((row) {
+        return (row as List<dynamic>).map<_PickSnapshot>((p) {
+          return _PickSnapshot(
+            playerId: p["playerId"] as String?,
+            stats: p["stats"] == null
+                ? null
+                : Map<String, dynamic>.from(p["stats"] as Map),
+          );
+        }).toList();
+      }).toList();
 
       final snap = _TableSnapshot(
-        punterNames: List<String>.from(json["data"]["punterNames"]),
-        picks: (json["data"]["picks"] as List)
-            .map(
-              (row) => (row as List)
-                  .map(
-                    (p) => _PickSnapshot(
-                      playerId: p["playerId"],
-                      stats: p["stats"] == null
-                          ? null
-                          : Map<String, dynamic>.from(p["stats"]),
-                    ),
-                  )
-                  .toList(),
-            )
-            .toList(),
+        punterNames: punterNames,
+        picks: picksJson,
       );
 
       setState(() {
         _applySnapshot(snap);
+        _history = [snap];
+        _historyIndex = 0;
       });
+
+      widget.onChanged?.call();
     } catch (e) {
       debugPrint("❌ Failed to load selections: $e");
     }

@@ -8,7 +8,7 @@ class LeaderboardTable extends StatelessWidget {
   final double rowHeight;
   final double totalWidth;
 
-  // ⭐ Added for scroll sync
+  // ⭐ Shared scroll controller for horizontal sync
   final ScrollController? scrollController;
 
   const LeaderboardTable({
@@ -30,81 +30,97 @@ class LeaderboardTable extends StatelessWidget {
     return Container(
       width: totalWidth,
       decoration: BoxDecoration(
-        color: cs.surface,
+        color: Colors.black.withAlpha(38), // dark tile
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.shade300.withAlpha(153),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(15), // 0.06 opacity
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withAlpha(46),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // -------------------------
-            // HEADER
-            // -------------------------
-            SizedBox(
-              width: totalWidth,
-              height: UIDimensions.headerHeight,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: cs.primary.withAlpha(31), // 0.12 opacity
-                      width: 0.75,
+
+        // ⭐ Horizontal scroll wrapper (header + body)
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          controller: scrollController,
+
+          child: SizedBox(
+            width: totalWidth,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+
+                // -------------------------
+                // HEADER
+                // -------------------------
+                SizedBox(
+                  width: totalWidth,
+                  height: UIDimensions.headerHeight,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withAlpha(64),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: cs.primary.withAlpha(31),
+                          width: 0.75,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: UIDimensions.rankColumnWidth,
+                          child: _headerCell(theme, "P", alignCenter: true),
+                        ),
+                        SizedBox(
+                          width: UIDimensions.punterNameColumnWidth,
+                          child: _headerCell(theme, "Punter", alignCenter: true),
+                        ),
+                        SizedBox(
+                          width: UIDimensions.totalColumnWidth,
+                          child: _headerCell(theme, "T", alignCenter: true),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: UIDimensions.rankColumnWidth,
-                      child: _headerCell(theme, "P", alignCenter: true),
-                    ),
-                    SizedBox(
-                      width: UIDimensions.punterNameColumnWidth,
-                      child: _headerCell(theme, "Punter", alignCenter: true),
-                    ),
-                    SizedBox(
-                      width: UIDimensions.totalColumnWidth,
-                      child: _headerCell(theme, "T", alignCenter: true),
-                    ),
-                  ],
+
+                // -------------------------
+                // BODY
+                // -------------------------
+                SizedBox(
+                  height: rowHeight * sorted.length,
+                  child: ListView.builder(
+                    itemCount: sorted.length,
+                    physics: const NeverScrollableScrollPhysics(), // ⭐ vertical only
+                    itemBuilder: (context, index) {
+                      final p = sorted[index];
+
+                      return buildSharedTableRow(
+                        context: context,
+                        index: index,
+                        rowHeight: rowHeight,
+                        totalWidth: totalWidth,
+                        isInvalid: false,
+                        isHighlighted: p.isPrizeWinner,
+                        leftCell: _rankCell(context, index),
+                        middleCells: [_punterNameCell(context, p)],
+                        rightCell: _scoreCell(context, p),
+                      );
+                    },
+                  ),
                 ),
-              ),
+              ],
             ),
-
-            // -------------------------
-            // BODY — SCROLLABLE + SYNCED
-            // -------------------------
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: sorted.length,
-                itemBuilder: (context, index) {
-                  final p = sorted[index];
-
-                  return buildSharedTableRow(
-                    context: context,
-                    index: index,
-                    rowHeight: rowHeight,
-                    totalWidth: totalWidth,
-                    isInvalid: false,
-                    isHighlighted: p.isPrizeWinner,
-                    leftCell: _rankCell(context, index),
-                    middleCells: [_punterNameCell(context, p)],
-                    rightCell: _scoreCell(context, p),
-                  );
-                },
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
