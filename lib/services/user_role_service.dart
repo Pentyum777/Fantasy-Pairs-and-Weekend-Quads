@@ -4,6 +4,7 @@ class UserRoleService {
   static const Set<String> adminEmails = {
     "wpenfold@bigpond.net.au",
     "paulfruin30@gmail.com",
+    "wayne.penfold@gmail.com",
   };
 
   UserRole role = UserRole.readOnly;
