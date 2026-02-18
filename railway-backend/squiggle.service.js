@@ -1,6 +1,13 @@
-import squiggleMap from "./squiggle_map.json" assert { type: "json" };
+import fs from "fs";
 import fetch from "node-fetch";
 
+// Load JSON manually (Railway-safe)
+const squiggleMap = JSON.parse(fs.readFileSync("./squiggle_map.json", "utf8"));
+
+/**
+ * Fetches Squiggle game status for a matchId.
+ * Returns: "Upcoming" | "In Progress" | "Final"
+ */
 export async function getSquiggleStatusForMatch(matchId) {
   const squiggleId = squiggleMap[matchId];
 
