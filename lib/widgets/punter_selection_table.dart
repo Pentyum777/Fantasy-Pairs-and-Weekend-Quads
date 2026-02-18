@@ -249,10 +249,11 @@ Widget build(BuildContext context) {
 
   return LayoutBuilder(
     builder: (context, constraints) {
-      final tableHeight = constraints.maxHeight; // ⭐ bounded height from parent
+      final double tableHeight = constraints.maxHeight;
 
       return Container(
         width: tableWidth,
+        height: tableHeight, // ⭐ CRITICAL FOR MOBILE
         decoration: BoxDecoration(
           color: cs.surfaceContainerHighest.withAlpha(64),
           borderRadius: BorderRadius.circular(8),
@@ -260,13 +261,13 @@ Widget build(BuildContext context) {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
 
-          // ⭐ Horizontal scroll only
           child: SingleChildScrollView(
             controller: _horizontalController,
             scrollDirection: Axis.horizontal,
+
             child: SizedBox(
               width: tableWidth,
-              height: tableHeight, // ⭐ give Column a real height
+              height: tableHeight, // ⭐ GIVE COLUMN REAL HEIGHT
               child: Column(
                 children: [
                   SizedBox(
@@ -279,9 +280,9 @@ Widget build(BuildContext context) {
                       fontSize,
                     ),
                   ),
+
                   Divider(height: 1, thickness: 1, color: cs.outlineVariant),
 
-                  // ⭐ BODY now gets remaining height and can scroll vertically
                   Expanded(
                     child: _buildBody(
                       theme,
