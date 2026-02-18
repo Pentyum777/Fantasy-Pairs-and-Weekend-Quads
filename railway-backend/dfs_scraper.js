@@ -1,113 +1,108 @@
-import fetch from "node-fetch";
-import * as cheerio from "cheerio";
+import playwright from "playwright";
 
-export async function scrapeDFS(dfsId) {
-  const url =
-    "https://dfsaustralia.com/wp-admin/admin-ajax.php?action=afl_game_stats_call_mysql";
+let browser = null;
+let page = null;
 
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "text/html, */*;q=0.8",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest",
-        Origin: "https://dfsaustralia.com",
-        Referer: "https://dfsaustralia.com/",
-      },
-      // ⭐ THE FIX — DFS expects "id", not "gameId"
-      body: `id=${encodeURIComponent(dfsId)}`,
-      timeout: 10000,
+export async function initScraper() {
+  if (!browser) {
+    browser = await playwright.chromium.launch({
+      headless: true,
+      args: ["--disable-gpu", "--no-sandbox"],
     });
 
-    if (!res.ok) {
-      console.error("DFS AJAX endpoint returned error:", res.status);
-      return { players: [], meta: {} };
-    }
+    page = await browser.newPage();
 
-    const html = await res.text();
-    const $ = cheerio.load(html);
+    // Block heavy resources
+    await page.route("**/*", (route) => {
+      const type = route.request().resourceType();
+      if (["image", "font", "media", "stylesheet"].includes(type)) {
+        route.abort();
+      } else {
+        route.continue();
+      }
+    });
+  }
+}
 
-    const rows = $("tbody tr");
-    if (rows.length === 0) {
-      console.warn("No table rows found in DFS AJAX response — returning empty stats");
-      return { players: [], meta: {} };
-    }
+export async function scrapeDFS(dfsId) {
+  await initScraper();
 
-    const players = [];
+  const url = `https://dfsaustralia.com/afl-game-stats/?gameId=${dfsId}`;
 
-    rows.each((_, row) => {
-      const cells = $(row).find("td");
-      if (cells.length === 0) return;
+  try {
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
 
-      const nameCell = $(cells[0]);
-      const link = nameCell.find("a");
-      const name = link.text().trim() || nameCell.text().trim();
-      const href = link.attr("href") || "";
+    await page.waitForSelector("table tbody tr", { timeout: 8000 });
 
-      const idMatch = href.match(/playerId=([^&]+)/);
-      const playerId = idMatch ? idMatch[1] : "";
-
-      const startingPosition = $(row).attr("data-startingposition") || "";
-      const benchReason = $(row).attr("data-benchreason") || "";
-
-      const isSubOrOut =
-        startingPosition === "SUB" ||
-        benchReason === "Sub Tactical" ||
-        benchReason === "Sub Injured" ||
-        benchReason === "Injured" ||
-        benchReason === "OUT";
-
-      if (isSubOrOut) return;
-
+    const players = await page.$$eval("table tbody tr", (rows) => {
       const parse = (v) => parseInt((v || "0").replace(/\s+/g, ""), 10);
 
-      const kicks = parse($(cells[1]).text());
-      const handballs = parse($(cells[2]).text());
-      const marks = parse($(cells[3]).text());
-      const tackles = parse($(cells[4]).text());
-      const hitouts = parse($(cells[5]).text());
-      const freesFor = parse($(cells[6]).text());
-      const freesAgainst = parse($(cells[7]).text());
-      const goals = parse($(cells[8]).text());
-      const behinds = parse($(cells[9]).text());
-      const tog = parse($(cells[10]).text());
+      return rows
+        .map((row) => {
+          const cells = Array.from(row.querySelectorAll("td"));
+          if (cells.length === 0) return null;
 
-      const fantasyPoints =
-        kicks * 3 +
-        handballs * 2 +
-        marks * 3 +
-        tackles * 4 +
-        hitouts * 1 +
-        freesFor * 1 +
-        freesAgainst * -3 +
-        goals * 6 +
-        behinds * 1;
+          const link = cells[0].querySelector("a");
+          const name = link?.innerText.trim() || cells[0].innerText.trim();
+          const href = link?.getAttribute("href") || "";
+          const idMatch = href.match(/playerId=([^&]+)/);
+          const playerId = idMatch ? idMatch[1] : name;
 
-      players.push({
-        id: playerId || name,
-        name,
-        team: "",
-        stats: {
-          fantasyPoints,
-          kicks,
-          handballs,
-          marks,
-          tackles,
-          hitouts,
-          freesFor,
-          freesAgainst,
-          goals,
-          behinds,
-          timeOnGroundPercentage: tog,
-        },
-      });
+          const kicks = parse(cells[1].innerText);
+          const handballs = parse(cells[2].innerText);
+          const marks = parse(cells[3].innerText);
+          const tackles = parse(cells[4].innerText);
+          const hitouts = parse(cells[5].innerText);
+          const freesFor = parse(cells[6].innerText);
+          const freesAgainst = parse(cells[7].innerText);
+          const goals = parse(cells[8].innerText);
+          const behinds = parse(cells[9].innerText);
+          const tog = parse(cells[10].innerText);
+
+          const fantasyPoints =
+            kicks * 3 +
+            handballs * 2 +
+            marks * 3 +
+            tackles * 4 +
+            hitouts * 1 +
+            freesFor * 1 +
+            freesAgainst * -3 +
+            goals * 6 +
+            behinds * 1;
+
+          return {
+            id: playerId,
+            name,
+            team: "",
+            stats: {
+              fantasyPoints,
+              kicks,
+              handballs,
+              marks,
+              tackles,
+              hitouts,
+              freesFor,
+              freesAgainst,
+              goals,
+              behinds,
+              timeOnGroundPercentage: tog,
+            },
+          };
+        })
+        .filter(Boolean);
     });
 
     return { players, meta: {} };
   } catch (err) {
-    console.error("DFS AJAX scrape failed:", err);
+    console.error("Playwright DFS scrape failed:", err);
     return { players: [], meta: {} };
+  }
+}
+
+export async function shutdownScraper() {
+  if (browser) {
+    await browser.close();
+    browser = null;
+    page = null;
   }
 }
