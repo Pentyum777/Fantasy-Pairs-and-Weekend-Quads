@@ -1,18 +1,19 @@
 FROM mcr.microsoft.com/playwright:v1.58.1-jammy
 
+# Set working directory to backend folder
 WORKDIR /app
 
 # Fix HTTPS requests
 RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
 
-# Copy backend package.json
-COPY railway-backend/package*.json ./railway-backend/
+# Copy backend package.json + lock file
+COPY railway-backend/package*.json ./ 
 
 # Install backend dependencies
-RUN cd railway-backend && npm install
+RUN npm install
 
-# Copy entire project
-COPY . .
+# Copy the rest of the backend code
+COPY railway-backend/. .
 
-# Run backend from subfolder
-CMD ["node", "railway-backend/server.js"]
+# Start the backend
+CMD ["node", "server.js"]
