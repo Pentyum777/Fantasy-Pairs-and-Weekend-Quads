@@ -1,10 +1,13 @@
 import express from "express";
 import cors from "cors";
+import fs from "fs";
 import { getDFSStatsForMatch } from "./dfscache.js";
 import { getSquiggleStatusForMatch } from "./squiggle_service.js";
-import dfsMap from "./dfs_map.json" assert { type: "json" };
-import squiggleMap from "./squiggle_map.json" assert { type: "json" };
-import { startLiveDFSLoop } from "./livescheduler.js";
+import { startLiveDFSLoop } from "./liveScheduler.js";
+
+// Load JSON maps manually (Railway-safe)
+const dfsMap = JSON.parse(fs.readFileSync("./dfs_map.json", "utf8"));
+const squiggleMap = JSON.parse(fs.readFileSync("./squiggle_map.json", "utf8"));
 
 console.log("🚀 DFS + Squiggle backend starting...");
 
@@ -50,10 +53,8 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 
   try {
-    // DFS stats (cached + live scraping)
     const dfsData = await getDFSStatsForMatch(matchId);
 
-    // Squiggle metadata (status only)
     let status = "Upcoming";
     if (squiggleId) {
       status = await getSquiggleStatusForMatch(matchId);
