@@ -2,8 +2,16 @@ import fs from "fs";
 import { getSquiggleStatusForMatch } from "./squiggle_service.js";
 
 // Load JSON maps manually (Railway-safe)
-const squiggleMap = JSON.parse(  fs.readFileSync("./railway-backend/squiggle_map.json", "utf8"));
-const dfsMap = JSON.parse(  fs.readFileSync("./railway-backend/dfs_map.json", "utf8"));
+import path from "path";
+
+const squiggleMap = JSON.parse(
+  fs.readFileSync(path.resolve("railway-backend/squiggle_map.json"), "utf8")
+);
+
+const dfsMap = JSON.parse(
+  fs.readFileSync(path.resolve("railway-backend/dfs_map.json"), "utf8")
+);
+
 
 /**
  * Returns all matches that are currently live.

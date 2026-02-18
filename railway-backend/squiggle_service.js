@@ -2,8 +2,10 @@ import fs from "fs";
 import fetch from "node-fetch";
 
 // Load JSON manually (Railway-safe)
+import path from "path";
+
 const squiggleMap = JSON.parse(
-  fs.readFileSync("./railway-backend/squiggle_map.json", "utf8")
+  fs.readFileSync(path.resolve("railway-backend/squiggle_map.json"), "utf8")
 );
 
 /**
