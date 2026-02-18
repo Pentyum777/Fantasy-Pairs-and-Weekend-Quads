@@ -4,8 +4,6 @@ import { scrapeDFS } from "./dfs_scraper.js";
 import { getSquiggleStatusForMatch } from "./squiggle_service.js";
 
 // Load JSON maps manually (Railway-safe)
-import path from "path";
-
 const squiggleMap = JSON.parse(
   fs.readFileSync(path.resolve("railway-backend/squiggle_map.json"), "utf8")
 );
