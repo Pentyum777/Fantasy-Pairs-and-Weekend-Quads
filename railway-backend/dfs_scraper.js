@@ -21,7 +21,14 @@ export async function scrapeDFS(dfsId) {
     const html = await res.text();
     const $ = cheerio.load(html);
 
-    const rows = $("table.dataTable tbody tr");
+    // ⭐ NEW SELECTOR — matches the real DFS table
+    let rows = $("div.nv-content-wrap table tbody tr");
+
+    // Fallback if DFS changes theme again
+    if (rows.length === 0) {
+      rows = $("tbody tr");
+    }
+
     if (rows.length === 0) {
       console.warn("No table rows found — returning empty stats");
       return { players: [], meta: {} };
