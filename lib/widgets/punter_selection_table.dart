@@ -928,8 +928,8 @@ clearButtonProps: const ClearButtonProps(
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "gameType": widget.gameType,
-        "season": widget.season,   // ⭐ REQUIRED
-        "round": widget.round,     // ⭐ REQUIRED
+        "season": widget.season,
+        "round": widget.round,
         "punterNames": snap.punterNames,
         "picks": snap.picks.map((row) {
           return row.map((p) {
@@ -945,9 +945,9 @@ clearButtonProps: const ClearButtonProps(
     final json = jsonDecode(res.body);
 
     if (json["lastUpdated"] != null) {
-  _lastUpdated = json["lastUpdated"];
-  widget.onTimestampChanged?.call(lastUpdatedLabel);
-}
+      _lastUpdated = json["lastUpdated"];
+      widget.onTimestampChanged?.call(lastUpdatedLabel);
+    }
   } catch (e) {
     debugPrint("❌ Failed to save selections: $e");
   }
@@ -972,13 +972,14 @@ clearButtonProps: const ClearButtonProps(
     final json = jsonDecode(res.body);
     if (json == null || json is! Map<String, dynamic>) return;
 
-    if (json["picks"] == null || json["punterNames"] == null) return;
+    final data = json["data"];
+    if (data == null) return;
 
-    final punterNames = (json["punterNames"] as List<dynamic>)
+    final punterNames = (data["punterNames"] as List<dynamic>)
         .map((e) => e.toString())
         .toList();
 
-    final picksJson = (json["picks"] as List<dynamic>)
+    final picksJson = (data["picks"] as List<dynamic>)
         .map<List<_PickSnapshot>>((row) {
       return (row as List<dynamic>).map<_PickSnapshot>((p) {
         return _PickSnapshot(

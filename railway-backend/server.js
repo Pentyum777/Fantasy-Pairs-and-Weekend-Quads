@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
+
 import { getDFSStatsForMatch } from "./dfscache.js";
 import { getSquiggleStatusForMatch } from "./squiggle_service.js";
 import { startLiveDFSLoop } from "./livescheduler.js";
@@ -33,6 +34,65 @@ app.use(express.json());
 // ------------------------------------------------------
 app.get("/", (req, res) => {
   res.send("DFS + Squiggle backend is running");
+});
+
+// ------------------------------------------------------
+// In-memory per-game-type selections (live state)
+// ------------------------------------------------------
+
+let selectionsByGameType = {};
+
+// Save selections
+app.post("/saveSelections", (req, res) => {
+  const { gameType, season, round, punterNames, picks } = req.body;
+
+  if (!gameType || !season || !round) {
+    return res.status(400).json({
+      error: "gameType, season, and round are required",
+    });
+  }
+
+  const key = `${gameType}_${season}_${round}`;
+
+  selectionsByGameType[key] = {
+    lastUpdated: Date.now(),
+    data: { punterNames, picks },
+  };
+
+  console.log(`💾 Saved selections for ${key}`);
+
+  res.json({
+    ok: true,
+    lastUpdated: selectionsByGameType[key].lastUpdated,
+  });
+});
+
+// Load selections
+app.get("/loadSelections", (req, res) => {
+  const { gameType, season, round } = req.query;
+
+  if (!gameType || !season || !round) {
+    return res.status(400).json({
+      error: "gameType, season, and round are required",
+    });
+  }
+
+  const key = `${gameType}_${season}_${round}`;
+  const snapshot = selectionsByGameType[key];
+
+  if (!snapshot) {
+    return res.json({
+      ok: true,
+      lastUpdated: 0,
+      data: null,
+    });
+  }
+
+  res.json({
+    ok: true,
+    lastUpdated: snapshot.lastUpdated,
+    data: snapshot.data,
+  });
 });
 
 // ------------------------------------------------------

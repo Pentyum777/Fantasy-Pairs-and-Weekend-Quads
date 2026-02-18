@@ -69,11 +69,11 @@ class MatchStatsParser {
     for (final raw in playersRaw) {
       if (raw is! Map<String, dynamic>) continue;
 
-      // Align with DFS scraper fields
-      final id = raw['playerId']?.toString().trim() ?? "";
-      final name = raw['playerName']?.toString().trim() ?? "";
+      // ⭐ Correct field names from backend
+      final id = raw['id']?.toString().trim() ?? "";
+      final name = raw['name']?.toString().trim() ?? "";
 
-      // Stats object from scraper
+      // Stats object from backend
       final stats = raw['stats'] is Map
           ? Map<String, dynamic>.from(raw['stats'])
           : <String, dynamic>{};
