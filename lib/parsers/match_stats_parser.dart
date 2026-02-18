@@ -10,53 +10,44 @@ class MatchStatsParser {
   static const String baseUrl =
       "https://fantasy-pairs-and-weekend-quads-production.up.railway.app";
 
-  // ⭐ In-memory cache
+  // In-memory cache
   static final Map<String, List<AflPlayerMatchStats>> _cache = {};
 
   static Future<List<AflPlayerMatchStats>> fetchMatchStats(
     String matchId,
     PlayerRepository repo,
-    FixtureRepository fixtureRepo,
+    FixtureRepository fixtureRepo, // kept for compatibility
   ) async {
-    // ⭐ 1. Return cached stats instantly
+    // 1. Return cached results
     if (_cache.containsKey(matchId)) {
       return _cache[matchId]!;
     }
 
-    // ⭐ 2. Fetch from backend
-    final fantasyRes = await http.get(
-      Uri.parse('$baseUrl/fantasy/$matchId'),
-    );
+    // 2. Fetch from backend
+    final res = await http.get(Uri.parse('$baseUrl/fantasy/$matchId'));
 
-    if (fantasyRes.statusCode != 200) return [];
-    if (fantasyRes.body.isEmpty) return [];
+    if (res.statusCode != 200 || res.body.isEmpty) return [];
 
-    final fantasyJson = jsonDecode(fantasyRes.body);
-    final playersRaw = fantasyJson['players'];
+    final json = jsonDecode(res.body);
+    final playersRaw = json['players'];
     if (playersRaw is! List) return [];
+
+    // Load all players for 2025 (your dataset)
+    final seasonPlayers = await repo.playersForSeason(2025);
 
     final List<AflPlayerMatchStats> results = [];
 
-    int asInt(dynamic v) {
-      if (v is int) return v;
-      return int.tryParse(v?.toString() ?? '') ?? 0;
-    }
+    int asInt(dynamic v) =>
+        v is int ? v : int.tryParse(v?.toString() ?? '') ?? 0;
 
-    // ⭐ Correct player lookup (ID-first)
-    Future<AflPlayer> _findPlayer(Map<String, dynamic> raw, int season) async {
-      final id = raw['id']?.toString().trim() ?? "";
-      final name = raw['name']?.toString().trim() ?? "";
-
-      final seasonPlayers = await repo.playersForSeason(season);
-
-      // 1. ID match
-      if (id.isNotEmpty) {
-        final byId = seasonPlayers.where((p) => p.id == id);
-        if (byId.isNotEmpty) return byId.first;
-      }
+    // Match DFS player to your repo player
+    AflPlayer _matchPlayer(String id, String name) {
+      // 1. ID match (CD_Ixxxxx)
+      final byId = seasonPlayers.where((p) => p.id == id);
+      if (byId.isNotEmpty) return byId.first;
 
       // 2. Name match
-      final normalized = name.toLowerCase();
+      final normalized = name.toLowerCase().trim();
       for (final p in seasonPlayers) {
         if (p.name.toLowerCase().trim() == normalized) {
           return p;
@@ -69,49 +60,46 @@ class MatchStatsParser {
         name: name,
         club: "",
         guernseyNumber: 0,
-        season: season,
+        season: 2025,
         fantasyScore: 0,
       );
     }
 
-    final season = int.tryParse(matchId.substring(4, 8)) ?? 2025;
+    // Parse each DFS player
+    for (final raw in playersRaw) {
+      if (raw is! Map<String, dynamic>) continue;
 
-    for (final p in playersRaw) {
-      if (p is! Map<String, dynamic>) continue;
+      // Align with DFS scraper fields
+      final id = raw['playerId']?.toString().trim() ?? "";
+      final name = raw['playerName']?.toString().trim() ?? "";
 
-      final stats = p['stats'] is Map
-          ? Map<String, dynamic>.from(p['stats'])
+      // Stats object from scraper
+      final stats = raw['stats'] is Map
+          ? Map<String, dynamic>.from(raw['stats'])
           : <String, dynamic>{};
 
-      // ⭐ Find player using ID-first logic
-      final player = await _findPlayer(p, season);
+      final repoPlayer = _matchPlayer(id, name);
 
-      // ⭐ Assign correct club using your PlayerRepository
-      final repoPlayer = await repo.findById(player.id, season);
-      final teamCode = repoPlayer?.club ?? player.club;
-
-      // ⭐ Build corrected player object (no copyWith)
-      final fixedPlayer = AflPlayer(
-        id: player.id,
-        name: player.name,
-        club: teamCode,
-        guernseyNumber: player.guernseyNumber,
-        season: player.season,
-        fantasyScore: player.fantasyScore,
+      final player = AflPlayer(
+        id: repoPlayer.id,
+        name: repoPlayer.name,
+        club: repoPlayer.club,
+        guernseyNumber: repoPlayer.guernseyNumber,
+        season: repoPlayer.season,
+        fantasyScore: repoPlayer.fantasyScore,
       );
 
-      // ⭐ Build final stats object
       results.add(
         AflPlayerMatchStats(
-          player: fixedPlayer,
-          team: teamCode,
+          player: player,
+          team: player.club,
           kicks: asInt(stats['kicks']),
           handballs: asInt(stats['handballs']),
           disposals: asInt(stats['disposals']),
           marks: asInt(stats['marks']),
           tackles: asInt(stats['tackles']),
           goals: asInt(stats['goals']),
-          behinds: asInt(stats['behinds'] ?? stats['behind']),
+          behinds: asInt(stats['behinds']),
           hitouts: asInt(stats['hitouts']),
           freesFor: asInt(stats['freesFor']),
           freesAgainst: asInt(stats['freesAgainst']),
@@ -121,13 +109,13 @@ class MatchStatsParser {
       );
     }
 
-    // ⭐ 3. Cache results
-    _cache[matchId] = results;
+    // Cache only non-empty results
+    if (results.isNotEmpty) {
+      _cache[matchId] = results;
+    }
 
     return results;
   }
 
-  static void clearCache() {
-    _cache.clear();
-  }
+  static void clearCache() => _cache.clear();
 }
