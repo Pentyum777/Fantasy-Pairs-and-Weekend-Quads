@@ -2,35 +2,35 @@ import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 
 export async function scrapeDFS(dfsId) {
-  const url = `https://dfsaustralia.com/afl-game-stats/?gameId=${dfsId}`;
+  const url =
+    "https://dfsaustralia.com/wp-admin/admin-ajax.php?action=afl_game_stats_call_mysql";
 
   try {
     const res = await fetch(url, {
+      method: "POST",
       headers: {
         "User-Agent": "Mozilla/5.0",
-        "Accept": "text/html",
+        "Accept": "text/html, */*;q=0.8",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
+        Origin: "https://dfsaustralia.com",
+        Referer: "https://dfsaustralia.com/",
       },
+      body: `gameId=${encodeURIComponent(dfsId)}`,
       timeout: 10000,
     });
 
     if (!res.ok) {
-      console.error("DFS HTML page returned error:", res.status);
+      console.error("DFS AJAX endpoint returned error:", res.status);
       return { players: [], meta: {} };
     }
 
     const html = await res.text();
     const $ = cheerio.load(html);
 
-    // ⭐ NEW SELECTOR — matches the real DFS table
-    let rows = $("div.nv-content-wrap table tbody tr");
-
-    // Fallback if DFS changes theme again
+    const rows = $("tbody tr");
     if (rows.length === 0) {
-      rows = $("tbody tr");
-    }
-
-    if (rows.length === 0) {
-      console.warn("No table rows found — returning empty stats");
+      console.warn("No table rows found in DFS AJAX response — returning empty stats");
       return { players: [], meta: {} };
     }
 
@@ -60,7 +60,7 @@ export async function scrapeDFS(dfsId) {
 
       if (isSubOrOut) return;
 
-      const parse = (v) => parseInt(v || "0", 10);
+      const parse = (v) => parseInt((v || "0").replace(/\s+/g, ""), 10);
 
       const kicks = parse($(cells[1]).text());
       const handballs = parse($(cells[2]).text());
@@ -104,29 +104,10 @@ export async function scrapeDFS(dfsId) {
       });
     });
 
-    // Extract metadata from page text
-    const bodyText = $("body").text();
-
-    const scoreMatch = bodyText.match(/(\d+)\s*-\s*(\d+)/);
-    const homeScore = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
-    const awayScore = scoreMatch ? parseInt(scoreMatch[2], 10) : 0;
-
-    const quarterMatch = bodyText.match(/\b(Q[1-4]|Final)\b/i);
-    const quarter = quarterMatch ? quarterMatch[1] : "";
-
-    const clockMatch = bodyText.match(/\b(\d{1,2}:\d{2})\b/);
-    const clock = clockMatch ? clockMatch[1] : "";
-
-    const meta = {
-      homeScore,
-      awayScore,
-      quarter,
-      clock,
-    };
-
-    return { players, meta };
+    // Meta (scores/clock) can stay with Squiggle; DFS fragment doesn’t need to supply it
+    return { players, meta: {} };
   } catch (err) {
-    console.error("DFS HTML scrape failed:", err);
+    console.error("DFS AJAX scrape failed:", err);
     return { players: [], meta: {} };
   }
 }
