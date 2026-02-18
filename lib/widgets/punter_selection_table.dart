@@ -226,7 +226,7 @@ int? _lastUpdated;
   // BUILD
   // ---------------------------------------------------------------------------
 
-  @override
+
 @override
 Widget build(BuildContext context) {
   if (widget.readOnly) {
@@ -247,56 +247,59 @@ Widget build(BuildContext context) {
   final baseWidth = widget.tableWidth;
   final tableWidth = math.max(baseWidth, _minTableWidth(pickCount));
 
-  return Container(
-  width: tableWidth,
-  decoration: BoxDecoration(
-    color: cs.surfaceContainerHighest.withAlpha(64),
-    borderRadius: BorderRadius.circular(8),
-  ),
-  child: ClipRRect(
-    borderRadius: BorderRadius.circular(8),
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final tableHeight = constraints.maxHeight; // ⭐ bounded height from parent
 
-    // ⭐ Horizontal scroll for entire table
-    child: SingleChildScrollView(
-      controller: _horizontalController,
-      scrollDirection: Axis.horizontal,
-      child: Column(
-        children: [
-          // -------------------------
-          // HEADER
-          // -------------------------
-          SizedBox(
-            width: tableWidth,
-            child: _buildTableHeader(
-              theme,
-              cs,
-              pickCount,
-              tableWidth,
-              fontSize,
+      return Container(
+        width: tableWidth,
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withAlpha(64),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+
+          // ⭐ Horizontal scroll only
+          child: SingleChildScrollView(
+            controller: _horizontalController,
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: tableWidth,
+              height: tableHeight, // ⭐ give Column a real height
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: tableWidth,
+                    child: _buildTableHeader(
+                      theme,
+                      cs,
+                      pickCount,
+                      tableWidth,
+                      fontSize,
+                    ),
+                  ),
+                  Divider(height: 1, thickness: 1, color: cs.outlineVariant),
+
+                  // ⭐ BODY now gets remaining height and can scroll vertically
+                  Expanded(
+                    child: _buildBody(
+                      theme,
+                      cs,
+                      visible,
+                      pickCount,
+                      tableWidth,
+                      fontSize,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-
-          Divider(height: 1, thickness: 1, color: cs.outlineVariant),
-
-          // -------------------------
-          // BODY — vertical scroll handled by ListView
-          // -------------------------
-          SizedBox(
-            width: tableWidth,
-            child: _buildBody(
-              theme,
-              cs,
-              visible,
-              pickCount,
-              tableWidth,
-              fontSize,
-            ),
-          ),
-        ],
-      ),
-    ),
-  ),
-);
+        ),
+      );
+    },
+  );
 }
 
 
