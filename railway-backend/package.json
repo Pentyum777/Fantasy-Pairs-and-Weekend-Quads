@@ -1,10 +1,10 @@
 {
   "name": "afl-fantasy-backend",
   "version": "1.0.0",
-  "main": "railway-backend/server.js",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node railway-backend/server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "cheerio": "^1.2.0",

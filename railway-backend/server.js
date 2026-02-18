@@ -1,20 +1,19 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
+import path from "path";
 
 import { getDFSStatsForMatch } from "./dfscache.js";
 import { getSquiggleStatusForMatch } from "./squiggle_service.js";
 import { startLiveDFSLoop } from "./livescheduler.js";
 
-// Load JSON maps manually (Railway-safe)
-import path from "path";
-
+// Load JSON maps (correct for Railway + Docker)
 const squiggleMap = JSON.parse(
-  fs.readFileSync(path.resolve("railway-backend/squiggle_map.json"), "utf8")
+  fs.readFileSync(path.resolve("squiggle_map.json"), "utf8")
 );
 
 const dfsMap = JSON.parse(
-  fs.readFileSync(path.resolve("railway-backend/dfs_map.json"), "utf8")
+  fs.readFileSync(path.resolve("dfs_map.json"), "utf8")
 );
 
 console.log("🚀 DFS + Squiggle backend starting...");
