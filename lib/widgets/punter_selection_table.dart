@@ -364,17 +364,18 @@ Widget build(BuildContext context) {
   // ---------------------------------------------------------------------------
 
   Widget _buildBody(
-    ThemeData theme,
-    ColorScheme cs,
-    List<PunterSelection> visible,
-    int pickCount,
-    double tableWidth,
-    double fontSize,
-  ) {
-    return ListView.builder(
-      controller: widget.scrollController,
-      itemCount: visible.length,
-      itemBuilder: (context, index) {
+  ThemeData theme,
+  ColorScheme cs,
+  List<PunterSelection> visible,
+  int pickCount,
+  double tableWidth,
+  double fontSize,
+) {
+  return ListView.builder(
+    controller: widget.scrollController,
+    itemCount: visible.length,
+    itemBuilder: (context, index) {
+      try {
         final row = visible[index];
         final isStriped = index.isOdd;
         final invalid = _hasAnyGlobalDuplicate();
@@ -404,16 +405,23 @@ Widget build(BuildContext context) {
                 width: kPunterColumnWidth,
                 child: _punterCell(context, row),
               ),
-              for (final pick in row.picks) ...[
+
+              // ⭐ SAFE PICK LOOP
+              for (int i = 0; i < pickCount; i++) ...[
                 SizedBox(
                   width: kPickColumnWidth,
-                  child: _buildPickCell(context, row, pick),
+                  child: i < row.picks.length
+                      ? _buildPickCell(context, row, row.picks[i])
+                      : const SizedBox(),
                 ),
                 SizedBox(
                   width: kPickScoreColumnWidth,
-                  child: _pickScoreCell(pick),
+                  child: i < row.picks.length
+                      ? _pickScoreCell(row.picks[i])
+                      : const SizedBox(),
                 ),
               ],
+
               SizedBox(
                 width: kTotalColumnWidth,
                 child: _totalCell(context, row),
@@ -421,9 +429,14 @@ Widget build(BuildContext context) {
             ],
           ),
         );
-      },
-    );
-  }
+      } catch (e, st) {
+        print("❌ TABLE ROW ERROR at index $index → $e");
+        print(st);
+        return const SizedBox.shrink();
+      }
+    },
+  );
+}
 
   // ---------------------------------------------------------------------------
   // PUNTER CELL
