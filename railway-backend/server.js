@@ -74,6 +74,8 @@ app.post("/saveSelections", (req, res) => {
 
 // Load selections for a specific game type (live state)
 app.get("/loadSelections", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+
   const gameType = req.query.gameType;
 
   if (!gameType) {
