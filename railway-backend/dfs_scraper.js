@@ -16,7 +16,6 @@ export async function scrapeDFS(dfsId) {
     }
 
     const json = await response.json();
-
     const rows = json?.players || [];
 
     const players = rows
@@ -58,6 +57,7 @@ export async function scrapeDFS(dfsId) {
           goals * 6 +
           behinds * 1;
 
+        // ⭐ Output EXACTLY like the old scraper
         return {
           id: playerId || playerName,
           name: playerName,

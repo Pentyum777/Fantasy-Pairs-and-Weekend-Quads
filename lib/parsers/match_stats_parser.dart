@@ -95,7 +95,7 @@ class MatchStatsParser {
           team: player.club,
           kicks: asInt(stats['kicks']),
           handballs: asInt(stats['handballs']),
-          disposals: asInt(stats['disposals']),
+          disposals: asInt(stats['kicks']) + asInt(stats['handballs']),
           marks: asInt(stats['marks']),
           tackles: asInt(stats['tackles']),
           goals: asInt(stats['goals']),

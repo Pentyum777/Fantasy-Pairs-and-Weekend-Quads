@@ -26903,23 +26903,23 @@ _.c=c
 _.e=!1},
 a8o:function a8o(){},
 a8p:function a8p(){},
-Od(b3,b4,b5){var s=0,r=A.U(t.IA),q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2
-var $async$Od=A.V(function(b6,b7){if(b6===1)return A.R(b7,r)
-for(;;)switch(s){case 0:if($.aCN.am(0,b3)){p=$.aCN.i(0,b3)
+Od(b4,b5,b6){var s=0,r=A.U(t.IA),q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3
+var $async$Od=A.V(function(b7,b8){if(b7===1)return A.R(b8,r)
+for(;;)switch(s){case 0:if($.aCN.am(0,b4)){p=$.aCN.i(0,b4)
 p.toString
 q=p
 s=1
 break}s=3
-return A.X(A.aAJ(A.fk(u.r+b3)),$async$Od)
-case 3:o=b7
+return A.X(A.aAJ(A.fk(u.r+b4)),$async$Od)
+case 3:o=b8
 if(o.b!==200||A.JE(A.Jy(o.e).c.a.i(0,"charset")).cs(0,o.w).length===0){q=A.b([],t.La)
 s=1
 break}n=J.bl(B.bh.uQ(0,A.JE(A.Jy(o.e).c.a.i(0,"charset")).cs(0,o.w),null),"players")
 if(!t.j.b(n)){q=A.b([],t.La)
 s=1
 break}s=4
-return A.X(b4.vL(2025),$async$Od)
-case 4:m=b7
+return A.X(b5.vL(2025),$async$Od)
+case 4:m=b8
 l=A.b([],t.La)
 k=new A.ac4()
 j=new A.ac2(m)
@@ -26944,16 +26944,17 @@ c=B.c.c8(c)
 a2=B.c.c8(a2)
 a6=k.$1(a0.i(0,"kicks"))
 a7=k.$1(a0.i(0,"handballs"))
-a8=k.$1(a0.i(0,"disposals"))
-a9=k.$1(a0.i(0,"marks"))
-b0=k.$1(a0.i(0,"tackles"))
-b1=k.$1(a0.i(0,"goals"))
-b2=k.$1(a0.i(0,"behinds"))
+a8=k.$1(a0.i(0,"kicks"))
+a9=k.$1(a0.i(0,"handballs"))
+b0=k.$1(a0.i(0,"marks"))
+b1=k.$1(a0.i(0,"tackles"))
+b2=k.$1(a0.i(0,"goals"))
+b3=k.$1(a0.i(0,"behinds"))
 k.$1(a0.i(0,"hitouts"))
 k.$1(a0.i(0,"freesFor"))
 k.$1(a0.i(0,"freesAgainst"))
 k.$1(a0.i(0,"timeOnGroundPercentage"))
-l.push(new A.jm(new A.cu(d,c,a2,a3,a4,a5),a6,a7,a8,a9,b0,b1,b2,k.$1(a0.i(0,"fantasyPoints"))))}if(l.length!==0)$.aCN.m(0,b3,l)
+l.push(new A.jm(new A.cu(d,c,a2,a3,a4,a5),a6,a7,a8+a9,b0,b1,b2,b3,k.$1(a0.i(0,"fantasyPoints"))))}if(l.length!==0)$.aCN.m(0,b4,l)
 q=l
 s=1
 break
