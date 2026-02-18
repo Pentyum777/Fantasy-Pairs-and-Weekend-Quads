@@ -921,7 +921,6 @@ String _timestampLabel = "--:--";
               .where((p) => fixtureClubCodes.contains(p.club))
               .toList();
 
-          // ⭐ Unified tile wrapper for BOTH widgets
           return Container(
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
@@ -929,7 +928,7 @@ String _timestampLabel = "--:--";
             ),
             padding: const EdgeInsets.all(8),
 
-            // ⭐ IntrinsicHeight forces both children to share the same height
+            // ⭐ BOTH widgets share the same height
             child: IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
