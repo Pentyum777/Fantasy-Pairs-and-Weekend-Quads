@@ -16,7 +16,8 @@ export async function scrapeDFS(dfsId) {
         Origin: "https://dfsaustralia.com",
         Referer: "https://dfsaustralia.com/",
       },
-      body: `gameId=${encodeURIComponent(dfsId)}`,
+      // ⭐ THE FIX — DFS expects "id", not "gameId"
+      body: `id=${encodeURIComponent(dfsId)}`,
       timeout: 10000,
     });
 
@@ -104,7 +105,6 @@ export async function scrapeDFS(dfsId) {
       });
     });
 
-    // Meta (scores/clock) can stay with Squiggle; DFS fragment doesn’t need to supply it
     return { players, meta: {} };
   } catch (err) {
     console.error("DFS AJAX scrape failed:", err);
