@@ -2,12 +2,17 @@ FROM mcr.microsoft.com/playwright:v1.58.1-jammy
 
 WORKDIR /app
 
-# Fix HTTPS requests (Squiggle, AFL, etc.)
+# Fix HTTPS requests
 RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
 
-COPY package*.json ./
-RUN npm install
+# Copy backend package.json
+COPY railway-backend/package*.json ./railway-backend/
 
+# Install backend dependencies
+RUN cd railway-backend && npm install
+
+# Copy entire project
 COPY . .
 
-CMD ["node", "server.js"]
+# Run backend from subfolder
+CMD ["node", "railway-backend/server.js"]
