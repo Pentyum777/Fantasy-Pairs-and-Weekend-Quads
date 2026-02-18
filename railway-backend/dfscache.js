@@ -1,8 +1,10 @@
 import fs from "fs";
 import path from "path";
 import { scrapeDFS } from "./dfs_scraper.js";
-import dfsMap from "./dfs_map.json" assert { type: "json" };
 import { getSquiggleStatusForMatch } from "./squiggle_service.js";
+
+// Load JSON maps manually (Railway-safe)
+const dfsMap = JSON.parse(fs.readFileSync("./dfs_map.json", "utf8"));
 
 const CACHE_FILE = path.resolve("dfs_cache.json");
 
@@ -35,18 +37,23 @@ export async function getDFSStatsForMatch(matchId) {
     return { players: [], meta: {} };
   }
 
+  // If cached as FINAL, return immediately
   if (cache[matchId]?.status === "final") {
     return cache[matchId].payload;
   }
 
+  // Check Squiggle status
   const status = await getSquiggleStatusForMatch(matchId);
 
+  // If upcoming, return cached (if any) or empty
   if (status === "Upcoming") {
     return cache[matchId]?.payload || { players: [], meta: {} };
   }
 
+  // Scrape DFS Australia
   const scraped = await scrapeDFS(dfsId);
 
+  // If scraper returned valid data, update cache
   if (scraped.players.length > 0) {
     cache[matchId] = {
       payload: scraped,
@@ -56,6 +63,7 @@ export async function getDFSStatsForMatch(matchId) {
     saveCache(cache);
   }
 
+  // Return scraped or fallback to cached
   return scraped.players.length > 0
     ? scraped
     : cache[matchId]?.payload || { players: [], meta: {} };

@@ -3,7 +3,7 @@ import cors from "cors";
 import fs from "fs";
 import { getDFSStatsForMatch } from "./dfscache.js";
 import { getSquiggleStatusForMatch } from "./squiggle_service.js";
-import { startLiveDFSLoop } from "./liveScheduler.js";
+import { startLiveDFSLoop } from "./livescheduler.js";
 
 // Load JSON maps manually (Railway-safe)
 const dfsMap = JSON.parse(fs.readFileSync("./dfs_map.json", "utf8"));
