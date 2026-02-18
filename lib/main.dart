@@ -1,3 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:web/web.dart' as web; // ⭐ required for reload()
+
 import 'package:flutter/material.dart';
 
 // ignore: deprecated_member_use
@@ -41,9 +46,16 @@ class _MyAppState extends State<MyApp> {
 
   Future<void>? _fixtureLoadFuture;
 
+  // ⭐ Forced refresh fields
+  Timer? _versionTimer;
+  String _currentVersion = "";
+
   @override
   void initState() {
     super.initState();
+
+    // ⭐ Start forced refresh polling
+    _startVersionPolling();
 
     fixtureRepo = FixtureRepository();
     playerRepo = PlayerRepository();
@@ -83,6 +95,40 @@ class _MyAppState extends State<MyApp> {
       }
     });
   }
+
+  // ⭐ Forced refresh polling
+  void _startVersionPolling() {
+    _versionTimer?.cancel();
+    _versionTimer = Timer.periodic(
+      const Duration(seconds: 20),
+      (_) => _checkForNewVersion(),
+    );
+  }
+
+  Future<void> _checkForNewVersion() async {
+  try {
+    final response = await http.get(
+      Uri.parse("version.json?cb=${DateTime.now().millisecondsSinceEpoch}"),
+    );
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      final newVersion = json["version"];
+
+      if (_currentVersion.isEmpty) {
+        _currentVersion = newVersion;
+        return;
+      }
+
+      if (newVersion != _currentVersion) {
+        print("🔄 New version detected → forcing reload");
+        web.window.location.reload();
+      }
+    }
+  } catch (_) {
+    // ignore errors silently
+  }
+}
 
   Future<void> _loadAllFixtures() async {
     await fixtureRepo.loadFixturesFromExcelFile('assets/afl_fixtures_2026.xlsx');
