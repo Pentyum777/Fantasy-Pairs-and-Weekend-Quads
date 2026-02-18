@@ -903,8 +903,6 @@ String _timestampLabel = "--:--";
       final double punterTableWidth =
           _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
 
-      final isMobileOrTablet = innerWidth < 900;
-
       return FutureBuilder<List<AflPlayer>>(
         future: widget.playerRepo.playersForSeason(widget.season),
         builder: (context, snapshot) {
@@ -923,7 +921,7 @@ String _timestampLabel = "--:--";
               .where((p) => fixtureClubCodes.contains(p.club))
               .toList();
 
-          // ⭐ Unified tile wrapper
+          // ⭐ Unified tile wrapper for BOTH widgets
           return Container(
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
@@ -931,106 +929,64 @@ String _timestampLabel = "--:--";
             ),
             padding: const EdgeInsets.all(8),
 
-            child: isMobileOrTablet
-                // ---------------------------------------------------------
-                // ⭐ MOBILE + TABLET LAYOUT (VERTICAL STACK)
-                // ---------------------------------------------------------
-                ? Column(
-                    children: [
-                      SizedBox(
-                        width: innerWidth,
-                        height: 400, // enough for vertical scroll
-                        child: PunterSelectionTable(
-                          gameType: widget.gameType,
-                          season: widget.season.toString(),
-                          round: widget.round!,
-                          tableWidth: innerWidth,
-                          visiblePunterCount: _visiblePunterCount,
-                          playersPerPunter: picks,
-                          availablePlayers: availablePlayers,
-                          selections: widget.selections,
-                          isCompleted: _isCompleted,
-                          readOnly: !widget.userRoleService.isAdmin,
-                          onChanged: widget.userRoleService.isAdmin ? () {} : null,
-                          collapsed: _leaderboardCollapsed,
-                          scrollController: _punterScrollController,
-                          userRoleService: widget.userRoleService,
-                          onTimestampChanged: (t) {
-                            setState(() => _timestampLabel = t);
-                          },
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      SizedBox(
-                        width: innerWidth,
-                        child: LeaderboardPanel(
-                          punters: widget.selections
-                              .take(_visiblePunterCount)
-                              .toList(),
-                          rowHeight: 34,
-                          collapsed: _leaderboardCollapsed,
-                          scrollController: _punterScrollController,
-                          onCollapseChanged: (collapsed) {
-                            setState(() => _leaderboardCollapsed = collapsed);
-                          },
-                        ),
-                      ),
-                    ],
-                  )
-
-                // ---------------------------------------------------------
-                // ⭐ DESKTOP LAYOUT (SIDE-BY-SIDE)
-                // ---------------------------------------------------------
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: punterTableWidth,
-                        child: PunterSelectionTable(
-                          gameType: widget.gameType,
-                          season: widget.season.toString(),
-                          round: widget.round!,
-                          tableWidth: punterTableWidth,
-                          visiblePunterCount: _visiblePunterCount,
-                          playersPerPunter: picks,
-                          availablePlayers: availablePlayers,
-                          selections: widget.selections,
-                          isCompleted: _isCompleted,
-                          readOnly: !widget.userRoleService.isAdmin,
-                          onChanged: widget.userRoleService.isAdmin ? () {} : null,
-                          collapsed: _leaderboardCollapsed,
-                          scrollController: _punterScrollController,
-                          userRoleService: widget.userRoleService,
-                          onTimestampChanged: (t) {
-                            setState(() => _timestampLabel = t);
-                          },
-                        ),
-                      ),
-
-                      SizedBox(
-                        width: leaderboardWidth,
-                        child: LeaderboardPanel(
-                          punters: widget.selections
-                              .take(_visiblePunterCount)
-                              .toList(),
-                          rowHeight: 34,
-                          collapsed: _leaderboardCollapsed,
-                          scrollController: _punterScrollController,
-                          onCollapseChanged: (collapsed) {
-                            setState(() => _leaderboardCollapsed = collapsed);
-                          },
-                        ),
-                      ),
-                    ],
+            // ⭐ IntrinsicHeight forces both children to share the same height
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // -----------------------------
+                  // ⭐ Punter Table
+                  // -----------------------------
+                  SizedBox(
+                    width: punterTableWidth,
+                    child: PunterSelectionTable(
+                      gameType: widget.gameType,
+                      season: widget.season.toString(),
+                      round: widget.round!,
+                      tableWidth: punterTableWidth,
+                      visiblePunterCount: _visiblePunterCount,
+                      playersPerPunter: picks,
+                      availablePlayers: availablePlayers,
+                      selections: widget.selections,
+                      isCompleted: _isCompleted,
+                      readOnly: !widget.userRoleService.isAdmin,
+                      onChanged: widget.userRoleService.isAdmin ? () {} : null,
+                      collapsed: _leaderboardCollapsed,
+                      scrollController: _punterScrollController,
+                      userRoleService: widget.userRoleService,
+                      onTimestampChanged: (t) {
+                        setState(() => _timestampLabel = t);
+                      },
+                    ),
                   ),
+
+                  // -----------------------------
+                  // ⭐ Leaderboard
+                  // -----------------------------
+                  SizedBox(
+                    width: leaderboardWidth,
+                    child: LeaderboardPanel(
+                      punters: widget.selections
+                          .take(_visiblePunterCount)
+                          .toList(),
+                      rowHeight: 34,
+                      collapsed: _leaderboardCollapsed,
+                      scrollController: _punterScrollController,
+                      onCollapseChanged: (collapsed) {
+                        setState(() => _leaderboardCollapsed = collapsed);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         },
       );
     },
   );
 }
+
 
 Widget _buildMainContent() {
   return Padding(
