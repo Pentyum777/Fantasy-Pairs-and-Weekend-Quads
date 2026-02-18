@@ -7,8 +7,8 @@ import { getSquiggleStatusForMatch } from "./squiggle_service.js";
 import { startLiveDFSLoop } from "./livescheduler.js";
 
 // Load JSON maps manually (Railway-safe)
-const dfsMap = JSON.parse(fs.readFileSync("./dfs_map.json", "utf8"));
-const squiggleMap = JSON.parse(fs.readFileSync("./squiggle_map.json", "utf8"));
+const squiggleMap = JSON.parse(  fs.readFileSync("./railway-backend/squiggle_map.json", "utf8"));
+const dfsMap = JSON.parse(  fs.readFileSync("./railway-backend/dfs_map.json", "utf8"));
 
 console.log("🚀 DFS + Squiggle backend starting...");
 

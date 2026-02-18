@@ -2,7 +2,9 @@ import fs from "fs";
 import fetch from "node-fetch";
 
 // Load JSON manually (Railway-safe)
-const squiggleMap = JSON.parse(fs.readFileSync("./squiggle_map.json", "utf8"));
+const squiggleMap = JSON.parse(
+  fs.readFileSync("./railway-backend/squiggle_map.json", "utf8")
+);
 
 /**
  * Fetches Squiggle game status for a matchId.
