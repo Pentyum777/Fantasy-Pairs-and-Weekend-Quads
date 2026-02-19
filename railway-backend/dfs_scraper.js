@@ -5,6 +5,8 @@ let page = null;
 
 export async function initScraper() {
   if (!browser) {
+    console.log("🟦 Initializing Playwright browser...");
+
     browser = await playwright.chromium.launch({
       headless: true,
       args: ["--disable-gpu", "--no-sandbox"],
@@ -21,6 +23,8 @@ export async function initScraper() {
         route.continue();
       }
     });
+
+    console.log("🟩 Playwright browser ready");
   }
 }
 
@@ -28,11 +32,14 @@ export async function scrapeDFS(dfsId) {
   await initScraper();
 
   const url = `https://dfsaustralia.com/afl-game-stats/?gameId=${dfsId}`;
+  console.log(`🔍 DFS scrape starting → dfsId ${dfsId}, url=${url}`);
 
   try {
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+    console.log(`🌐 Page loaded for dfsId ${dfsId}`);
 
     await page.waitForSelector("table tbody tr", { timeout: 8000 });
+    console.log(`📄 Table rows detected for dfsId ${dfsId}`);
 
     const players = await page.$$eval("table tbody tr", (rows) => {
       const parse = (v) => parseInt((v || "0").replace(/\s+/g, ""), 10);
@@ -92,15 +99,19 @@ export async function scrapeDFS(dfsId) {
         .filter(Boolean);
     });
 
+    // 🔍 CRITICAL DEBUG LOG
+    console.log(`🟨 DFS scrape complete → dfsId ${dfsId}, players=${players.length}`);
+
     return { players, meta: {} };
   } catch (err) {
-    console.error("Playwright DFS scrape failed:", err);
+    console.error(`❌ Playwright DFS scrape failed for dfsId ${dfsId}:`, err);
     return { players: [], meta: {} };
   }
 }
 
 export async function shutdownScraper() {
   if (browser) {
+    console.log("🟥 Shutting down Playwright browser...");
     await browser.close();
     browser = null;
     page = null;
