@@ -969,12 +969,14 @@ Future<void> _saveSnapshotToBackend(_TableSnapshot snap) async {
 Future<void> _loadSnapshotFromBackend() async {
   try {
     final url = Uri.https(
-      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
-      "/loadSelections",
-      {
-        "gameType": widget.gameType,
-      },
-    );
+  "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+  "/loadSelections",
+  {
+    "gameType": widget.gameType,
+    "season": widget.season,
+    "round": widget.round.toString(),
+  },
+);
 
     final res = await http.get(url);
 

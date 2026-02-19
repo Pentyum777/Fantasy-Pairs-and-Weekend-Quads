@@ -85,7 +85,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   bool _fridayWinnerSelected = false;
 
   // ------------------------------------------------------------
-  // ⭐ Save round results for season-long storage
+  // Save round results for season-long storage
   // ------------------------------------------------------------
   Future<void> _saveRoundResultsToBackend(List<PunterSelection> punters) async {
     try {
@@ -708,6 +708,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
     );
   }
 
+  String _timestampLabel = "--:--";
+
   Widget _buildPunterControls() {
     final theme = Theme.of(context);
 
@@ -827,8 +829,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
     );
   }
 
-  String _timestampLabel = "--:--";
-
   Widget _buildPunterAndLeaderboard() {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -863,72 +863,61 @@ class _GameViewScreenState extends State<GameViewScreen> {
                 .toList();
 
             return Container(
-  decoration: BoxDecoration(
-    color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
-    borderRadius: BorderRadius.circular(12),
-  ),
-  padding: const EdgeInsets.all(8),
-
-  child: Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // ⭐ Punter table
-      SizedBox(
-        width: punterTableWidth,
-        child: PunterSelectionTable(
-          key: _punterTableKey,   // ⭐ REQUIRED FOR STATE ACCESS
-
-          gameType: widget.gameType,
-          season: widget.season.toString(),
-          round: widget.round!,
-          tableWidth: punterTableWidth,
-          visiblePunterCount: _visiblePunterCount,
-          playersPerPunter: picks,
-          availablePlayers: availablePlayers,
-          selections: widget.selections,
-          isCompleted: _isCompleted,
-          readOnly: !widget.userRoleService.isAdmin,
-          onChanged: widget.userRoleService.isAdmin ? () {} : null,
-          collapsed: _leaderboardCollapsed,
-          scrollController: _punterScrollController,
-
-          // ⭐ NEW: pass fantasyService into the table
-          fantasyService: widget.fantasyService,
-
-          userRoleService: widget.userRoleService,
-
-          // ⭐ Timestamp label update
-          onTimestampChanged: (t) {
-            setState(() => _timestampLabel = t);
-          },
-
-          // ⭐ Save snapshot after live score updates
-          onLiveScoreUpdateSave: () {
-            final tableState = _punterTableKey.currentState as dynamic;
-            tableState?.saveSnapshot();
-          },
-        ),
-      ),
-
-      // ⭐ Leaderboard
-      SizedBox(
-        width: leaderboardWidth,
-        child: LeaderboardPanel(
-          punters: widget.selections
-              .take(_visiblePunterCount)
-              .toList(),
-          rowHeight: 34,
-          collapsed: _leaderboardCollapsed,
-          scrollController: _punterScrollController,
-          onCollapseChanged: (collapsed) {
-            setState(() => _leaderboardCollapsed = collapsed);
-          },
-        ),
-      ),
-    ],
-  ),
-);
-
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: punterTableWidth,
+                    child: PunterSelectionTable(
+                      key: _punterTableKey,
+                      gameType: widget.gameType,
+                      season: widget.season.toString(),
+                      round: widget.round!,
+                      tableWidth: punterTableWidth,
+                      visiblePunterCount: _visiblePunterCount,
+                      playersPerPunter: picks,
+                      availablePlayers: availablePlayers,
+                      selections: widget.selections,
+                      isCompleted: _isCompleted,
+                      readOnly: !widget.userRoleService.isAdmin,
+                      onChanged:
+                          widget.userRoleService.isAdmin ? () {} : null,
+                      collapsed: _leaderboardCollapsed,
+                      scrollController: _punterScrollController,
+                      fantasyService: widget.fantasyService,
+                      userRoleService: widget.userRoleService,
+                      onTimestampChanged: (t) {
+                        setState(() => _timestampLabel = t);
+                      },
+                      onLiveScoreUpdateSave: () {
+                        final tableState =
+                            _punterTableKey.currentState as dynamic;
+                        tableState?.saveSnapshot();
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: leaderboardWidth,
+                    child: LeaderboardPanel(
+                      punters: widget.selections
+                          .take(_visiblePunterCount)
+                          .toList(),
+                      rowHeight: 34,
+                      collapsed: _leaderboardCollapsed,
+                      scrollController: _punterScrollController,
+                      onCollapseChanged: (collapsed) {
+                        setState(() => _leaderboardCollapsed = collapsed);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
           },
         );
       },

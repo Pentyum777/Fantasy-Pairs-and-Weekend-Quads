@@ -91432,23 +91432,24 @@ return A.T($async$u5,r)},
 xE(){var s=0,r=A.U(t.H),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b,a,a0
 var $async$xE=A.V(function(a1,a2){if(a1===1){o.push(a2)
 s=p}for(;;)switch(s){case 0:p=4
-e=t.N
-m=A.aYe("https","fantasy-pairs-and-weekend-quads-production.up.railway.app","/loadSelections",A.aw(["gameType",n.a.Q],e,t.z))
+e=n.a
+d=t.N
+m=A.aYe("https","fantasy-pairs-and-weekend-quads-production.up.railway.app","/loadSelections",A.aw(["gameType",e.Q,"season",e.as,"round",B.e.k(e.at)],d,t.z))
 s=7
 return A.X(A.aAK(m),$async$xE)
 case 7:l=a2
 if(l.b!==200){A.pi().$1("\u274c loadSelections returned "+l.b)
 s=1
-break}d=l
-k=B.bg.uR(0,A.JF(A.Jz(d.e).c.a.i(0,"charset")).cs(0,d.w),null)
+break}e=l
+k=B.bg.uR(0,A.JF(A.Jz(e.e).c.a.i(0,"charset")).cs(0,e.w),null)
 if(k==null||!t.a.b(k)){s=1
 break}j=J.bp(k,"data")
 if(j==null){s=1
-break}d=t.j
-e=J.fT(d.a(J.bp(j,"punterNames")),new A.avL(),e)
-c=A.O(e,e.$ti.h("ak.E"))
+break}e=t.j
+d=J.fT(e.a(J.bp(j,"punterNames")),new A.avL(),d)
+c=A.O(d,d.$ti.h("ak.E"))
 i=c
-e=J.fT(d.a(J.bp(j,"picks")),new A.avM(),t.cK)
+e=J.fT(e.a(J.bp(j,"picks")),new A.avM(),t.cK)
 b=A.O(e,e.$ti.h("ak.E"))
 h=b
 g=new A.Im(i,h)
