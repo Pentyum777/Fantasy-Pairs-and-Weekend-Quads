@@ -874,11 +874,15 @@ class _GameViewScreenState extends State<GameViewScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.all(8),
+
+            // ⭐ FIX: Give the row a fixed height using Expanded above
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  width: punterTableWidth,
+
+                // -------------------------
+                // PUNTER TABLE (EXPANDED)
+                // -------------------------
+                Expanded(
                   child: PunterSelectionTable(
                     key: _punterTableKey,
                     gameType: widget.gameType,
@@ -899,8 +903,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
                     onTimestampChanged: (t) {
                       setState(() => _timestampLabel = t);
                     },
-
-                    // ⭐ FIXED: null‑safe snapshot saving
                     onLiveScoreUpdateSave: () {
                       final tableState = _punterTableKey.currentState;
                       if (tableState != null) {
@@ -909,6 +911,12 @@ class _GameViewScreenState extends State<GameViewScreen> {
                     },
                   ),
                 ),
+
+
+
+                // -------------------------
+                // LEADERBOARD (FIXED WIDTH)
+                // -------------------------
                 SizedBox(
                   width: leaderboardWidth,
                   child: LeaderboardPanel(
