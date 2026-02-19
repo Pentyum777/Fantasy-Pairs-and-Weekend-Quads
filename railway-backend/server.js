@@ -197,26 +197,38 @@ async function fetchSquiggleMeta(gameId) {
 // Fantasy endpoint (DFS + Squiggle)
 // ------------------------------------------------------
 app.get("/fantasy/:matchId", async (req, res) => {
-  const matchId = req.params.matchId;
+  const cdMatchId = req.params.matchId;
 
-  const dfsId = dfsMap[matchId];
-  const squiggleGameId = squiggleMap[matchId];
+  console.log("➡ Incoming CD_M matchId:", cdMatchId);
 
-  console.log("➡ Incoming matchId:", matchId);
+  // Convert CD_M → DFS ID
+  const dfsId = dfsMap[cdMatchId];
+  const squiggleGameId = squiggleMap[cdMatchId];
+
   console.log("➡ DFS ID:", dfsId);
   console.log("➡ Squiggle ID:", squiggleGameId);
 
+  // If no DFS mapping exists, return a safe JSON response
   if (!dfsId) {
-    return res.status(404).json({ error: "No DFS mapping for matchId" });
+    return res.status(404).json({
+      error: "No DFS mapping for matchId",
+      matchId: cdMatchId,
+      message: "This CD_M ID does not exist in dfs_map.json"
+    });
   }
 
   try {
+    // Scrape DFS stats
     const dfsData = await scrapeDFS(dfsId);
 
     if (!dfsData || !dfsData.players) {
-      return res.status(500).json({ error: "DFS returned no player data" });
+      return res.status(500).json({
+        error: "DFS returned no player data",
+        dfsId
+      });
     }
 
+    // Default metadata
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -225,24 +237,37 @@ app.get("/fantasy/:matchId", async (req, res) => {
       status: "",
     };
 
+    // Fetch Squiggle metadata if available
     if (squiggleGameId) {
-      meta = await fetchSquiggleMeta(squiggleGameId);
+      try {
+        meta = await fetchSquiggleMeta(squiggleGameId);
+      } catch (err) {
+        console.warn("⚠ Squiggle metadata failed:", err);
+      }
     }
 
-    res.json({
-      matchId,
-      homeScore: meta.homeScore,
-      awayScore: meta.awayScore,
-      quarter: meta.quarter,
-      clock: meta.clock,
-      status: meta.status,
+    // Final response
+    return res.json({
+      matchId: cdMatchId,
+      homeScore: meta.homeScore ?? 0,
+      awayScore: meta.awayScore ?? 0,
+      quarter: meta.quarter ?? "",
+      clock: meta.clock ?? "",
+      status: meta.status ?? "",
       players: dfsData.players,
     });
+
   } catch (err) {
     console.error("💥 Combined DFS + Squiggle error:", err);
-    res.status(500).json({ error: String(err) });
+    return res.status(500).json({
+      error: "Internal error fetching fantasy data",
+      details: String(err),
+      matchId: cdMatchId,
+      dfsId
+    });
   }
 });
+
 
 // ------------------------------------------------------
 // Metadata-only endpoint
