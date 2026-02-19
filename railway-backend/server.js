@@ -28,61 +28,110 @@ app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 // ------------------------------------------------------
-// In-memory per-game-type selections (live snapshot)
+// Shared helpers
 // ------------------------------------------------------
-let selectionsByGameType = {};
+const SELECTIONS_ROOT = path.join(process.cwd(), "selections");
+const SEASON_RESULTS_ROOT = path.join(process.cwd(), "season_results");
 
-// Save selections
-app.post("/saveSelections", (req, res) => {
-  const { gameType, punterNames, picks } = req.body;
-
-  if (!gameType) {
-    return res.status(400).json({ error: "gameType is required" });
+function ensureDir(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
   }
+}
 
-  selectionsByGameType[gameType] = {
-    lastUpdated: Date.now(),
-    data: { punterNames, picks },
-  };
-
-  console.log(`💾 Saved selections for ${gameType}`);
-
-  res.json({
-    ok: true,
-    lastUpdated: selectionsByGameType[gameType].lastUpdated,
-  });
-});
-
-// Load selections
-app.get("/loadSelections", (req, res) => {
-  const gameType = req.query.gameType;
-
-  if (!gameType) {
-    return res.status(400).json({ error: "gameType is required" });
-  }
-
-  const snapshot = selectionsByGameType[gameType];
-
-  if (!snapshot) {
-    return res.json({
-      ok: true,
-      lastUpdated: 0,
-      data: null,
-    });
-  }
-
-  res.json({
-    ok: true,
-    lastUpdated: snapshot.lastUpdated,
-    data: snapshot.data,
-  });
-});
+function normalizeGameType(gameType) {
+  if (!gameType) return null;
+  return String(gameType).trim().toLowerCase();
+}
 
 // ------------------------------------------------------
 // Root
 // ------------------------------------------------------
 app.get("/", (req, res) => {
   res.send("DFS + Squiggle backend is running");
+});
+
+// ------------------------------------------------------
+// Live selections (persistent, per gameType)
+// ------------------------------------------------------
+
+// Save selections (live state, shared, per gameType)
+app.post("/saveSelections", (req, res) => {
+  try {
+    const { gameType, punterNames, picks } = req.body;
+
+    if (!gameType) {
+      return res.status(400).json({ error: "gameType is required" });
+    }
+
+    const normalizedGameType = normalizeGameType(gameType);
+    if (!normalizedGameType) {
+      return res.status(400).json({ error: "Invalid gameType" });
+    }
+
+    ensureDir(SELECTIONS_ROOT);
+
+    const filePath = path.join(SELECTIONS_ROOT, `${normalizedGameType}.json`);
+    const payload = {
+      lastUpdated: Date.now(),
+      punterNames: Array.isArray(punterNames) ? punterNames : [],
+      picks: Array.isArray(picks) ? picks : [],
+    };
+
+    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf8");
+
+    console.log(
+      `💾 Saved selections for gameType=${normalizedGameType} at ${payload.lastUpdated}`
+    );
+
+    res.json({
+      ok: true,
+      lastUpdated: payload.lastUpdated,
+    });
+  } catch (err) {
+    console.error("💥 saveSelections error:", err);
+    res.status(500).json({ error: "Failed to save selections" });
+  }
+});
+
+// Load selections (live state, shared, per gameType)
+app.get("/loadSelections", (req, res) => {
+  try {
+    const gameType = req.query.gameType;
+
+    if (!gameType) {
+      return res.status(400).json({ error: "gameType is required" });
+    }
+
+    const normalizedGameType = normalizeGameType(gameType);
+    if (!normalizedGameType) {
+      return res.status(400).json({ error: "Invalid gameType" });
+    }
+
+    const filePath = path.join(SELECTIONS_ROOT, `${normalizedGameType}.json`);
+
+    if (!fs.existsSync(filePath)) {
+      return res.json({
+        ok: true,
+        lastUpdated: 0,
+        data: null,
+      });
+    }
+
+    const json = JSON.parse(fs.readFileSync(filePath, "utf8"));
+
+    res.json({
+      ok: true,
+      lastUpdated: json.lastUpdated || 0,
+      data: {
+        punterNames: json.punterNames || [],
+        picks: json.picks || [],
+      },
+    });
+  } catch (err) {
+    console.error("💥 loadSelections error:", err);
+    res.status(500).json({ error: "Failed to load selections" });
+  }
 });
 
 // ------------------------------------------------------
@@ -162,7 +211,6 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 
   try {
-    // ALWAYS scrape DFS — no gating
     const dfsData = await scrapeDFS(dfsId);
 
     if (!dfsData || !dfsData.players) {
@@ -217,21 +265,8 @@ app.get("/meta/:matchId", async (req, res) => {
 });
 
 // ------------------------------------------------------
-// Persistent season results (RESTORED)
+// Persistent season results (unchanged)
 // ------------------------------------------------------
-const SEASON_RESULTS_ROOT = path.join(process.cwd(), "season_results");
-
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
-
-function normalizeGameType(gameType) {
-  if (!gameType) return null;
-  return String(gameType).trim().toLowerCase();
-}
-
 app.post("/saveRoundResults", (req, res) => {
   try {
     const { season, round, gameType, punters } = req.body;
@@ -250,7 +285,6 @@ app.post("/saveRoundResults", (req, res) => {
       return res.status(400).json({ error: "Invalid gameType" });
     }
 
-    // Skip 2025 test data
     if (numericSeason <= 2025) {
       console.log(
         `⚠️ Skipping persistent save for test season ${numericSeason}, gameType=${normalizedGameType}, round=${numericRound}`

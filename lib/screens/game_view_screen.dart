@@ -67,12 +67,14 @@ class _GameViewScreenState extends State<GameViewScreen> {
   bool _isSubmitted = false;
   bool _leaderboardCollapsed = false;
   bool _fixturesCollapsed = false;
-bool _controlsCollapsed = false;
+  bool _controlsCollapsed = false;
 
-bool get isLandscapePhone {
-  final size = MediaQuery.of(context).size;
-  return size.width > size.height && size.width < 900;
-}
+  bool get isLandscapePhone {
+    final size = MediaQuery.of(context).size;
+    return size.width > size.height && size.width < 900;
+  }
+
+  final GlobalKey _punterTableKey = GlobalKey();
 
   AflFixture? _selectedFixture;
   Timer? _liveTimer;
@@ -83,7 +85,7 @@ bool get isLandscapePhone {
   bool _fridayWinnerSelected = false;
 
   // ------------------------------------------------------------
-  // ⭐ NEW: Save round results for season-long storage
+  // ⭐ Save round results for season-long storage
   // ------------------------------------------------------------
   Future<void> _saveRoundResultsToBackend(List<PunterSelection> punters) async {
     try {
@@ -179,132 +181,92 @@ bool get isLandscapePhone {
   }
 
   Future<void> _refreshLive() async {
-  try {
+    try {
+      final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+        widget.season,
+        widget.round,
+      );
+
+      for (final f in fixtures) {
+        final matchId = f.matchId?.trim();
+        if (matchId != null && matchId.isNotEmpty) {
+          await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
+        }
+      }
+
+      if (!mounted) return;
+
+      _checkRoundCompletion();
+
+      // Fetch and store round stats
+      final roundStats = await _fetchRoundStats();
+      _currentStatsByPlayerId = roundStats;
+
+      // Apply live stats to the table
+      final tableState = _punterTableKey.currentState as dynamic;
+      tableState?.applyLiveStatsToTable(_currentStatsByPlayerId);
+
+      // Save snapshot after live score updates (Admins only)
+      if (widget.userRoleService.isAdmin) {
+        tableState?.saveSnapshot();
+      }
+
+      _checkAndCompleteWeekendQuadsRound();
+    } catch (e, st) {
+      debugPrint("❌ Live refresh error: $e\n$st");
+    }
+  }
+
+  void _checkRoundCompletion() {
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
       widget.season,
       widget.round,
     );
 
-    for (final f in fixtures) {
-      final matchId = f.matchId?.trim();
-      if (matchId != null && matchId.isNotEmpty) {
-        await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
-      }
+    if (fixtures.isEmpty) return;
+
+    final allComplete = fixtures.every((f) => f.complete);
+
+    if (allComplete) {
+      widget.roundCompletionService.markCompleted(widget.round);
+
+      // Save season results for Pairs games
+      _saveRoundResultsToBackend(widget.selections);
     }
-
-    if (!mounted) return;
-
-    // ⭐ This will now save round results when complete
-    _checkRoundCompletion();
-
-    final roundStats = await _fetchRoundStats();
-
-    _applyLiveStats(roundStats.values.toList());
-
-    // ⭐ This will now save Quads results when complete
-    _checkAndCompleteWeekendQuadsRound();
-
-  } catch (e, st) {
-    debugPrint("❌ Live refresh error: $e\n$st");
   }
-}
-
-  void _applyLiveStats(List<AflPlayerMatchStats> stats) {
-    _currentStatsByPlayerId = {
-      for (final s in stats)
-        if (s.player != null) s.player!.id: s
-    };
-
-    for (final selection in widget.selections) {
-      for (final pick in selection.picks) {
-        final id = pick.player?.id;
-
-        if (id == null) {
-          pick.fantasyPoints = 0;
-          pick.stats = null;
-          continue;
-        }
-
-        final s = _currentStatsByPlayerId[id];
-
-        if (s == null) {
-          pick.fantasyPoints = 0;
-          pick.stats = null;
-          continue;
-        }
-
-        pick.fantasyPoints = s.fantasyPoints;
-        pick.stats = {
-          "AF": s.fantasyPoints,
-          "K": s.kicks,
-          "HB": s.handballs,
-          "D": s.disposals,
-          "M": s.marks,
-          "T": s.tackles,
-          "G": s.goals,
-          "B": s.behinds,
-        };
-      }
-
-      selection.liveScore = widget.fantasyService.calculatePunterScore(
-        selection: selection,
-        liveStatsByPlayerId: _currentStatsByPlayerId,
-      );
-    }
-
-    setState(() {});
-  }
-
-  void _checkRoundCompletion() {
-  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-    widget.season,
-    widget.round,
-  );
-
-  if (fixtures.isEmpty) return;
-
-  final allComplete = fixtures.every((f) => f.complete);
-
-  if (allComplete) {
-    widget.roundCompletionService.markCompleted(widget.round);
-
-    // ⭐ NEW: Save season results for Pairs games
-    _saveRoundResultsToBackend(widget.selections);
-  }
-}
 
   void _checkAndCompleteWeekendQuadsRound() {
-  if (widget.gameType != "weekend_quads") return;
-  if (_isCompleted) return;
+    if (widget.gameType != "weekend_quads") return;
+    if (_isCompleted) return;
 
-  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-    widget.season,
-    widget.round,
-  );
+    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+      widget.season,
+      widget.round,
+    );
 
-  final allComplete =
-      fixtures.isNotEmpty && fixtures.every((f) => f.complete);
+    final allComplete =
+        fixtures.isNotEmpty && fixtures.every((f) => f.complete);
 
-  if (!allComplete) return;
+    if (!allComplete) return;
 
-  setState(() => _isCompleted = true);
+    setState(() => _isCompleted = true);
 
-  final firstFixture = fixtures.firstWhere(
-    (f) => f.date != null,
-    orElse: () => fixtures.first,
-  );
+    final firstFixture = fixtures.firstWhere(
+      (f) => f.date != null,
+      orElse: () => fixtures.first,
+    );
 
-  final month = firstFixture.date == null
-      ? "Unknown"
-      : _monthName(firstFixture.date!.month);
+    final month = firstFixture.date == null
+        ? "Unknown"
+        : _monthName(firstFixture.date!.month);
 
-  widget.championshipService.addRound(month, widget.selections);
+    widget.championshipService.addRound(month, widget.selections);
 
-  // ⭐ NEW: Save season results for Weekend Quads
-  _saveRoundResultsToBackend(widget.selections);
+    // Save season results for Weekend Quads
+    _saveRoundResultsToBackend(widget.selections);
 
-  debugPrint("🏆 Weekend Quads completed for $month");
-}
+    debugPrint("🏆 Weekend Quads completed for $month");
+  }
 
   List<AflFixture> _fixturesForGameType() {
     final all = widget.round == null
@@ -401,19 +363,18 @@ bool get isLandscapePhone {
   }
 
   Map<String, dynamic> _mapStats(AflPlayerMatchStats s) {
-  return {
-    "Player": s.player?.name ?? "Unknown",
-    "AF": s.fantasyPoints,
-    "K": s.kicks,
-    "HB": s.handballs,
-    "D": s.disposals,
-    "M": s.marks,
-    "T": s.tackles,
-    "G": s.goals,
-    "B": s.behinds,
-  };
-}
-
+    return {
+      "Player": s.player?.name ?? "Unknown",
+      "AF": s.fantasyPoints,
+      "K": s.kicks,
+      "HB": s.handballs,
+      "D": s.disposals,
+      "M": s.marks,
+      "T": s.tackles,
+      "G": s.goals,
+      "B": s.behinds,
+    };
+  }
 
   // ignore: unused_element
   bool _canSubmit() {
@@ -493,228 +454,211 @@ bool get isLandscapePhone {
   }
 
   @override
-Widget build(BuildContext context) {
-  final allFixtures = _fixturesForGameType();
+  Widget build(BuildContext context) {
+    final allFixtures = _fixturesForGameType();
 
-  var fixtures = allFixtures;
-  if (widget.selectedFixtureIds != null) {
-    fixtures = allFixtures.where((f) {
-      final id = f.matchId ?? allFixtures.indexOf(f).toString();
-      return widget.selectedFixtureIds!.contains(id);
-    }).toList();
-  }
+    var fixtures = allFixtures;
+    if (widget.selectedFixtureIds != null) {
+      fixtures = allFixtures.where((f) {
+        final id = f.matchId ?? allFixtures.indexOf(f).toString();
+        return widget.selectedFixtureIds!.contains(id);
+      }).toList();
+    }
 
-  if (_selectedFixture == null && fixtures.isNotEmpty) {
-    _selectedFixture = fixtures.first;
-  }
+    if (_selectedFixture == null && fixtures.isNotEmpty) {
+      _selectedFixture = fixtures.first;
+    }
 
-  return BackgroundContainer(
-    child: Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        toolbarHeight: isLandscapePhone ? 36 : 44,
-        titleSpacing: 0,
-        title: Text(
-          _appBarTitle(),
-          style: TextStyle(
-            fontSize: isLandscapePhone ? 13 : 15,
-            fontWeight: FontWeight.w600,
+    return BackgroundContainer(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          toolbarHeight: isLandscapePhone ? 36 : 44,
+          titleSpacing: 0,
+          title: Text(
+            _appBarTitle(),
+            style: TextStyle(
+              fontSize: isLandscapePhone ? 13 : 15,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
+        body: Column(
+          children: [
+            _buildFixtureStrip(fixtures),
+            const Divider(height: 1),
+            Expanded(child: _buildMainContent()),
+          ],
+        ),
       ),
-
-      // ⭐ Your body belongs INSIDE the Scaffold
-      body: Column(
-        children: [
-          _buildFixtureStrip(fixtures),
-          const Divider(height: 1),
-          Expanded(child: _buildMainContent()),
-        ],
-      ),
-    ),
-  );
-}
-
-
-  Widget _buildFixtureStrip(List<AflFixture> fixtures) {
-  if (fixtures.isEmpty) {
-    return const SizedBox(
-      height: 95,
-      child: Center(child: Text("No fixtures")),
     );
   }
 
-  return AnimatedContainer(
-    duration: const Duration(milliseconds: 200),
-    height: _fixturesCollapsed ? 36 : 88,
-    child: Column(
-      children: [
-        // Collapse toggle bar
-        InkWell(
-          onTap: () => setState(() => _fixturesCollapsed = !_fixturesCollapsed),
-          child: Container(
-            height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+  Widget _buildFixtureStrip(List<AflFixture> fixtures) {
+    if (fixtures.isEmpty) {
+      return const SizedBox(
+        height: 95,
+        child: Center(child: Text("No fixtures")),
+      );
+    }
 
-            // ⭐ FIXED: remove opaque background
-            color: Colors.black.withAlpha(51),
-
-            child: Row(
-              children: [
-                Text(
-                  "Fixtures",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      height: _fixturesCollapsed ? 36 : 88,
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () =>
+                setState(() => _fixturesCollapsed = !_fixturesCollapsed),
+            child: Container(
+              height: 36,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              color: Colors.black.withAlpha(51),
+              child: Row(
+                children: [
+                  Text(
+                    "Fixtures",
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    _fixturesCollapsed
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_up,
+                    size: 20,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                ),
-                const Spacer(),
-                Icon(
-                  _fixturesCollapsed
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_up,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Expanded fixture list
-        if (!_fixturesCollapsed)
-          Expanded(
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              itemCount: fixtures.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, i) => _buildFixtureCard(fixtures[i]),
-            ),
-          ),
-      ],
-    ),
-  );
-}
-
-
-
-  Widget _buildFixtureCard(AflFixture f) {
-  final theme = Theme.of(context);        // ⭐ REQUIRED
-  final cs = theme.colorScheme;           // optional shortcut
-
-  final selected = f == _selectedFixture;
-  _handleFridayPairsTrigger(f);
-
-  final homeScore = f.homeScore;
-  final awayScore = f.awayScore;
-  final homeWinning = homeScore > awayScore;
-  final awayWinning = awayScore > homeScore;
-
-  final quarter = _quarterLabel(f);
-  final time = _timeLabel(f);
-
-  final scoreBaseStyle = TextStyle(
-    fontSize: isLandscapePhone ? 12 : 13,
-    fontWeight: FontWeight.w500,
-    color: cs.onSurface,
-  );
-
-  final metaStyle = TextStyle(
-    fontSize: isLandscapePhone ? 10 : 11,
-    fontWeight: FontWeight.w500,
-    color: Colors.grey.shade700,
-    height: 1.1,
-  );
-
-  return Material(
-    color: Colors.transparent,
-    child: InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => _onFixtureTap(f),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        width: isLandscapePhone ? 100 : 125,
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-
-        // ⭐ FIXED: lighter, unified tile background
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: selected
-              ? cs.surfaceContainerHighest.withAlpha(72)
-              : cs.surfaceContainerHighest.withAlpha(40),
-          border: Border.all(
-            color: selected ? cs.primary : cs.outlineVariant,
-            width: selected ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(20),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TeamLogo(f.homeTeam, size: isLandscapePhone ? 22 : 26),
-
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      style: scoreBaseStyle,
-                      children: [
-                        TextSpan(
-                          text: "$homeScore",
-                          style: TextStyle(
-                            fontWeight: homeWinning
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                        ),
-                        const TextSpan(text: "–"),
-                        TextSpan(
-                          text: "$awayScore",
-                          style: TextStyle(
-                            fontWeight: awayWinning
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.visible,
-                    softWrap: false,
-                  ),
-                ),
-
-                TeamLogo(f.awayTeam, size: isLandscapePhone ? 22 : 26),
-              ],
-            ),
-
-            Align(
-              alignment: Alignment.center,
-              child: Text(
-                quarter.isEmpty ? time : "$quarter • $time",
-                style: metaStyle,
-                overflow: TextOverflow.ellipsis,
+                ],
               ),
             ),
-          ],
+          ),
+          if (!_fixturesCollapsed)
+            Expanded(
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                itemCount: fixtures.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) => _buildFixtureCard(fixtures[i]),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFixtureCard(AflFixture f) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final selected = f == _selectedFixture;
+    _handleFridayPairsTrigger(f);
+
+    final homeScore = f.homeScore;
+    final awayScore = f.awayScore;
+    final homeWinning = homeScore > awayScore;
+    final awayWinning = awayScore > homeScore;
+
+    final quarter = _quarterLabel(f);
+    final time = _timeLabel(f);
+
+    final scoreBaseStyle = TextStyle(
+      fontSize: isLandscapePhone ? 12 : 13,
+      fontWeight: FontWeight.w500,
+      color: cs.onSurface,
+    );
+
+    final metaStyle = TextStyle(
+      fontSize: isLandscapePhone ? 10 : 11,
+      fontWeight: FontWeight.w500,
+      color: Colors.grey.shade700,
+      height: 1.1,
+    );
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _onFixtureTap(f),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: isLandscapePhone ? 100 : 125,
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: selected
+                ? cs.surfaceContainerHighest.withAlpha(72)
+                : cs.surfaceContainerHighest.withAlpha(40),
+            border: Border.all(
+              color: selected ? cs.primary : cs.outlineVariant,
+              width: selected ? 2 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(20),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TeamLogo(f.homeTeam, size: isLandscapePhone ? 22 : 26),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        style: scoreBaseStyle,
+                        children: [
+                          TextSpan(
+                            text: "$homeScore",
+                            style: TextStyle(
+                              fontWeight: homeWinning
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                          const TextSpan(text: "–"),
+                          TextSpan(
+                            text: "$awayScore",
+                            style: TextStyle(
+                              fontWeight: awayWinning
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
+                      softWrap: false,
+                    ),
+                  ),
+                  TeamLogo(f.awayTeam, size: isLandscapePhone ? 22 : 26),
+                ],
+              ),
+              Align(
+                alignment: Alignment.center,
+                child: Text(
+                  quarter.isEmpty ? time : "$quarter • $time",
+                  style: metaStyle,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   Future<void> _onFixtureTap(AflFixture f) async {
     setState(() => _selectedFixture = f);
@@ -765,298 +709,296 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildPunterControls() {
-  final theme = Theme.of(context);
+    final theme = Theme.of(context);
 
-  return AnimatedContainer(
-    duration: const Duration(milliseconds: 200),
-    height: _controlsCollapsed ? 32 : null,
-    padding: EdgeInsets.symmetric(
-      vertical: _controlsCollapsed ? 0 : (isLandscapePhone ? 2 : 4),
-    ),
-    child: Column(
-      children: [
-        InkWell(
-          onTap: () => setState(() => _controlsCollapsed = !_controlsCollapsed),
-          child: Container(
-            height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Text(
-                  "Punter Controls",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      height: _controlsCollapsed ? 32 : null,
+      padding: EdgeInsets.symmetric(
+        vertical: _controlsCollapsed ? 0 : (isLandscapePhone ? 2 : 4),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () =>
+                setState(() => _controlsCollapsed = !_controlsCollapsed),
+            child: Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: [
+                  Text(
+                    "Punter Controls",
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    iconSize: 18,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Icon(
+                      _leaderboardCollapsed
+                          ? Icons.chevron_left
+                          : Icons.chevron_right,
+                      color: theme.colorScheme.primary,
+                    ),
+                    onPressed: () {
+                      setState(
+                          () => _leaderboardCollapsed = !_leaderboardCollapsed);
+                    },
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _controlsCollapsed
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_up,
+                    size: 20,
                     color: theme.colorScheme.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (!_controlsCollapsed)
+            Row(
+              children: [
+                Text("Punters Playing", style: theme.textTheme.bodyMedium),
+                const SizedBox(width: 6),
+                DropdownButtonHideUnderline(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                        width: 1,
+                      ),
+                      color: theme.colorScheme.surface,
+                    ),
+                    child: DropdownButton<int>(
+                      value: _visiblePunterCount,
+                      isDense: true,
+                      menuMaxHeight: 280,
+                      itemHeight: 32,
+                      style: theme.textTheme.bodyMedium,
+                      items: List.generate(25, (i) => i + 1)
+                          .map(
+                            (v) => DropdownMenuItem<int>(
+                              value: v,
+                              child: Text("$v"),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: widget.userRoleService.isAdmin
+                          ? (value) {
+                              if (value == null) return;
+                              setState(() => _visiblePunterCount = value);
+                            }
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withAlpha(64),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    "Updated $_timestampLabel",
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  iconSize: 18,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  icon: Icon(
-                    _leaderboardCollapsed
-                        ? Icons.chevron_left
-                        : Icons.chevron_right,
-                    color: theme.colorScheme.primary,
-                  ),
-                  onPressed: () {
-                    setState(() => _leaderboardCollapsed = !_leaderboardCollapsed);
-                  },
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  _controlsCollapsed
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_up,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
               ],
             ),
-          ),
-        ),
+        ],
+      ),
+    );
+  }
 
-        if (!_controlsCollapsed)
-  Row(
+  String _timestampLabel = "--:--";
+
+  Widget _buildPunterAndLeaderboard() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final theme = Theme.of(context);
+        final innerWidth = constraints.maxWidth;
+        final picks = widget.gameType == "weekend_quads" ? 4 : 2;
+
+        final leaderboardWidth = _leaderboardCollapsed
+            ? UIDimensions.collapsedLeaderboardWidth
+            : UIDimensions.rankColumnWidth +
+                UIDimensions.punterNameColumnWidth +
+                UIDimensions.totalColumnWidth;
+
+        final double punterTableWidth =
+            _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
+
+        return FutureBuilder<List<AflPlayer>>(
+          future: widget.playerRepo.playersForSeason(widget.season),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final seasonPlayers = snapshot.data!;
+            final fixtures = _fixturesForGameType();
+
+            final fixtureClubCodes =
+                fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
+
+            final availablePlayers = seasonPlayers
+                .where((p) => fixtureClubCodes.contains(p.club))
+                .toList();
+
+            return Container(
+  decoration: BoxDecoration(
+    color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
+    borderRadius: BorderRadius.circular(12),
+  ),
+  padding: const EdgeInsets.all(8),
+
+  child: Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text("Punters Playing", style: theme.textTheme.bodyMedium),
-      const SizedBox(width: 6),
+      // ⭐ Punter table
+      SizedBox(
+        width: punterTableWidth,
+        child: PunterSelectionTable(
+          key: _punterTableKey,   // ⭐ REQUIRED FOR STATE ACCESS
 
-      DropdownButtonHideUnderline(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant,
-              width: 1,
-            ),
-            color: theme.colorScheme.surface,
-          ),
-          child: DropdownButton<int>(
-            value: _visiblePunterCount,
-            isDense: true,
-            menuMaxHeight: 280,
-            itemHeight: 32,
-            style: theme.textTheme.bodyMedium,
-            items: List.generate(25, (i) => i + 1)
-                .map(
-                  (v) => DropdownMenuItem<int>(
-                    value: v,
-                    child: Text("$v"),
-                  ),
-                )
-                .toList(),
-            onChanged: widget.userRoleService.isAdmin
-                ? (value) {
-                    if (value == null) return;
-                    setState(() => _visiblePunterCount = value);
-                  }
-                : null,
-          ),
+          gameType: widget.gameType,
+          season: widget.season.toString(),
+          round: widget.round!,
+          tableWidth: punterTableWidth,
+          visiblePunterCount: _visiblePunterCount,
+          playersPerPunter: picks,
+          availablePlayers: availablePlayers,
+          selections: widget.selections,
+          isCompleted: _isCompleted,
+          readOnly: !widget.userRoleService.isAdmin,
+          onChanged: widget.userRoleService.isAdmin ? () {} : null,
+          collapsed: _leaderboardCollapsed,
+          scrollController: _punterScrollController,
+
+          // ⭐ NEW: pass fantasyService into the table
+          fantasyService: widget.fantasyService,
+
+          userRoleService: widget.userRoleService,
+
+          // ⭐ Timestamp label update
+          onTimestampChanged: (t) {
+            setState(() => _timestampLabel = t);
+          },
+
+          // ⭐ Save snapshot after live score updates
+          onLiveScoreUpdateSave: () {
+            final tableState = _punterTableKey.currentState as dynamic;
+            tableState?.saveSnapshot();
+          },
         ),
       ),
 
-      const SizedBox(width: 12),
-
-      // ⭐ NEW: Last Updated Timestamp Badge
-      Container(
-  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-  decoration: BoxDecoration(
-    color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
-    borderRadius: BorderRadius.circular(6),
-  ),
-  child: Text(
-  "Updated $_timestampLabel",
-  style: theme.textTheme.bodySmall?.copyWith(
-    fontWeight: FontWeight.w600,
-    color: theme.colorScheme.primary,
-  ),
-),
-),
-
-      const Spacer(),
+      // ⭐ Leaderboard
+      SizedBox(
+        width: leaderboardWidth,
+        child: LeaderboardPanel(
+          punters: widget.selections
+              .take(_visiblePunterCount)
+              .toList(),
+          rowHeight: 34,
+          collapsed: _leaderboardCollapsed,
+          scrollController: _punterScrollController,
+          onCollapseChanged: (collapsed) {
+            setState(() => _leaderboardCollapsed = collapsed);
+          },
+        ),
+      ),
     ],
   ),
-      ],
-    ),
-  );
-}
+);
 
-String _timestampLabel = "--:--";
-
-  Widget _buildPunterAndLeaderboard() {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final theme = Theme.of(context);
-      final innerWidth = constraints.maxWidth;
-      final picks = widget.gameType == "weekend_quads" ? 4 : 2;
-
-      final leaderboardWidth = _leaderboardCollapsed
-          ? UIDimensions.collapsedLeaderboardWidth
-          : UIDimensions.rankColumnWidth +
-              UIDimensions.punterNameColumnWidth +
-              UIDimensions.totalColumnWidth;
-
-      final double punterTableWidth =
-          _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
-
-      return FutureBuilder<List<AflPlayer>>(
-        future: widget.playerRepo.playersForSeason(widget.season),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final seasonPlayers = snapshot.data!;
-          final fixtures = _fixturesForGameType();
-
-          final fixtureClubCodes = fixtures
-              .expand((f) => [f.homeTeam, f.awayTeam])
-              .toSet();
-
-          final availablePlayers = seasonPlayers
-              .where((p) => fixtureClubCodes.contains(p.club))
-              .toList();
-
-          return Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.all(8),
-
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ⭐ Punter table expands vertically and scrolls internally
-                SizedBox(
-                  width: punterTableWidth,
-                  child: PunterSelectionTable(
-                    gameType: widget.gameType,
-                    season: widget.season.toString(),
-                    round: widget.round!,
-                    tableWidth: punterTableWidth,
-                    visiblePunterCount: _visiblePunterCount,
-                    playersPerPunter: picks,
-                    availablePlayers: availablePlayers,
-                    selections: widget.selections,
-                    isCompleted: _isCompleted,
-                    readOnly: !widget.userRoleService.isAdmin,
-                    onChanged: widget.userRoleService.isAdmin ? () {} : null,
-                    collapsed: _leaderboardCollapsed,
-                    scrollController: _punterScrollController,
-                    userRoleService: widget.userRoleService,
-                    onTimestampChanged: (t) {
-                      setState(() => _timestampLabel = t);
-                    },
-                  ),
-                ),
-
-                // ⭐ Leaderboard stays aligned at the top
-                SizedBox(
-                  width: leaderboardWidth,
-                  child: LeaderboardPanel(
-                    punters: widget.selections
-                        .take(_visiblePunterCount)
-                        .toList(),
-                    rowHeight: 34,
-                    collapsed: _leaderboardCollapsed,
-                    scrollController: _punterScrollController,
-                    onCollapseChanged: (collapsed) {
-                      setState(() => _leaderboardCollapsed = collapsed);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    },
-  );
-}
-
-
-Widget _buildMainContent() {
-  return Padding(
-    padding: const EdgeInsets.all(12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildPunterControls(),
-        const SizedBox(height: 6),
-        Expanded(child: _buildPunterAndLeaderboard()),
-      ],
-    ),
-  );
-}
-
-void _handleFridayPairsTrigger(AflFixture fixture) {
-  if (widget.gameType != "friday_pairs") return;
-  if (_fridayWinnerSelected) return;
-
-  final isLive = !fixture.complete && fixture.time.isNotEmpty;
-
-  if (isLive) {
-    final winner =
-        _fridayPairsService.selectRandomBottomHalf(widget.selections);
-
-    setState(() {
-      for (final s in widget.selections) {
-        s.isPrizeWinner = (s.punterName == winner.punterName);
-      }
-      _fridayWinnerSelected = true;
-    });
-  }
-}
-
-void validateAflData(
-  List<AflFixture> fixtures,
-  PlayerRepository repo,
-) {
-  final fixtureClubs = fixtures
-      .expand((f) => [
-            f.homeTeam.trim().toUpperCase(),
-            f.awayTeam.trim().toUpperCase(),
-          ])
-      .toSet();
-
-  final playerClubs = repo.players
-      .map((p) => p.club.trim().toUpperCase())
-      .toSet();
-
-  final missingInPlayers = fixtureClubs.difference(playerClubs);
-  final missingInFixtures = playerClubs.difference(fixtureClubs);
-
-  debugPrint("=== AFL DATA VALIDATION ===");
-
-  if (missingInPlayers.isNotEmpty) {
-    debugPrint("❌ Clubs in FIXTURES but NOT in PLAYERS:");
-    debugPrint(missingInPlayers.toString());
+          },
+        );
+      },
+    );
   }
 
-  if (missingInFixtures.isNotEmpty) {
-    debugPrint("❌ Clubs in PLAYERS but NOT in FIXTURES:");
-    debugPrint(missingInFixtures.toString());
+  Widget _buildMainContent() {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPunterControls(),
+          const SizedBox(height: 6),
+          Expanded(child: _buildPunterAndLeaderboard()),
+        ],
+      ),
+    );
   }
 
-  if (missingInPlayers.isEmpty && missingInFixtures.isEmpty) {
-    debugPrint("✔ All clubs aligned between fixtures and players");
-  }
+  void _handleFridayPairsTrigger(AflFixture fixture) {
+    if (widget.gameType != "friday_pairs") return;
+    if (_fridayWinnerSelected) return;
 
-  final emptyClubs =
-      repo.players.where((p) => p.club.trim().isEmpty).toList();
-  if (emptyClubs.isNotEmpty) {
-    debugPrint("❌ Players with empty club codes:");
-    for (final p in emptyClubs) {
-      debugPrint(" - ${p.name}");
+    final isLive = !fixture.complete && fixture.time.isNotEmpty;
+
+    if (isLive) {
+      final winner =
+          _fridayPairsService.selectRandomBottomHalf(widget.selections);
+
+      setState(() {
+        for (final s in widget.selections) {
+          s.isPrizeWinner = (s.punterName == winner.punterName);
+        }
+        _fridayWinnerSelected = true;
+      });
     }
   }
 
-  debugPrint("=== END AFL VALIDATION ===");
-}
+  void validateAflData(
+    List<AflFixture> fixtures,
+    PlayerRepository repo,
+  ) {
+    final fixtureClubs = fixtures
+        .expand((f) => [
+              f.homeTeam.trim().toUpperCase(),
+              f.awayTeam.trim().toUpperCase(),
+            ])
+        .toSet();
 
+    final playerClubs =
+        repo.players.map((p) => p.club.trim().toUpperCase()).toSet();
+
+    final missingInPlayers = fixtureClubs.difference(playerClubs);
+    final missingInFixtures = playerClubs.difference(fixtureClubs);
+
+    debugPrint("=== AFL DATA VALIDATION ===");
+
+    if (missingInPlayers.isNotEmpty) {
+      debugPrint("❌ Clubs in FIXTURES but NOT in PLAYERS:");
+      debugPrint(missingInPlayers.toString());
+    }
+
+    if (missingInFixtures.isNotEmpty) {
+      debugPrint("❌ Clubs in PLAYERS but NOT in FIXTURES:");
+      debugPrint(missingInFixtures.toString());
+    }
+
+    if (missingInPlayers.isEmpty && missingInFixtures.isEmpty) {
+      debugPrint("✅ Fixtures and players are aligned.");
+    }
+  }
 }
