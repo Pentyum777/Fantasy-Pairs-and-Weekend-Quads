@@ -13,7 +13,9 @@ console.log("🚀 DFS + Squiggle backend starting...");
 const port = process.env.PORT || 8080;
 const app = express();
 
-// CORS
+// ------------------------------------------------------
+// CORS + Preflight
+// ------------------------------------------------------
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -25,14 +27,67 @@ app.use((req, res, next) => {
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
+// ------------------------------------------------------
+// In-memory per-game-type selections (live snapshot)
+// ------------------------------------------------------
+let selectionsByGameType = {};
+
+// Save selections
+app.post("/saveSelections", (req, res) => {
+  const { gameType, punterNames, picks } = req.body;
+
+  if (!gameType) {
+    return res.status(400).json({ error: "gameType is required" });
+  }
+
+  selectionsByGameType[gameType] = {
+    lastUpdated: Date.now(),
+    data: { punterNames, picks },
+  };
+
+  console.log(`💾 Saved selections for ${gameType}`);
+
+  res.json({
+    ok: true,
+    lastUpdated: selectionsByGameType[gameType].lastUpdated,
+  });
+});
+
+// Load selections
+app.get("/loadSelections", (req, res) => {
+  const gameType = req.query.gameType;
+
+  if (!gameType) {
+    return res.status(400).json({ error: "gameType is required" });
+  }
+
+  const snapshot = selectionsByGameType[gameType];
+
+  if (!snapshot) {
+    return res.json({
+      ok: true,
+      lastUpdated: 0,
+      data: null,
+    });
+  }
+
+  res.json({
+    ok: true,
+    lastUpdated: snapshot.lastUpdated,
+    data: snapshot.data,
+  });
+});
+
+// ------------------------------------------------------
 // Root
+// ------------------------------------------------------
 app.get("/", (req, res) => {
   res.send("DFS + Squiggle backend is running");
 });
 
-// ------------------------------
+// ------------------------------------------------------
 // Squiggle metadata fetcher
-// ------------------------------
+// ------------------------------------------------------
 async function fetchSquiggleMeta(gameId) {
   const url = `https://api.squiggle.com.au/?q=games&game=${gameId}`;
 
@@ -89,9 +144,9 @@ async function fetchSquiggleMeta(gameId) {
   }
 }
 
-// ------------------------------
+// ------------------------------------------------------
 // Fantasy endpoint (DFS + Squiggle)
-// ------------------------------
+// ------------------------------------------------------
 app.get("/fantasy/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
 
@@ -141,9 +196,9 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 });
 
-// ------------------------------
+// ------------------------------------------------------
 // Metadata-only endpoint
-// ------------------------------
+// ------------------------------------------------------
 app.get("/meta/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
   const squiggleGameId = squiggleMap[matchId];
@@ -161,6 +216,120 @@ app.get("/meta/:matchId", async (req, res) => {
   }
 });
 
+// ------------------------------------------------------
+// Persistent season results (RESTORED)
+// ------------------------------------------------------
+const SEASON_RESULTS_ROOT = path.join(process.cwd(), "season_results");
+
+function ensureDir(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+}
+
+function normalizeGameType(gameType) {
+  if (!gameType) return null;
+  return String(gameType).trim().toLowerCase();
+}
+
+app.post("/saveRoundResults", (req, res) => {
+  try {
+    const { season, round, gameType, punters } = req.body;
+
+    if (season == null || round == null || !gameType) {
+      return res.status(400).json({
+        error: "season, round and gameType are required",
+      });
+    }
+
+    const numericSeason = Number(season);
+    const numericRound = Number(round);
+    const normalizedGameType = normalizeGameType(gameType);
+
+    if (!normalizedGameType) {
+      return res.status(400).json({ error: "Invalid gameType" });
+    }
+
+    // Skip 2025 test data
+    if (numericSeason <= 2025) {
+      console.log(
+        `⚠️ Skipping persistent save for test season ${numericSeason}, gameType=${normalizedGameType}, round=${numericRound}`
+      );
+      return res.json({ ok: true, skipped: true });
+    }
+
+    const seasonDir = path.join(SEASON_RESULTS_ROOT, String(numericSeason));
+    const gameTypeDir = path.join(seasonDir, normalizedGameType);
+
+    ensureDir(gameTypeDir);
+
+    const fileName = `round_${numericRound}.json`;
+    const filePath = path.join(gameTypeDir, fileName);
+
+    const payload = {
+      season: numericSeason,
+      round: numericRound,
+      gameType: normalizedGameType,
+      timestamp: Date.now(),
+      punters: Array.isArray(punters) ? punters : [],
+    };
+
+    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf8");
+
+    console.log(
+      `📁 Saved season result: season=${numericSeason}, gameType=${normalizedGameType}, round=${numericRound}`
+    );
+
+    res.json({ ok: true, path: filePath });
+  } catch (err) {
+    console.error("💥 saveRoundResults error:", err);
+    res.status(500).json({ error: "Failed to save round results" });
+  }
+});
+
+app.get("/seasonResults", (req, res) => {
+  try {
+    const { season, gameType } = req.query;
+
+    if (!season || !gameType) {
+      return res.status(400).json({
+        error: "season and gameType are required",
+      });
+    }
+
+    const numericSeason = Number(season);
+    const normalizedGameType = normalizeGameType(gameType);
+
+    const gameTypeDir = path.join(
+      SEASON_RESULTS_ROOT,
+      String(numericSeason),
+      normalizedGameType
+    );
+
+    if (!fs.existsSync(gameTypeDir)) {
+      return res.json({ ok: true, results: [] });
+    }
+
+    const files = fs
+      .readdirSync(gameTypeDir)
+      .filter((f) => f.startsWith("round_") && f.endsWith(".json"))
+      .sort();
+
+    const results = files.map((file) => {
+      const fullPath = path.join(gameTypeDir, file);
+      return JSON.parse(fs.readFileSync(fullPath, "utf8"));
+    });
+
+    res.json({ ok: true, results });
+  } catch (err) {
+    console.error("💥 seasonResults error:", err);
+    res.status(500).json({ error: "Failed to load season results" });
+  }
+});
+
+// ------------------------------------------------------
+// Start server
+// ------------------------------------------------------
 app.listen(port, "0.0.0.0", () => {
   console.log(`🚀 DFS + Squiggle backend running on port ${port}`);
 });
