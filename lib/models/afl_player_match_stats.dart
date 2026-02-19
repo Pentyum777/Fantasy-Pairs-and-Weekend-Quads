@@ -5,43 +5,49 @@ class AflPlayerMatchStats {
 
   final String team;
 
-  final int kicks;
-  final int handballs;
-  final int disposals;
-  final int marks;
-  final int tackles;
-  final int goals;
-  final int behinds;
-  final int hitouts;
+  // All raw stats from backend MUST be nullable
+  final int? kicks;
+  final int? handballs;
+  final int? disposals;
+  final int? marks;
+  final int? tackles;
+  final int? goals;
+  final int? behinds;
+  final int? hitouts;
 
-  final int clearances;
-  final int metresGained;
-  final int goalAssists;
-  final int timeOnGroundPercentage;
+  final int? clearances;
+  final int? metresGained;
+  final int? goalAssists;
+  final int? timeOnGroundPercentage;
 
-  final int freesFor;
-  final int freesAgainst;
+  final int? freesFor;
+  final int? freesAgainst;
 
   /// Live AFL Fantasy score (direct from backend)
-  int fantasyPoints;
+  int? fantasyPoints;
 
   AflPlayerMatchStats({
-  this.player,                 // nullable now
-  required this.team,
-  this.kicks = 0,
-  this.handballs = 0,
-  this.disposals = 0,
-  this.marks = 0,
-  this.tackles = 0,
-  this.goals = 0,
-  this.behinds = 0,
-  this.hitouts = 0,
-  this.clearances = 0,
-  this.metresGained = 0,
-  this.goalAssists = 0,
-  this.timeOnGroundPercentage = 0,
-  this.freesFor = 0,
-  this.freesAgainst = 0,
-  this.fantasyPoints = 0,
-});
+    this.player,
+    required this.team,
+
+    // All backend-fed fields must be nullable
+    this.kicks,
+    this.handballs,
+    this.disposals,
+    this.marks,
+    this.tackles,
+    this.goals,
+    this.behinds,
+    this.hitouts,
+
+    this.clearances,
+    this.metresGained,
+    this.goalAssists,
+    this.timeOnGroundPercentage,
+
+    this.freesFor,
+    this.freesAgainst,
+
+    this.fantasyPoints,
+  });
 }

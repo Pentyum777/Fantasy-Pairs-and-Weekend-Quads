@@ -675,34 +675,65 @@ void applyLiveStatsToTable(Map<String, AflPlayerMatchStats> statsById) {
     for (final pick in selection.picks) {
       final id = pick.player?.id;
 
+      // No player selected
       if (id == null) {
         pick.fantasyPoints = 0;
-        pick.stats = null;
+        pick.stats = {
+          "AF": 0,
+          "K": 0,
+          "HB": 0,
+          "D": 0,
+          "M": 0,
+          "T": 0,
+          "G": 0,
+          "B": 0,
+        };
         continue;
       }
 
       final s = statsById[id];
 
+      // No stats yet for this player
       if (s == null) {
         pick.fantasyPoints = 0;
-        pick.stats = null;
+        pick.stats = {
+          "AF": 0,
+          "K": 0,
+          "HB": 0,
+          "D": 0,
+          "M": 0,
+          "T": 0,
+          "G": 0,
+          "B": 0,
+        };
         continue;
       }
 
-      pick.fantasyPoints = s.fantasyPoints;
+      // ⭐ Normalize all stats BEFORE assigning
+      final af = s.fantasyPoints ?? 0;
+      final k = s.kicks ?? 0;
+      final hb = s.handballs ?? 0;
+      final d = s.disposals ?? 0;
+      final m = s.marks ?? 0;
+      final t = s.tackles ?? 0;
+      final g = s.goals ?? 0;
+      final b = s.behinds ?? 0;
+
+      pick.fantasyPoints = af;
+
       pick.stats = {
-        "AF": s.fantasyPoints,
-        "K": s.kicks,
-        "HB": s.handballs,
-        "D": s.disposals,
-        "M": s.marks,
-        "T": s.tackles,
-        "G": s.goals,
-        "B": s.behinds,
+        "AF": af,
+        "K": k,
+        "HB": hb,
+        "D": d,
+        "M": m,
+        "T": t,
+        "G": g,
+        "B": b,
       };
     }
 
-    // Recalculate punter total using the scoring service
+    // Recalculate punter total
     selection.liveScore = widget.fantasyService.calculatePunterScore(
       selection: selection,
       liveStatsByPlayerId: statsById,
@@ -711,11 +742,9 @@ void applyLiveStatsToTable(Map<String, AflPlayerMatchStats> statsById) {
 
   setState(() {});
 
-  // Trigger save callback (Admins only)
-  if (widget.onLiveScoreUpdateSave != null) {
-    widget.onLiveScoreUpdateSave!();
-  }
+  widget.onLiveScoreUpdateSave?.call();
 }
+
 
 // ---------------------------------------------------------------------------
 // SCORE CELL

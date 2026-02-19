@@ -5,7 +5,7 @@ class AflPlayer {
   final int guernseyNumber;
   final int season;
 
-  /// Live fantasy score (updated externally)
+  /// Live fantasy score (mirrors stats.fantasyPoints)
   int fantasyScore;
 
   AflPlayer({
@@ -35,6 +35,17 @@ class AflPlayer {
         season: 2026,
         fantasyScore: 0,
       );
+
+  factory AflPlayer.fromJson(Map<String, dynamic> json) {
+    return AflPlayer(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      club: json['team'] ?? '',
+      guernseyNumber: json['guernseyNumber'] ?? 0,
+      season: json['season'] ?? 2026,
+      fantasyScore: json['fantasyScore'] ?? 0,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {

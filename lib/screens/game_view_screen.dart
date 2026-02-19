@@ -181,41 +181,47 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Future<void> _refreshLive() async {
-    try {
-      final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-        widget.season,
-        widget.round,
-      );
+  try {
+    // Refresh fixture metadata (scores, quarter, clock, status)
+    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+      widget.season,
+      widget.round,
+    );
 
-      for (final f in fixtures) {
-        final matchId = f.matchId?.trim();
-        if (matchId != null && matchId.isNotEmpty) {
-          await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
-        }
+    for (final f in fixtures) {
+      final matchId = f.matchId?.trim();
+      if (matchId != null && matchId.isNotEmpty) {
+        await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
       }
-
-      if (!mounted) return;
-
-      _checkRoundCompletion();
-
-      // Fetch and store round stats
-      final roundStats = await _fetchRoundStats();
-      _currentStatsByPlayerId = roundStats;
-
-      // Apply live stats to the table
-      final tableState = _punterTableKey.currentState as dynamic;
-      tableState?.applyLiveStatsToTable(_currentStatsByPlayerId);
-
-      // Save snapshot after live score updates (Admins only)
-      if (widget.userRoleService.isAdmin) {
-        tableState?.saveSnapshot();
-      }
-
-      _checkAndCompleteWeekendQuadsRound();
-    } catch (e, st) {
-      debugPrint("❌ Live refresh error: $e\n$st");
     }
+
+    if (!mounted) return;
+
+    _checkRoundCompletion();
+
+    // Fetch and store round-wide stats
+    final roundStats = await _fetchRoundStats();
+    _currentStatsByPlayerId = roundStats;
+
+    // Apply live stats to the punter table (only if mounted)
+    final tableState = _punterTableKey.currentState;
+    if (tableState != null) {
+      final dynamic dyn = tableState;
+
+      dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
+
+      // Admins save snapshot after live update
+      if (widget.userRoleService.isAdmin) {
+        dyn.saveSnapshot();
+      }
+    }
+
+    _checkAndCompleteWeekendQuadsRound();
+  } catch (e, st) {
+    debugPrint("❌ Live refresh error: $e\n$st");
   }
+}
+
 
   void _checkRoundCompletion() {
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(

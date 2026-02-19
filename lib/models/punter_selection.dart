@@ -16,24 +16,39 @@ class PunterSelection {
     this.isPrizeWinner = false,
   });
 
-  factory PunterSelection.placeholder({
-    required String name,
-    required int totalScore,
-  }) {
+  // -----------------------------
+  // JSON Serialization
+  // -----------------------------
+  factory PunterSelection.fromJson(Map<String, dynamic> json) {
     return PunterSelection(
-      punterNumber: -1,
-      picks: const [],
-      punterName: name,
-      liveScore: totalScore,
-      isPrizeWinner: false,
+      punterNumber: json['punterNumber'] as int,
+      picks: (json['picks'] as List<dynamic>)
+          .map((p) => PlayerPick.fromJson(p))
+          .toList(),
+      punterName: json['punterName'] ?? "",
+      liveScore: json['liveScore'] ?? 0,
+      isPrizeWinner: json['isPrizeWinner'] ?? false,
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'punterNumber': punterNumber,
+      'picks': picks.map((p) => p.toJson()).toList(),
+      'punterName': punterName,
+      'liveScore': liveScore,
+      'isPrizeWinner': isPrizeWinner,
+    };
+  }
+
+  // -----------------------------
+  // Null-safe total score
+  // -----------------------------
   int get totalScore {
     int total = 0;
     for (final pick in picks) {
       if (pick.player == null) continue;
-      total += pick.fantasyPoints;
+      total += (pick.fantasyPoints ?? 0);
     }
     return total;
   }

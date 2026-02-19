@@ -4,29 +4,55 @@ class PlayerPick {
   final int pickNumber;
   AflPlayer? player;
 
-  /// Raw stats only (no fantasyPoints)
   Map<String, dynamic>? stats;
-
-  /// Single source of truth for fantasy points
-  int fantasyPoints;
+  int? fantasyPoints;
 
   PlayerPick({
     required this.pickNumber,
     this.player,
     this.stats,
-    this.fantasyPoints = 0,
+    this.fantasyPoints,
   });
 
-  int get kicks => _int("kicks");
-  int get handballs => _int("handballs");
-  int get marks => _int("marks");
-  int get tackles => _int("tackles");
-  int get hitouts => _int("hitouts");
-  int get freesFor => _int("freesFor");
-  int get freesAgainst => _int("freesAgainst");
-  int get goals => _int("goals");
-  int get behinds => _int("behinds");
-  int get timeOnGroundPercentage => _int("timeOnGroundPercentage");
+  // -----------------------------
+  // JSON Serialization
+  // -----------------------------
+  factory PlayerPick.fromJson(Map<String, dynamic> json) {
+    return PlayerPick(
+      pickNumber: json['pickNumber'] as int,
+      player: json['player'] != null
+          ? AflPlayer.fromJson(json['player'])
+          : null,
+      stats: json['stats'] != null
+          ? Map<String, dynamic>.from(json['stats'])
+          : null,
+      fantasyPoints: json['fantasyPoints'] as int?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'pickNumber': pickNumber,
+      'player': player?.toJson(),
+      'stats': stats,
+      'fantasyPoints': fantasyPoints,
+    };
+  }
+
+  // -----------------------------
+  // UI getters (null-safe)
+  // -----------------------------
+  int get kicks => _int("K");
+  int get handballs => _int("HB");
+  int get marks => _int("M");
+  int get tackles => _int("T");
+  int get goals => _int("G");
+  int get behinds => _int("B");
+
+  int get hitouts => _int("HO");
+  int get freesFor => _int("FF");
+  int get freesAgainst => _int("FA");
+  int get timeOnGroundPercentage => _int("TOG");
 
   int _int(String key) {
     final v = stats?[key];

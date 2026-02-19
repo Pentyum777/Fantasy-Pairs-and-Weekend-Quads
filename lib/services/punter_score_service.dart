@@ -22,7 +22,8 @@ class PunterScoreService {
       final stats = liveStatsByPlayerId[player.id];
       if (stats == null) continue;
 
-      total += stats.fantasyPoints;
+      // ⭐ Null-safe scoring
+      total += (stats.fantasyPoints ?? 0);
     }
 
     return total;
