@@ -959,15 +959,20 @@ clearButtonProps: const ClearButtonProps(
 
   Future<void> _loadSnapshotFromBackend() async {
   try {
-    final url = Uri.parse(
-      "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/loadSelections"
-      "?gameType=${widget.gameType}"
-      "&season=${widget.season}"
-      "&round=${widget.round}",
+    final url = Uri.https(
+      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+      "/loadSelections",
+      {
+        "gameType": widget.gameType,
+      },
     );
 
     final res = await http.get(url);
-    if (res.statusCode != 200) return;
+
+    if (res.statusCode != 200) {
+      debugPrint("❌ loadSelections returned ${res.statusCode}");
+      return;
+    }
 
     final json = jsonDecode(res.body);
     if (json == null || json is! Map<String, dynamic>) return;
