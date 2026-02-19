@@ -1,119 +1,122 @@
-import playwright from "playwright";
+import { chromium } from "playwright";
 
 let browser = null;
-let page = null;
 
-export async function initScraper() {
-  if (!browser) {
-    console.log("🟦 Initializing Playwright browser...");
-
-    browser = await playwright.chromium.launch({
+async function getBrowser() {
+  if (!browser || browser.isConnected() === false) {
+    browser = await chromium.launch({
       headless: true,
-      args: ["--disable-gpu", "--no-sandbox"],
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+  }
+  return browser;
+}
+
+async function safeGoto(page, url) {
+  try {
+    await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: 15000,
+    });
+    return page;
+  } catch (err) {
+    console.error("Goto failed, restarting browser:", err);
+
+    try {
+      await browser?.close();
+    } catch (_) {}
+
+    browser = await chromium.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
-    page = await browser.newPage();
-
-    // Block heavy resources
-    await page.route("**/*", (route) => {
-      const type = route.request().resourceType();
-      if (["image", "font", "media", "stylesheet"].includes(type)) {
-        route.abort();
-      } else {
-        route.continue();
-      }
+    const newPage = await browser.newPage();
+    await newPage.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: 15000,
     });
 
-    console.log("🟩 Playwright browser ready");
+    return newPage;
   }
 }
 
 export async function scrapeDFS(dfsId) {
-  await initScraper();
-
   const url = `https://dfsaustralia.com/afl-game-stats/?gameId=${dfsId}`;
-  console.log(`🔍 DFS scrape starting → dfsId ${dfsId}, url=${url}`);
+
+  const browser = await getBrowser();
+  let page = await browser.newPage();
+
+  page = await safeGoto(page, url);
 
   try {
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
-    console.log(`🌐 Page loaded for dfsId ${dfsId}`);
-
-    await page.waitForSelector("table tbody tr", { timeout: 8000 });
-    console.log(`📄 Table rows detected for dfsId ${dfsId}`);
-
-    const players = await page.$$eval("table tbody tr", (rows) => {
-      const parse = (v) => parseInt((v || "0").replace(/\s+/g, ""), 10);
-
-      return rows
-        .map((row) => {
-          const cells = Array.from(row.querySelectorAll("td"));
-          if (cells.length === 0) return null;
-
-          const link = cells[0].querySelector("a");
-          const name = link?.innerText.trim() || cells[0].innerText.trim();
-          const href = link?.getAttribute("href") || "";
-          const idMatch = href.match(/playerId=([^&]+)/);
-          const playerId = idMatch ? idMatch[1] : name;
-
-          const kicks = parse(cells[1].innerText);
-          const handballs = parse(cells[2].innerText);
-          const marks = parse(cells[3].innerText);
-          const tackles = parse(cells[4].innerText);
-          const hitouts = parse(cells[5].innerText);
-          const freesFor = parse(cells[6].innerText);
-          const freesAgainst = parse(cells[7].innerText);
-          const goals = parse(cells[8].innerText);
-          const behinds = parse(cells[9].innerText);
-          const tog = parse(cells[10].innerText);
-
-          const fantasyPoints =
-            kicks * 3 +
-            handballs * 2 +
-            marks * 3 +
-            tackles * 4 +
-            hitouts * 1 +
-            freesFor * 1 +
-            freesAgainst * -3 +
-            goals * 6 +
-            behinds * 1;
-
-          return {
-            id: playerId,
-            name,
-            team: "",
-            stats: {
-              fantasyPoints,
-              kicks,
-              handballs,
-              marks,
-              tackles,
-              hitouts,
-              freesFor,
-              freesAgainst,
-              goals,
-              behinds,
-              timeOnGroundPercentage: tog,
-            },
-          };
-        })
-        .filter(Boolean);
-    });
-
-    // 🔍 CRITICAL DEBUG LOG
-    console.log(`🟨 DFS scrape complete → dfsId ${dfsId}, players=${players.length}`);
-
-    return { players, meta: {} };
-  } catch (err) {
-    console.error(`❌ Playwright DFS scrape failed for dfsId ${dfsId}:`, err);
+    await page.waitForSelector("table.dataTable tbody tr", { timeout: 8000 });
+  } catch (_) {
+    console.warn("No table rows found — returning empty stats");
     return { players: [], meta: {} };
   }
-}
 
-export async function shutdownScraper() {
-  if (browser) {
-    console.log("🟥 Shutting down Playwright browser...");
-    await browser.close();
-    browser = null;
-    page = null;
-  }
+  const players = await page.$$eval("table.dataTable tbody tr", rows =>
+    rows
+      .map(row => {
+        const cells = [...row.querySelectorAll("td")];
+        if (cells.length === 0) return null;
+
+        const nameCell = cells[0];
+        const link = nameCell.querySelector("a");
+
+        const name = link?.innerText.trim() || nameCell.innerText.trim() || "";
+        const href = link?.getAttribute("href") || "";
+
+        const idMatch = href.match(/playerId=([^&]+)/);
+        const playerId = idMatch ? idMatch[1] : name;
+
+        const parse = v => parseInt(v || "0", 10);
+
+        const kicks = parse(cells[1]?.innerText);
+        const handballs = parse(cells[2]?.innerText);
+        const marks = parse(cells[3]?.innerText);
+        const tackles = parse(cells[4]?.innerText);
+        const hitouts = parse(cells[5]?.innerText);
+        const freesFor = parse(cells[6]?.innerText);
+        const freesAgainst = parse(cells[7]?.innerText);
+        const goals = parse(cells[8]?.innerText);
+        const behinds = parse(cells[9]?.innerText);
+
+        const fantasyPoints =
+          kicks * 3 +
+          handballs * 2 +
+          marks * 3 +
+          tackles * 4 +
+          hitouts * 1 +
+          freesFor * 1 +
+          freesAgainst * -3 +
+          goals * 6 +
+          behinds * 1;
+
+        return {
+          id: playerId,
+          name,
+          team: "",
+          stats: {
+            fantasyPoints,
+            kicks,
+            handballs,
+            marks,
+            tackles,
+            hitouts,
+            freesFor,
+            freesAgainst,
+            goals,
+            behinds,
+            timeOnGroundPercentage: parse(cells[10]?.innerText),
+          },
+        };
+      })
+      .filter(Boolean)
+  );
+
+  await page.close();
+
+  return { players, meta: {} };
 }

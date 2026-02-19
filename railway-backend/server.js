@@ -1,29 +1,19 @@
 import express from "express";
-import cors from "cors";
 import fs from "fs";
 import path from "path";
+import cors from "cors";
 
-import { getDFSStatsForMatch } from "./dfscache.js";
-import { getSquiggleStatusForMatch } from "./squiggle_service.js";
-import { startLiveDFSLoop } from "./livescheduler.js";
+import { scrapeDFS } from "./dfs_scraper.js";
 
-// Load JSON maps (correct for Railway + Docker)
-const squiggleMap = JSON.parse(
-  fs.readFileSync(path.resolve("squiggle_map.json"), "utf8")
-);
-
-const dfsMap = JSON.parse(
-  fs.readFileSync(path.resolve("dfs_map.json"), "utf8")
-);
+const dfsMap = JSON.parse(fs.readFileSync("./dfs_map.json", "utf8"));
+const squiggleMap = JSON.parse(fs.readFileSync("./squiggle_map.json", "utf8"));
 
 console.log("🚀 DFS + Squiggle backend starting...");
 
 const port = process.env.PORT || 8080;
 const app = express();
 
-// ------------------------------------------------------
-// CORS + Preflight
-// ------------------------------------------------------
+// CORS
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -35,132 +25,142 @@ app.use((req, res, next) => {
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-// ------------------------------------------------------
-// Root route
-// ------------------------------------------------------
+// Root
 app.get("/", (req, res) => {
   res.send("DFS + Squiggle backend is running");
 });
 
-// ------------------------------------------------------
-// In-memory per-game-type selections (live state)
-// ------------------------------------------------------
+// ------------------------------
+// Squiggle metadata fetcher
+// ------------------------------
+async function fetchSquiggleMeta(gameId) {
+  const url = `https://api.squiggle.com.au/?q=games&game=${gameId}`;
 
-let selectionsByGameType = {};
-
-// Save selections
-app.post("/saveSelections", (req, res) => {
-  const { gameType, season, round, punterNames, picks } = req.body;
-
-  if (!gameType || !season || !round) {
-    return res.status(400).json({
-      error: "gameType, season, and round are required",
+  try {
+    const response = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0" },
     });
+
+    const json = await response.json();
+    const games = json.games || [];
+
+    if (!games.length) {
+      console.warn("⚠ Squiggle returned no games for", gameId);
+      return {
+        homeScore: 0,
+        awayScore: 0,
+        quarter: "",
+        clock: "",
+        status: "",
+      };
+    }
+
+    const g = games[0];
+
+    const homeScore = g.hscore ?? 0;
+    const awayScore = g.ascore ?? 0;
+
+    let quarter = "";
+    let clock = "";
+    let status = "";
+
+    if (g.complete === 100) {
+      quarter = "Final";
+      clock = "FT";
+      status = "Full Time";
+    } else if (g.complete > 0) {
+      quarter = g.timestr || "";
+      clock = "";
+      status = "In Progress";
+    } else {
+      status = "Upcoming";
+    }
+
+    return { homeScore, awayScore, quarter, clock, status };
+  } catch (err) {
+    console.error("Squiggle fetch failed:", err);
+    return {
+      homeScore: 0,
+      awayScore: 0,
+      quarter: "",
+      clock: "",
+      status: "",
+    };
   }
+}
 
-  const key = `${gameType}_${season}_${round}`;
-
-  selectionsByGameType[key] = {
-    lastUpdated: Date.now(),
-    data: { punterNames, picks },
-  };
-
-  console.log(`💾 Saved selections for ${key}`);
-
-  res.json({
-    ok: true,
-    lastUpdated: selectionsByGameType[key].lastUpdated,
-  });
-});
-
-// Load selections
-app.get("/loadSelections", (req, res) => {
-  const { gameType, season, round } = req.query;
-
-  if (!gameType || !season || !round) {
-    return res.status(400).json({
-      error: "gameType, season, and round are required",
-    });
-  }
-
-  const key = `${gameType}_${season}_${round}`;
-  const snapshot = selectionsByGameType[key];
-
-  if (!snapshot) {
-    return res.json({
-      ok: true,
-      lastUpdated: 0,
-      data: null,
-    });
-  }
-
-  res.json({
-    ok: true,
-    lastUpdated: snapshot.lastUpdated,
-    data: snapshot.data,
-  });
-});
-
-// ------------------------------------------------------
-// Fantasy stats endpoint (DFS + Squiggle)
-// ------------------------------------------------------
+// ------------------------------
+// Fantasy endpoint (DFS + Squiggle)
+// ------------------------------
 app.get("/fantasy/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
 
   const dfsId = dfsMap[matchId];
-  const squiggleId = squiggleMap[matchId];
+  const squiggleGameId = squiggleMap[matchId];
 
-  console.log("➡️ Incoming matchId:", matchId);
-  console.log("➡️ DFS ID:", dfsId);
-  console.log("➡️ Squiggle ID:", squiggleId);
+  console.log("➡ Incoming matchId:", matchId);
+  console.log("➡ DFS ID:", dfsId);
+  console.log("➡ Squiggle ID:", squiggleGameId);
 
   if (!dfsId) {
     return res.status(404).json({ error: "No DFS mapping for matchId" });
   }
 
   try {
-    const dfsData = await getDFSStatsForMatch(matchId);
+    // ALWAYS scrape DFS — no gating
+    const dfsData = await scrapeDFS(dfsId);
 
-    let status = "Upcoming";
-    if (squiggleId) {
-      status = await getSquiggleStatusForMatch(matchId);
+    if (!dfsData || !dfsData.players) {
+      return res.status(500).json({ error: "DFS returned no player data" });
+    }
+
+    let meta = {
+      homeScore: 0,
+      awayScore: 0,
+      quarter: "",
+      clock: "",
+      status: "",
+    };
+
+    if (squiggleGameId) {
+      meta = await fetchSquiggleMeta(squiggleGameId);
     }
 
     res.json({
       matchId,
-      status,
+      homeScore: meta.homeScore,
+      awayScore: meta.awayScore,
+      quarter: meta.quarter,
+      clock: meta.clock,
+      status: meta.status,
       players: dfsData.players,
     });
   } catch (err) {
-    console.error("💥 /fantasy error:", err);
+    console.error("💥 Combined DFS + Squiggle error:", err);
     res.status(500).json({ error: String(err) });
   }
 });
 
-// ------------------------------------------------------
-// Squiggle status-only endpoint
-// ------------------------------------------------------
+// ------------------------------
+// Metadata-only endpoint
+// ------------------------------
 app.get("/meta/:matchId", async (req, res) => {
   const matchId = req.params.matchId;
-  const squiggleId = squiggleMap[matchId];
+  const squiggleGameId = squiggleMap[matchId];
 
-  if (!squiggleId) {
+  if (!squiggleGameId) {
     return res.status(404).json({ error: "No Squiggle mapping for matchId" });
   }
 
   try {
-    const status = await getSquiggleStatusForMatch(matchId);
-    res.json({ matchId, status });
+    const meta = await fetchSquiggleMeta(squiggleGameId);
+    res.json({ matchId, match: meta });
   } catch (err) {
-    console.error("💥 /meta error:", err);
+    console.error("Squiggle meta error:", err);
     res.status(500).json({ error: String(err) });
   }
 });
 
-// ------------------------------------------------------
-// Start server + live scheduler
-// ------------------------------------------------------
 app.listen(port, "0.0.0.0", () => {
-  console.log(`✅ DFS + Squiggle backend running on port ${port}`);
-  startLiveDFSLoop();
+  console.log(`🚀 DFS + Squiggle backend running on port ${port}`);
 });
