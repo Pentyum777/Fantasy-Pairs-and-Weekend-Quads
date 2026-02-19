@@ -5,7 +5,7 @@ import fetch from "node-fetch";
 import path from "path";
 
 const squiggleMap = JSON.parse(
-  fs.readFileSync(path.resolve("railway-backend/squiggle_map.json"), "utf8")
+  fs.readFileSync(path.resolve("squiggle_map.json"), "utf8")
 );
 
 /**
