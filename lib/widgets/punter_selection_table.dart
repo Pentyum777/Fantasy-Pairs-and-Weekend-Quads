@@ -267,16 +267,16 @@ Widget build(BuildContext context) {
               theme.textTheme.bodySmall?.fontSize ?? 12,
             ),
             const Divider(height: 1),
-            Expanded(
-              child: _buildBody(
-                theme,
-                cs,
-                widget.selections.take(widget.visiblePunterCount).toList(),
-                pickCount,
-                widget.tableWidth,
-                theme.textTheme.bodySmall?.fontSize ?? 12,
-              ),
-            ),
+            Flexible(
+  child: _buildBody(
+    theme,
+    cs,
+    widget.selections.take(widget.visiblePunterCount).toList(),
+    pickCount,
+    widget.tableWidth,
+    theme.textTheme.bodySmall?.fontSize ?? 12,
+  ),
+),
           ],
         ),
       ),
