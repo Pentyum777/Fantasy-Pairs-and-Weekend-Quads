@@ -921,13 +921,42 @@ void _applySnapshot(_TableSnapshot snap) {
   for (int i = 0; i < widget.selections.length; i++) {
     final row = widget.selections[i];
 
-    row.punterName = snap.punterNames[i];
-    _controllers[row.punterNumber]?.text = row.punterName;
+    // ---- Safe punterName ----
+    String safeName = "P${row.punterNumber}";
+    if (i < snap.punterNames.length) {
+      final name = snap.punterNames[i];
+      if (name.isNotEmpty) {
+        safeName = name;
+      }
+    }
+
+    row.punterName = safeName;
+    _controllers[row.punterNumber]?.text = safeName;
+
+    // ---- Safe picks ----
+    if (i >= snap.picks.length) {
+      // No picks for this row → clear them
+      for (final pick in row.picks) {
+        pick.player = null;
+        pick.stats = null;
+      }
+      continue;
+    }
+
+    final snapRow = snap.picks[i];
 
     for (int j = 0; j < row.picks.length; j++) {
       final pick = row.picks[j];
-      final snapPick = snap.picks[i][j];
 
+      if (j >= snapRow.length) {
+        pick.player = null;
+        pick.stats = null;
+        continue;
+      }
+
+      final snapPick = snapRow[j];
+
+      // ---- Safe player restore ----
       if (snapPick.playerId == null) {
         pick.player = null;
         pick.stats = null;
@@ -950,6 +979,8 @@ void _applySnapshot(_TableSnapshot snap) {
     }
   }
 }
+
+
 
 // ---------------------------------------------------------------------------
 // SAVE SNAPSHOT TO BACKEND (Admins only)
