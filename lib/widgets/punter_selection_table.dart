@@ -405,42 +405,49 @@ Widget build(BuildContext context) {
 
   print("🔥 bodyHeight = $bodyHeight");
 
-  return Scrollbar(
-    controller: _horizontalController,
-    thumbVisibility: true,
-    child: SingleChildScrollView(
+  return SizedBox(               // ⭐ FIX: give the table a real width
+    width: widget.tableWidth,    // ⭐ THIS is the missing constraint
+    child: Scrollbar(
       controller: _horizontalController,
-      scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: minWidth),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTableHeader(
-              theme,
-              cs,
-              pickCount,
-              widget.tableWidth,
-              theme.textTheme.bodySmall?.fontSize ?? 12,
-            ),
-            const Divider(height: 1),
-            SizedBox(
-              height: bodyHeight,
-              child: _buildBody(
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: _horizontalController,
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: minWidth,
+            maxWidth: widget.tableWidth,   // ⭐ FIX: prevent infinite width
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildTableHeader(
                 theme,
                 cs,
-                visibleRows,
                 pickCount,
                 widget.tableWidth,
                 theme.textTheme.bodySmall?.fontSize ?? 12,
               ),
-            ),
-          ],
+              const Divider(height: 1),
+              SizedBox(
+                height: bodyHeight,
+                child: _buildBody(
+                  theme,
+                  cs,
+                  visibleRows,
+                  pickCount,
+                  widget.tableWidth,
+                  theme.textTheme.bodySmall?.fontSize ?? 12,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     ),
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // PUNTER CELL
