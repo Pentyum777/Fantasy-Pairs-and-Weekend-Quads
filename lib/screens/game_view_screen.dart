@@ -836,49 +836,48 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Widget _buildPunterAndLeaderboard() {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final theme = Theme.of(context);
-      final innerWidth = constraints.maxWidth;
-      final picks = widget.gameType == "weekend_quads" ? 4 : 2;
+  return Expanded( // ⭐ THIS is the missing piece
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final theme = Theme.of(context);
+        final innerWidth = constraints.maxWidth;
+        final picks = widget.gameType == "weekend_quads" ? 4 : 2;
 
-      final leaderboardWidth = _leaderboardCollapsed
-          ? UIDimensions.collapsedLeaderboardWidth
-          : UIDimensions.rankColumnWidth +
-              UIDimensions.punterNameColumnWidth +
-              UIDimensions.totalColumnWidth;
+        final leaderboardWidth = _leaderboardCollapsed
+            ? UIDimensions.collapsedLeaderboardWidth
+            : UIDimensions.rankColumnWidth +
+                UIDimensions.punterNameColumnWidth +
+                UIDimensions.totalColumnWidth;
 
-      final double punterTableWidth =
-          _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
+        final double punterTableWidth =
+            _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
 
-      return FutureBuilder<List<AflPlayer>>(
-        future: widget.playerRepo.playersForSeason(widget.season),
-        builder: (context, snapshot) {
-          print("🔥 FUTUREBUILDER snapshot: hasData=${snapshot.hasData}, error=${snapshot.error}");
+        return FutureBuilder<List<AflPlayer>>(
+          future: widget.playerRepo.playersForSeason(widget.season),
+          builder: (context, snapshot) {
+            print("🔥 FUTUREBUILDER snapshot: hasData=${snapshot.hasData}, error=${snapshot.error}");
 
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final seasonPlayers = snapshot.data!;
-          final fixtures = _fixturesForGameType();
+            final seasonPlayers = snapshot.data!;
+            final fixtures = _fixturesForGameType();
 
-          final fixtureClubCodes =
-              fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
+            final fixtureClubCodes =
+                fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
 
-          final availablePlayers = seasonPlayers
-              .where((p) => fixtureClubCodes.contains(p.club))
-              .toList();
+            final availablePlayers = seasonPlayers
+                .where((p) => fixtureClubCodes.contains(p.club))
+                .toList();
 
-          return Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.all(8),
+            return Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(8),
 
-            // ⭐ CRITICAL FIX: Force Row to fill available height
-            child: SizedBox.expand(
               child: Row(
                 children: [
 
@@ -934,11 +933,11 @@ class _GameViewScreenState extends State<GameViewScreen> {
                   ),
                 ],
               ),
-            ),
-          );
-        },
-      );
-    },
+            );
+          },
+        );
+      },
+    ),
   );
 }
 
