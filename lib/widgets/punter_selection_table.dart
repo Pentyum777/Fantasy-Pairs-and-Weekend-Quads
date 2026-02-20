@@ -241,140 +241,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
 // BUILD
 // ---------------------------------------------------------------------------
 
-@override
-Widget build(BuildContext context) {
-  print("🔥 PUNTER TABLE BUILDING with ${widget.selections.length} selections, visible=${widget.visiblePunterCount}");
-  final theme = Theme.of(context);
-  final cs = theme.colorScheme;
-
-  final pickCount = widget.playersPerPunter;
-  final minWidth = _minTableWidth(pickCount);
-
-  // Row height consistent with UIDimensions + phone tweaks
-  final double rowHeight = isPortraitPhone(context)
-      ? 32
-      : (isLandscapePhone ? 34 : UIDimensions.rowHeight);
-
-  // Visible body height = visible punters * rowHeight
-  final int visibleCount =
-      widget.selections.take(widget.visiblePunterCount).length;
-  final double bodyHeight = rowHeight * visibleCount;
-
-  return Scrollbar(
-    controller: _horizontalController,
-    thumbVisibility: true,
-    child: SingleChildScrollView(
-      controller: _horizontalController,
-      scrollDirection: Axis.horizontal,
-
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: minWidth),
-
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-
-            // -------------------------
-            // HEADER
-            // -------------------------
-            _buildTableHeader(
-              theme,
-              cs,
-              pickCount,
-              widget.tableWidth,
-              theme.textTheme.bodySmall?.fontSize ?? 12,
-            ),
-
-            const Divider(height: 1),
-
-            // -------------------------
-            // BODY (fixed height)
-            // -------------------------
-            SizedBox(
-              height: bodyHeight,
-              child: _buildBody(
-                theme,
-                cs,
-                widget.selections
-                    .take(widget.visiblePunterCount)
-                    .toList(),
-                pickCount,
-                widget.tableWidth,
-                theme.textTheme.bodySmall?.fontSize ?? 12,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-
-
-// ---------------------------------------------------------------------------
-// HEADER
-// ---------------------------------------------------------------------------
-
-Widget _buildTableHeader(
-  ThemeData theme,
-  ColorScheme cs,
-  int pickCount,
-  double tableWidth,
-  double fontSize,
-) {
-  return SizedBox(
-    height: isPortraitPhone(context) ? 34 : UIDimensions.headerHeight,
-    child: Row(
-      children: [
-        SizedBox(
-          width: kPunterColumnWidth,
-          child: _headerCell(theme, "Punter", alignCenter: true),
-        ),
-        for (int i = 0; i < pickCount; i++) ...[
-          SizedBox(
-            width: kPickColumnWidth,
-            child: _headerCell(theme, "Pick ${i + 1}", alignCenter: true),
-          ),
-          SizedBox(
-            width: kPickScoreColumnWidth,
-            child: _headerCell(theme, "Score", alignCenter: true),
-          ),
-        ],
-        SizedBox(
-          width: kTotalColumnWidth,
-          child: _headerCell(theme, "Total", alignCenter: true),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _headerCell(
-  ThemeData theme,
-  String text, {
-  bool alignCenter = false,
-}) {
-  return Container(
-    alignment: alignCenter ? Alignment.center : Alignment.centerLeft,
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-    child: Text(
-      text,
-      style: theme.textTheme.bodySmall?.copyWith(
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.1,
-      ),
-      overflow: TextOverflow.ellipsis,
-      textAlign: alignCenter ? TextAlign.center : TextAlign.left,
-    ),
-  );
-}
-
-// ---------------------------------------------------------------------------
-// BODY
-// ---------------------------------------------------------------------------
-
 Widget _buildBody(
+  
   ThemeData theme,
   ColorScheme cs,
   List<PunterSelection> visible,
@@ -383,7 +251,9 @@ Widget _buildBody(
   double fontSize,
 ) {
   return ListView.builder(
-    controller: widget.scrollController,
+    // ⭐ FIX: Do NOT share vertical scroll controller with leaderboard
+    controller: ScrollController(),
+
     itemCount: visible.length,
     itemBuilder: (context, index) {
       try {
@@ -446,6 +316,129 @@ Widget _buildBody(
         return const SizedBox.shrink();
       }
     },
+  );
+}
+
+
+
+
+// ---------------------------------------------------------------------------
+// HEADER
+// ---------------------------------------------------------------------------
+
+Widget _buildTableHeader(
+  ThemeData theme,
+  ColorScheme cs,
+  int pickCount,
+  double tableWidth,
+  double fontSize,
+) {
+  return SizedBox(
+    height: isPortraitPhone(context) ? 34 : UIDimensions.headerHeight,
+    child: Row(
+      children: [
+        SizedBox(
+          width: kPunterColumnWidth,
+          child: _headerCell(theme, "Punter", alignCenter: true),
+        ),
+        for (int i = 0; i < pickCount; i++) ...[
+          SizedBox(
+            width: kPickColumnWidth,
+            child: _headerCell(theme, "Pick ${i + 1}", alignCenter: true),
+          ),
+          SizedBox(
+            width: kPickScoreColumnWidth,
+            child: _headerCell(theme, "Score", alignCenter: true),
+          ),
+        ],
+        SizedBox(
+          width: kTotalColumnWidth,
+          child: _headerCell(theme, "Total", alignCenter: true),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _headerCell(
+  ThemeData theme,
+  String text, {
+  bool alignCenter = false,
+}) {
+  return Container(
+    alignment: alignCenter ? Alignment.center : Alignment.centerLeft,
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+    child: Text(
+      text,
+      style: theme.textTheme.bodySmall?.copyWith(
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.1,
+      ),
+      overflow: TextOverflow.ellipsis,
+      textAlign: alignCenter ? TextAlign.center : TextAlign.left,
+    ),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Build conext
+// ---------------------------------------------------------------------------
+
+@override
+Widget build(BuildContext context) {
+  print("🔥 PUNTER TABLE BUILDING with ${widget.selections.length} selections, visible=${widget.visiblePunterCount}");
+
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
+
+  final pickCount = widget.playersPerPunter;
+  final minWidth = _minTableWidth(pickCount);
+
+  final double rowHeight = isPortraitPhone(context)
+      ? 32
+      : (isLandscapePhone ? 34 : UIDimensions.rowHeight);
+
+  final visibleRows =
+      widget.selections.take(widget.visiblePunterCount).toList();
+
+  final double bodyHeight = rowHeight * visibleRows.length;
+
+  print("🔥 bodyHeight = $bodyHeight");
+
+  return Scrollbar(
+    controller: _horizontalController,
+    thumbVisibility: true,
+    child: SingleChildScrollView(
+      controller: _horizontalController,
+      scrollDirection: Axis.horizontal,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minWidth: minWidth),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildTableHeader(
+              theme,
+              cs,
+              pickCount,
+              widget.tableWidth,
+              theme.textTheme.bodySmall?.fontSize ?? 12,
+            ),
+            const Divider(height: 1),
+            SizedBox(
+              height: bodyHeight,
+              child: _buildBody(
+                theme,
+                cs,
+                visibleRows,
+                pickCount,
+                widget.tableWidth,
+                theme.textTheme.bodySmall?.fontSize ?? 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
   );
 }
 
