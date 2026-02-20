@@ -854,7 +854,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
       return FutureBuilder<List<AflPlayer>>(
         future: widget.playerRepo.playersForSeason(widget.season),
         builder: (context, snapshot) {
-  print("🔥 FUTUREBUILDER snapshot: hasData=${snapshot.hasData}, error=${snapshot.error}");
+          print("🔥 FUTUREBUILDER snapshot: hasData=${snapshot.hasData}, error=${snapshot.error}");
+
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -876,63 +877,63 @@ class _GameViewScreenState extends State<GameViewScreen> {
             ),
             padding: const EdgeInsets.all(8),
 
-            // ⭐ FIX: Give the row a fixed height using Expanded above
-            child: Row(
-              children: [
+            // ⭐ CRITICAL FIX: Force Row to fill available height
+            child: SizedBox.expand(
+              child: Row(
+                children: [
 
-                // -------------------------
-                // PUNTER TABLE (EXPANDED)
-                // -------------------------
-                Expanded(
-                  child: PunterSelectionTable(
-                    key: _punterTableKey,
-                    gameType: widget.gameType,
-                    season: widget.season.toString(),
-                    round: widget.round!,
-                    tableWidth: punterTableWidth,
-                    visiblePunterCount: _visiblePunterCount,
-                    playersPerPunter: picks,
-                    availablePlayers: availablePlayers,
-                    selections: widget.selections,
-                    isCompleted: _isCompleted,
-                    readOnly: !widget.userRoleService.isAdmin,
-                    onChanged: widget.userRoleService.isAdmin ? () {} : null,
-                    collapsed: _leaderboardCollapsed,
-                    scrollController: _punterScrollController,
-                    fantasyService: widget.fantasyService,
-                    userRoleService: widget.userRoleService,
-                    onTimestampChanged: (t) {
-                      setState(() => _timestampLabel = t);
-                    },
-                    onLiveScoreUpdateSave: () {
-                      final tableState = _punterTableKey.currentState;
-                      if (tableState != null) {
-                        (tableState as dynamic).saveSnapshot();
-                      }
-                    },
+                  // -------------------------
+                  // PUNTER TABLE (EXPANDED)
+                  // -------------------------
+                  Expanded(
+                    child: PunterSelectionTable(
+                      key: _punterTableKey,
+                      gameType: widget.gameType,
+                      season: widget.season.toString(),
+                      round: widget.round!,
+                      tableWidth: punterTableWidth,
+                      visiblePunterCount: _visiblePunterCount,
+                      playersPerPunter: picks,
+                      availablePlayers: availablePlayers,
+                      selections: widget.selections,
+                      isCompleted: _isCompleted,
+                      readOnly: !widget.userRoleService.isAdmin,
+                      onChanged: widget.userRoleService.isAdmin ? () {} : null,
+                      collapsed: _leaderboardCollapsed,
+                      scrollController: _punterScrollController,
+                      fantasyService: widget.fantasyService,
+                      userRoleService: widget.userRoleService,
+                      onTimestampChanged: (t) {
+                        setState(() => _timestampLabel = t);
+                      },
+                      onLiveScoreUpdateSave: () {
+                        final tableState = _punterTableKey.currentState;
+                        if (tableState != null) {
+                          (tableState as dynamic).saveSnapshot();
+                        }
+                      },
+                    ),
                   ),
-                ),
 
-
-
-                // -------------------------
-                // LEADERBOARD (FIXED WIDTH)
-                // -------------------------
-                SizedBox(
-                  width: leaderboardWidth,
-                  child: LeaderboardPanel(
-                    punters: widget.selections
-                        .take(_visiblePunterCount)
-                        .toList(),
-                    rowHeight: 34,
-                    collapsed: _leaderboardCollapsed,
-                    scrollController: _punterScrollController,
-                    onCollapseChanged: (collapsed) {
-                      setState(() => _leaderboardCollapsed = collapsed);
-                    },
+                  // -------------------------
+                  // LEADERBOARD (FIXED WIDTH)
+                  // -------------------------
+                  SizedBox(
+                    width: leaderboardWidth,
+                    child: LeaderboardPanel(
+                      punters: widget.selections
+                          .take(_visiblePunterCount)
+                          .toList(),
+                      rowHeight: 34,
+                      collapsed: _leaderboardCollapsed,
+                      scrollController: _punterScrollController,
+                      onCollapseChanged: (collapsed) {
+                        setState(() => _leaderboardCollapsed = collapsed);
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
