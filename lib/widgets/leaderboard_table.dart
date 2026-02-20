@@ -19,6 +19,83 @@ class LeaderboardTable extends StatelessWidget {
     this.scrollController,
   });
 
+// ---------------------------------------------------------------------------
+// EXTRACTED HEADER (for sticky header use)
+// ---------------------------------------------------------------------------
+Widget buildHeader(BuildContext context) {
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
+
+  return SizedBox(
+    width: totalWidth,
+    height: UIDimensions.headerHeight,
+    child: Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withAlpha(96),
+        border: Border(
+          bottom: BorderSide(
+            color: cs.primary.withAlpha(31),
+            width: 0.75,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: UIDimensions.rankColumnWidth,
+            child: _headerCell(theme, "P", alignCenter: true),
+          ),
+          SizedBox(
+            width: UIDimensions.punterNameColumnWidth,
+            child: _headerCell(theme, "Punter", alignCenter: true),
+          ),
+          SizedBox(
+            width: UIDimensions.totalColumnWidth,
+            child: _headerCell(theme, "T", alignCenter: true),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// EXTRACTED BODY (scrollable)
+// ---------------------------------------------------------------------------
+Widget buildBody(BuildContext context) {
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
+
+  final sorted = [...punters]
+    ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
+
+  return ListView.builder(
+    itemCount: sorted.length,
+    itemExtent: rowHeight,
+    itemBuilder: (context, index) {
+      final p = sorted[index];
+
+      return Container(
+        height: rowHeight,
+        color: cs.surfaceContainerHighest.withAlpha(
+          index.isEven ? 32 : 20,
+        ),
+        child: buildSharedTableRow(
+          context: context,
+          index: index,
+          rowHeight: rowHeight,
+          totalWidth: totalWidth,
+          isInvalid: false,
+          isHighlighted: p.isPrizeWinner,
+          leftCell: _rankCell(context, index),
+          middleCells: [_punterNameCell(context, p)],
+          rightCell: _scoreCell(context, p),
+        ),
+      );
+    },
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

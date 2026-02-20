@@ -836,7 +836,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Widget _buildPunterAndLeaderboard() {
-  return Expanded( // ⭐ REQUIRED so the Row gets real width & height
+  return Expanded(
     child: LayoutBuilder(
       builder: (context, constraints) {
         final theme = Theme.of(context);
@@ -878,8 +878,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
               ),
               padding: const EdgeInsets.all(8),
 
-              // ⭐ FIX: NO SizedBox.expand — this was collapsing the table
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,   // ⭐ FIX: align top
                 children: [
 
                   // -------------------------
@@ -924,7 +924,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
                       punters: widget.selections
                           .take(_visiblePunterCount)
                           .toList(),
-                      rowHeight: 34,
+                      rowHeight: UIDimensions.rowHeight,   // ⭐ FIX: match table
                       collapsed: _leaderboardCollapsed,
                       scrollController: _punterScrollController,
                       onCollapseChanged: (collapsed) {
@@ -941,6 +941,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
     ),
   );
 }
+
 
   Widget _buildMainContent() {
   return Padding(

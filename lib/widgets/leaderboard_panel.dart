@@ -49,16 +49,36 @@ class LeaderboardPanel extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
 
-        // ⭐ FIX: Leaderboard must fill available height so its ListView can scroll
         child: collapsed
             ? const SizedBox.shrink()
-            : SizedBox.expand(
-                child: LeaderboardTable(
-                  punters: punters,
-                  rowHeight: rowHeight,
-                  totalWidth: expandedWidth,
-                  scrollController: scrollController,
-                ),
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  // ⭐ Sticky header (from your existing LeaderboardTable)
+                  SizedBox(
+                    height: UIDimensions.headerHeight,
+                    width: expandedWidth,
+                    child: LeaderboardTable(
+                      punters: punters,
+                      rowHeight: rowHeight,
+                      totalWidth: expandedWidth,
+                      scrollController: scrollController,
+                    ).buildHeader(context),
+                  ),
+
+                  const Divider(height: 1),
+
+                  // ⭐ Scrollable body
+                  Expanded(
+                    child: LeaderboardTable(
+                      punters: punters,
+                      rowHeight: rowHeight,
+                      totalWidth: expandedWidth,
+                      scrollController: scrollController,
+                    ).buildBody(context),
+                  ),
+                ],
               ),
       ),
     );

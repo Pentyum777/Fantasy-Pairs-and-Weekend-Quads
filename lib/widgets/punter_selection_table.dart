@@ -386,61 +386,60 @@ Widget _headerCell(
 
 @override
 Widget build(BuildContext context) {
-  print("🔥 PUNTER TABLE BUILDING with ${widget.selections.length} selections, visible=${widget.visiblePunterCount}");
-
   final theme = Theme.of(context);
   final cs = theme.colorScheme;
 
   final pickCount = widget.playersPerPunter;
   final minWidth = _minTableWidth(pickCount);
 
-  final double rowHeight = isPortraitPhone(context)
-      ? 32
-      : (isLandscapePhone ? 34 : UIDimensions.rowHeight);
-
   final visibleRows =
       widget.selections.take(widget.visiblePunterCount).toList();
 
-  final double bodyHeight = rowHeight * visibleRows.length;
-
-  print("🔥 bodyHeight = $bodyHeight");
-
-  return SizedBox(               // ⭐ FIX: give the table a real width
-    width: widget.tableWidth,    // ⭐ THIS is the missing constraint
-    child: Scrollbar(
-      controller: _horizontalController,
-      thumbVisibility: true,
-      child: SingleChildScrollView(
+  return Align(
+    alignment: Alignment.topLeft,
+    child: SizedBox(
+      width: widget.tableWidth,
+      child: Scrollbar(
         controller: _horizontalController,
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: minWidth,
-            maxWidth: widget.tableWidth,   // ⭐ FIX: prevent infinite width
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTableHeader(
-                theme,
-                cs,
-                pickCount,
-                widget.tableWidth,
-                theme.textTheme.bodySmall?.fontSize ?? 12,
-              ),
-              const Divider(height: 1),
-              SizedBox(
-                height: bodyHeight,
-                child: _buildBody(
+        thumbVisibility: true,
+        child: SingleChildScrollView(
+          controller: _horizontalController,
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: minWidth,
+              maxWidth: widget.tableWidth,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ⭐ Sticky header
+                _buildTableHeader(
                   theme,
                   cs,
-                  visibleRows,
                   pickCount,
                   widget.tableWidth,
                   theme.textTheme.bodySmall?.fontSize ?? 12,
                 ),
-              ),
-            ],
+                const Divider(height: 1),
+
+                // ⭐ Scrollable body
+                Expanded(
+                  child: ListView.builder(
+                    controller: ScrollController(),
+                    itemCount: visibleRows.length,
+                    itemBuilder: (context, index) {
+                      return _buildRow(
+                        theme,
+                        cs,
+                        visibleRows[index],
+                        pickCount,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -532,6 +531,55 @@ Widget _punterCell(BuildContext context, PunterSelection row) {
     ),
   );
 }
+
+Widget _buildRow(ThemeData theme, ColorScheme cs, PunterSelection row, int pickCount) {
+  final index = row.punterNumber - 1;
+  final isStriped = index.isOdd;
+
+  final bg = isStriped
+      ? cs.surfaceContainerHighest.withAlpha(64)
+      : cs.surface;
+
+  return Container(
+    height: UIDimensions.rowHeight,
+    decoration: BoxDecoration(
+      color: bg,
+      border: Border(
+        bottom: BorderSide(
+          color: cs.outlineVariant.withAlpha(153),
+          width: 0.5,
+        ),
+      ),
+    ),
+    child: Row(
+      children: [
+        SizedBox(
+          width: kPunterColumnWidth,
+          child: _punterCell(context, row),
+        ),
+        for (int i = 0; i < pickCount; i++) ...[
+          SizedBox(
+            width: kPickColumnWidth,
+            child: i < row.picks.length
+                ? _buildPickCell(context, row, row.picks[i])
+                : const SizedBox(),
+          ),
+          SizedBox(
+            width: kPickScoreColumnWidth,
+            child: i < row.picks.length
+                ? _pickScoreCell(row.picks[i])
+                : const SizedBox(),
+          ),
+        ],
+        SizedBox(
+          width: kTotalColumnWidth,
+          child: _totalCell(context, row),
+        ),
+      ],
+    ),
+  );
+}
+
 
 // ---------------------------------------------------------------------------
 // PICK CELL (Dropdown)
