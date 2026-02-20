@@ -20,110 +20,115 @@ class LeaderboardTable extends StatelessWidget {
   });
 
   @override
-Widget build(BuildContext context) {
-  final theme = Theme.of(context);
-  final cs = theme.colorScheme;
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
-  final sorted = [...punters]
-    ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
+    final sorted = [...punters]
+      ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
 
-  return Container(
-    width: totalWidth,
-    decoration: BoxDecoration(
-      color: cs.surfaceContainerHighest.withAlpha(64),
-      borderRadius: BorderRadius.circular(8),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withAlpha(15),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+    // ⭐ FIX: Give the body a concrete height so it always renders
+    final double bodyHeight = rowHeight * sorted.length;
 
-      // ⭐ Horizontal scroll wrapper (header + body)
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        controller: scrollController,
+    return Container(
+      width: totalWidth,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withAlpha(64),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
 
-        child: SizedBox(
-          width: totalWidth,
-          child: Column(
-            children: [
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          controller: scrollController,
 
-              // -------------------------
-              // HEADER
-              // -------------------------
-              SizedBox(
-                width: totalWidth,
-                height: UIDimensions.headerHeight,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest.withAlpha(96),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: cs.primary.withAlpha(31),
-                        width: 0.75,
+          child: SizedBox(
+            width: totalWidth,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+
+                // -------------------------
+                // HEADER
+                // -------------------------
+                SizedBox(
+                  width: totalWidth,
+                  height: UIDimensions.headerHeight,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withAlpha(96),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: cs.primary.withAlpha(31),
+                          width: 0.75,
+                        ),
                       ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: UIDimensions.rankColumnWidth,
-                        child: _headerCell(theme, "P", alignCenter: true),
-                      ),
-                      SizedBox(
-                        width: UIDimensions.punterNameColumnWidth,
-                        child: _headerCell(theme, "Punter", alignCenter: true),
-                      ),
-                      SizedBox(
-                        width: UIDimensions.totalColumnWidth,
-                        child: _headerCell(theme, "T", alignCenter: true),
-                      ),
-                    ],
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: UIDimensions.rankColumnWidth,
+                          child: _headerCell(theme, "P", alignCenter: true),
+                        ),
+                        SizedBox(
+                          width: UIDimensions.punterNameColumnWidth,
+                          child: _headerCell(theme, "Punter", alignCenter: true),
+                        ),
+                        SizedBox(
+                          width: UIDimensions.totalColumnWidth,
+                          child: _headerCell(theme, "T", alignCenter: true),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // -------------------------
-              // BODY (scrollable vertically)
-              // -------------------------
-              Expanded(
-                child: ListView.builder(
-                  itemCount: sorted.length,
-                  itemBuilder: (context, index) {
-                    final p = sorted[index];
+                // -------------------------
+                // BODY (fixed height)
+                // -------------------------
+                SizedBox(
+                  height: bodyHeight,
+                  child: ListView.builder(
+                    itemCount: sorted.length,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemBuilder: (context, index) {
+                      final p = sorted[index];
 
-                    return Container(
-                      height: rowHeight,
-                      color: cs.surfaceContainerHighest.withAlpha(
-                        index.isEven ? 32 : 20,
-                      ),
-                      child: buildSharedTableRow(
-                        context: context,
-                        index: index,
-                        rowHeight: rowHeight,
-                        totalWidth: totalWidth,
-                        isInvalid: false,
-                        isHighlighted: p.isPrizeWinner,
-                        leftCell: _rankCell(context, index),
-                        middleCells: [_punterNameCell(context, p)],
-                        rightCell: _scoreCell(context, p),
-                      ),
-                    );
-                  },
+                      return Container(
+                        height: rowHeight,
+                        color: cs.surfaceContainerHighest.withAlpha(
+                          index.isEven ? 32 : 20,
+                        ),
+                        child: buildSharedTableRow(
+                          context: context,
+                          index: index,
+                          rowHeight: rowHeight,
+                          totalWidth: totalWidth,
+                          isInvalid: false,
+                          isHighlighted: p.isPrizeWinner,
+                          leftCell: _rankCell(context, index),
+                          middleCells: [_punterNameCell(context, p)],
+                          rightCell: _scoreCell(context, p),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // -------------------------
   // CELL BUILDERS

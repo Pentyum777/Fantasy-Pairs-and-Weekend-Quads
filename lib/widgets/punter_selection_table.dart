@@ -249,16 +249,33 @@ Widget build(BuildContext context) {
   final pickCount = widget.playersPerPunter;
   final minWidth = _minTableWidth(pickCount);
 
+  // Row height consistent with UIDimensions + phone tweaks
+  final double rowHeight = isPortraitPhone(context)
+      ? 32
+      : (isLandscapePhone ? 34 : UIDimensions.rowHeight);
+
+  // Visible body height = visible punters * rowHeight
+  final int visibleCount =
+      widget.selections.take(widget.visiblePunterCount).length;
+  final double bodyHeight = rowHeight * visibleCount;
+
   return Scrollbar(
     controller: _horizontalController,
     thumbVisibility: true,
     child: SingleChildScrollView(
       controller: _horizontalController,
       scrollDirection: Axis.horizontal,
+
       child: ConstrainedBox(
         constraints: BoxConstraints(minWidth: minWidth),
+
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
+
+            // -------------------------
+            // HEADER
+            // -------------------------
             _buildTableHeader(
               theme,
               cs,
@@ -266,23 +283,32 @@ Widget build(BuildContext context) {
               widget.tableWidth,
               theme.textTheme.bodySmall?.fontSize ?? 12,
             ),
+
             const Divider(height: 1),
-            Expanded(
-  child: _buildBody(
-    theme,
-    cs,
-    widget.selections.take(widget.visiblePunterCount).toList(),
-    pickCount,
-    widget.tableWidth,
-    theme.textTheme.bodySmall?.fontSize ?? 12,
-  ),
-),
+
+            // -------------------------
+            // BODY (fixed height)
+            // -------------------------
+            SizedBox(
+              height: bodyHeight,
+              child: _buildBody(
+                theme,
+                cs,
+                widget.selections
+                    .take(widget.visiblePunterCount)
+                    .toList(),
+                pickCount,
+                widget.tableWidth,
+                theme.textTheme.bodySmall?.fontSize ?? 12,
+              ),
+            ),
           ],
         ),
       ),
     ),
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // HEADER
