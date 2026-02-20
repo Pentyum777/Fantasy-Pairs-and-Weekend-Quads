@@ -19,7 +19,15 @@ class PlayerRepository {
     }
 
     final path = 'assets/data/players_$season.json';
-    final jsonString = await rootBundle.loadString(path);
+    print("🔥 Loading $path");
+String jsonString;
+try {
+  jsonString = await rootBundle.loadString(path);
+  print("✅ Loaded $path");
+} catch (e) {
+  print("❌ FAILED to load $path → $e");
+  return [];
+}
     final data = json.decode(jsonString);
 
     if (data is! Map<String, dynamic>) return [];

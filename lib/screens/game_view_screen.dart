@@ -854,6 +854,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
       return FutureBuilder<List<AflPlayer>>(
         future: widget.playerRepo.playersForSeason(widget.season),
         builder: (context, snapshot) {
+  print("🔥 FUTUREBUILDER snapshot: hasData=${snapshot.hasData}, error=${snapshot.error}");
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }

@@ -243,6 +243,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
 
 @override
 Widget build(BuildContext context) {
+  print("🔥 PUNTER TABLE BUILDING with ${widget.selections.length} selections, visible=${widget.visiblePunterCount}");
   final theme = Theme.of(context);
   final cs = theme.colorScheme;
 
@@ -308,6 +309,7 @@ Widget build(BuildContext context) {
     ),
   );
 }
+
 
 
 // ---------------------------------------------------------------------------
