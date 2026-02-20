@@ -121,6 +121,17 @@ class _GameViewScreenState extends State<GameViewScreen> {
     }
   }
 
+
+Future<void> _checkForSnapshotUpdates() async {
+  final tableState = _punterTableKey.currentState;
+  if (tableState == null) return;
+
+  final dynamic dyn = tableState;
+
+  // ⭐ Calls the new method inside PunterSelectionTable
+  await dyn.loadSnapshotFromBackendIfNewer();
+}
+
   @override
   void initState() {
     super.initState();
@@ -137,7 +148,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   void _startLivePolling() {
     _liveTimer?.cancel();
     _liveTimer = Timer.periodic(
-      const Duration(seconds: 10),
+      const Duration(seconds: 5),
       (_) async {
         await _refreshLive();
         setState(() {});
@@ -213,6 +224,10 @@ class _GameViewScreenState extends State<GameViewScreen> {
       // Admins save snapshot after live update
       if (widget.userRoleService.isAdmin) {
         dyn.saveSnapshot();
+        // ⭐ NEW: Check if backend snapshot changed
+await _checkForSnapshotUpdates();
+
+
       }
     }
 

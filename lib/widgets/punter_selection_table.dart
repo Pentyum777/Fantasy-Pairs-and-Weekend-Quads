@@ -530,6 +530,68 @@ Widget _punterCell(BuildContext context, PunterSelection row) {
   );
 }
 
+Future<void> loadSnapshotFromBackendIfNewer() async {
+  try {
+    final url = Uri.https(
+      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+      "/loadSelections",
+      {
+        "gameType": widget.gameType,
+        "season": widget.season,
+        "round": widget.round.toString(),
+      },
+    );
+
+    final res = await http.get(url);
+    if (res.statusCode != 200) return;
+
+    final json = jsonDecode(res.body);
+    if (json == null || json is! Map<String, dynamic>) return;
+
+    final serverTimestamp = json["lastUpdated"];
+    if (serverTimestamp == null) return;
+
+    // ⭐ Only reload if backend timestamp is newer
+    if (_lastUpdated != null && serverTimestamp == _lastUpdated) {
+      return;
+    }
+
+    // Update local timestamp
+    _lastUpdated = serverTimestamp;
+
+    final data = json["data"];
+    if (data == null) return;
+
+    final punterNames = List<String>.from(data["punterNames"]);
+    final picksRaw = data["picks"] as List;
+
+    final picks = picksRaw.map<List<_PickSnapshot>>((row) {
+      return (row as List).map<_PickSnapshot>((p) {
+        return _PickSnapshot(
+          playerId: p["playerId"],
+          stats: p["stats"] == null
+              ? null
+              : Map<String, dynamic>.from(p["stats"]),
+        );
+      }).toList();
+    }).toList();
+
+    final snap = _TableSnapshot(
+      punterNames: punterNames,
+      picks: picks,
+    );
+
+    setState(() {
+      _applySnapshot(snap);
+    });
+
+    widget.onTimestampChanged?.call(lastUpdatedLabel);
+
+  } catch (e) {
+    debugPrint("❌ loadSnapshotFromBackendIfNewer error: $e");
+  }
+}
+
 Widget _buildRow(ThemeData theme, ColorScheme cs, PunterSelection row, int pickCount) {
   final index = row.punterNumber - 1;
   final isStriped = index.isOdd;
