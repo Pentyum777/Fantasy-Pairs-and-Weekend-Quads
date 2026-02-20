@@ -943,18 +943,18 @@ class _GameViewScreenState extends State<GameViewScreen> {
 }
 
   Widget _buildMainContent() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildPunterControls(),
-          const SizedBox(height: 6),
-          Expanded(child: _buildPunterAndLeaderboard()),
-        ],
-      ),
-    );
-  }
+  return Padding(
+    padding: const EdgeInsets.all(12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildPunterControls(),
+        const SizedBox(height: 6),
+        _buildPunterAndLeaderboard(), // ⭐ FIX: remove Expanded
+      ],
+    ),
+  );
+}
 
   void _handleFridayPairsTrigger(AflFixture fixture) {
     if (widget.gameType != "friday_pairs") return;
