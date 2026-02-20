@@ -14,7 +14,7 @@ const port = process.env.PORT || 8080;
 const app = express();
 
 // ------------------------------------------------------
-// CORS + Preflight
+// GLOBAL CORS (applies to ALL responses, including 404)
 // ------------------------------------------------------
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -48,24 +48,24 @@ function normalizeGameType(gameType) {
 // Root
 // ------------------------------------------------------
 app.get("/", (req, res) => {
-  res.send("DFS + Squiggle backend is running");
+  res.json({ ok: true, message: "DFS + Squiggle backend is running" });
 });
 
 // ------------------------------------------------------
-// Live selections (persistent, per gameType)
+// Save selections
 // ------------------------------------------------------
-
-// Save selections (live state, shared, per gameType)
 app.post("/saveSelections", (req, res) => {
   try {
     const { gameType, punterNames, picks } = req.body;
 
     if (!gameType) {
+      res.header("Access-Control-Allow-Origin", "*");
       return res.status(400).json({ error: "gameType is required" });
     }
 
     const normalizedGameType = normalizeGameType(gameType);
     if (!normalizedGameType) {
+      res.header("Access-Control-Allow-Origin", "*");
       return res.status(400).json({ error: "Invalid gameType" });
     }
 
@@ -80,42 +80,38 @@ app.post("/saveSelections", (req, res) => {
 
     fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf8");
 
-    console.log(
-      `💾 Saved selections for gameType=${normalizedGameType} at ${payload.lastUpdated}`
-    );
+    console.log(`💾 Saved selections for ${normalizedGameType}`);
 
-    res.json({
-      ok: true,
-      lastUpdated: payload.lastUpdated,
-    });
+    res.json({ ok: true, lastUpdated: payload.lastUpdated });
   } catch (err) {
     console.error("💥 saveSelections error:", err);
+    res.header("Access-Control-Allow-Origin", "*");
     res.status(500).json({ error: "Failed to save selections" });
   }
 });
 
-// Load selections (live state, shared, per gameType)
+// ------------------------------------------------------
+// Load selections
+// ------------------------------------------------------
 app.get("/loadSelections", (req, res) => {
   try {
     const gameType = req.query.gameType;
 
     if (!gameType) {
+      res.header("Access-Control-Allow-Origin", "*");
       return res.status(400).json({ error: "gameType is required" });
     }
 
     const normalizedGameType = normalizeGameType(gameType);
     if (!normalizedGameType) {
+      res.header("Access-Control-Allow-Origin", "*");
       return res.status(400).json({ error: "Invalid gameType" });
     }
 
     const filePath = path.join(SELECTIONS_ROOT, `${normalizedGameType}.json`);
 
     if (!fs.existsSync(filePath)) {
-      return res.json({
-        ok: true,
-        lastUpdated: 0,
-        data: null,
-      });
+      return res.json({ ok: true, lastUpdated: 0, data: null });
     }
 
     const json = JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -130,6 +126,7 @@ app.get("/loadSelections", (req, res) => {
     });
   } catch (err) {
     console.error("💥 loadSelections error:", err);
+    res.header("Access-Control-Allow-Origin", "*");
     res.status(500).json({ error: "Failed to load selections" });
   }
 });
@@ -161,26 +158,33 @@ async function fetchSquiggleMeta(gameId) {
 
     const g = games[0];
 
-    const homeScore = g.hscore ?? 0;
-    const awayScore = g.ascore ?? 0;
-
-    let quarter = "";
-    let clock = "";
-    let status = "";
-
     if (g.complete === 100) {
-      quarter = "Final";
-      clock = "FT";
-      status = "Full Time";
-    } else if (g.complete > 0) {
-      quarter = g.timestr || "";
-      clock = "";
-      status = "In Progress";
-    } else {
-      status = "Upcoming";
+      return {
+        homeScore: g.hscore ?? 0,
+        awayScore: g.ascore ?? 0,
+        quarter: "Final",
+        clock: "FT",
+        status: "Full Time",
+      };
     }
 
-    return { homeScore, awayScore, quarter, clock, status };
+    if (g.complete > 0) {
+      return {
+        homeScore: g.hscore ?? 0,
+        awayScore: g.ascore ?? 0,
+        quarter: g.timestr || "",
+        clock: "",
+        status: "In Progress",
+      };
+    }
+
+    return {
+      homeScore: 0,
+      awayScore: 0,
+      quarter: "",
+      clock: "",
+      status: "Upcoming",
+    };
   } catch (err) {
     console.error("Squiggle fetch failed:", err);
     return {
@@ -201,34 +205,29 @@ app.get("/fantasy/:matchId", async (req, res) => {
 
   console.log("➡ Incoming CD_M matchId:", cdMatchId);
 
-  // Convert CD_M → DFS ID
   const dfsId = dfsMap[cdMatchId];
   const squiggleGameId = squiggleMap[cdMatchId];
 
-  console.log("➡ DFS ID:", dfsId);
-  console.log("➡ Squiggle ID:", squiggleGameId);
-
-  // If no DFS mapping exists, return a safe JSON response
   if (!dfsId) {
+    res.header("Access-Control-Allow-Origin", "*");
     return res.status(404).json({
       error: "No DFS mapping for matchId",
       matchId: cdMatchId,
-      message: "This CD_M ID does not exist in dfs_map.json"
+      message: "This CD_M ID does not exist in dfs_map.json",
     });
   }
 
   try {
-    // Scrape DFS stats
     const dfsData = await scrapeDFS(dfsId);
 
     if (!dfsData || !dfsData.players) {
+      res.header("Access-Control-Allow-Origin", "*");
       return res.status(500).json({
         error: "DFS returned no player data",
-        dfsId
+        dfsId,
       });
     }
 
-    // Default metadata
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -237,7 +236,6 @@ app.get("/fantasy/:matchId", async (req, res) => {
       status: "",
     };
 
-    // Fetch Squiggle metadata if available
     if (squiggleGameId) {
       try {
         meta = await fetchSquiggleMeta(squiggleGameId);
@@ -246,7 +244,6 @@ app.get("/fantasy/:matchId", async (req, res) => {
       }
     }
 
-    // Final response
     return res.json({
       matchId: cdMatchId,
       homeScore: meta.homeScore ?? 0,
@@ -256,18 +253,17 @@ app.get("/fantasy/:matchId", async (req, res) => {
       status: meta.status ?? "",
       players: dfsData.players,
     });
-
   } catch (err) {
     console.error("💥 Combined DFS + Squiggle error:", err);
+    res.header("Access-Control-Allow-Origin", "*");
     return res.status(500).json({
       error: "Internal error fetching fantasy data",
       details: String(err),
       matchId: cdMatchId,
-      dfsId
+      dfsId,
     });
   }
 });
-
 
 // ------------------------------------------------------
 // Metadata-only endpoint
@@ -277,6 +273,7 @@ app.get("/meta/:matchId", async (req, res) => {
   const squiggleGameId = squiggleMap[matchId];
 
   if (!squiggleGameId) {
+    res.header("Access-Control-Allow-Origin", "*");
     return res.status(404).json({ error: "No Squiggle mapping for matchId" });
   }
 
@@ -285,18 +282,20 @@ app.get("/meta/:matchId", async (req, res) => {
     res.json({ matchId, match: meta });
   } catch (err) {
     console.error("Squiggle meta error:", err);
+    res.header("Access-Control-Allow-Origin", "*");
     res.status(500).json({ error: String(err) });
   }
 });
 
 // ------------------------------------------------------
-// Persistent season results (unchanged)
+// Persistent season results
 // ------------------------------------------------------
 app.post("/saveRoundResults", (req, res) => {
   try {
     const { season, round, gameType, punters } = req.body;
 
     if (season == null || round == null || !gameType) {
+      res.header("Access-Control-Allow-Origin", "*");
       return res.status(400).json({
         error: "season, round and gameType are required",
       });
@@ -307,6 +306,7 @@ app.post("/saveRoundResults", (req, res) => {
     const normalizedGameType = normalizeGameType(gameType);
 
     if (!normalizedGameType) {
+      res.header("Access-Control-Allow-Origin", "*");
       return res.status(400).json({ error: "Invalid gameType" });
     }
 
@@ -342,6 +342,7 @@ app.post("/saveRoundResults", (req, res) => {
     res.json({ ok: true, path: filePath });
   } catch (err) {
     console.error("💥 saveRoundResults error:", err);
+    res.header("Access-Control-Allow-Origin", "*");
     res.status(500).json({ error: "Failed to save round results" });
   }
 });
@@ -351,6 +352,7 @@ app.get("/seasonResults", (req, res) => {
     const { season, gameType } = req.query;
 
     if (!season || !gameType) {
+      res.header("Access-Control-Allow-Origin", "*");
       return res.status(400).json({
         error: "season and gameType are required",
       });
@@ -382,6 +384,7 @@ app.get("/seasonResults", (req, res) => {
     res.json({ ok: true, results });
   } catch (err) {
     console.error("💥 seasonResults error:", err);
+    res.header("Access-Control-Allow-Origin", "*");
     res.status(500).json({ error: "Failed to load season results" });
   }
 });
