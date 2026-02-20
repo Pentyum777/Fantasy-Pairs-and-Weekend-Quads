@@ -267,7 +267,7 @@ Widget build(BuildContext context) {
               theme.textTheme.bodySmall?.fontSize ?? 12,
             ),
             const Divider(height: 1),
-            Flexible(
+            Expanded(
   child: _buildBody(
     theme,
     cs,
