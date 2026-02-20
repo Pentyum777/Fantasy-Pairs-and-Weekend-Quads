@@ -39,6 +39,7 @@ class GameViewScreen extends StatefulWidget {
   final UserRoleService userRoleService;
   final List<String>? selectedFixtureIds;
   final List<AflPlayer>? overridePlayers;
+  
 
   const GameViewScreen({
     super.key,
@@ -69,11 +70,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
   bool _fixturesCollapsed = false;
   bool _controlsCollapsed = false;
 
-  bool get isLandscapePhone {
-    final size = MediaQuery.of(context).size;
-    return size.width > size.height && size.width < 900;
-  }
-
   final GlobalKey _punterTableKey = GlobalKey();
 
   AflFixture? _selectedFixture;
@@ -83,6 +79,13 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   final FridayPairsService _fridayPairsService = FridayPairsService();
   bool _fridayWinnerSelected = false;
+  int _fridayWinnerPosition = 0;
+  
+
+  bool get isLandscapePhone {
+    final size = MediaQuery.of(context).size;
+    return size.width > size.height && size.width < 900;
+  }
 
   // ------------------------------------------------------------
   // Save round results for season-long storage
@@ -121,16 +124,15 @@ class _GameViewScreenState extends State<GameViewScreen> {
     }
   }
 
+  Future<void> _checkForSnapshotUpdates() async {
+    final tableState = _punterTableKey.currentState;
+    if (tableState == null) return;
 
-Future<void> _checkForSnapshotUpdates() async {
-  final tableState = _punterTableKey.currentState;
-  if (tableState == null) return;
+    final dynamic dyn = tableState;
 
-  final dynamic dyn = tableState;
-
-  // ⭐ Calls the new method inside PunterSelectionTable
-  await dyn.loadSnapshotFromBackendIfNewer();
-}
+    // ⭐ Calls the new method inside PunterSelectionTable
+    await dyn.loadSnapshotFromBackendIfNewer();
+  }
 
   @override
   void initState() {
@@ -210,6 +212,9 @@ Future<void> _checkForSnapshotUpdates() async {
 
     _checkRoundCompletion();
 
+    // ⭐ NEW — Check if Friday Pairs final winner should be applied
+    _finaliseFridayPairsWinner();
+
     // Fetch and store round-wide stats
     final roundStats = await _fetchRoundStats();
     _currentStatsByPlayerId = roundStats;
@@ -224,10 +229,7 @@ Future<void> _checkForSnapshotUpdates() async {
       // Admins save snapshot after live update
       if (widget.userRoleService.isAdmin) {
         dyn.saveSnapshot();
-        // ⭐ NEW: Check if backend snapshot changed
-await _checkForSnapshotUpdates();
-
-
+        await _checkForSnapshotUpdates();
       }
     }
 
@@ -237,6 +239,24 @@ await _checkForSnapshotUpdates();
   }
 }
 
+void _finaliseFridayPairsWinner() {
+  if (widget.gameType != "friday_pairs") return;
+  if (!_fridayWinnerSelected) return;
+
+  final fixtures = _fixturesForGameType();
+  if (fixtures.isEmpty) return;
+
+  final allComplete = fixtures.every((f) => f.complete);
+  if (!allComplete) return;
+
+  setState(() {
+    for (final p in widget.selections) {
+      p.isPrizeWinner = (p.punterNumber == _fridayWinnerPosition);
+    }
+  });
+
+  debugPrint("🏁 Friday Pairs final winner = $_fridayWinnerPosition");
+}
 
   void _checkRoundCompletion() {
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
@@ -572,6 +592,29 @@ await _checkForSnapshotUpdates();
     );
   }
 
+void _handleFridayPairsTrigger(AflFixture f) {
+  if (widget.gameType != "friday_pairs") return;
+  if (_fridayWinnerSelected) return;
+
+  if (f.quarterText.isEmpty && !f.complete) return;
+
+  final punterCount = widget.selections.length;
+
+  final pos =
+      _fridayPairsService.selectRandomBottomHalfPosition(punterCount);
+
+  _fridayWinnerPosition = pos;
+  _fridayWinnerSelected = true;
+
+  setState(() {
+    for (final p in widget.selections) {
+      p.isPrizeWinner = (p.punterNumber == pos);
+    }
+  });
+
+  debugPrint("🎯 Friday Pairs random position = $pos");
+}
+
   Widget _buildFixtureCard(AflFixture f) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -680,7 +723,6 @@ await _checkForSnapshotUpdates();
       ),
     );
   }
-
   Future<void> _onFixtureTap(AflFixture f) async {
     setState(() => _selectedFixture = f);
 
@@ -851,145 +893,126 @@ await _checkForSnapshotUpdates();
   }
 
   Widget _buildPunterAndLeaderboard() {
-  return Expanded(
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final theme = Theme.of(context);
-        final innerWidth = constraints.maxWidth;
-        final picks = widget.gameType == "weekend_quads" ? 4 : 2;
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final theme = Theme.of(context);
+          final innerWidth = constraints.maxWidth;
+          final picks = widget.gameType == "weekend_quads" ? 4 : 2;
 
-        final leaderboardWidth = _leaderboardCollapsed
-            ? UIDimensions.collapsedLeaderboardWidth
-            : UIDimensions.rankColumnWidth +
-                UIDimensions.punterNameColumnWidth +
-                UIDimensions.totalColumnWidth;
+          final leaderboardWidth = _leaderboardCollapsed
+              ? UIDimensions.collapsedLeaderboardWidth
+              : UIDimensions.rankColumnWidth +
+                  UIDimensions.punterNameColumnWidth +
+                  UIDimensions.totalColumnWidth;
 
-        final double punterTableWidth =
-            _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
+          final double punterTableWidth =
+              _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
 
-        return FutureBuilder<List<AflPlayer>>(
-          future: widget.playerRepo.playersForSeason(widget.season),
-          builder: (context, snapshot) {
-            print("🔥 FUTUREBUILDER snapshot: hasData=${snapshot.hasData}, error=${snapshot.error}");
+          return FutureBuilder<List<AflPlayer>>(
+            future: widget.playerRepo.playersForSeason(widget.season),
+            builder: (context, snapshot) {
+              print(
+                  "🔥 FUTUREBUILDER snapshot: hasData=${snapshot.hasData}, error=${snapshot.error}");
 
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-            final seasonPlayers = snapshot.data!;
-            final fixtures = _fixturesForGameType();
+              final seasonPlayers = snapshot.data!;
+              List<AflPlayer> availablePlayers = [];
 
-            final fixtureClubCodes =
-                fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
+              // ⭐ If custom pairs, use overridePlayers directly
+              if (widget.gameType == "custom_pairs" &&
+                  widget.overridePlayers != null) {
+                availablePlayers = widget.overridePlayers!;
+              } else {
+                final fixtures = _fixturesForGameType();
+                final fixtureClubCodes =
+                    fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
 
-            final availablePlayers = seasonPlayers
-                .where((p) => fixtureClubCodes.contains(p.club))
-                .toList();
+                availablePlayers = seasonPlayers
+                    .where((p) => fixtureClubCodes.contains(p.club))
+                    .toList();
+              }
 
-            return Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.all(8),
-
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,   // ⭐ FIX: align top
-                children: [
-
-                  // -------------------------
-                  // PUNTER TABLE (EXPANDED)
-                  // -------------------------
-                  Expanded(
-                    child: PunterSelectionTable(
-                      key: _punterTableKey,
-                      gameType: widget.gameType,
-                      season: widget.season.toString(),
-                      round: widget.round!,
-                      tableWidth: punterTableWidth,
-                      visiblePunterCount: _visiblePunterCount,
-                      playersPerPunter: picks,
-                      availablePlayers: availablePlayers,
-                      selections: widget.selections,
-                      isCompleted: _isCompleted,
-                      readOnly: !widget.userRoleService.isAdmin,
-                      onChanged: widget.userRoleService.isAdmin ? () {} : null,
-                      collapsed: _leaderboardCollapsed,
-                      scrollController: _punterScrollController,
-                      fantasyService: widget.fantasyService,
-                      userRoleService: widget.userRoleService,
-                      onTimestampChanged: (t) {
-                        setState(() => _timestampLabel = t);
-                      },
-                      onLiveScoreUpdateSave: () {
-                        final tableState = _punterTableKey.currentState;
-                        if (tableState != null) {
-                          (tableState as dynamic).saveSnapshot();
-                        }
-                      },
+              return Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: PunterSelectionTable(
+                        key: _punterTableKey,
+                        gameType: widget.gameType,
+                        season: widget.season.toString(),
+                        round: widget.round!,
+                        tableWidth: punterTableWidth,
+                        visiblePunterCount: _visiblePunterCount,
+                        playersPerPunter: picks,
+                        availablePlayers: availablePlayers,
+                        selections: widget.selections,
+                        isCompleted: _isCompleted,
+                        readOnly: !widget.userRoleService.isAdmin,
+                        onChanged: widget.userRoleService.isAdmin ? () {} : null,
+                        collapsed: _leaderboardCollapsed,
+                        scrollController: _punterScrollController,
+                        fantasyService: widget.fantasyService,
+                        userRoleService: widget.userRoleService,
+                        onTimestampChanged: (t) {
+                          setState(() => _timestampLabel = t);
+                        },
+                        onLiveScoreUpdateSave: () {
+                          final tableState = _punterTableKey.currentState;
+                          if (tableState != null) {
+                            (tableState as dynamic).saveSnapshot();
+                          }
+                        },
+                      ),
                     ),
-                  ),
-
-                  // -------------------------
-                  // LEADERBOARD (FIXED WIDTH)
-                  // -------------------------
-                  SizedBox(
-                    width: leaderboardWidth,
-                    child: LeaderboardPanel(
-                      punters: widget.selections
-                          .take(_visiblePunterCount)
-                          .toList(),
-                      rowHeight: UIDimensions.rowHeight,   // ⭐ FIX: match table
-                      collapsed: _leaderboardCollapsed,
-                      scrollController: _punterScrollController,
-                      onCollapseChanged: (collapsed) {
-                        setState(() => _leaderboardCollapsed = collapsed);
-                      },
+                    SizedBox(
+                      width: leaderboardWidth,
+                      child: LeaderboardPanel(
+                        punters: widget.selections
+                            .take(_visiblePunterCount)
+                            .toList(),
+                        rowHeight: UIDimensions.rowHeight,
+                        collapsed: _leaderboardCollapsed,
+                        scrollController: _punterScrollController,
+                        onCollapseChanged: (collapsed) {
+                          setState(() => _leaderboardCollapsed = collapsed);
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ),
-  );
-}
-
-
-  Widget _buildMainContent() {
-  return Padding(
-    padding: const EdgeInsets.all(12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildPunterControls(),
-        const SizedBox(height: 6),
-        _buildPunterAndLeaderboard(), // ⭐ FIX: remove Expanded
-      ],
-    ),
-  );
-}
-
-  void _handleFridayPairsTrigger(AflFixture fixture) {
-    if (widget.gameType != "friday_pairs") return;
-    if (_fridayWinnerSelected) return;
-
-    final isLive = !fixture.complete && fixture.time.isNotEmpty;
-
-    if (isLive) {
-      final winner =
-          _fridayPairsService.selectRandomBottomHalf(widget.selections);
-
-      setState(() {
-        for (final s in widget.selections) {
-          s.isPrizeWinner = (s.punterName == winner.punterName);
-        }
-        _fridayWinnerSelected = true;
-      });
-    }
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
   }
+  Widget _buildMainContent() {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPunterControls(),
+          const SizedBox(height: 6),
+          _buildPunterAndLeaderboard(),
+        ],
+      ),
+    );
+  }
+
+  
+
 
   void validateAflData(
     List<AflFixture> fixtures,
