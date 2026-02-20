@@ -836,7 +836,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Widget _buildPunterAndLeaderboard() {
-  return Expanded( // ⭐ THIS is the missing piece
+  return Expanded( // ⭐ REQUIRED so the Row gets real width & height
     child: LayoutBuilder(
       builder: (context, constraints) {
         final theme = Theme.of(context);
@@ -878,6 +878,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
               ),
               padding: const EdgeInsets.all(8),
 
+              // ⭐ FIX: NO SizedBox.expand — this was collapsing the table
               child: Row(
                 children: [
 
