@@ -268,18 +268,16 @@ Widget _buildBody(
                 : cs.surface;
 
         return Container(
-          height: isPortraitPhone(context)
-              ? 32
-              : (isLandscapePhone ? 34 : UIDimensions.rowHeight),
-          decoration: BoxDecoration(
-            color: bg,
-            border: Border(
-              bottom: BorderSide(
-                color: cs.outlineVariant.withAlpha(153),
-                width: 0.5,
-              ),
-            ),
-          ),
+  height: UIDimensions.rowHeight,   // ⭐ FIXED HEIGHT — matches leaderboard
+  decoration: BoxDecoration(
+    color: bg,
+    border: Border(
+      bottom: BorderSide(
+        color: cs.outlineVariant.withAlpha(153),
+        width: 0.5,
+      ),
+    ),
+  ),
           child: Row(
             children: [
               SizedBox(
