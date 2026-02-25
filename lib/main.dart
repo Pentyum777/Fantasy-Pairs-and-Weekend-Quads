@@ -81,7 +81,9 @@ class _MyAppState extends State<MyApp> {
           _token = token;
 
           try {
-            _fixtureLoadFuture = _loadAllFixtures();
+            _fixtureLoadFuture = _loadAllFixtures().then((_) {
+  return playerRepo.loadSeason(selectedSeason);
+});
           } catch (e, st) {
             print("MSAL(Dart): ERROR starting _loadAllFixtures() → $e");
             print(st);
@@ -156,7 +158,9 @@ class _MyAppState extends State<MyApp> {
                       _token = "local-login";
 
                       try {
-                        _fixtureLoadFuture = _loadAllFixtures();
+                        _fixtureLoadFuture = _loadAllFixtures().then((_) {
+  return playerRepo.loadSeason(selectedSeason);
+});
                       } catch (e, st) {
                         print("ERROR starting _loadAllFixtures() → $e");
                         print(st);
@@ -185,55 +189,54 @@ class _MyAppState extends State<MyApp> {
 
                   return SeasonSelectionScreen(
                     seasons: const [2025, 2026],
-                    onSelect: (season) async {
-                      // ⭐ Load players BEFORE navigating
-                      await playerRepo.loadSeason(season);
+                    onSelect: (season) {
+  playerRepo.loadSeason(season).then((_) {
+    setState(() {
+      selectedSeason = season;
+    });
 
-                      setState(() {
-                        selectedSeason = season;
-                      });
+    final List<int?> rounds = [];
 
-                      final List<int?> rounds = [];
+    if (fixtureRepo.preseasonFixturesForSeason(season).isNotEmpty) {
+      rounds.add(null);
+    }
 
-                      if (fixtureRepo.preseasonFixturesForSeason(season).isNotEmpty) {
-                        rounds.add(null);
-                      }
+    rounds.addAll(
+      fixtureRepo.allRoundsForSeason(season),
+    );
 
-                      rounds.addAll(
-                        fixtureRepo.allRoundsForSeason(season),
-                      );
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: const RouteSettings(name: "round_selection"),
+        builder: (_) => RoundSelectionScreen(
+          rounds: rounds,
+          completedRounds: roundCompletionService.completedRounds,
+          onRoundSelected: (int? round) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                settings: RouteSettings(
+                  name: "game_type_${round ?? 'ps'}",
+                ),
+                builder: (_) => GameTypeSelectionScreen(
+                  season: season,
+                  round: round,
+                  fixtureRepo: fixtureRepo,
+                  playerRepo: playerRepo,
+                  fantasyService: fantasyService,
+                  roundCompletionService: roundCompletionService,
+                  userRoleService: userRoleService,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  });
+});
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          settings: const RouteSettings(name: "round_selection"),
-                          builder: (_) => RoundSelectionScreen(
-                            rounds: rounds,
-                            completedRounds: roundCompletionService.completedRounds,
-                            onRoundSelected: (int? round) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  settings: RouteSettings(
-                                    name: "game_type_${round ?? 'ps'}",
-                                  ),
-                                  builder: (_) => GameTypeSelectionScreen(
-                                    season: season,
-                                    round: round,
-                                    fixtureRepo: fixtureRepo,
-                                    playerRepo: playerRepo,
-                                    fantasyService: fantasyService,
-                                    roundCompletionService: roundCompletionService,
-                                    userRoleService: userRoleService,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  );
                 },
               ),
       ),
