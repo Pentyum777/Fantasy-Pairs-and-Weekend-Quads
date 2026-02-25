@@ -56,7 +56,7 @@ app.get("/", (req, res) => {
 // ------------------------------------------------------
 app.post("/saveSelections", (req, res) => {
   try {
-    const { gameType, punterNames, picks } = req.body;
+    const { gameType, season, round, punterNames, picks } = req.body;
 
     if (!gameType) {
       res.header("Access-Control-Allow-Origin", "*");
@@ -69,9 +69,23 @@ app.post("/saveSelections", (req, res) => {
       return res.status(400).json({ error: "Invalid gameType" });
     }
 
-    ensureDir(SELECTIONS_ROOT);
+    const safeSeason = season ?? "generic";
+    const safeRound = round ?? 0;
 
-    const filePath = path.join(SELECTIONS_ROOT, `${normalizedGameType}.json`);
+    // ✅ Create directory: selections/<season>/<gameType>/
+    const dirPath = path.join(
+      SELECTIONS_ROOT,
+      String(safeSeason),
+      normalizedGameType
+    );
+    ensureDir(dirPath);
+
+    // ✅ Save file: custom_pairs_round_0.json
+    const filePath = path.join(
+      dirPath,
+      `${normalizedGameType}_round_${safeRound}.json`
+    );
+
     const payload = {
       lastUpdated: Date.now(),
       punterNames: Array.isArray(punterNames) ? punterNames : [],
@@ -80,7 +94,7 @@ app.post("/saveSelections", (req, res) => {
 
     fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf8");
 
-    console.log(`💾 Saved selections for ${normalizedGameType}`);
+    console.log(`💾 Saved selections → ${filePath}`);
 
     res.json({ ok: true, lastUpdated: payload.lastUpdated });
   } catch (err) {
@@ -96,6 +110,8 @@ app.post("/saveSelections", (req, res) => {
 app.get("/loadSelections", (req, res) => {
   try {
     const gameType = req.query.gameType;
+const season = req.query.season;
+const round = req.query.round;
 
     if (!gameType) {
       res.header("Access-Control-Allow-Origin", "*");
@@ -108,10 +124,26 @@ app.get("/loadSelections", (req, res) => {
       return res.status(400).json({ error: "Invalid gameType" });
     }
 
-    const filePath = path.join(SELECTIONS_ROOT, `${normalizedGameType}.json`);
+    const safeSeason = season ?? "generic";
+const safeRound = round ?? 0;
 
-    if (!fs.existsSync(filePath)) {
-      return res.json({ ok: true, lastUpdated: 0, data: null });
+const dirPath = path.join(
+  SELECTIONS_ROOT,
+  String(safeSeason),
+  normalizedGameType
+);
+const filePath = path.join(
+  dirPath,
+  `${normalizedGameType}_round_${safeRound}.json`
+);
+
+if (!fs.existsSync(filePath)) {
+  return res.json({
+    ok: true,
+    lastUpdated: 0,
+    data: { punterNames: [], picks: [] }, // ✅ never null
+  });
+
     }
 
     const json = JSON.parse(fs.readFileSync(filePath, "utf8"));
