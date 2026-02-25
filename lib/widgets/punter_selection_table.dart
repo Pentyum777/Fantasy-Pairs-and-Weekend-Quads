@@ -1175,7 +1175,7 @@ Future<void> _saveSnapshotToBackend(_TableSnapshot snap) async {
 Future<void> _loadSnapshotFromBackend() async {
   try {
     // Pre-season safe: ensure round is never null
-    final int safeRound = widget.round;
+    final int safeRound = widget.round ;
 
     final url = Uri.https(
       "fantasy-pairs-and-weekend-quads-production.up.railway.app",
@@ -1195,48 +1195,37 @@ Future<void> _loadSnapshotFromBackend() async {
     }
 
     final json = jsonDecode(res.body);
-    if (json == null || json is! Map<String, dynamic>) {
+    if (json is! Map<String, dynamic>) {
       debugPrint("⚠️ loadSelections: response not a JSON map");
       return;
     }
 
     final data = json["data"];
-    if (data == null) {
-      debugPrint("⚠️ loadSelections: data field missing");
+    if (data is! Map<String, dynamic>) {
+      debugPrint("⚠️ loadSelections: data field missing or invalid");
       return;
     }
 
-    final punterNamesRaw = data["punterNames"];
-    if (punterNamesRaw == null || punterNamesRaw is! List) {
-      debugPrint("⚠️ loadSelections: punterNames missing or invalid");
-      return;
-    }
-
-    final punterNames = punterNamesRaw
-        .map((e) => e == null ? "" : e.toString())
+    // ---- SAFE punterNames ----
+    final punterNames = (data["punterNames"] as List<dynamic>? ?? [])
+        .map((e) => e?.toString() ?? "")
         .toList();
 
-    final picksRaw = data["picks"];
-    if (picksRaw == null || picksRaw is! List) {
-      debugPrint("⚠️ loadSelections: picks missing or invalid");
-      return;
-    }
-
-    final picksJson = picksRaw.map<List<_PickSnapshot>>((row) {
+    // ---- SAFE picks ----
+    final picksJson = (data["picks"] as List<dynamic>? ?? [])
+        .map<List<_PickSnapshot>>((row) {
       if (row is! List) return <_PickSnapshot>[];
 
       return row.map<_PickSnapshot>((p) {
-        final playerId =
-            p is Map && p["playerId"] != null ? p["playerId"] as String? : null;
-
-        final stats =
-            p is Map && p["stats"] is Map
-                ? Map<String, dynamic>.from(p["stats"])
-                : null;
+        if (p is! Map) {
+          return _PickSnapshot(playerId: null, stats: null);
+        }
 
         return _PickSnapshot(
-          playerId: playerId,
-          stats: stats,
+          playerId: p["playerId"] as String?,
+          stats: p["stats"] is Map
+              ? Map<String, dynamic>.from(p["stats"])
+              : null,
         );
       }).toList();
     }).toList();
@@ -1256,5 +1245,5 @@ Future<void> _loadSnapshotFromBackend() async {
   } catch (e) {
     debugPrint("❌ Failed to load selections: $e");
   }
-} // ← closes the method
+}
 }
