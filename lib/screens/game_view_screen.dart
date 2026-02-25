@@ -124,15 +124,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
     }
   }
 
-  Future<void> _checkForSnapshotUpdates() async {
-    final tableState = _punterTableKey.currentState;
-    if (tableState == null) return;
-
-    final dynamic dyn = tableState;
-
-    // ⭐ Calls the new method inside PunterSelectionTable
-    await dyn.loadSnapshotFromBackendIfNewer();
-  }
+  
 
   @override
   void initState() {
@@ -158,41 +150,42 @@ class _GameViewScreenState extends State<GameViewScreen> {
     );
   }
 
+// -------------------------------------------------------------
+// ROUND-WIDE STATS FETCHER
+// -------------------------------------------------------------
+Future<Map<String, AflPlayerMatchStats>> _fetchRoundStats() async {
+  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+    widget.season,
+    widget.round,
+  );
+
+  final Map<String, AflPlayerMatchStats> roundStats = {};
+
+  for (final f in fixtures) {
+    final matchId = f.matchId?.trim();
+    if (matchId == null || matchId.isEmpty) continue;
+
+    final stats = await MatchStatsParser.fetchMatchStats(
+      matchId,
+      widget.playerRepo,
+      widget.fixtureRepo,
+    );
+
+    if (stats.isEmpty) continue;
+
+    for (final s in stats) {
+      if (s.player != null) {
+        roundStats[s.player!.id] = s;
+      }
+    }
+  }
+
+  return roundStats;
+}
+
   // -------------------------------------------------------------
   // ROUND-WIDE STATS
   // -------------------------------------------------------------
-  Future<Map<String, AflPlayerMatchStats>> _fetchRoundStats() async {
-    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-      widget.season,
-      widget.round,
-    );
-
-    final Map<String, AflPlayerMatchStats> roundStats = {};
-
-    for (final f in fixtures) {
-      final matchId = f.matchId?.trim();
-      if (matchId == null || matchId.isEmpty) continue;
-
-      final stats = await MatchStatsParser.fetchMatchStats(
-        matchId,
-        widget.playerRepo,
-        widget.fixtureRepo,
-      );
-
-      if (stats.isEmpty) {
-        continue;
-      }
-
-      for (final s in stats) {
-        if (s.player != null) {
-          roundStats[s.player!.id] = s;
-        }
-      }
-    }
-
-    return roundStats;
-  }
-
   Future<void> _refreshLive() async {
   try {
     // Refresh fixture metadata (scores, quarter, clock, status)
@@ -227,17 +220,16 @@ class _GameViewScreenState extends State<GameViewScreen> {
       dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
 
       // Admins save snapshot after live update
-      if (widget.userRoleService.isAdmin) {
-        dyn.saveSnapshot();
-        await _checkForSnapshotUpdates();
-      }
+      // (your saveSnapshot call goes here if needed)
     }
 
     _checkAndCompleteWeekendQuadsRound();
+
   } catch (e, st) {
     debugPrint("❌ Live refresh error: $e\n$st");
   }
 }
+  
 
 void _finaliseFridayPairsWinner() {
   if (widget.gameType != "friday_pairs") return;
