@@ -16,20 +16,26 @@ class AFLFantasyService {
   ///   "players": [ ... ]
   /// }
   static Future<Map<String, dynamic>> fetchFantasyMatchPayload(
-    String matchId,
-  ) async {
-    final uri = Uri.parse('$baseUrl/fantasy/$matchId');
-    final resp = await http.get(uri);
+  String matchId,
+) async {
+  final uri = Uri.parse('$baseUrl/fantasy/$matchId');
+  final resp = await http.get(uri);
 
-    if (resp.statusCode != 200) {
-      throw Exception('Failed to load fantasy payload for $matchId');
-    }
-
-    final decoded = json.decode(resp.body);
-    if (decoded is! Map<String, dynamic>) {
-      throw Exception('Unexpected fantasy payload shape');
-    }
-
-    return decoded;
+  if (resp.statusCode != 200) {
+    throw Exception('Backend returned ${resp.statusCode} for $matchId');
   }
+
+  dynamic decoded;
+  try {
+    decoded = json.decode(resp.body);
+  } catch (e) {
+    throw Exception('Backend returned invalid JSON for $matchId');
+  }
+
+  if (decoded == null || decoded is! Map<String, dynamic>) {
+    throw Exception('Fantasy payload was not a JSON object for $matchId');
+  }
+
+  return decoded;
+}
 }

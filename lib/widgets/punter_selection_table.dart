@@ -894,7 +894,7 @@ Widget _pickScoreCell(PlayerPick pick) {
     alignment: Alignment.center,
     padding: const EdgeInsets.symmetric(horizontal: 4),
     child: Text(
-      "${pick.fantasyPoints}",
+      "${pick.fantasyPoints ?? 0}",
       style: theme.textTheme.bodySmall?.copyWith(
         fontWeight: FontWeight.w600,
         color: cs.onSurface,
@@ -1071,46 +1071,56 @@ void _applySnapshot(_TableSnapshot snap) {
 
     // ---- Safe picks ----
     if (i >= snap.picks.length) {
-      for (final pick in row.picks) {
-        pick.player = null;
-        pick.stats = null;
-      }
-      continue;
-    }
+  // No snapshot row → clear entire row safely
+  for (final pick in row.picks) {
+    pick.player = null;
+    pick.stats = null;
+  }
+  continue;
+}
 
-    final snapRow = snap.picks[i];
+final snapRow = snap.picks[i];
 
-    for (int j = 0; j < row.picks.length; j++) {
-      final pick = row.picks[j];
+for (int j = 0; j < row.picks.length; j++) {
+  final pick = row.picks[j];
 
-      if (j >= snapRow.length) {
-        pick.player = null;
-        pick.stats = null;
-        continue;
-      }
+  // No snapshot pick for this column
+  if (j >= snapRow.length) {
+    pick.player = null;
+    pick.stats = null;
+    continue;
+  }
 
-      final snapPick = snapRow[j];
+  final snapPick = snapRow[j];
 
-      if (snapPick.playerId == null) {
-        pick.player = null;
-        pick.stats = null;
-        continue;
-      }
+  // Defensive: snapPick must be a _PickSnapshot
+  final pid = snapPick.playerId;
+if (pid == null || pid.isEmpty) {
+  pick.player = null;
+  pick.stats = null;
+  continue;
+}
 
-      final restored = widget.availablePlayers
-          .where((p) => p.id == snapPick.playerId)
-          .toList();
+  // Restore player safely
+  final restored = widget.availablePlayers
+      .where((p) => p.id == snapPick.playerId)
+      .toList();
 
-      if (restored.isEmpty) {
-        pick.player = null;
-        pick.stats = null;
-      } else {
-        pick.player = restored.first;
-        pick.stats = snapPick.stats == null
-            ? null
-            : Map<String, dynamic>.from(snapPick.stats!);
-      }
-    }
+  if (restored.isEmpty) {
+    pick.player = null;
+    pick.stats = null;
+    continue;
+  }
+
+  pick.player = restored.first;
+
+  // Restore stats safely
+  if (snapPick.stats is Map<String, dynamic>) {
+    pick.stats = Map<String, dynamic>.from(snapPick.stats!);
+  } else {
+    pick.stats = null;
+  }
+}
   }
 }
 

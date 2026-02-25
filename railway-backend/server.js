@@ -198,7 +198,7 @@ async function fetchSquiggleMeta(gameId) {
 }
 
 // ------------------------------------------------------
-// Fantasy endpoint (DFS + Squiggle)
+// Fantasy endpoint (DFS + Squiggle) — hardened
 // ------------------------------------------------------
 app.get("/fantasy/:matchId", async (req, res) => {
   const cdMatchId = req.params.matchId;
@@ -217,52 +217,72 @@ app.get("/fantasy/:matchId", async (req, res) => {
     });
   }
 
+  let dfsData;
   try {
-    const dfsData = await scrapeDFS(dfsId);
+    dfsData = await scrapeDFS(dfsId);
 
-    if (!dfsData || !dfsData.players) {
-      res.header("Access-Control-Allow-Origin", "*");
-      return res.status(500).json({
-        error: "DFS returned no player data",
-        dfsId,
-      });
+    if (!dfsData || typeof dfsData !== "object") {
+      throw new Error("DFS returned invalid payload");
     }
 
-    let meta = {
-      homeScore: 0,
-      awayScore: 0,
-      quarter: "",
-      clock: "",
-      status: "",
-    };
-
-    if (squiggleGameId) {
-      try {
-        meta = await fetchSquiggleMeta(squiggleGameId);
-      } catch (err) {
-        console.warn("⚠ Squiggle metadata failed:", err);
-      }
+    if (!Array.isArray(dfsData.players)) {
+      throw new Error("DFS payload missing 'players' array");
     }
 
-    return res.json({
-      matchId: cdMatchId,
-      homeScore: meta.homeScore ?? 0,
-      awayScore: meta.awayScore ?? 0,
-      quarter: meta.quarter ?? "",
-      clock: meta.clock ?? "",
-      status: meta.status ?? "",
-      players: dfsData.players,
-    });
+    const normalisedPlayers = dfsData.players
+      .filter((p) => p && p.id)
+      .map((p) => ({
+        id: String(p.id),
+        fantasyPoints: p.fantasyPoints ?? 0,
+        goals: p.goals ?? 0,
+        behinds: p.behinds ?? 0,
+        disposals: p.disposals ?? 0,
+        marks: p.marks ?? 0,
+        tackles: p.tackles ?? 0,
+        hitouts: p.hitouts ?? 0,
+        clearances: p.clearances ?? 0,
+        metresGained: p.metresGained ?? 0,
+        goalAssists: p.goalAssists ?? 0,
+        timeOnGroundPercentage: p.timeOnGroundPercentage ?? 0,
+      }));
+
+    dfsData.players = normalisedPlayers;
   } catch (err) {
-    console.error("💥 Combined DFS + Squiggle error:", err);
+    console.error("💥 DFS error:", err);
     res.header("Access-Control-Allow-Origin", "*");
     return res.status(500).json({
-      error: "Internal error fetching fantasy data",
+      error: "DFS fetch failed",
       details: String(err),
       matchId: cdMatchId,
       dfsId,
     });
   }
+
+  let meta = {
+    homeScore: 0,
+    awayScore: 0,
+    quarter: "",
+    clock: "",
+    status: "",
+  };
+
+  if (squiggleGameId) {
+    try {
+      meta = await fetchSquiggleMeta(squiggleGameId);
+    } catch (err) {
+      console.warn("⚠ Squiggle metadata failed:", err);
+    }
+  }
+
+  return res.json({
+    matchId: cdMatchId,
+    homeScore: meta.homeScore ?? 0,
+    awayScore: meta.awayScore ?? 0,
+    quarter: meta.quarter ?? "",
+    clock: meta.clock ?? "",
+    status: meta.status ?? "",
+    players: dfsData.players,
+  });
 });
 
 // ------------------------------------------------------
