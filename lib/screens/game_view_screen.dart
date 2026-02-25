@@ -932,8 +932,9 @@ void _handleFridayPairsTrigger(AflFixture f) {
                     fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
 
                 availablePlayers = seasonPlayers
-                    .where((p) => fixtureClubCodes.contains(p.club))
-                    .toList();
+    .where((p) => p.club.isNotEmpty)
+    .where((p) => fixtureClubCodes.contains(p.club))
+    .toList();
               }
 
               return Container(
