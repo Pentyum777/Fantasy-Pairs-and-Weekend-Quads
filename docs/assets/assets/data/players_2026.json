@@ -5440,10 +5440,24 @@
       "season": 2026
     },
     {
-      "id": "CD_I1027367",
+      "id": "CD_I1012862",
       "name": "Zane Peucker",
       "club": "RIC",
       "guernseyNumber": 0,
+      "season": 2026
+    },
+    {
+      "id": "CD_I1013494",
+      "name": "Elijah Hollands",
+      "club": "CAR",
+      "guernseyNumber":20,
+      "season": 2026
+    },
+    {
+      "id": "CD_I1016140",
+      "name": "Wade Derksen",
+      "club": "CAR",
+      "guernseyNumber":45,
       "season": 2026
     },
     {
