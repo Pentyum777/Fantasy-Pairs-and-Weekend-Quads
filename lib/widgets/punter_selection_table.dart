@@ -1048,10 +1048,23 @@ if (pid == null || pid.isEmpty) {
       .toList();
 
   if (restored.isEmpty) {
-    pick.player = null;
-    pick.stats = null;
-    continue;
-  }
+  debugPrint("❌ Missing player in availablePlayers for season ${widget.season}: ${snapPick.playerId}");
+
+  // Season‑safe fallback player
+  pick.player = AflPlayer(
+    id: snapPick.playerId ?? "UNKNOWN",
+    name: "Unknown (${snapPick.playerId})",
+    club: "UNK",
+    guernseyNumber: 0,
+  );
+
+  // Preserve stats if they exist
+  pick.stats = snapPick.stats != null
+      ? Map<String, dynamic>.from(snapPick.stats!)
+      : null;
+
+  continue;
+}
 
   pick.player = restored.first;
 
