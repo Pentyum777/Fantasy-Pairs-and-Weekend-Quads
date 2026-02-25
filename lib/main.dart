@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:web/web.dart' as web; // ⭐ required for reload()
+import 'package:web/web.dart' as web;
 
 import 'package:flutter/material.dart';
 
@@ -46,7 +46,6 @@ class _MyAppState extends State<MyApp> {
 
   Future<void>? _fixtureLoadFuture;
 
-  // ⭐ Forced refresh fields
   Timer? _versionTimer;
   String _currentVersion = "";
 
@@ -54,16 +53,16 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
 
-    // ⭐ Start forced refresh polling
     _startVersionPolling();
 
     fixtureRepo = FixtureRepository();
     playerRepo = PlayerRepository();
     fantasyService = PunterScoreService();
 
+    // ⭐ Load initial season players (no await in initState)
     playerRepo.loadSeason(selectedSeason);
 
-    // MSAL → Dart token + account callback
+    // MSAL login callback
     MsalService.listenForToken((token, account) {
       if (!mounted) return;
 
@@ -106,29 +105,27 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _checkForNewVersion() async {
-  try {
-    final response = await http.get(
-      Uri.parse("version.json?cb=${DateTime.now().millisecondsSinceEpoch}"),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse("version.json?cb=${DateTime.now().millisecondsSinceEpoch}"),
+      );
 
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-      final newVersion = json["version"];
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final newVersion = json["version"];
 
-      if (_currentVersion.isEmpty) {
-        _currentVersion = newVersion;
-        return;
+        if (_currentVersion.isEmpty) {
+          _currentVersion = newVersion;
+          return;
+        }
+
+        if (newVersion != _currentVersion) {
+          print("🔄 New version detected → forcing reload");
+          web.window.location.reload();
+        }
       }
-
-      if (newVersion != _currentVersion) {
-        print("🔄 New version detected → forcing reload");
-        web.window.location.reload();
-      }
-    }
-  } catch (_) {
-    // ignore errors silently
+    } catch (_) {}
   }
-}
 
   Future<void> _loadAllFixtures() async {
     await fixtureRepo.loadFixturesFromExcelFile('assets/afl_fixtures_2026.xlsx');
@@ -136,117 +133,116 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
-Widget build(BuildContext context) {
-  return MaterialApp(
-    title: 'AFL App',
-    theme: ThemeData(primarySwatch: Colors.blue),
-    home: Container(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage("assets/images/stadium_glow.png"),
-          fit: BoxFit.cover,
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'AFL App',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/images/stadium_glow.png"),
+            fit: BoxFit.cover,
+          ),
         ),
-      ),
-      child: _token == null
-          ? LoginScreen(
-              onLoggedIn: () {
-                if (!mounted) return;
+        child: _token == null
+            ? LoginScreen(
+                onLoggedIn: () {
+                  if (!mounted) return;
 
-                try {
-                  // ⭐ LOCAL LOGIN MUST SET ADMIN ROLE
-                  userRoleService.setUser("wpenfold@bigpond.net.au");
+                  try {
+                    userRoleService.setUser("wpenfold@bigpond.net.au");
 
-                  setState(() {
-                    _token = "local-login";
-
-                    try {
-                      _fixtureLoadFuture = _loadAllFixtures();
-                    } catch (e, st) {
-                      print("ERROR starting _loadAllFixtures() → $e");
-                      print(st);
-                      _fixtureLoadFuture = Future.value();
-                    }
-                  });
-                } catch (e, st) {
-                  print("ERROR in onLoggedIn callback → $e");
-                  print(st);
-                }
-              },
-            )
-          : FutureBuilder(
-              future: _fixtureLoadFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                // ⭐ Load players for the selected season
-                playerRepo.loadSeason(selectedSeason);
-
-                // ⭐ Updated validator call
-                validateAflData(
-                  season: selectedSeason,
-                  fixtureRepo: fixtureRepo,
-                  playerRepo: playerRepo,
-                );
-
-                return SeasonSelectionScreen(
-                  seasons: const [2025, 2026],
-                  onSelect: (season) {
                     setState(() {
-                      selectedSeason = season;
+                      _token = "local-login";
+
+                      try {
+                        _fixtureLoadFuture = _loadAllFixtures();
+                      } catch (e, st) {
+                        print("ERROR starting _loadAllFixtures() → $e");
+                        print(st);
+                        _fixtureLoadFuture = Future.value();
+                      }
                     });
+                  } catch (e, st) {
+                    print("ERROR in onLoggedIn callback → $e");
+                    print(st);
+                  }
+                },
+              )
+            : FutureBuilder(
+                future: _fixtureLoadFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                    final List<int?> rounds = [];
+                  // ⭐ Validate AFTER fixtures + players are loaded
+                  validateAflData(
+                    season: selectedSeason,
+                    fixtureRepo: fixtureRepo,
+                    playerRepo: playerRepo,
+                  );
 
-                    if (fixtureRepo.preseasonFixturesForSeason(season).isNotEmpty) {
-                      rounds.add(null);
-                    }
+                  return SeasonSelectionScreen(
+                    seasons: const [2025, 2026],
+                    onSelect: (season) async {
+                      // ⭐ Load players BEFORE navigating
+                      await playerRepo.loadSeason(season);
 
-                    rounds.addAll(
-                      fixtureRepo.allRoundsForSeason(season),
-                    );
+                      setState(() {
+                        selectedSeason = season;
+                      });
 
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        settings: const RouteSettings(name: "round_selection"),
-                        builder: (_) => RoundSelectionScreen(
-                          rounds: rounds,
-                          completedRounds: roundCompletionService.completedRounds,
-                          onRoundSelected: (int? round) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                settings: RouteSettings(
-                                  name: "game_type_${round ?? 'ps'}",
+                      final List<int?> rounds = [];
+
+                      if (fixtureRepo.preseasonFixturesForSeason(season).isNotEmpty) {
+                        rounds.add(null);
+                      }
+
+                      rounds.addAll(
+                        fixtureRepo.allRoundsForSeason(season),
+                      );
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          settings: const RouteSettings(name: "round_selection"),
+                          builder: (_) => RoundSelectionScreen(
+                            rounds: rounds,
+                            completedRounds: roundCompletionService.completedRounds,
+                            onRoundSelected: (int? round) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  settings: RouteSettings(
+                                    name: "game_type_${round ?? 'ps'}",
+                                  ),
+                                  builder: (_) => GameTypeSelectionScreen(
+                                    season: season,
+                                    round: round,
+                                    fixtureRepo: fixtureRepo,
+                                    playerRepo: playerRepo,
+                                    fantasyService: fantasyService,
+                                    roundCompletionService: roundCompletionService,
+                                    userRoleService: userRoleService,
+                                  ),
                                 ),
-                                builder: (_) => GameTypeSelectionScreen(
-                                  season: season,
-                                  round: round,
-                                  fixtureRepo: fixtureRepo,
-                                  playerRepo: playerRepo,
-                                  fantasyService: fantasyService,
-                                  roundCompletionService: roundCompletionService,
-                                  userRoleService: userRoleService,
-                                ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-    ),
-  );
-}
+                      );
+                    },
+                  );
+                },
+              ),
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
-// ⭐ LOGIN SCREEN WITH GLOBAL BACKGROUND + FOOTBALL BUTTON + HOVER GLOW
+// ⭐ LOGIN SCREEN (embedded inside main.dart — correct)
 // ---------------------------------------------------------------------------
 
 class LoginScreen extends StatefulWidget {
