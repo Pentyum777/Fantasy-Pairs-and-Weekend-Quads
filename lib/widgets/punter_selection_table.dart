@@ -1043,12 +1043,16 @@ if (pid == null || pid.isEmpty) {
 }
 
   // Restore player safely
-  final restored = widget.availablePlayers
-      .where((p) => p.id == snapPick.playerId)
-      .toList();
+final restored = widget.availablePlayers
+    .where((p) => p.id == snapPick.playerId)
+    .toList();
 
-  if (restored.isEmpty) {
-  debugPrint("❌ Missing player in availablePlayers for season ${widget.season}: ${snapPick.playerId}");
+// 🔥 DEBUG: Log missing players immediately
+if (restored.isEmpty) {
+  debugPrint(
+    "❌ Missing player in availablePlayers for season ${widget.season}: "
+    "${snapPick.playerId} (row $i, pick $j)"
+  );
 
   // Season‑safe fallback player
   pick.player = AflPlayer(
@@ -1065,6 +1069,7 @@ if (pid == null || pid.isEmpty) {
 
   continue;
 }
+
 
   pick.player = restored.first;
 

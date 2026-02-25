@@ -91686,8 +91686,8 @@ s=A.aKT(r.a.r)
 r.y.push(s)
 r.z=r.y.length-1
 if(r.a.CW.a===B.cF)r.ud(s)},
-a5i(a4){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3=this
-for(s=t.f,r=t.N,q=t.z,p=a4.b,o=a3.f,n=a4.a,m=0;l=a3.a.r,m<l.length;++m){k=l[m]
+a5i(a5){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4=this
+for(s=t.f,r=t.N,q=t.z,p=a5.b,o=a4.f,n=a5.a,m=0;l=a4.a.r,m<l.length;++m){k=l[m]
 l=k.a
 j="P"+l
 if(m<n.length){i=n[m]
@@ -91696,24 +91696,24 @@ l=o.i(0,l)
 if(l!=null)l.mj(0,l.a.on(B.b0,B.e_,j))
 if(m>=p.length){for(l=k.b,h=l.length,g=0;g<h;++g){f=l[g]
 f.c=f.b=null}continue}e=p[m]
-for(l=k.b,h=J.aC(e),d=0;d<l.length;++d){f=l[d]
-if(d>=h.gA(e)){f.c=f.b=null
-continue}c=h.i(e,d)
-b=c.a
-a=b==null
-if(a||b.length===0){f.c=f.b=null
-continue}a0=a3.a.f
-a1=A.M(a0).h("ab<1>")
-a2=A.O(new A.ab(a0,new A.avL(c),a1),a1.h("l.E"))
-if(a2.length===0){A.iy().$1("\u274c Missing player in availablePlayers for season "+a3.a.as+": "+b)
-a=a?"UNKNOWN":b
-a0=B.c.bS("Unknown ("+b+")")
-f.b=new A.cv(a,a0,B.c.bS("UNK"),0,2026,0)
-a=c.b
-f.c=a!=null?A.nW(a,r,q):null
-continue}f.b=B.b.gO(a2)
-a=c.b
-if(s.b(a))f.c=A.nW(a,r,q)
+for(l=k.b,h=J.aC(e),d=m,c=0;c<l.length;++c){f=l[c]
+if(c>=h.gA(e)){f.c=f.b=null
+continue}b=h.i(e,c)
+a=b.a
+a0=a==null
+if(a0||a.length===0){f.c=f.b=null
+continue}a1=a4.a.f
+a2=A.M(a1).h("ab<1>")
+a3=A.O(new A.ab(a1,new A.avL(b),a2),a2.h("l.E"))
+if(a3.length===0){A.iy().$1("\u274c Missing player in availablePlayers for season "+a4.a.as+": "+a+" (row "+d+", pick "+c+")")
+a0=a0?"UNKNOWN":a
+a1=B.c.bS("Unknown ("+a+")")
+f.b=new A.cv(a0,a1,B.c.bS("UNK"),0,2026,0)
+a0=b.b
+f.c=a0!=null?A.nW(a0,r,q):null
+continue}f.b=B.b.gO(a3)
+a0=b.b
+if(s.b(a0))f.c=A.nW(a0,r,q)
 else f.c=null}}},
 ud(a){return this.ah_(a)},
 ah_(a){var s=0,r=A.U(t.H),q=1,p=[],o=this,n,m,l,k,j,i,h,g,f,e,d,c,b
