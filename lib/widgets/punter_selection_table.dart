@@ -737,7 +737,8 @@ Widget _buildPickCell(
     ),
 
     dropdownBuilder: (context, player) {
-      final text = player == null ? hintText : player.fullName;
+      final safeName = (player?.fullName ?? "").trim();
+final text = safeName.isEmpty ? hintText : safeName;
       final colours =
           player == null ? null : _getTeamColoursForPlayer(player);
 
