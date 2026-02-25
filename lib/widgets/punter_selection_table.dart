@@ -538,7 +538,7 @@ Future<void> loadSnapshotFromBackendIfNewer() async {
       {
         "gameType": widget.gameType,
         "season": widget.season,
-        "round": widget.round.toString(),
+        "round": (widget.round -1).toString(),
       },
     );
 
@@ -1071,7 +1071,6 @@ void _applySnapshot(_TableSnapshot snap) {
 
     // ---- Safe picks ----
     if (i >= snap.picks.length) {
-      // No picks for this row → clear them
       for (final pick in row.picks) {
         pick.player = null;
         pick.stats = null;
@@ -1092,7 +1091,6 @@ void _applySnapshot(_TableSnapshot snap) {
 
       final snapPick = snapRow[j];
 
-      // ---- Safe player restore ----
       if (snapPick.playerId == null) {
         pick.player = null;
         pick.stats = null;
@@ -1116,8 +1114,6 @@ void _applySnapshot(_TableSnapshot snap) {
   }
 }
 
-
-
 // ---------------------------------------------------------------------------
 // SAVE SNAPSHOT TO BACKEND (Admins only)
 // ---------------------------------------------------------------------------
@@ -1128,13 +1124,16 @@ Future<void> _saveSnapshotToBackend(_TableSnapshot snap) async {
       "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/saveSelections",
     );
 
+    // Pre-season safe: ensure round is never null
+    final int safeRound = widget.round;
+
     final res = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "gameType": widget.gameType,
         "season": widget.season,
-        "round": widget.round,
+        "round": safeRound,
         "punterNames": snap.punterNames,
         "picks": snap.picks.map((row) {
           return row.map((p) {
@@ -1164,13 +1163,16 @@ Future<void> _saveSnapshotToBackend(_TableSnapshot snap) async {
 
 Future<void> _loadSnapshotFromBackend() async {
   try {
+    // Pre-season safe: ensure round is never null
+    final int safeRound = widget.round;
+
     final url = Uri.https(
       "fantasy-pairs-and-weekend-quads-production.up.railway.app",
       "/loadSelections",
       {
         "gameType": widget.gameType,
         "season": widget.season,
-        "round": widget.round.toString(),
+        "round": safeRound.toString(),
       },
     );
 
@@ -1193,7 +1195,6 @@ Future<void> _loadSnapshotFromBackend() async {
       return;
     }
 
-    // Validate punterNames
     final punterNamesRaw = data["punterNames"];
     if (punterNamesRaw == null || punterNamesRaw is! List) {
       debugPrint("⚠️ loadSelections: punterNames missing or invalid");
@@ -1201,10 +1202,9 @@ Future<void> _loadSnapshotFromBackend() async {
     }
 
     final punterNames = punterNamesRaw
-        .map((e) => e?.toString() ?? "")
+        .map((e) => e == null ? "" : e.toString())
         .toList();
 
-    // Validate picks
     final picksRaw = data["picks"];
     if (picksRaw == null || picksRaw is! List) {
       debugPrint("⚠️ loadSelections: picks missing or invalid");
@@ -1215,13 +1215,13 @@ Future<void> _loadSnapshotFromBackend() async {
       if (row is! List) return <_PickSnapshot>[];
 
       return row.map<_PickSnapshot>((p) {
-        final playerId = p is Map && p["playerId"] != null
-            ? p["playerId"] as String?
-            : null;
+        final playerId =
+            p is Map && p["playerId"] != null ? p["playerId"] as String? : null;
 
-        final stats = p is Map && p["stats"] is Map
-            ? Map<String, dynamic>.from(p["stats"])
-            : null;
+        final stats =
+            p is Map && p["stats"] is Map
+                ? Map<String, dynamic>.from(p["stats"])
+                : null;
 
         return _PickSnapshot(
           playerId: playerId,
@@ -1245,5 +1245,5 @@ Future<void> _loadSnapshotFromBackend() async {
   } catch (e) {
     debugPrint("❌ Failed to load selections: $e");
   }
-}
+} // ← closes the method
 }
