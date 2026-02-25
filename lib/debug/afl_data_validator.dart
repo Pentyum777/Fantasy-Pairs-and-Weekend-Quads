@@ -1,21 +1,20 @@
 import '../repositories/fixture_repository.dart';
 import '../repositories/player_repository.dart';
 
-void validateAflData({
+Future<void> validateAflData({
+  required int season,
   required FixtureRepository fixtureRepo,
   required PlayerRepository playerRepo,
-}) {
+}) async {
   print("====================================");
   print(" AFL DATA VALIDATION START ");
   print("====================================");
 
-  // ⭐ NEW: Flatten all fixtures across all seasons
-  final allFixtures = fixtureRepo.fixturesBySeason.values
-      .expand((seasonList) => seasonList)
-      .toList();
+  // ⭐ Fixtures for the selected season only
+  final fixtures = fixtureRepo.fixturesBySeason[season] ?? [];
 
   final fixtureTeams = <String>{};
-  for (final f in allFixtures) {
+  for (final f in fixtures) {
     fixtureTeams.add(f.homeTeam.trim().toUpperCase());
     fixtureTeams.add(f.awayTeam.trim().toUpperCase());
   }
@@ -23,8 +22,11 @@ void validateAflData({
   print("\nFixture team codes found:");
   print(fixtureTeams);
 
+  // ⭐ Players for the selected season only
+  final seasonPlayers = await playerRepo.playersForSeason(season);
+
   final playerTeams = <String>{};
-  for (final p in playerRepo.players) {
+  for (final p in seasonPlayers) {
     playerTeams.add(p.club.trim().toUpperCase());
   }
 
@@ -50,7 +52,8 @@ void validateAflData({
     print(missingInFixtures);
   }
 
-  final failedPlayers = playerRepo.players
+  // ⭐ Validate club codes for this season only
+  final failedPlayers = seasonPlayers
       .where((p) => p.club.isEmpty || p.club.length < 2)
       .toList();
 

@@ -192,54 +192,58 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
     );
   }
 
-  void _startCustomPairs(BuildContext context, List<AflFixture> fixtures) {
-    final selectedFixtures = fixtures.where((f) {
-      final id = f.matchId ?? fixtures.indexOf(f).toString();
-      return _selectedFixtureIds.contains(id);
-    }).toList();
+  void _startCustomPairs(BuildContext context, List<AflFixture> fixtures) async {
+  final selectedFixtures = fixtures.where((f) {
+    final id = f.matchId ?? fixtures.indexOf(f).toString();
+    return _selectedFixtureIds.contains(id);
+  }).toList();
 
-    final clubs = <String>{};
-    for (final f in selectedFixtures) {
-      clubs.add(f.homeTeam);
-      clubs.add(f.awayTeam);
-    }
-
-    final players = widget.playerRepo.players
-        .where((p) => clubs.contains(p.club))
-        .toList();
-
-    final selections = List.generate(
-      25,
-      (i) => PunterSelection(
-        punterNumber: i + 1,
-        punterName: "P${i + 1}",
-        picks: [
-          PlayerPick(pickNumber: 1, player: null, stats: null),
-          PlayerPick(pickNumber: 2, player: null, stats: null),
-        ],
-      ),
-    );
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => GameViewScreen(
-          season: widget.season,
-          round: widget.round,
-          gameType: "custom_pairs",
-          selections: selections,
-          fixtureRepo: widget.fixtureRepo,
-          playerRepo: widget.playerRepo,
-          fantasyService: widget.fantasyService,
-          championshipService: widget.championshipService,
-          roundCompletionService: widget.roundCompletionService,
-          userRoleService: widget.userRoleService,
-          selectedFixtureIds: _selectedFixtureIds.toList(),
-          overridePlayers: players,
-        ),
-      ),
-    );
+  final clubs = <String>{};
+  for (final f in selectedFixtures) {
+    clubs.add(f.homeTeam);
+    clubs.add(f.awayTeam);
   }
+
+  // ⭐ Load players for the selected season only
+  final seasonPlayers = await widget.playerRepo.playersForSeason(widget.season);
+
+  // ⭐ Filter players by selected fixture clubs
+  final players = seasonPlayers
+      .where((p) => clubs.contains(p.club))
+      .toList();
+
+  final selections = List.generate(
+    25,
+    (i) => PunterSelection(
+      punterNumber: i + 1,
+      punterName: "P${i + 1}",
+      picks: [
+        PlayerPick(pickNumber: 1, player: null, stats: null),
+        PlayerPick(pickNumber: 2, player: null, stats: null),
+      ],
+    ),
+  );
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => GameViewScreen(
+        season: widget.season,
+        round: widget.round,
+        gameType: "custom_pairs",
+        selections: selections,
+        fixtureRepo: widget.fixtureRepo,
+        playerRepo: widget.playerRepo,
+        fantasyService: widget.fantasyService,
+        championshipService: widget.championshipService,
+        roundCompletionService: widget.roundCompletionService,
+        userRoleService: widget.userRoleService,
+        selectedFixtureIds: _selectedFixtureIds.toList(),
+        overridePlayers: players,
+      ),
+    ),
+  );
+}
 
   String _buildFixtureLabel(int index, DateTime? date) {
     final gameNumber = index + 1;

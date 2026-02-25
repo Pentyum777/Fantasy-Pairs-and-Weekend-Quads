@@ -1017,36 +1017,42 @@ void _handleFridayPairsTrigger(AflFixture f) {
 
 
   void validateAflData(
-    List<AflFixture> fixtures,
-    PlayerRepository repo,
-  ) {
-    final fixtureClubs = fixtures
-        .expand((f) => [
-              f.homeTeam.trim().toUpperCase(),
-              f.awayTeam.trim().toUpperCase(),
-            ])
-        .toSet();
+  List<AflFixture> fixtures,
+  PlayerRepository repo,
+  int season,
+) async {
+  // Collect fixture clubs
+  final fixtureClubs = fixtures
+      .expand((f) => [
+            f.homeTeam.trim().toUpperCase(),
+            f.awayTeam.trim().toUpperCase(),
+          ])
+      .toSet();
 
-    final playerClubs =
-        repo.players.map((p) => p.club.trim().toUpperCase()).toSet();
+  // Load players for the selected season only
+  final seasonPlayers = await repo.playersForSeason(season);
 
-    final missingInPlayers = fixtureClubs.difference(playerClubs);
-    final missingInFixtures = playerClubs.difference(fixtureClubs);
+  final playerClubs = seasonPlayers
+      .map((p) => p.club.trim().toUpperCase())
+      .toSet();
 
-    debugPrint("=== AFL DATA VALIDATION ===");
+  final missingInPlayers = fixtureClubs.difference(playerClubs);
+  final missingInFixtures = playerClubs.difference(fixtureClubs);
 
-    if (missingInPlayers.isNotEmpty) {
-      debugPrint("❌ Clubs in FIXTURES but NOT in PLAYERS:");
-      debugPrint(missingInPlayers.toString());
-    }
+  debugPrint("=== AFL DATA VALIDATION ===");
 
-    if (missingInFixtures.isNotEmpty) {
-      debugPrint("❌ Clubs in PLAYERS but NOT in FIXTURES:");
-      debugPrint(missingInFixtures.toString());
-    }
-
-    if (missingInPlayers.isEmpty && missingInFixtures.isEmpty) {
-      debugPrint("✅ Fixtures and players are aligned.");
-    }
+  if (missingInPlayers.isNotEmpty) {
+    debugPrint("❌ Clubs in FIXTURES but NOT in PLAYERS:");
+    debugPrint(missingInPlayers.toString());
   }
+
+  if (missingInFixtures.isNotEmpty) {
+    debugPrint("❌ Clubs in PLAYERS but NOT in FIXTURES:");
+    debugPrint(missingInFixtures.toString());
+  }
+
+  if (missingInPlayers.isEmpty && missingInFixtures.isEmpty) {
+    debugPrint("✅ Fixtures and players are aligned.");
+  }
+}
 }

@@ -61,7 +61,7 @@ class _MyAppState extends State<MyApp> {
     playerRepo = PlayerRepository();
     fantasyService = PunterScoreService();
 
-    playerRepo.loadAllPlayers();
+    playerRepo.loadSeason(selectedSeason);
 
     // MSAL → Dart token + account callback
     MsalService.listenForToken((token, account) {
@@ -136,108 +136,113 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'AFL App',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/images/stadium_glow.png"),
-            fit: BoxFit.cover,
-          ),
+Widget build(BuildContext context) {
+  return MaterialApp(
+    title: 'AFL App',
+    theme: ThemeData(primarySwatch: Colors.blue),
+    home: Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage("assets/images/stadium_glow.png"),
+          fit: BoxFit.cover,
         ),
-        child: _token == null
-            ? LoginScreen(
-                onLoggedIn: () {
-                  if (!mounted) return;
-
-                  try {
-                    // ⭐ LOCAL LOGIN MUST SET ADMIN ROLE
-                    userRoleService.setUser("wpenfold@bigpond.net.au");
-
-                    setState(() {
-                      _token = "local-login";
-
-                      try {
-                        _fixtureLoadFuture = _loadAllFixtures();
-                      } catch (e, st) {
-                        print("ERROR starting _loadAllFixtures() → $e");
-                        print(st);
-                        _fixtureLoadFuture = Future.value();
-                      }
-                    });
-                  } catch (e, st) {
-                    print("ERROR in onLoggedIn callback → $e");
-                    print(st);
-                  }
-                },
-              )
-            : FutureBuilder(
-                future: _fixtureLoadFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  validateAflData(
-                    fixtureRepo: fixtureRepo,
-                    playerRepo: playerRepo,
-                  );
-
-                  return SeasonSelectionScreen(
-                    seasons: const [2025, 2026],
-                    onSelect: (season) {
-                      setState(() {
-                        selectedSeason = season;
-                      });
-
-                      final List<int?> rounds = [];
-
-                      if (fixtureRepo.preseasonFixturesForSeason(season).isNotEmpty) {
-                        rounds.add(null);
-                      }
-
-                      rounds.addAll(
-                        fixtureRepo.allRoundsForSeason(season),
-                      );
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          settings: const RouteSettings(name: "round_selection"),
-                          builder: (_) => RoundSelectionScreen(
-                            rounds: rounds,
-                            completedRounds: roundCompletionService.completedRounds,
-                            onRoundSelected: (int? round) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  settings: RouteSettings(
-                                    name: "game_type_${round ?? 'ps'}",
-                                  ),
-                                  builder: (_) => GameTypeSelectionScreen(
-                                    season: season,
-                                    round: round,
-                                    fixtureRepo: fixtureRepo,
-                                    playerRepo: playerRepo,
-                                    fantasyService: fantasyService,
-                                    roundCompletionService: roundCompletionService,
-                                    userRoleService: userRoleService,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
       ),
-    );
-  }
+      child: _token == null
+          ? LoginScreen(
+              onLoggedIn: () {
+                if (!mounted) return;
+
+                try {
+                  // ⭐ LOCAL LOGIN MUST SET ADMIN ROLE
+                  userRoleService.setUser("wpenfold@bigpond.net.au");
+
+                  setState(() {
+                    _token = "local-login";
+
+                    try {
+                      _fixtureLoadFuture = _loadAllFixtures();
+                    } catch (e, st) {
+                      print("ERROR starting _loadAllFixtures() → $e");
+                      print(st);
+                      _fixtureLoadFuture = Future.value();
+                    }
+                  });
+                } catch (e, st) {
+                  print("ERROR in onLoggedIn callback → $e");
+                  print(st);
+                }
+              },
+            )
+          : FutureBuilder(
+              future: _fixtureLoadFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                // ⭐ Load players for the selected season
+                playerRepo.loadSeason(selectedSeason);
+
+                // ⭐ Updated validator call
+                validateAflData(
+                  season: selectedSeason,
+                  fixtureRepo: fixtureRepo,
+                  playerRepo: playerRepo,
+                );
+
+                return SeasonSelectionScreen(
+                  seasons: const [2025, 2026],
+                  onSelect: (season) {
+                    setState(() {
+                      selectedSeason = season;
+                    });
+
+                    final List<int?> rounds = [];
+
+                    if (fixtureRepo.preseasonFixturesForSeason(season).isNotEmpty) {
+                      rounds.add(null);
+                    }
+
+                    rounds.addAll(
+                      fixtureRepo.allRoundsForSeason(season),
+                    );
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        settings: const RouteSettings(name: "round_selection"),
+                        builder: (_) => RoundSelectionScreen(
+                          rounds: rounds,
+                          completedRounds: roundCompletionService.completedRounds,
+                          onRoundSelected: (int? round) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                settings: RouteSettings(
+                                  name: "game_type_${round ?? 'ps'}",
+                                ),
+                                builder: (_) => GameTypeSelectionScreen(
+                                  season: season,
+                                  round: round,
+                                  fixtureRepo: fixtureRepo,
+                                  playerRepo: playerRepo,
+                                  fantasyService: fantasyService,
+                                  roundCompletionService: roundCompletionService,
+                                  userRoleService: userRoleService,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+    ),
+  );
+}
 }
 
 // ---------------------------------------------------------------------------
