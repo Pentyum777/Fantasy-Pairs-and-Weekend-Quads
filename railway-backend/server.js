@@ -148,14 +148,14 @@ if (!fs.existsSync(filePath)) {
 
     const json = JSON.parse(fs.readFileSync(filePath, "utf8"));
 
-    res.json({
-      ok: true,
-      lastUpdated: json.lastUpdated || 0,
-      data: {
-        punterNames: json.punterNames || [],
-        picks: json.picks || [],
-      },
-    });
+res.json({
+  ok: true,
+  lastUpdated: json.lastUpdated || 0,
+  data: {
+    punterNames: Array.isArray(json.punterNames) ? json.punterNames : [],
+    picks: Array.isArray(json.picks) ? json.picks : [],
+  },
+});
   } catch (err) {
     console.error("💥 loadSelections error:", err);
     res.header("Access-Control-Allow-Origin", "*");

@@ -76,7 +76,7 @@ class PunterSelectionTable extends StatefulWidget {
   final ScrollController? scrollController;
 
   final String gameType;
-  final String season;
+final int season;
   final int round;
 
   final void Function()? onChanged;
@@ -906,7 +906,14 @@ void _cleanInvalidSelectionsGlobal() {
     for (final pick in row.picks) {
       final p = pick.player;
       if (p != null && !validIds.contains(p.id)) {
-        pick.player = null;
+        pick.player = AflPlayer(
+  id: "UNKNOWN",
+  name: "Unknown",
+  club: "UNK",
+  guernseyNumber: 0,
+  season: widget.season,
+  fantasyScore: 0,
+);
         pick.stats = null;
       }
     }
@@ -1012,76 +1019,96 @@ void _applySnapshot(_TableSnapshot snap) {
 
     // ---- Safe picks ----
     if (i >= snap.picks.length) {
-  // No snapshot row → clear entire row safely
-  for (final pick in row.picks) {
-    pick.player = null;
-    pick.stats = null;
+      // No snapshot row → clear entire row safely
+      for (final pick in row.picks) {
+        pick.player = AflPlayer(
+          id: "UNKNOWN",
+          name: "Unknown",
+          club: "UNK",
+          guernseyNumber: 0,
+          season: widget.season,
+          fantasyScore: 0,
+        );
+        pick.stats = null;
+      }
+      continue;
+    }
+
+    final snapRow = snap.picks[i];
+
+    for (int j = 0; j < row.picks.length; j++) {
+      final pick = row.picks[j];
+
+      // No snapshot pick for this column
+      if (j >= snapRow.length) {
+        pick.player = AflPlayer(
+          id: "UNKNOWN",
+          name: "Unknown",
+          club: "UNK",
+          guernseyNumber: 0,
+          season: widget.season,
+          fantasyScore: 0,
+        );
+        pick.stats = null;
+        continue;
+      }
+
+      final snapPick = snapRow[j];
+
+      // Defensive: snapPick must have a playerId
+      final pid = snapPick.playerId;
+      if (pid == null || pid.isEmpty) {
+        pick.player = AflPlayer(
+          id: "UNKNOWN",
+          name: "Unknown",
+          club: "UNK",
+          guernseyNumber: 0,
+          season: widget.season,
+          fantasyScore: 0,
+        );
+        pick.stats = null;
+        continue;
+      }
+
+      // Restore player safely
+      final restored = widget.availablePlayers
+          .where((p) => p.id == snapPick.playerId)
+          .toList();
+
+      if (restored.isEmpty) {
+        debugPrint(
+          "❌ Missing player in availablePlayers for season ${widget.season}: "
+          "${snapPick.playerId} (row $i, pick $j)"
+        );
+
+        pick.player = AflPlayer(
+          id: snapPick.playerId ?? "UNKNOWN",
+          name: "Unknown (${snapPick.playerId})",
+          club: "UNK",
+          guernseyNumber: 0,
+          season: widget.season,
+          fantasyScore: 0,
+        );
+
+        pick.stats = snapPick.stats != null
+            ? Map<String, dynamic>.from(snapPick.stats!)
+            : null;
+
+        continue;
+      }
+
+      pick.player = restored.first;
+
+      // Restore stats safely
+      if (snapPick.stats is Map<String, dynamic>) {
+        pick.stats = Map<String, dynamic>.from(snapPick.stats!);
+      } else {
+        pick.stats = null;
+      }
+    }
   }
-  continue;
 }
 
-final snapRow = snap.picks[i];
-
-for (int j = 0; j < row.picks.length; j++) {
-  final pick = row.picks[j];
-
-  // No snapshot pick for this column
-  if (j >= snapRow.length) {
-    pick.player = null;
-    pick.stats = null;
-    continue;
-  }
-
-  final snapPick = snapRow[j];
-
-  // Defensive: snapPick must be a _PickSnapshot
-  final pid = snapPick.playerId;
-if (pid == null || pid.isEmpty) {
-  pick.player = null;
-  pick.stats = null;
-  continue;
-}
-
-  // Restore player safely
-final restored = widget.availablePlayers
-    .where((p) => p.id == snapPick.playerId)
-    .toList();
-
-// 🔥 DEBUG: Log missing players immediately
-if (restored.isEmpty) {
-  debugPrint(
-    "❌ Missing player in availablePlayers for season ${widget.season}: "
-    "${snapPick.playerId} (row $i, pick $j)"
-  );
-
-  // Season‑safe fallback player
-  pick.player = AflPlayer(
-    id: snapPick.playerId ?? "UNKNOWN",
-    name: "Unknown (${snapPick.playerId})",
-    club: "UNK",
-    guernseyNumber: 0,
-  );
-
-  // Preserve stats if they exist
-  pick.stats = snapPick.stats != null
-      ? Map<String, dynamic>.from(snapPick.stats!)
-      : null;
-
-  continue;
-}
-
-
-  pick.player = restored.first;
-
-  // Restore stats safely
-  if (snapPick.stats is Map<String, dynamic>) {
-    pick.stats = Map<String, dynamic>.from(snapPick.stats!);
-  } else {
-    pick.stats = null;
-  }
-}
-  }
-}
 
 // ---------------------------------------------------------------------------
 // SAVE SNAPSHOT TO BACKEND (Admins only)

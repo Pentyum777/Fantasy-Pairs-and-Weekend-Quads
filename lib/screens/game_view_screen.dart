@@ -949,7 +949,7 @@ void _handleFridayPairsTrigger(AflFixture f) {
                     child: PunterSelectionTable(
                       key: _punterTableKey,
                       gameType: widget.gameType,
-                      season: widget.season.toString(),
+                      season: widget.season,
                       round: safeRound, // ✅ no bang
                       tableWidth: punterTableWidth,
                       visiblePunterCount: _visiblePunterCount,
