@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <!-- GA4 STUB MUST BE FIRST -->
+  <script>
+    window.ga4 = function() {};
+    window.gtag = function() {};
+    window.dataLayer = window.dataLayer || [];
+  </script>
+
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
   <meta name="description" content="Fantasy Pairs" />
@@ -10,13 +17,6 @@
   <!-- MSAL -->
   <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
   <script src="msal.js"></script>
-
-  <!-- GA4 STUB (prevents Flutter Web ga4/gtag errors) -->
-  <script>
-    window.ga4 = function() {};
-    window.gtag = function() {};
-    window.dataLayer = window.dataLayer || [];
-  </script>
 
   <!-- Flutter Web -->
   <meta name="flutter-service-worker" content="false">
