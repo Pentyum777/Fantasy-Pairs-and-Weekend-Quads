@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!-- MUST BE FIRST: fixes ga4() crash -->
+  <!-- MUST BE FIRST: disable analytics + stub ga4 -->
   <script>
+    // Stub all analytics calls Flutter might try
     window.ga4 = function() {};
     window.gtag = function() {};
     window.dataLayer = window.dataLayer || [];
+
+    // Disable Flutter Web analytics entirely
+    self.flutterConfiguration = { analytics: false };
   </script>
 
   <meta charset="UTF-8" />
