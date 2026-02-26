@@ -1,122 +1,46 @@
-import { chromium } from "playwright";
+// dfs_scraper.js
+// JSON-based DFS fetcher (no Playwright)
 
-let browser = null;
-
-async function getBrowser() {
-  if (!browser || browser.isConnected() === false) {
-    browser = await chromium.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-  }
-  return browser;
-}
-
-async function safeGoto(page, url) {
-  try {
-    await page.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: 15000,
-    });
-    return page;
-  } catch (err) {
-    console.error("Goto failed, restarting browser:", err);
-
-    try {
-      await browser?.close();
-    } catch (_) {}
-
-    browser = await chromium.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-
-    const newPage = await browser.newPage();
-    await newPage.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: 15000,
-    });
-
-    return newPage;
-  }
-}
+import fetch from "node-fetch";
 
 export async function scrapeDFS(dfsId) {
-  const url = `https://dfsaustralia.com/afl-game-stats/?gameId=${dfsId}`;
-
-  const browser = await getBrowser();
-  let page = await browser.newPage();
-
-  page = await safeGoto(page, url);
+  const url = `https://dfsaustralia.com/api/afl-game-stats?gameId=${dfsId}`;
 
   try {
-    await page.waitForSelector("table.dataTable tbody tr", { timeout: 8000 });
-  } catch (_) {
-    console.warn("No table rows found — returning empty stats");
-    return { players: [], meta: {} };
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+
+    if (!res.ok) {
+      throw new Error(`DFS API returned ${res.status}`);
+    }
+
+    const json = await res.json();
+
+    // Defensive: ensure players array exists
+    const players = Array.isArray(json.players) ? json.players : [];
+
+    // Normalize to the shape your backend + Flutter expect
+    const normalisedPlayers = players
+      .filter((p) => p && p.id)
+      .map((p) => ({
+        id: String(p.id),
+        fantasyPoints: p.fantasyPoints ?? 0,
+        goals: p.goals ?? 0,
+        behinds: p.behinds ?? 0,
+        disposals: p.disposals ?? 0,
+        marks: p.marks ?? 0,
+        tackles: p.tackles ?? 0,
+        hitouts: p.hitouts ?? 0,
+        clearances: p.clearances ?? 0,
+        metresGained: p.metresGained ?? 0,
+        goalAssists: p.goalAssists ?? 0,
+        timeOnGroundPercentage: p.timeOnGroundPercentage ?? 0,
+      }));
+
+    return { players: normalisedPlayers };
+  } catch (err) {
+    console.error("💥 DFS JSON fetch failed:", err);
+    return { players: [] };
   }
-
-  const players = await page.$$eval("table.dataTable tbody tr", rows =>
-    rows
-      .map(row => {
-        const cells = [...row.querySelectorAll("td")];
-        if (cells.length === 0) return null;
-
-        const nameCell = cells[0];
-        const link = nameCell.querySelector("a");
-
-        const name = link?.innerText.trim() || nameCell.innerText.trim() || "";
-        const href = link?.getAttribute("href") || "";
-
-        const idMatch = href.match(/playerId=([^&]+)/);
-        const playerId = idMatch ? idMatch[1] : name;
-
-        const parse = v => parseInt(v || "0", 10);
-
-        const kicks = parse(cells[1]?.innerText);
-        const handballs = parse(cells[2]?.innerText);
-        const marks = parse(cells[3]?.innerText);
-        const tackles = parse(cells[4]?.innerText);
-        const hitouts = parse(cells[5]?.innerText);
-        const freesFor = parse(cells[6]?.innerText);
-        const freesAgainst = parse(cells[7]?.innerText);
-        const goals = parse(cells[8]?.innerText);
-        const behinds = parse(cells[9]?.innerText);
-
-        const fantasyPoints =
-          kicks * 3 +
-          handballs * 2 +
-          marks * 3 +
-          tackles * 4 +
-          hitouts * 1 +
-          freesFor * 1 +
-          freesAgainst * -3 +
-          goals * 6 +
-          behinds * 1;
-
-        return {
-          id: playerId,
-          name,
-          team: "",
-          stats: {
-            fantasyPoints,
-            kicks,
-            handballs,
-            marks,
-            tackles,
-            hitouts,
-            freesFor,
-            freesAgainst,
-            goals,
-            behinds,
-            timeOnGroundPercentage: parse(cells[10]?.innerText),
-          },
-        };
-      })
-      .filter(Boolean)
-  );
-
-  await page.close();
-
-  return { players, meta: {} };
 }

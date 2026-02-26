@@ -11,6 +11,12 @@
   <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
   <script src="msal.js"></script>
 
+  <!-- GA4 STUB (prevents Flutter Web ga4() errors) -->
+  <script>
+    window.ga4 = function() {};
+    window.gtag = function() {};
+  </script>
+
   <!-- Flutter Web -->
   <meta name="flutter-service-worker" content="false">
   <base href="/Fantasy-Pairs-and-Weekend-Quads/">
