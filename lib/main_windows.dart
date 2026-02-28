@@ -10,6 +10,7 @@ import 'services/user_role_service.dart';
 import 'screens/round_selection_screen.dart';
 import 'screens/game_type_selection_screen.dart';
 import 'screens/season_selection_screen.dart';
+import 'screens/login_screen.dart';
 
 import 'debug/afl_data_validator.dart';
 
@@ -47,6 +48,7 @@ class _MyAppState extends State<MyApp> {
     playerRepo = PlayerRepository();
     fantasyService = PunterScoreService();
 
+    // Load all players for both seasons
     playerRepo.loadAllPlayers();
   }
 
@@ -70,6 +72,7 @@ class _MyAppState extends State<MyApp> {
         child: _token == null
             ? LoginScreen(
                 onLoggedIn: () {
+                  // Local login for Windows/mobile
                   userRoleService.setUser("wpenfold@bigpond.net.au");
 
                   setState(() {
@@ -85,10 +88,13 @@ class _MyAppState extends State<MyApp> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
+                  // Validate fixture + player data
                   validateAflData(
-                    fixtureRepo: fixtureRepo,
-                    playerRepo: playerRepo,
-                  );
+  fixtureRepo: fixtureRepo,
+  playerRepo: playerRepo,
+  season: selectedSeason,
+);
+
 
                   return SeasonSelectionScreen(
                     seasons: const [2025, 2026],

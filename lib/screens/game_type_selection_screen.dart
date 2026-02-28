@@ -16,7 +16,7 @@ import '../screens/game_view_screen.dart';
 import 'championship_screen.dart';
 import 'custom_pairs_builder_screen.dart';
 
-import '../widgets/background_container.dart';   // ⭐ REQUIRED
+import '../widgets/background_container.dart';
 
 class GameTypeSelectionScreen extends StatefulWidget {
   final int season;
@@ -224,9 +224,9 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     final String roundLabel = RoundHelper.label(widget.round);
     final bool mobile = isPortraitPhone(context);
 
-    return BackgroundContainer(                     // ⭐ WRAP THE SCREEN
+    return BackgroundContainer(
       child: Scaffold(
-        backgroundColor: Colors.transparent,        // ⭐ KEEP TRANSPARENT
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text("$roundLabel – Select Game Type"),
         ),

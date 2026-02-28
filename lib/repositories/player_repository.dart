@@ -62,6 +62,14 @@ class PlayerRepository {
   }
 
   // ------------------------------------------------------------
+  // LOAD ALL PLAYERS (2025 + 2026)
+  // ------------------------------------------------------------
+  Future<void> loadAllPlayers() async {
+    await loadSeason(2025);
+    await loadSeason(2026);
+  }
+
+  // ------------------------------------------------------------
   // GETTERS — NO MERGING
   // ------------------------------------------------------------
   Future<List<AflPlayer>> playersForSeason(int season) async {

@@ -16,6 +16,7 @@ import 'services/user_role_service.dart';
 import 'screens/round_selection_screen.dart';
 import 'screens/game_type_selection_screen.dart';
 import 'screens/season_selection_screen.dart';
+import 'screens/login_screen.dart';
 
 import 'debug/afl_data_validator.dart';
 
@@ -133,9 +134,10 @@ class _MyAppState extends State<MyApp> {
                   }
 
                   validateAflData(
-                    fixtureRepo: fixtureRepo,
-                    playerRepo: playerRepo,
-                  );
+  fixtureRepo: fixtureRepo,
+  playerRepo: playerRepo,
+  season: selectedSeason,   // ⭐ FIX
+);
 
                   return SeasonSelectionScreen(
                     seasons: const [2025, 2026],
