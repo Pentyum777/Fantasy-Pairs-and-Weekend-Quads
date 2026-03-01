@@ -21,34 +21,22 @@ class MsalService {
   static void listenForToken(
     void Function(String token, MsalAccount account) onTokenReceived,
   ) {
-    print("MSAL(Dart): Registering onMsalToken callback");
-
-    // JS → Dart callback MUST use allowInterop
     js_util.setProperty(
       js_util.globalThis,
       'onMsalToken',
       allowInterop((token, accountObj) {
-        print("MSAL(Dart): Token received from JS → $token");
-
-        if (token is! String) {
-          print("MSAL(Dart): ERROR — token was not a string: $token");
-          return;
-        }
-
+        if (token is! String) return;
         final account = MsalAccount.fromJsObject(accountObj);
         onTokenReceived(token, account);
       }),
     );
 
-    // Handle pending token (page reload scenario)
     final pendingToken =
         js_util.getProperty(js_util.globalThis, '__pendingMsalToken');
     final pendingAccount =
         js_util.getProperty(js_util.globalThis, '__pendingMsalAccount');
 
     if (pendingToken != null && pendingToken is String) {
-      print("MSAL(Dart): Found pending token → delivering immediately");
-
       final account = MsalAccount.fromJsObject(pendingAccount);
       onTokenReceived(pendingToken, account);
 
@@ -59,15 +47,11 @@ class MsalService {
 
   static void startLogin(List<String> scopes) {
     final scopesJson = jsonEncode(scopes);
-    print("MSAL(Dart): startLogin with $scopesJson");
-
     js_util.callMethod(js_util.globalThis, 'msalLogin', [scopesJson]);
   }
 
   static void startGetToken(List<String> scopes) {
     final scopesJson = jsonEncode(scopes);
-    print("MSAL(Dart): startGetToken with $scopesJson");
-
     js_util.callMethod(js_util.globalThis, 'msalGetToken', [scopesJson]);
   }
 }

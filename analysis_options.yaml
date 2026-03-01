@@ -1,2 +1,7 @@
 analyzer:
-  
+  exclude:
+    - node_modules/**
+    - backend/**
+    - scripts/**
+    - "**/*.tsx"
+    - lib/services/msal_service_web.dart
