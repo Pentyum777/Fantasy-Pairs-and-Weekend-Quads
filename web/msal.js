@@ -43,6 +43,9 @@ if (!window.__msalInitialized) {
         auth: {
             clientId: "c75121a5-552e-46c6-a357-2e5029b56131",
             authority: "https://login.microsoftonline.com/common",
+
+            // IMPORTANT: GitHub Pages requires BOTH versions registered in Azure AD
+            // This one MUST match exactly what the browser loads
             redirectUri: "https://pentyum777.github.io/Fantasy-Pairs-and-Weekend-Quads/"
         },
         cache: {
