@@ -185,12 +185,16 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _initControllers();
-    _initFocusNodes();
+void initState() {
+  super.initState();
+  _initControllers();
+  _initFocusNodes();
+
+  // ⭐ Delay snapshot loading until after the first frame
+  WidgetsBinding.instance.addPostFrameCallback((_) {
     _loadSnapshotFromBackend();
-  }
+  });
+}
 
   @override
   void dispose() {
@@ -939,6 +943,17 @@ bool _hasAnyGlobalDuplicate() {
 // SNAKE DRAFT LOGIC
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// CURRENT PICK STATE
+// ---------------------------------------------------------------------------
+
+// Tracks the authoritative current pick number (1-based)
+int currentGlobalPick = 1;
+
+// ---------------------------------------------------------------------------
+// CURRENT PICK LOGIC (deterministic, snapshot-safe)
+// ---------------------------------------------------------------------------
+
 bool _isCurrentPick(PunterSelection row, PlayerPick pick) {
   final rowIndex = row.punterNumber - 1;
   final colIndex = pick.pickNumber - 1;
@@ -948,14 +963,7 @@ bool _isCurrentPick(PunterSelection row, PlayerPick pick) {
     colIndex: colIndex,
   );
 
-  int made = 0;
-  for (final r in widget.selections) {
-    for (final p in r.picks) {
-      if (p.player != null) made++;
-    }
-  }
-
-  return made + 1 == globalIndex;
+  return currentGlobalPick == globalIndex;
 }
 
 int _globalPickNumberForCell({
@@ -965,6 +973,7 @@ int _globalPickNumberForCell({
   final round = colIndex;
   final punters = _punterCount;
 
+  // Snake draft logic
   if (round.isEven) {
     return round * punters + (rowIndex + 1);
   } else {
@@ -1002,33 +1011,36 @@ void _restoreSnapshot(int index) {
 }
 
 void _applySnapshot(_TableSnapshot snap) {
+  if (widget.selections.isEmpty) return;
+
   for (int i = 0; i < widget.selections.length; i++) {
     final row = widget.selections[i];
 
-    // ---- Safe punterName ----
+    // -----------------------------
+    // SAFE PUNTER NAME
+    // -----------------------------
     String safeName = "P${row.punterNumber}";
-    if (i < snap.punterNames.length) {
-      final name = snap.punterNames[i];
-      if (name.isNotEmpty) {
-        safeName = name;
-      }
+
+if (i < snap.punterNames.length) {
+  final Object? raw = snap.punterNames[i];   // ⭐ key change
+
+  if (raw is String) {
+    final trimmed = raw.trim();
+    if (trimmed.isNotEmpty) {
+      safeName = trimmed;
     }
+  }
+}
 
-    row.punterName = safeName;
-    _controllers[row.punterNumber]?.text = safeName;
+row.punterName = safeName;
+_controllers[row.punterNumber]?.text = safeName;
 
-    // ---- Safe picks ----
+    // -----------------------------
+    // SAFE PICKS LIST
+    // -----------------------------
     if (i >= snap.picks.length) {
-      // No snapshot row → clear entire row safely
       for (final pick in row.picks) {
-        pick.player = AflPlayer(
-          id: "UNKNOWN",
-          name: "Unknown",
-          club: "UNK",
-          guernseyNumber: 0,
-          season: widget.season,
-          fantasyScore: 0,
-        );
+        pick.player = null;
         pick.stats = null;
       }
       continue;
@@ -1039,75 +1051,68 @@ void _applySnapshot(_TableSnapshot snap) {
     for (int j = 0; j < row.picks.length; j++) {
       final pick = row.picks[j];
 
-      // No snapshot pick for this column
       if (j >= snapRow.length) {
-        pick.player = AflPlayer(
-          id: "UNKNOWN",
-          name: "Unknown",
-          club: "UNK",
-          guernseyNumber: 0,
-          season: widget.season,
-          fantasyScore: 0,
-        );
+        pick.player = null;
         pick.stats = null;
         continue;
       }
 
       final snapPick = snapRow[j];
 
-      // Defensive: snapPick must have a playerId
-      final pid = snapPick.playerId;
-      if (pid == null || pid.isEmpty) {
-        pick.player = AflPlayer(
-          id: "UNKNOWN",
-          name: "Unknown",
-          club: "UNK",
-          guernseyNumber: 0,
-          season: widget.season,
-          fantasyScore: 0,
-        );
+      // -----------------------------
+      // SAFE PLAYER ID
+      // -----------------------------
+      final pid = (snapPick.playerId is String)
+          ? snapPick.playerId!.trim()
+          : "";
+
+      if (pid.isEmpty) {
+        pick.player = null;
         pick.stats = null;
         continue;
       }
 
-      // Restore player safely
+      // -----------------------------
+      // SAFE PLAYER RESTORE
+      // -----------------------------
       final restored = widget.availablePlayers
-          .where((p) => p.id == snapPick.playerId)
+          .where((p) => p.id == pid)
           .toList();
 
       if (restored.isEmpty) {
-        debugPrint(
-          "❌ Missing player in availablePlayers for season ${widget.season}: "
-          "${snapPick.playerId} (row $i, pick $j)"
-        );
-
         pick.player = AflPlayer(
-          id: snapPick.playerId ?? "UNKNOWN",
-          name: "Unknown (${snapPick.playerId})",
+          id: pid,
+          name: "Unknown ($pid)",
           club: "UNK",
           guernseyNumber: 0,
           season: widget.season,
-          fantasyScore: 0,
         );
-
-        pick.stats = snapPick.stats != null
-            ? Map<String, dynamic>.from(snapPick.stats!)
-            : null;
-
-        continue;
-      }
-
-      pick.player = restored.first;
-
-      // Restore stats safely
-      if (snapPick.stats is Map<String, dynamic>) {
-        pick.stats = Map<String, dynamic>.from(snapPick.stats!);
       } else {
-        pick.stats = null;
+        pick.player = restored.first;
       }
+
+      // -----------------------------
+      // SAFE STATS RESTORE
+      // -----------------------------
+      final rawStats = snapPick.stats;
+
+if (rawStats is Map) {
+  final safeStats = <String, dynamic>{};
+
+  // rawStats is now guaranteed non-null and a Map
+  (rawStats as Map).forEach((key, value) {
+    if (key is String) safeStats[key] = value;
+  });
+
+  pick.stats = safeStats;
+} else {
+  pick.stats = null;
+}
     }
   }
 }
+
+
 
 
 // ---------------------------------------------------------------------------
