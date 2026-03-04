@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/msal_service.dart';
 
 class LoginScreen extends StatefulWidget {
   final void Function() onLoggedIn;
@@ -14,9 +15,11 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _hovering = false;
 
   void _login() {
-    setState(() => _loading = true);
-    widget.onLoggedIn();
-  }
+  setState(() => _loading = true);
+
+  // Trigger MSAL login
+  MsalService.startLogin(["User.Read"]);
+}
 
   bool isPortraitPhone(BuildContext context) {
     final size = MediaQuery.of(context).size;
