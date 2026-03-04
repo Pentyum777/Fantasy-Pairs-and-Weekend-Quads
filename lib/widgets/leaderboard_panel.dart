@@ -35,7 +35,7 @@ class LeaderboardPanel extends StatelessWidget {
       curve: Curves.easeOut,
       width: collapsed ? collapsedWidth : expandedWidth,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
+        color: theme.colorScheme.surfaceVariant.withAlpha(64),
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(

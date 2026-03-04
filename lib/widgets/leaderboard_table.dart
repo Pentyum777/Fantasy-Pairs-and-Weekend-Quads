@@ -31,7 +31,7 @@ Widget buildHeader(BuildContext context) {
     height: UIDimensions.headerHeight,
     child: Container(
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withAlpha(96),
+        color: cs.surfaceVariant.withAlpha(96),
         border: Border(
           bottom: BorderSide(
             color: cs.primary.withAlpha(31),
@@ -77,7 +77,7 @@ Widget buildBody(BuildContext context) {
 
       return Container(
         height: rowHeight,
-        color: cs.surfaceContainerHighest.withAlpha(
+        color: cs.surfaceVariant.withAlpha(
           index.isEven ? 32 : 20,
         ),
         child: buildSharedTableRow(
@@ -110,7 +110,7 @@ Widget buildBody(BuildContext context) {
     return Container(
       width: totalWidth,
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withAlpha(64),
+        color: cs.surfaceVariant.withAlpha(64),
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
@@ -141,7 +141,7 @@ Widget buildBody(BuildContext context) {
                   height: UIDimensions.headerHeight,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest.withAlpha(96),
+                      color: cs.surfaceVariant.withAlpha(96),
                       border: Border(
                         bottom: BorderSide(
                           color: cs.primary.withAlpha(31),
@@ -181,7 +181,7 @@ Widget buildBody(BuildContext context) {
 
                       return Container(
                         height: rowHeight,
-                        color: cs.surfaceContainerHighest.withAlpha(
+                        color: cs.surfaceVariant.withAlpha(
                           index.isEven ? 32 : 20,
                         ),
                         child: buildSharedTableRow(

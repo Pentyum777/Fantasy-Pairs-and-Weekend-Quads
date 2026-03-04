@@ -72,7 +72,7 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 alignment: Alignment.centerLeft,
-                color: cs.surfaceContainerHighest,
+                color: cs.surfaceVariant,
                 child: Text(
                   selectedTeam,
                   style: theme.textTheme.labelLarge?.copyWith(
@@ -88,7 +88,7 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
               Container(
                 height: headerHeight,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                color: cs.surfaceContainerHighest,
+                color: cs.surfaceVariant,
                 child: Row(
                   children: widget.columns
                       .map(
@@ -118,7 +118,7 @@ class _SingleTeamStatsTableState extends State<SingleTeamStatsTable> {
                   height: rowHeight,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   color: isStriped
-                      ? cs.surfaceContainerHighest.withAlpha(76) // 0.30 opacity
+                      ? cs.surfaceVariant.withAlpha(76) // 0.30 opacity
                       : cs.surface,
                   child: Row(
                     children: widget.columns

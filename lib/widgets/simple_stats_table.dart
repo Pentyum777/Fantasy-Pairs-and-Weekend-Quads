@@ -25,7 +25,7 @@ class SimpleStatsTable extends StatelessWidget {
         children: [
           // Header row
           Container(
-            color: cs.surfaceContainerHighest,
+            color: cs.surfaceVariant,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Row(
               children: columns
@@ -58,7 +58,7 @@ class SimpleStatsTable extends StatelessWidget {
             return Container(
               height: 32,
               color: isStriped
-                  ? cs.surfaceContainerHighest.withAlpha(76) // 0.30 opacity
+                  ? cs.surfaceVariant.withAlpha(76) // 0.30 opacity
                   : cs.surface,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(

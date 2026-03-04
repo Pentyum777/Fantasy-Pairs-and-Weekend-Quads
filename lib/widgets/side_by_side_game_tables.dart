@@ -56,7 +56,7 @@ class SideBySideGameTables extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 2),
             alignment: Alignment.centerLeft,
-            color: cs.surfaceContainerHighest,
+            color: cs.surfaceVariant,
             child: Text(
               title,
               style: theme.textTheme.labelLarge?.copyWith(
@@ -69,7 +69,7 @@ class SideBySideGameTables extends StatelessWidget {
           Container(
             height: headerHeight,
             padding: const EdgeInsets.symmetric(horizontal: 2),
-            color: cs.surfaceContainerHighest,
+            color: cs.surfaceVariant,
             child: Row(
               children: columns.map((c) {
                 final isPlayer = c == "Player";
@@ -109,7 +109,7 @@ class SideBySideGameTables extends StatelessWidget {
               height: rowHeight,
               padding: const EdgeInsets.symmetric(horizontal: 2),
               color: isStriped
-                  ? cs.surfaceContainerHighest.withAlpha(76) // 0.30 opacity
+                  ? cs.surfaceVariant.withAlpha(76) // 0.30 opacity
                   : cs.surface,
               child: Row(
                 children: columns.map((c) {
@@ -179,14 +179,14 @@ class SideBySideGameTables extends StatelessWidget {
             width: double.infinity,
             padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 3),
             alignment: Alignment.centerLeft,
-            color: headerBg ?? cs.surfaceContainerHighest,
+            color: headerBg ?? cs.surfaceVariant,
             child: Text(title, style: headerStyle),
           ),
           const Divider(height: 1),
           Container(
             height: compact ? 26 : headerHeight,
             padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 3),
-            color: headerBg ?? cs.surfaceContainerHighest,
+            color: headerBg ?? cs.surfaceVariant,
             child: Row(
               children: columns.map((c) {
                 final isPlayer = c == "Player";
@@ -220,7 +220,7 @@ class SideBySideGameTables extends StatelessWidget {
               height: compact ? 24 : rowHeight,
               padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 3),
               color: isStriped
-                  ? cs.surfaceContainerHighest.withAlpha(76) // 0.30 opacity
+                  ? cs.surfaceVariant.withAlpha(76) // 0.30 opacity
                   : cs.surface,
               child: Row(
                 children: columns.map((c) {

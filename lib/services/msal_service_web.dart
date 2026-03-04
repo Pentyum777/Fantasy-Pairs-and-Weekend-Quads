@@ -2,14 +2,13 @@
 library msal_service_web;
 
 import 'dart:convert';
-import 'dart:js_interop';
-import 'dart:js_interop_unsafe';
+import 'dart:html' as html;
+import 'dart:js_util' as js_util;
+import 'package:js/js.dart';
 
 @JS()
-@staticInterop
-class JsMsalAccount {}
-
-extension JsMsalAccountExt on JsMsalAccount {
+@anonymous
+class JsMsalAccount {
   external String? get username;
 }
 
@@ -24,44 +23,45 @@ class MsalAccount {
 }
 
 class MsalService {
+  static html.Window get _global => html.window;
+
   static void listenForToken(
     void Function(String token, MsalAccount account) onTokenReceived,
   ) {
-    // Register callback on window
-    globalThis.setProperty(
-      'onMsalToken'.toJS,
-      ((JSAny token, JSAny accountObj) {
-        final tokenStr = token.dartify() as String?;
+    js_util.setProperty(
+      _global,
+      'onMsalToken',
+      allowInterop((dynamic token, dynamic accountObj) {
+        final tokenStr = token as String?;
         if (tokenStr == null) return;
 
         final account = MsalAccount.fromJsObject(accountObj as JsMsalAccount?);
         onTokenReceived(tokenStr, account);
-      }).toJS,
+      }),
     );
 
-    // Handle pending token
-    final pendingToken = globalThis.getProperty('__pendingMsalToken'.toJS);
-    final pendingAccount = globalThis.getProperty('__pendingMsalAccount'.toJS);
+    final pendingToken = js_util.getProperty(_global, '__pendingMsalToken');
+    final pendingAccount = js_util.getProperty(_global, '__pendingMsalAccount');
 
-    if (pendingToken != null && pendingToken is JSString) {
-      final tokenStr = pendingToken.dartify() as String;
+    if (pendingToken != null && pendingToken is String) {
+      final tokenStr = pendingToken;
       final account =
           MsalAccount.fromJsObject(pendingAccount as JsMsalAccount?);
 
       onTokenReceived(tokenStr, account);
 
-      globalThis.setProperty('__pendingMsalToken'.toJS, null.toJS);
-      globalThis.setProperty('__pendingMsalAccount'.toJS, null.toJS);
+      js_util.setProperty(_global, '__pendingMsalToken', null);
+      js_util.setProperty(_global, '__pendingMsalAccount', null);
     }
   }
 
   static void startLogin(List<String> scopes) {
-    final scopesJson = jsonEncode(scopes).toJS;
-    globalThis.callMethod('msalLogin'.toJS, [scopesJson]);
+    final scopesJson = jsonEncode(scopes);
+    js_util.callMethod(_global, 'msalLogin', [scopesJson]);
   }
 
   static void startGetToken(List<String> scopes) {
-    final scopesJson = jsonEncode(scopes).toJS;
-    globalThis.callMethod('msalGetToken'.toJS, [scopesJson]);
+    final scopesJson = jsonEncode(scopes);
+    js_util.callMethod(_global, 'msalGetToken', [scopesJson]);
   }
 }

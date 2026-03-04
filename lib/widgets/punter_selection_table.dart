@@ -264,7 +264,7 @@ Widget _buildBody(
         final bg = invalid
             ? Colors.red.withAlpha(15)
             : isStriped
-                ? cs.surfaceContainerHighest.withAlpha(64)
+                ? cs.surfaceVariant.withAlpha(64)
                 : cs.surface;
 
         return Container(
@@ -537,7 +537,7 @@ Widget _buildRow(ThemeData theme, ColorScheme cs, PunterSelection row, int pickC
   final isStriped = index.isOdd;
 
   final bg = isStriped
-      ? cs.surfaceContainerHighest.withAlpha(64)
+      ? cs.surfaceVariant.withAlpha(64)
       : cs.surface;
 
   return Container(

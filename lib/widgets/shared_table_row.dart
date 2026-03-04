@@ -28,8 +28,8 @@ Widget buildSharedTableRow({
   final Color bg = isHighlighted
       ? Colors.amber.withAlpha(48) // subtle highlight
       : index.isOdd
-          ? cs.surfaceContainerHighest.withAlpha(32) // striped row
-          : cs.surfaceContainerHighest.withAlpha(20);
+          ? cs.surfaceVariant.withAlpha(32) // striped row
+          : cs.surfaceVariant.withAlpha(20);
 
   return SizedBox(
     width: totalWidth,

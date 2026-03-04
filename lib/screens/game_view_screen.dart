@@ -647,8 +647,8 @@ void _handleFridayPairsTrigger(AflFixture f) {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             color: selected
-                ? cs.surfaceContainerHighest.withAlpha(72)
-                : cs.surfaceContainerHighest.withAlpha(40),
+                ? cs.surfaceVariant.withAlpha(72)
+                : cs.surfaceVariant.withAlpha(40),
             border: Border.all(
               color: selected ? cs.primary : cs.outlineVariant,
               width: selected ? 2 : 1,
@@ -864,7 +864,7 @@ void _handleFridayPairsTrigger(AflFixture f) {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest
+                    color: theme.colorScheme.surfaceVariant
                         .withAlpha(64),
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -938,7 +938,7 @@ void _handleFridayPairsTrigger(AflFixture f) {
 
             return Container(
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
+                color: theme.colorScheme.surfaceVariant.withAlpha(64),
                 borderRadius: BorderRadius.circular(12),
               ),
               padding: const EdgeInsets.all(8),
