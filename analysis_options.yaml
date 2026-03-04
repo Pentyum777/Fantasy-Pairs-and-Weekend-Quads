@@ -4,4 +4,4 @@ analyzer:
     - backend/**
     - scripts/**
     - "**/*.tsx"
-    - lib/services/msal_service_web.dart
+    
