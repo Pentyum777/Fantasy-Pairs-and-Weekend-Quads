@@ -55,6 +55,4 @@ flutter:
 
 
 
-# ⭐ Critical fix for Flutter Web JSObject errors
-dependency_overrides:
-  web: 0.5.1
+
