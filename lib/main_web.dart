@@ -136,7 +136,7 @@ class _MyAppState extends State<MyApp> {
                   validateAflData(
   fixtureRepo: fixtureRepo,
   playerRepo: playerRepo,
-  season: selectedSeason,   // ⭐ FIX
+  season: selectedSeason,
 );
 
                   return SeasonSelectionScreen(
