@@ -1185,9 +1185,11 @@ Future<void> _loadSnapshotFromBackend() async {
       },
     );
 
+print("DEBUG URL = $url");
+
     final res = await http.get(url);
 
-print("DEBUG URL = $url");
+
 print("DEBUG STATUS = ${res.statusCode}");
 print("DEBUG RESPONSE START = ${res.body.substring(0, 200)}");
 

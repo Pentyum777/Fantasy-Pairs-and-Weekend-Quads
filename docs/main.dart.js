@@ -89548,10 +89548,10 @@ d=n.a
 m=d.at
 c=t.N
 l=A.aRI("https","fantasy-pairs-and-weekend-quads-production.up.railway.app","/loadSelections",A.at(["gameType",d.Q,"season",d.as,"round",J.c4(m)],c,t.z))
+A.bg("DEBUG URL = "+A.j(l))
 s=7
 return A.a0(A.auX(l),$async$xq)
 case 7:k=a3
-A.bg("DEBUG URL = "+A.j(l))
 A.bg("DEBUG STATUS = "+k.b)
 d=k
 A.bg("DEBUG RESPONSE START = "+B.c.U(A.rr(A.rm(d.e).c.a.i(0,"charset")).ck(0,d.w),0,200))
