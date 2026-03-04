@@ -87857,7 +87857,7 @@ j=n.as
 if(j.length===0){n.as=k
 s=1
 break}if(!J.e(k,j)){A.bq("\ud83d\udd04 New version detected \u2192 forcing reload")
-self.window.location.reload()}}p=2
+window.location.reload()}}p=2
 s=6
 break
 case 4:p=3

@@ -7,14 +7,16 @@ if (!window.__msalInitialized) {
     // -------------------------------------------------------------------
     // TOKEN DELIVERY (Callback + Pending Token)
     // -------------------------------------------------------------------
-    function deliverToken(token) {
+    function deliverToken(token, account) {
         if (typeof window.onMsalToken === "function") {
-            console.log("MSAL: Delivering token to Flutter");
-            window.onMsalToken(token);
+            console.log("MSAL: Delivering token + account to Flutter");
+            window.onMsalToken(token, account);
             window.__pendingMsalToken = null;
+            window.__pendingMsalAccount = null;
         } else {
-            console.log("MSAL: Flutter not ready, stashing pending token");
+            console.log("MSAL: Flutter not ready, stashing pending token + account");
             window.__pendingMsalToken = token;
+            window.__pendingMsalAccount = account;
         }
     }
 
@@ -25,10 +27,11 @@ if (!window.__msalInitialized) {
             this.__onMsalToken = callback;
 
             // Deliver pending token immediately
-            if (window.__pendingMsalToken) {
-                console.log("MSAL: Delivering previously stashed token");
-                callback(window.__pendingMsalToken);
+            if (window.__pendingMsalToken && window.__pendingMsalAccount) {
+                console.log("MSAL: Delivering previously stashed token + account");
+                callback(window.__pendingMsalToken, window.__pendingMsalAccount);
                 window.__pendingMsalToken = null;
+                window.__pendingMsalAccount = null;
             }
         },
         get: function () {
@@ -45,7 +48,6 @@ if (!window.__msalInitialized) {
             authority: "https://login.microsoftonline.com/common",
 
             // IMPORTANT: GitHub Pages requires BOTH versions registered in Azure AD
-            // This one MUST match exactly what the browser loads
             redirectUri: "https://pentyum777.github.io/Fantasy-Pairs-and-Weekend-Quads/"
         },
         cache: {
@@ -68,7 +70,7 @@ if (!window.__msalInitialized) {
             activeAccount = result.account;
 
             if (result.accessToken) {
-                deliverToken(result.accessToken);
+                deliverToken(result.accessToken, activeAccount);
             }
         } else {
             console.log("MSAL: No redirect result");
@@ -131,7 +133,7 @@ if (!window.__msalInitialized) {
             console.log("MSAL: Silent token success", result);
 
             if (result.accessToken) {
-                deliverToken(result.accessToken);
+                deliverToken(result.accessToken, activeAccount);
             }
 
             return result.accessToken || null;
