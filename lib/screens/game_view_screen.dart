@@ -421,13 +421,24 @@ void _finaliseFridayPairsWinner() {
     }
 
     final seen = <String>{};
-    for (final row in widget.selections) {
-      for (final pick in row.picks) {
-        final id = pick.player!.id;
-        if (seen.contains(id)) return false;
-        seen.add(id);
-      }
-    }
+
+for (final row in widget.selections) {
+  for (final pick in row.picks) {
+    final player = pick.player;
+
+    // Skip empty picks safely
+    if (player == null) continue;
+
+    final id = player.id;
+
+    // Skip invalid IDs
+    if (id.isEmpty) continue;
+
+    if (seen.contains(id)) return false;
+
+    seen.add(id);
+  }
+}
 
     return true;
   }

@@ -14,7 +14,7 @@ import '../services/round_completion_service.dart';
 import '../services/user_role_service.dart';
 
 import '../widgets/team_logo.dart';
-import '../widgets/background_container.dart';   // ⭐ REQUIRED
+import '../widgets/background_container.dart';
 import 'game_view_screen.dart';
 
 class CustomPairsBuilderScreen extends StatefulWidget {
@@ -59,9 +59,9 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
 
     final roundLabel = RoundHelper.label(widget.round);
 
-    return BackgroundContainer(                     // ⭐ WRAP THE SCREEN
+    return BackgroundContainer(
       child: Scaffold(
-        backgroundColor: Colors.transparent,        // ⭐ KEEP TRANSPARENT
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: const Text("Custom Pairs Builder"),
         ),
@@ -85,7 +85,12 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                       itemCount: fixtures.length,
                       itemBuilder: (context, index) {
                         final f = fixtures[index];
-                        final fixtureId = f.matchId ?? index.toString();
+
+                        // ⭐ Hardened fixture ID
+                        final fixtureId = f.matchId?.trim().isNotEmpty == true
+                            ? f.matchId!.trim()
+                            : "fixture_$index";
+
                         final selected = _selectedFixtureIds.contains(fixtureId);
                         final label = _buildFixtureLabel(index, f.date);
 
@@ -111,21 +116,18 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                               ),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(18),
-
                                 color: selected
                                     ? Theme.of(context)
                                         .colorScheme
                                         .primary
                                         .withAlpha(20)
                                     : Theme.of(context).colorScheme.surface,
-
                                 border: Border.all(
                                   color: selected
                                       ? Theme.of(context).colorScheme.primary
                                       : Colors.grey.shade400,
                                   width: selected ? 2 : 1,
                                 ),
-
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withAlpha(13),
@@ -138,7 +140,6 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                                 children: [
                                   TeamLogo(f.homeTeam, size: 34),
                                   const SizedBox(width: 12),
-
                                   Expanded(
                                     child: Text(
                                       label,
@@ -152,7 +153,6 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                                       ),
                                     ),
                                   ),
-
                                   const SizedBox(width: 12),
                                   TeamLogo(f.awayTeam, size: 34),
                                 ],
@@ -192,58 +192,66 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
     );
   }
 
+  // ⭐ Hardened start logic
   void _startCustomPairs(BuildContext context, List<AflFixture> fixtures) async {
-  final selectedFixtures = fixtures.where((f) {
-    final id = f.matchId ?? fixtures.indexOf(f).toString();
-    return _selectedFixtureIds.contains(id);
-  }).toList();
+    // Build a stable ID map
+    final idMap = <AflFixture, String>{
+      for (int i = 0; i < fixtures.length; i++)
+        fixtures[i]: fixtures[i].matchId?.trim().isNotEmpty == true
+            ? fixtures[i].matchId!.trim()
+            : "fixture_$i"
+    };
 
-  final clubs = <String>{};
-  for (final f in selectedFixtures) {
-    clubs.add(f.homeTeam);
-    clubs.add(f.awayTeam);
-  }
+    final selectedFixtures = fixtures.where((f) {
+      final id = idMap[f]!;
+      return _selectedFixtureIds.contains(id);
+    }).toList();
 
-  // ⭐ Load players for the selected season only
-  final seasonPlayers = await widget.playerRepo.playersForSeason(widget.season);
+    final clubs = <String>{};
+    for (final f in selectedFixtures) {
+      clubs.add(f.homeTeam);
+      clubs.add(f.awayTeam);
+    }
 
-  // ⭐ Filter players by selected fixture clubs
-  final players = seasonPlayers
-      .where((p) => clubs.contains(p.club))
-      .toList();
+    final seasonPlayers = await widget.playerRepo.playersForSeason(widget.season);
 
-  final selections = List.generate(
-    25,
-    (i) => PunterSelection(
-      punterNumber: i + 1,
-      punterName: "P${i + 1}",
-      picks: [
-        PlayerPick(pickNumber: 1, player: null, stats: null),
-        PlayerPick(pickNumber: 2, player: null, stats: null),
-      ],
-    ),
-  );
+    final players = seasonPlayers.where((p) {
+      final club = p.club.trim();
+      return club.isNotEmpty && clubs.contains(club);
+    }).toList();
 
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => GameViewScreen(
-        season: widget.season,
-        round: widget.round,
-        gameType: "custom_pairs",
-        selections: selections,
-        fixtureRepo: widget.fixtureRepo,
-        playerRepo: widget.playerRepo,
-        fantasyService: widget.fantasyService,
-        championshipService: widget.championshipService,
-        roundCompletionService: widget.roundCompletionService,
-        userRoleService: widget.userRoleService,
-        selectedFixtureIds: _selectedFixtureIds.toList(),
-        overridePlayers: players,
+    final selections = List.generate(
+      25,
+      (i) => PunterSelection(
+        punterNumber: i + 1,
+        punterName: "P${i + 1}",
+        picks: [
+          PlayerPick(pickNumber: 1, player: null, stats: null),
+          PlayerPick(pickNumber: 2, player: null, stats: null),
+        ],
       ),
-    ),
-  );
-}
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GameViewScreen(
+          season: widget.season,
+          round: widget.round,
+          gameType: "custom_pairs",
+          selections: selections,
+          fixtureRepo: widget.fixtureRepo,
+          playerRepo: widget.playerRepo,
+          fantasyService: widget.fantasyService,
+          championshipService: widget.championshipService,
+          roundCompletionService: widget.roundCompletionService,
+          userRoleService: widget.userRoleService,
+          selectedFixtureIds: _selectedFixtureIds.toList(),
+          overridePlayers: players,
+        ),
+      ),
+    );
+  }
 
   String _buildFixtureLabel(int index, DateTime? date) {
     final gameNumber = index + 1;
@@ -259,7 +267,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
 
   String _weekday(int w) {
     const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return names[w - 1];
+    return names[(w - 1).clamp(0, 6)];
   }
 
   String _formatTime(DateTime dt) {

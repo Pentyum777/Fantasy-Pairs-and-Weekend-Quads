@@ -3,7 +3,6 @@ import 'package:flutter/services.dart' show rootBundle;
 import '../models/afl_fixture.dart';
 import '../utils/afl_club_codes.dart';
 import '../parsers/fixture_parser.dart';
-
 import '../services/afl_fantasy_score_service.dart';
 
 class FixtureRepository {
@@ -62,6 +61,7 @@ class FixtureRepository {
       final parser = FixtureParser();
       final parsedFixtures = parser.parse(bytes);
 
+      // Ensure key exists and assign safely
       fixturesBySeason[season] = parsedFixtures;
 
       print("DEBUG: parsedFixtures.length = ${parsedFixtures.length}");
@@ -71,20 +71,31 @@ class FixtureRepository {
     }
   }
 
+  /// Returns all non-preseason rounds for a season, sorted.
+  /// Never throws; may return an empty list if no fixtures exist.
   List<int> allRoundsForSeason(int season) {
-    final fixtures = fixturesBySeason[season] ?? [];
-    final rounds = fixtures
-        .where((f) => !f.isPreseason && f.round != null)
-        .map((f) => f.round!)
-        .toSet()
-        .toList();
+    final fixtures = fixturesBySeason[season];
 
-    rounds.sort();
-    return rounds;
+    if (fixtures == null || fixtures.isEmpty) {
+      return <int>[];
+    }
+
+    final rounds = <int>{};
+
+    for (final f in fixtures) {
+      final r = f.round;
+      if (f.isPreseason || r == null) continue;
+      rounds.add(r);
+    }
+
+    final sorted = rounds.toList()..sort();
+    return sorted;
   }
 
+  /// Returns fixtures for a given season and round.
+  /// If round is null, returns preseason fixtures.
   List<AflFixture> fixturesForSeasonRound(int season, int? round) {
-    final fixtures = fixturesBySeason[season] ?? [];
+    final fixtures = fixturesBySeason[season] ?? const <AflFixture>[];
 
     if (round == null) {
       return fixtures.where((f) => f.isPreseason).toList();
@@ -95,11 +106,12 @@ class FixtureRepository {
         .toList();
   }
 
+  /// Returns all preseason fixtures for a season.
   List<AflFixture> preseasonFixturesForSeason(int season) {
-    return fixturesBySeason[season]
-            ?.where((f) => f.isPreseason)
-            .toList() ??
-        [];
+    final fixtures = fixturesBySeason[season];
+    if (fixtures == null || fixtures.isEmpty) return <AflFixture>[];
+
+    return fixtures.where((f) => f.isPreseason).toList();
   }
 
   /// Uses full match payload (metadata + players) but ONLY updates fixture metadata.
@@ -129,7 +141,7 @@ class FixtureRepository {
     }
   }
 
-  /// ⭐ FIXED: Now accepts `status`
+  /// Updates fixture scores and status for a given matchId.
   void updateFixtureScores({
     required String matchId,
     required int homeScore,
@@ -139,7 +151,10 @@ class FixtureRepository {
     String? status,
   }) {
     for (final season in fixturesBySeason.keys) {
-      for (final f in fixturesBySeason[season]!) {
+      final list = fixturesBySeason[season];
+      if (list == null || list.isEmpty) continue;
+
+      for (final f in list) {
         if (f.matchId == matchId) {
           f.homeScore = homeScore;
           f.awayScore = awayScore;
@@ -157,7 +172,8 @@ class FixtureRepository {
   }
 
   int? _extractSeasonFromFilename(String path) {
-    final match = RegExp(r'(\d{4})').firstMatch(path);
+    // Prefer a year near the end of the path to avoid false positives
+    final match = RegExp(r'(\d{4})(?=\D*$)').firstMatch(path);
     return match != null ? int.tryParse(match.group(1)!) : null;
   }
 }

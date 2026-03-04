@@ -190,9 +190,11 @@ void initState() {
   _initControllers();
   _initFocusNodes();
 
-  // ⭐ Delay snapshot loading until after the first frame
+  // Delay snapshot loading until the UI is fully built AND the event loop is stable
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    _loadSnapshotFromBackend();
+    Future.microtask(() {
+      _loadSnapshotFromBackend();
+    });
   });
 }
 
@@ -1147,7 +1149,13 @@ Future<void> _saveSnapshotToBackend(_TableSnapshot snap) async {
       }),
     );
 
-    final json = jsonDecode(res.body);
+    dynamic json;
+try {
+  json = jsonDecode(res.body);
+} catch (_) {
+  debugPrint("❌ loadSelections: invalid JSON (HTML or corrupted)");
+  return;
+}
 
     if (json["lastUpdated"] != null) {
       _lastUpdated = json["lastUpdated"];
