@@ -15,18 +15,34 @@ class PlayerPick {
   });
 
   // -----------------------------
-  // JSON Serialization
+  // Safe helpers
+  // -----------------------------
+  bool get hasPlayer => player != null;
+
+  AflPlayer get safePlayer => player ?? AflPlayer.empty();
+
+  Map<String, dynamic> get safeStats => stats ?? const {};
+
+  // -----------------------------
+  // JSON Serialization (hardened)
   // -----------------------------
   factory PlayerPick.fromJson(Map<String, dynamic> json) {
     return PlayerPick(
-      pickNumber: json['pickNumber'] as int,
-      player: json['player'] != null
+      pickNumber: json['pickNumber'] is int
+          ? json['pickNumber']
+          : int.tryParse(json['pickNumber']?.toString() ?? '') ?? 0,
+
+      player: json['player'] is Map<String, dynamic>
           ? AflPlayer.fromJson(json['player'])
           : null,
-      stats: json['stats'] != null
+
+      stats: json['stats'] is Map
           ? Map<String, dynamic>.from(json['stats'])
           : null,
-      fantasyPoints: json['fantasyPoints'] as int?,
+
+      fantasyPoints: json['fantasyPoints'] is int
+          ? json['fantasyPoints']
+          : int.tryParse(json['fantasyPoints']?.toString() ?? ''),
     );
   }
 
@@ -59,5 +75,21 @@ class PlayerPick {
     if (v is int) return v;
     if (v is double) return v.round();
     return 0;
+  }
+
+  // -----------------------------
+  // CopyWith (useful for updates)
+  // -----------------------------
+  PlayerPick copyWith({
+    AflPlayer? player,
+    Map<String, dynamic>? stats,
+    int? fantasyPoints,
+  }) {
+    return PlayerPick(
+      pickNumber: pickNumber,
+      player: player ?? this.player,
+      stats: stats ?? this.stats,
+      fantasyPoints: fantasyPoints ?? this.fantasyPoints,
+    );
   }
 }

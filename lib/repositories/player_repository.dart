@@ -12,6 +12,7 @@ class PlayerRepository {
   // LOAD SEASON (ONLY loads the requested season)
   // ------------------------------------------------------------
   Future<List<AflPlayer>> loadSeason(int season) async {
+    // Already loaded
     if (_playersBySeason.containsKey(season)) {
       return _playersBySeason[season]!;
     }
@@ -20,35 +21,68 @@ class PlayerRepository {
     print("🔥 Loading $path");
 
     String jsonString;
+
     try {
       jsonString = await rootBundle.loadString(path);
       print("✅ Loaded $path");
     } catch (e) {
       print("❌ FAILED to load $path → $e");
-      return [];
+      _playersBySeason[season] = <AflPlayer>[]; // prevent null map entries
+      return <AflPlayer>[];
     }
 
-    final data = json.decode(jsonString);
-    if (data is! Map<String, dynamic>) return [];
-    if (data['players'] is! List) return [];
+    // Safe JSON decode
+    dynamic decoded;
+    try {
+      decoded = json.decode(jsonString);
+    } catch (e) {
+      print("❌ JSON decode failed for $path → $e");
+      _playersBySeason[season] = <AflPlayer>[];
+      return <AflPlayer>[];
+    }
 
-    final rawPlayers = data['players'] as List<dynamic>;
+    if (decoded is! Map<String, dynamic>) {
+      print("❌ Invalid JSON structure in $path");
+      _playersBySeason[season] = <AflPlayer>[];
+      return <AflPlayer>[];
+    }
 
-    final players = rawPlayers.map((p) {
-      final map = Map<String, dynamic>.from(p as Map);
+    final rawPlayers = decoded['players'];
+    if (rawPlayers is! List) {
+      print("❌ 'players' field missing or invalid in $path");
+      _playersBySeason[season] = <AflPlayer>[];
+      return <AflPlayer>[];
+    }
+
+    final List<AflPlayer> players = [];
+
+    for (final raw in rawPlayers) {
+      if (raw is! Map) continue;
+
+      final map = Map<String, dynamic>.from(raw);
 
       final seasonValue = _asInt(map['season']);
       final rawClub = (map['club'] ?? '').toString();
       final normalizedClub = AflClubCodes.normalize(rawClub);
 
-      return AflPlayer(
-        id: (map['id'] ?? '').toString(),
-        name: (map['name'] ?? '').toString(),
-        club: normalizedClub,
-        guernseyNumber: _asInt(map['guernseyNumber']),
-        season: seasonValue == 0 ? season : seasonValue,
+      final id = (map['id'] ?? '').toString().trim();
+      final name = (map['name'] ?? '').toString().trim();
+
+      if (id.isEmpty || name.isEmpty) {
+        // Skip corrupted entries
+        continue;
+      }
+
+      players.add(
+        AflPlayer(
+          id: id,
+          name: name,
+          club: normalizedClub,
+          guernseyNumber: _asInt(map['guernseyNumber']),
+          season: seasonValue == 0 ? season : seasonValue,
+        ),
       );
-    }).toList();
+    }
 
     // Store ONLY for this season
     _playersBySeason[season] = players;
@@ -80,7 +114,6 @@ class PlayerRepository {
     final seasonPlayers = _playersBySeason[season];
     if (seasonPlayers == null) return null;
 
-    // ⭐ FIXED: firstWhere cannot return null — replaced with safe loop
     for (final p in seasonPlayers) {
       if (p.id == id) return p;
     }

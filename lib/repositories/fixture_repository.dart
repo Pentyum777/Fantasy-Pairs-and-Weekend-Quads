@@ -44,7 +44,6 @@ class FixtureRepository {
     print("DEBUG: loadFixturesFromExcelFile CALLED for path = $path");
 
     final season = _extractSeasonFromFilename(path);
-
     if (season == null) {
       print("❌ Could not determine season from filename: $path");
       return;
@@ -61,24 +60,20 @@ class FixtureRepository {
       final parser = FixtureParser();
       final parsedFixtures = parser.parse(bytes);
 
-      // Ensure key exists and assign safely
+      // Always store a list, even if empty
       fixturesBySeason[season] = parsedFixtures;
 
       print("DEBUG: parsedFixtures.length = ${parsedFixtures.length}");
       print("✅ Loaded ${parsedFixtures.length} fixtures for $season");
     } catch (e) {
       print("❌ DEBUG: ERROR loading fixture asset: $e");
+      fixturesBySeason[season] = <AflFixture>[]; // prevent null map entries
     }
   }
 
-  /// Returns all non-preseason rounds for a season, sorted.
-  /// Never throws; may return an empty list if no fixtures exist.
   List<int> allRoundsForSeason(int season) {
     final fixtures = fixturesBySeason[season];
-
-    if (fixtures == null || fixtures.isEmpty) {
-      return <int>[];
-    }
+    if (fixtures == null || fixtures.isEmpty) return <int>[];
 
     final rounds = <int>{};
 
@@ -92,8 +87,6 @@ class FixtureRepository {
     return sorted;
   }
 
-  /// Returns fixtures for a given season and round.
-  /// If round is null, returns preseason fixtures.
   List<AflFixture> fixturesForSeasonRound(int season, int? round) {
     final fixtures = fixturesBySeason[season] ?? const <AflFixture>[];
 
@@ -106,7 +99,6 @@ class FixtureRepository {
         .toList();
   }
 
-  /// Returns all preseason fixtures for a season.
   List<AflFixture> preseasonFixturesForSeason(int season) {
     final fixtures = fixturesBySeason[season];
     if (fixtures == null || fixtures.isEmpty) return <AflFixture>[];
@@ -114,12 +106,12 @@ class FixtureRepository {
     return fixtures.where((f) => f.isPreseason).toList();
   }
 
-  /// Uses full match payload (metadata + players) but ONLY updates fixture metadata.
-  /// Scoring is handled centrally via round-wide stats in GameViewScreen.
   Future<void> refreshLiveScores({
     required String matchId,
   }) async {
     final payload = await AFLFantasyService.fetchFantasyMatchPayload(matchId);
+
+    if (payload.isEmpty) return;
 
     final homeScore = payload['homeScore'] as int?;
     final awayScore = payload['awayScore'] as int?;
@@ -141,7 +133,6 @@ class FixtureRepository {
     }
   }
 
-  /// Updates fixture scores and status for a given matchId.
   void updateFixtureScores({
     required String matchId,
     required int homeScore,
@@ -172,7 +163,6 @@ class FixtureRepository {
   }
 
   int? _extractSeasonFromFilename(String path) {
-    // Prefer a year near the end of the path to avoid false positives
     final match = RegExp(r'(\d{4})(?=\D*$)').firstMatch(path);
     return match != null ? int.tryParse(match.group(1)!) : null;
   }

@@ -24,12 +24,31 @@ class MatchStatsParser {
     }
 
     // 2. Fetch from backend
-    final res = await http.get(Uri.parse('$baseUrl/fantasy/$matchId'));
+    http.Response res;
+    try {
+      res = await http.get(Uri.parse('$baseUrl/fantasy/$matchId'));
+    } catch (e) {
+      // Network failure
+      return [];
+    }
 
-    if (res.statusCode != 200 || res.body.isEmpty) return [];
+    // Reject empty or non-200 responses
+    if (res.statusCode != 200 || res.body.isEmpty) {
+      return [];
+    }
 
-    final json = jsonDecode(res.body);
-    final playersRaw = json['players'];
+    // 3. Safe JSON decode (prevents ga0)
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(res.body);
+    } catch (_) {
+      // HTML or corrupted JSON → avoid crash
+      return [];
+    }
+
+    if (decoded is! Map) return [];
+
+    final playersRaw = decoded['players'];
     if (playersRaw is! List) return [];
 
     // Load all players for 2025 (your dataset)
@@ -42,7 +61,7 @@ class MatchStatsParser {
 
     // Match DFS player to your repo player
     AflPlayer _matchPlayer(String id, String name) {
-      // 1. ID match (CD_Ixxxxx)
+      // 1. ID match
       final byId = seasonPlayers.where((p) => p.id == id);
       if (byId.isNotEmpty) return byId.first;
 
@@ -67,13 +86,13 @@ class MatchStatsParser {
 
     // Parse each DFS player
     for (final raw in playersRaw) {
-      if (raw is! Map<String, dynamic>) continue;
+      if (raw is! Map) continue;
 
-      // ⭐ Correct field names from backend
+      // Safe extraction
       final id = raw['id']?.toString().trim() ?? "";
       final name = raw['name']?.toString().trim() ?? "";
 
-      // Stats object from backend
+      // Safe stats map
       final stats = raw['stats'] is Map
           ? Map<String, dynamic>.from(raw['stats'])
           : <String, dynamic>{};

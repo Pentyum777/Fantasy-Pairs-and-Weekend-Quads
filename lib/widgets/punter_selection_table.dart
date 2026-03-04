@@ -1192,11 +1192,13 @@ Future<void> _loadSnapshotFromBackend() async {
       return;
     }
 
-    final json = jsonDecode(res.body);
-    if (json is! Map<String, dynamic>) {
-      debugPrint("⚠️ loadSelections: response not a JSON map");
-      return;
-    }
+    dynamic json;
+try {
+  json = jsonDecode(res.body);
+} catch (_) {
+  debugPrint("❌ loadSelections: invalid JSON (HTML or corrupted)");
+  return;
+}
 
     final data = json["data"];
     if (data is! Map<String, dynamic>) {

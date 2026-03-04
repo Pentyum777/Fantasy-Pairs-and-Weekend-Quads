@@ -9,41 +9,57 @@ class AflPlayer {
   int fantasyScore;
 
   AflPlayer({
-    required this.id,
+    required String id,
     required String? name,
     required String? club,
     this.guernseyNumber = 0,
     this.season = 2026,
     this.fantasyScore = 0,
-  })  : name = (name ?? "").trim(),
+  })  : id = id.trim().isEmpty ? "UNKNOWN" : id.trim(),
+        name = (name ?? "").trim(),
         club = (club ?? "").trim();
 
+  // -----------------------------
+  // Derived names
+  // -----------------------------
   String get fullName => name;
 
   String get shortName {
     if (name.isEmpty) return "Unknown";
-    final parts = name.split(" ");
-    if (parts.length <= 1) return name;
+    final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.length <= 1) return parts.first;
     return "${parts.first} ${parts.last}";
   }
 
+  bool get isUnknown => id == "UNKNOWN" || name == "Unknown";
+
+  // -----------------------------
+  // Empty placeholder
+  // -----------------------------
   static AflPlayer empty() => AflPlayer(
-        id: '',
-        name: 'Unknown',
-        club: '',
+        id: "UNKNOWN",
+        name: "Unknown",
+        club: "",
         guernseyNumber: 0,
         season: 2026,
         fantasyScore: 0,
       );
 
+  // -----------------------------
+  // JSON parsing (hardened)
+  // -----------------------------
   factory AflPlayer.fromJson(Map<String, dynamic> json) {
+    dynamic rawId = json['id'] ?? "";
+    dynamic rawName = json['name'] ?? json['fullName'] ?? "";
+    dynamic rawClub = json['club'] ?? json['team'] ?? "";
+
     return AflPlayer(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      club: json['team'] ?? '',
-      guernseyNumber: json['guernseyNumber'] ?? 0,
-      season: json['season'] ?? 2026,
-      fantasyScore: json['fantasyScore'] ?? 0,
+      id: rawId.toString(),
+      name: rawName.toString(),
+      club: rawClub.toString(),
+      guernseyNumber: _asInt(json['guernseyNumber']),
+      season: _asInt(json['season']) == 0 ? 2026 : _asInt(json['season']),
+      fantasyScore: _asInt(json['fantasyScore']),
     );
   }
 
@@ -56,5 +72,47 @@ class AflPlayer {
       "season": season,
       "fantasyScore": fantasyScore,
     };
+  }
+
+  // -----------------------------
+  // CopyWith
+  // -----------------------------
+  AflPlayer copyWith({
+    String? id,
+    String? name,
+    String? club,
+    int? guernseyNumber,
+    int? season,
+    int? fantasyScore,
+  }) {
+    return AflPlayer(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      club: club ?? this.club,
+      guernseyNumber: guernseyNumber ?? this.guernseyNumber,
+      season: season ?? this.season,
+      fantasyScore: fantasyScore ?? this.fantasyScore,
+    );
+  }
+
+  // -----------------------------
+  // Equality + Hashing
+  // -----------------------------
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AflPlayer &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
+
+  // -----------------------------
+  // Utils
+  // -----------------------------
+  static int _asInt(dynamic v) {
+    if (v is int) return v;
+    return int.tryParse(v?.toString() ?? "") ?? 0;
   }
 }
