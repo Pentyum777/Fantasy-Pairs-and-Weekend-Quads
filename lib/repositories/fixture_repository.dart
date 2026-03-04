@@ -163,7 +163,7 @@ class FixtureRepository {
   }
 
   int? _extractSeasonFromFilename(String path) {
-    final match = RegExp(r'(\d{4})(?=\D*$)').firstMatch(path);
+    final match = RegExp(r'(\d{4})').firstMatch(path);
     return match != null ? int.tryParse(match.group(1)!) : null;
   }
 }

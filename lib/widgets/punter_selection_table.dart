@@ -1187,6 +1187,10 @@ Future<void> _loadSnapshotFromBackend() async {
 
     final res = await http.get(url);
 
+print("DEBUG URL = $url");
+print("DEBUG STATUS = ${res.statusCode}");
+print("DEBUG RESPONSE START = ${res.body.substring(0, 200)}");
+
     if (res.statusCode != 200) {
       debugPrint("❌ loadSelections returned ${res.statusCode}");
       return;
