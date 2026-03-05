@@ -24,7 +24,20 @@ if (!(Test-Path $webDir)) {
 Write-Host "Flutter build complete."
 
 # ---------------------------------------------------------------------------
-# 1B. REMOVE SERVICE WORKER (HARD DELETE)
+# 1B. RESTORE CUSTOM index.html + MSAL FILES
+# ---------------------------------------------------------------------------
+Write-Host "Restoring custom index.html and MSAL scripts..."
+
+# Copy your custom index.html into the build output
+Copy-Item "web/index.html" "$webDir/index.html" -Force
+
+# Copy MSAL JS files into build output
+Copy-Item "web/assets" "$webDir/assets" -Recurse -Force
+
+Write-Host "Custom index.html and MSAL scripts restored."
+
+# ---------------------------------------------------------------------------
+# 1C. REMOVE SERVICE WORKER (HARD DELETE)
 # ---------------------------------------------------------------------------
 $swPath = Join-Path $webDir "flutter_service_worker.js"
 if (Test-Path $swPath) {
@@ -51,26 +64,7 @@ Copy-Item "$webDir\*" $docsDir -Recurse
 Write-Host "Copied build to /docs."
 
 # ---------------------------------------------------------------------------
-# 3. COPY MSAL.JS INTO /docs
-# ---------------------------------------------------------------------------
-$msalSourcePaths = @("web/msal.js", "msal.js")
-$msalCopied = $false
-
-foreach ($path in $msalSourcePaths) {
-    if (Test-Path $path) {
-        Copy-Item $path "$docsDir/msal.js"
-        Write-Host "msal.js copied from $path"
-        $msalCopied = $true
-        break
-    }
-}
-
-if (-not $msalCopied) {
-    Write-Host "WARNING: msal.js not found -- login will fail."
-}
-
-# ---------------------------------------------------------------------------
-# 4. GIT COMMIT + PUSH (SOURCE CODE FIRST, THEN DEPLOY)
+# 3. GIT COMMIT + PUSH (SOURCE CODE FIRST, THEN DEPLOY)
 # ---------------------------------------------------------------------------
 
 Write-Host "Committing source code changes..."
