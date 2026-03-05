@@ -1,2 +1,5 @@
+[variables]
+NIXPACKS_USE_NIX = "1"
+
 [phases.setup]
-nixPkgs = ["chromium", "chromiumDriver", "nss", "freetype", "fontconfig"]
+nixPkgs = ["chromium", "nss", "freetype", "fontconfig"]
