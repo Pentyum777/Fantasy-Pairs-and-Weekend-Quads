@@ -5,8 +5,13 @@ import cors from "cors";
 
 import { scrapeDFS } from "./dfs_scraper.js";
 
-const dfsMap = JSON.parse(fs.readFileSync("./dfs_map.json", "utf8"));
-const squiggleMap = JSON.parse(fs.readFileSync("./squiggle_map.json", "utf8"));
+const dfsMap = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "dfs_map.json"), "utf8")
+);
+
+const squiggleMap = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "squiggle_map.json"), "utf8")
+);
 
 console.log("🚀 DFS + Squiggle backend starting...");
 
