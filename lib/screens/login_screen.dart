@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class LoginScreen extends StatefulWidget {
   final void Function() onLoggedIn;
 
@@ -57,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onEnter: (_) => setState(() => _hovering = true),
                   onExit: (_) => setState(() => _hovering = false),
                   child: GestureDetector(
-                    onTap: widget.onLoggedIn,   // ⭐ FIXED: no MSAL here
+                    onTap: widget.onLoggedIn,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       padding: EdgeInsets.all(mobile ? 12 : 20),
