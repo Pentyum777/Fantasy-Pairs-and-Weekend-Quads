@@ -89367,8 +89367,8 @@ if(this.gia())return 70
 return 90},
 gqI(){var s=this.c
 s.toString
-if(this.hC(s))return 120
-if(this.gia())return 140
+if(this.hC(s))return 160
+if(this.gia())return 180
 return 185},
 gHW(){var s=this.c
 s.toString

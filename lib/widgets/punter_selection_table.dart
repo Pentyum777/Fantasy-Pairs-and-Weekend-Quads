@@ -137,8 +137,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   double get kPickColumnWidth {
-    if (isPortraitPhone(context)) return 120;
-    if (isLandscapePhone) return 140;
+    if (isPortraitPhone(context)) return 160;
+    if (isLandscapePhone) return 180;
     return 185;
   }
 
