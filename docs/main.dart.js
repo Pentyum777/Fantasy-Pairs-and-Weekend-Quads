@@ -87909,13 +87909,13 @@ return A.a0(p.vf("assets/afl_fixtures_2025_round_24.xlsx"),$async$tk)
 case 3:return A.X(null,r)}})
 return A.Y($async$tk,r)},
 a3i(a){var s,r,q,p,o=null,n=A.by(a,o,t.w).w.a,m=n.a,l=n.b>m&&m<600
-m=l?12:20
-s=A.db(l?16:22)
-r=t.V
-r=this.Q?A.b([],r):A.b([new A.b5(4,B.B,A.K(140,68,138,255),B.h,25)],r)
-q=this.Q
-p=q?0.4:1
-return A.ey(A.pk(o,A.mB(A.ax4(A.lj(A.aBD("assets/images/Football.Logo.png",o,B.lG,l?100:150),q,o),p),B.P,new A.bG(o,o,o,s,r,o,B.M),B.de,o,o,new A.an(m,m,m,m),o),B.a6,!1,o,o,o,o,o,o,o,o,o,o,o,o,o,o,new A.apF(this),o,o,o),o,o)},
+m=this.Q
+s=l?12:20
+r=A.db(l?16:22)
+q=t.V
+q=m?A.b([],q):A.b([new A.b5(4,B.B,A.K(140,68,138,255),B.h,25)],q)
+p=this.Q?0.4:1
+return A.ey(A.lj(A.pk(o,A.mB(A.ax4(A.aBD("assets/images/Football.Logo.png",o,B.lG,l?100:150),p),B.P,new A.bG(o,o,o,r,q,o,B.M),B.de,o,o,new A.an(s,s,s,s),o),B.a6,!1,o,o,o,o,o,o,o,o,o,o,o,o,o,o,new A.apF(this),o,o,o),m,o),o,o)},
 K(a){var s=this,r=null,q=A.CO(r,B.k4,r)
 return new A.zK(A.bx(r,s.d==null?s.a3i(a):new A.tH(s.z,new A.apL(s),r,t.qs),B.j,r,r,B.lF,r,r,r,r,r,r,r),"AFL App",q,r)}}
 A.apN.prototype={
