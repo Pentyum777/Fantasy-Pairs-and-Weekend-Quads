@@ -76,47 +76,59 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _buildLoginUI(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final mobile = size.height > size.width && size.width < 600;
+  final size = MediaQuery.of(context).size;
+  final mobile = size.height > size.width && size.width < 600;
 
-    return Center(
-      child: GestureDetector(
-        onTap: () {
-          if (_loggingIn) return;
-          setState(() => _loggingIn = true);
+  return Center(
+    child: GestureDetector(
+      onTap: () {
+        if (_loggingIn) return;
 
-          if (kIsWeb) {
+        setState(() => _loggingIn = true);
+
+        if (kIsWeb) {
+          Future.microtask(() {
             MsalService.startLogin(["User.Read"]);
-          } else {
-            userRoleService.setUser("wpenfold@bigpond.net.au");
-            setState(() {
-              _token = "local-login";
-              _fixtureLoadFuture = _loadAllFixtures();
-            });
-          }
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: EdgeInsets.all(mobile ? 12 : 20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(mobile ? 16 : 22),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blueAccent.withOpacity(0.55),
-                blurRadius: 25,
-                spreadRadius: 4,
-              ),
-            ],
-          ),
-          child: Image.asset(
-            "assets/images/Football.Logo.png",
-            height: mobile ? 100 : 150,
-            fit: BoxFit.contain,
+          });
+        } else {
+          userRoleService.setUser("wpenfold@bigpond.net.au");
+          setState(() {
+            _token = "local-login";
+            _fixtureLoadFuture = _loadAllFixtures();
+          });
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: EdgeInsets.all(mobile ? 12 : 20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(mobile ? 16 : 22),
+          boxShadow: _loggingIn
+              ? []
+              : [
+                  BoxShadow(
+                    color: Colors.blueAccent.withOpacity(0.55),
+                    blurRadius: 25,
+                    spreadRadius: 4,
+                  ),
+                ],
+        ),
+        child: Opacity(
+          opacity: _loggingIn ? 0.4 : 1.0,
+          child: IgnorePointer(
+            ignoring: _loggingIn,
+            child: Image.asset(
+              "assets/images/Football.Logo.png",
+              height: mobile ? 100 : 150,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
