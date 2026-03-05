@@ -23,49 +23,80 @@ export async function scrapeDFS_HTML(dfsId) {
 
     const players = [];
 
-    // Select both home + away tables
-    const tables = $("table.dataTable");
+    // Find ALL tables and detect the stats table by header names
+    const allTables = $("table");
 
-    tables.each((_, table) => {
-      const rows = $(table).find("tbody tr");
+    let statsTable = null;
 
-      rows.each((__, row) => {
-        const cells = $(row).find("td");
-        if (cells.length === 0) return;
+    allTables.each((_, table) => {
+      const headers = $(table).find("thead th").map((__, th) =>
+        $(th).text().trim().toUpperCase()
+      ).get();
 
-        const nameCell = $(cells[0]);
-        const link = nameCell.find("a");
-        const name = link.text().trim() || nameCell.text().trim();
-        const href = link.attr("href") || "";
+      // Look for the known DFS stats headers
+      if (
+        headers.includes("PLAYER") &&
+        headers.includes("D") &&
+        headers.includes("M") &&
+        headers.includes("T") &&
+        headers.includes("HO") &&
+        headers.includes("FF") &&
+        headers.includes("FA") &&
+        (headers.includes("G.B") || headers.includes("G.B.")) &&
+        headers.includes("FP")
+      ) {
+        statsTable = table;
+      }
+    });
 
-        const idMatch = href.match(/playerId=([^&]+)/);
-        const playerId = idMatch ? idMatch[1] : name;
+    if (!statsTable) {
+      console.warn("⚠ No DFS stats table found in HTML");
+      return { players: [], meta: {} };
+    }
 
-        const parse = (v) => parseInt(v || "0", 10);
+    // Parse rows
+    const rows = $(statsTable).find("tbody tr");
 
-        const disposals = parse($(cells[1]).text());
-        const marks = parse($(cells[2]).text());
-        const tackles = parse($(cells[3]).text());
-        const hitouts = parse($(cells[4]).text());
-        const freesFor = parse($(cells[5]).text());
-        const freesAgainst = parse($(cells[6]).text());
-        const goals = parse($(cells[7]).text());
-        const behinds = parse($(cells[8]).text());
-        const fantasyPoints = parse($(cells[9]).text());
+    rows.each((_, row) => {
+      const cells = $(row).find("td");
+      if (cells.length < 10) return;
 
-        players.push({
-          id: playerId,
-          name,
-          fantasyPoints,
-          goals,
-          behinds,
-          disposals,
-          marks,
-          tackles,
-          hitouts,
-          freesFor,
-          freesAgainst,
-        });
+      const name = $(cells[1]).text().trim(); // Column 1 = PLAYER
+      if (!name) return;
+
+      const parse = (v) => parseInt(String(v).trim() || "0", 10);
+
+      const disposals = parse($(cells[2]).text());
+      const marks = parse($(cells[3]).text());
+      const tackles = parse($(cells[4]).text());
+      const hitouts = parse($(cells[5]).text());
+      const freesFor = parse($(cells[6]).text());
+      const freesAgainst = parse($(cells[7]).text());
+
+      // G.B column → "1.2" or "0.1" or "2.0"
+      const gb = $(cells[8]).text().trim();
+      let goals = 0;
+      let behinds = 0;
+      if (gb.includes(".")) {
+        const [g, b] = gb.split(".");
+        goals = parse(g);
+        behinds = parse(b);
+      }
+
+      const fantasyPoints = parse($(cells[11]).text()); // FP column
+
+      players.push({
+        id: name, // DFS does not expose playerId in this table
+        name,
+        fantasyPoints,
+        goals,
+        behinds,
+        disposals,
+        marks,
+        tackles,
+        hitouts,
+        freesFor,
+        freesAgainst,
       });
     });
 
