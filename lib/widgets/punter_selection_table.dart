@@ -137,8 +137,8 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   double get kPickColumnWidth {
-    if (isPortraitPhone(context)) return 300;
-    if (isLandscapePhone) return 320;
+    if (isPortraitPhone(context)) return 280;
+    if (isLandscapePhone) return 300;
     return 185;
   }
 
@@ -688,30 +688,33 @@ Widget _buildPickCell(
   final colours = player == null ? null : _getTeamColoursForPlayer(player);
 
   return Container(
-    width: kPickColumnWidth,
+    width: kPickColumnWidth,                 // 🔥 FULL WIDTH OF CELL
+    height: double.infinity,
     alignment: Alignment.center,
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+
+    decoration: colours == null
+        ? null
+        : BoxDecoration(
+            color: colours["bg"]?.withAlpha(230),   // 🔥 BACKGROUND NOW FILLS FULL WIDTH
+            borderRadius: BorderRadius.circular(4),
+          ),
+
     child: Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: colours == null
-                ? null
-                : BoxDecoration(
-                    color: colours["bg"]?.withAlpha(230),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-            child: Text(
-              text,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colours == null ? cs.onSurfaceVariant : colours["fg"],
-              ),
+        // 🔥 FIX: No Expanded — it was collapsing the background
+        SizedBox(
+          width: kPickColumnWidth - (player != null ? 20 : 0), 
+          child: Text(
+            text,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colours == null ? cs.onSurfaceVariant : colours["fg"],
             ),
           ),
         ),
@@ -741,6 +744,7 @@ Widget _buildPickCell(
     ),
   );
 },
+
 
 
     onChanged: (player) {
