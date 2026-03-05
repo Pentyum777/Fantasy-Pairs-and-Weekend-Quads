@@ -31,37 +31,39 @@ class MsalService {
   // WEB IMPLEMENTATION
   //
   static void listenForToken(
-    void Function(String token, MsalAccount account) onTokenReceived,
-  ) {
-    if (!kIsWeb) return; // Windows/Android/iOS → no-op
+  void Function(String token, MsalAccount account) onTokenReceived,
+) {
+  if (!kIsWeb) return;
 
-    final html.Window global = html.window;
+  final html.Window global = html.window;
 
-    js_util.setProperty(
-      global,
-      'onMsalToken',
-      allowInterop((dynamic token, dynamic accountObj) {
-        final tokenStr = token as String?;
-        if (tokenStr == null) return;
+  // Register callback for future tokens
+  js_util.setProperty(
+    global,
+    'onMsalToken',
+    allowInterop((dynamic token, dynamic accountObj) {
+      final tokenStr = token as String?;
+      if (tokenStr == null) return;
 
-        final account = MsalAccount.fromJsObject(accountObj as JsMsalAccount?);
-        onTokenReceived(tokenStr, account);
-      }),
-    );
+      final account = MsalAccount.fromJsObject(accountObj as JsMsalAccount?);
+      onTokenReceived(tokenStr, account);
+    }),
+  );
 
-    final pendingToken = js_util.getProperty(global, '__pendingMsalToken');
-    final pendingAccount = js_util.getProperty(global, '__pendingMsalAccount');
+  // 🔥 NEW: Check for pending token from redirect
+  final pendingToken = js_util.getProperty(global, '__pendingMsalToken');
+  final pendingAccount = js_util.getProperty(global, '__pendingMsalAccount');
 
-    if (pendingToken != null && pendingToken is String) {
-      final account =
-          MsalAccount.fromJsObject(pendingAccount as JsMsalAccount?);
+  if (pendingToken != null && pendingToken is String) {
+    final account = MsalAccount.fromJsObject(pendingAccount as JsMsalAccount?);
 
-      onTokenReceived(pendingToken, account);
+    onTokenReceived(pendingToken, account);
 
-      js_util.setProperty(global, '__pendingMsalToken', null);
-      js_util.setProperty(global, '__pendingMsalAccount', null);
-    }
+    // Clear pending values
+    js_util.setProperty(global, '__pendingMsalToken', null);
+    js_util.setProperty(global, '__pendingMsalAccount', null);
   }
+}
 
   static void startLogin(List<String> scopes) {
     if (!kIsWeb) return; // Windows/Android/iOS → no-op
