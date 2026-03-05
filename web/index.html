@@ -5,21 +5,17 @@
     <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
     <meta name="description" content="Fantasy Pairs and Weekend Quads" />
 
+    <!-- IMPORTANT: Correct base href for GitHub Pages subfolder -->
     <base href="/Fantasy-Pairs-and-Weekend-Quads/" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Fantasy Pairs & Weekend Quads</title>
 
-    <!-- MSAL scripts -->
-    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
-    <script src="assets/msal.js"></script>
-    <script src="assets/msal_interop.js"></script>
-
     <!-- Flutter Web JS loader -->
     <script src="flutter.js" defer></script>
 
-    <!-- Disable caching -->
+    <!-- Disable all caching to prevent stale JS -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -27,6 +23,7 @@
 
   <body>
     <script>
+      // Load Flutter app
       window.addEventListener("load", function () {
         _flutter.loader.loadEntrypoint({
           entrypointUrl: "main.dart.js",
