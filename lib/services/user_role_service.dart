@@ -7,18 +7,24 @@ class UserRoleService {
     "wayne.penfold@gmail.com",
   };
 
+  String? _currentUser;
   UserRole role = UserRole.readOnly;
+
+  String? get currentUser => _currentUser;
 
   bool get isAdmin => role == UserRole.admin;
   bool get isReadOnly => role == UserRole.readOnly;
 
   void setUser(String email) {
     final normalized = email.trim().toLowerCase();
+    _currentUser = normalized;
 
     if (adminEmails.contains(normalized)) {
       role = UserRole.admin;
     } else {
       role = UserRole.readOnly;
     }
+
+    print("UserRoleService → user: $_currentUser, role: $role");
   }
 }

@@ -127,11 +127,8 @@ class _MyAppState extends State<MyApp> {
         child: _token == null
             ? LoginScreen(
   onLoggedIn: () {
-    setState(() {
-      _token = "local-login";   // or whatever you use after MSAL login
-      _fixtureLoadFuture = _loadAllFixtures();
-    });
-  },
+  MsalService.startLogin(["User.Read"]);
+},
 )
             : FutureBuilder(
                 future: _fixtureLoadFuture,
