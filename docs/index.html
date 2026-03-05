@@ -5,20 +5,28 @@
     <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
     <meta name="description" content="Fantasy Pairs and Weekend Quads" />
 
-    <!-- IMPORTANT: Correct base href for GitHub Pages subfolder -->
+    <!-- Correct base href for GitHub Pages subfolder -->
     <base href="/Fantasy-Pairs-and-Weekend-Quads/" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Fantasy Pairs & Weekend Quads</title>
 
+    <!-- MSAL -->
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+
+    <script>
+      // Explicit redirect URI for MSAL (GitHub Pages subfolder)
+      window.msalRedirectUri = window.location.origin + "/Fantasy-Pairs-and-Weekend-Quads/";
+    </script>
+
+    <!-- MSAL interop -->
     <script src="msal_interop.js"></script>
 
     <!-- Flutter Web JS loader -->
     <script src="flutter.js" defer></script>
 
-    <!-- Disable all caching to prevent stale JS -->
+    <!-- Disable caching -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />

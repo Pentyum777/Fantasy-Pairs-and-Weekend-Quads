@@ -81,7 +81,7 @@ class _MyAppState extends State<MyApp> {
 
   return Center(
     child: IgnorePointer(
-      ignoring: _loggingIn, // disable ALL taps, including GestureDetector
+      ignoring: _loggingIn, // disables ALL taps, including GestureDetector
       child: GestureDetector(
         onTap: () {
           if (_loggingIn) return;
@@ -128,6 +128,7 @@ class _MyAppState extends State<MyApp> {
     ),
   );
 }
+
 
 
 

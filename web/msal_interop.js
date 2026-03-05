@@ -1,13 +1,33 @@
+// Use explicit redirect URI for GitHub Pages deployment
+const redirectUri = window.location.origin + "/Fantasy-Pairs-and-Weekend-Quads/";
+
 const msalConfig = {
   auth: {
     clientId: "c75121a5-552e-46c6-a357-2e5029b56131",
     authority: "https://login.microsoftonline.com/common",
-    redirectUri: window.location.origin + window.location.pathname
+    redirectUri: redirectUri
   }
 };
 
 const msalInstance = new msal.PublicClientApplication(msalConfig);
 
+// Handle redirect result and deliver token to Flutter
+msalInstance.handleRedirectPromise().then((result) => {
+  if (result && result.accessToken) {
+    const account = { username: result.account.username };
+
+    if (typeof window.onMsalToken === "function") {
+      window.onMsalToken(result.accessToken, account);
+    } else {
+      window.__pendingMsalToken = result.accessToken;
+      window.__pendingMsalAccount = account;
+    }
+  }
+}).catch((err) => {
+  console.error("MSAL redirect handling error:", err);
+});
+
+// Called by Flutter to start login
 window.msalLogin = async function (scopesJson) {
   console.log("msalLogin called with scopes:", scopesJson);
 
@@ -20,6 +40,7 @@ window.msalLogin = async function (scopesJson) {
   }
 };
 
+// Called by Flutter to get token silently
 window.msalGetToken = async function (scopesJson) {
   console.log("msalGetToken called with scopes:", scopesJson);
 
