@@ -9,7 +9,13 @@ class AflFixture {
   final String venue;
   final String time;
   final String source;
+
+  /// AFL MatchCentre ID (CD_M…)
   final String? matchId;
+
+  /// DFS Australia game ID (7164, 7165, etc.)
+  /// ⭐ This is the new field your backend now requires.
+  String? dfsId;
 
   final String? footyInfoUrl;
   final String? footyInfoId;
@@ -21,7 +27,7 @@ class AflFixture {
   int awayScore;
   String quarterText;
   String timeText;
-  String status;   // ⭐ NEW FIELD
+  String status;
 
   AflFixture({
     required this.roundLabel,
@@ -36,11 +42,15 @@ class AflFixture {
     required this.isPreseason,
     this.footyInfoUrl,
     this.footyInfoId,
+
+    // ⭐ NEW FIELD
+    this.dfsId,
+
     this.homeScore = 0,
     this.awayScore = 0,
     this.quarterText = "",
     this.timeText = "",
-    this.status = "",   // ⭐ NEW DEFAULT
+    this.status = "",
   });
 
   /// Backwards‑compatible flag used by GameViewScreen

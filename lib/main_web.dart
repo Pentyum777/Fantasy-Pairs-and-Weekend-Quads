@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 import 'package:flutter/material.dart';
 
@@ -101,7 +101,7 @@ class _MyAppState extends State<MyApp> {
 
         if (newVersion != _currentVersion) {
           print("🔄 New version detected → forcing reload");
-          html.window.location.reload();
+          web.window.location.reload();
         }
       }
     } catch (_) {}
@@ -136,7 +136,7 @@ class _MyAppState extends State<MyApp> {
                   validateAflData(
   fixtureRepo: fixtureRepo,
   playerRepo: playerRepo,
-  season: selectedSeason,
+  season: selectedSeason,   // ⭐ FIX
 );
 
                   return SeasonSelectionScreen(

@@ -57,17 +57,18 @@ class FixtureRepository {
 
       print("DEBUG: bytes loaded = ${bytes.length}");
 
-      final parser = FixtureParser();
+      // ⭐ NEW: Pass DFS map into parser
+      final parser = FixtureParser(AFLFantasyService.dfsMap);
+
       final parsedFixtures = parser.parse(bytes);
 
-      // Always store a list, even if empty
       fixturesBySeason[season] = parsedFixtures;
 
       print("DEBUG: parsedFixtures.length = ${parsedFixtures.length}");
       print("✅ Loaded ${parsedFixtures.length} fixtures for $season");
     } catch (e) {
       print("❌ DEBUG: ERROR loading fixture asset: $e");
-      fixturesBySeason[season] = <AflFixture>[]; // prevent null map entries
+      fixturesBySeason[season] = <AflFixture>[];
     }
   }
 

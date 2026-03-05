@@ -5,6 +5,10 @@ import '../models/afl_fixture.dart';
 import '../utils/afl_club_codes.dart';
 
 class FixtureParser {
+  final Map<String, dynamic> dfsMap;
+
+  FixtureParser(this.dfsMap);
+
   List<AflFixture> parse(Uint8List bytes) {
     print("DEBUG: FixtureParser.parse() called");
     print("DEBUG: bytes length = ${bytes.length}");
@@ -56,7 +60,6 @@ class FixtureParser {
     final idxMatchId = headerIndex["MATCH ID"];
     final idxIsPreseason = headerIndex["ISPRESEASON"];
 
-    // NEW FIELDS
     final idxFootyInfo = headerIndex["FOOTY INFO"];
     final idxFootyInfoId = headerIndex["FOOTY INFO ID"];
 
@@ -141,17 +144,19 @@ class FixtureParser {
       final int? roundNumber =
           isPreseason ? null : _parseRound(roundLabel);
 
-      // NEW: Extract Footy Info fields
       final footyInfoUrl =
           idxFootyInfo != null ? _cellString(row, idxFootyInfo) : null;
 
       final footyInfoId =
           idxFootyInfoId != null ? _cellString(row, idxFootyInfoId) : null;
 
+      // ⭐ NEW: Lookup DFS ID using matchId
+      final dfsId = matchId != null ? dfsMap[matchId] : null;
+
       print(
         "ROW $r | RAW_ROUND='$originalRoundLabel' → NORM_ROUND='$roundLabel' → round=${roundNumber ?? "null"} | "
         "DATE='$dateText' → $parsedDate | HOME='$homeTeamRaw' → '$homeTeam' | "
-        "AWAY='$awayTeamRaw' → '$awayTeam' | matchId='${matchId ?? ""}' isPreseason=$isPreseason | "
+        "AWAY='$awayTeamRaw' → '$awayTeam' | matchId='${matchId ?? ""}' dfsId='${dfsId ?? ""}' isPreseason=$isPreseason | "
         "footyInfoUrl='$footyInfoUrl' footyInfoId='$footyInfoId'",
       );
 
@@ -169,6 +174,9 @@ class FixtureParser {
           isPreseason: isPreseason,
           footyInfoUrl: footyInfoUrl,
           footyInfoId: footyInfoId,
+
+          // ⭐ NEW FIELD
+          dfsId: dfsId?.toString(),
         ),
       );
     }

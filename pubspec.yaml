@@ -48,6 +48,7 @@ flutter:
     - assets/afl_players_2025.xlsx
     - assets/afl_players_2026.xlsx
     - assets/afl_fixtures_2025_round_24.xlsx
+    - assets/dfs_map.json    
     - assets/data/
     - assets/images/stadium_glow.png
     - assets/images/Football.Logo.png
