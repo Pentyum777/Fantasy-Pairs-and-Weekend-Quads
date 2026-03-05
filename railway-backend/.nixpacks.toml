@@ -1,6 +1,12 @@
 [build]
 builder = "node"
 
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.start]
+cmd = "npm start"
+
 [variables]
 NIXPACKS_USE_NIX = "1"
 
