@@ -15,5 +15,8 @@
     "playwright": "^1.45.0",
     "playwright-core": "^1.45.0",
     "puppeteer": "^24.38.0"
+  },
+  "puppeteer": {
+    "skipChromeDownload": true
   }
 }
