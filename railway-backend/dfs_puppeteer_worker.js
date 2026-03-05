@@ -5,25 +5,39 @@ export async function startDFSWorker(dfsId) {
   const url = `https://dfsaustralia.com/live-scoring/?gameId=${dfsId}`;
 
   const browser = await puppeteer.launch({
-  headless: "new",
-  executablePath: "/nix/var/nix/profiles/default/bin/chromium",
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-    "--disable-software-rasterizer",
-    "--no-zygote",
-    "--single-process"
-  ]
-});
+    executablePath: "/nix/var/nix/profiles/default/bin/chromium",
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--disable-software-rasterizer",
+      "--disable-dev-tools",
+      "--no-zygote",
+      "--single-process",
+      "--disable-background-networking",
+      "--disable-background-timer-throttling",
+      "--disable-breakpad",
+      "--disable-client-side-phishing-detection",
+      "--disable-default-apps",
+      "--disable-hang-monitor",
+      "--disable-popup-blocking",
+      "--disable-prompt-on-repost",
+      "--disable-sync",
+      "--metrics-recording-only",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--ignore-certificate-errors",
+      "--ignore-ssl-errors"
+    ]
+  });
 
   const page = await browser.newPage();
 
   async function scrape() {
     try {
       await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
-
       await page.waitForSelector("table", { timeout: 15000 });
 
       const data = await page.evaluate(() => {
@@ -41,7 +55,6 @@ export async function startDFSWorker(dfsId) {
 
         const players = rows.map(row => {
           const cells = Array.from(row.querySelectorAll("td")).map(td => td.innerText.trim());
-
           const name = cells[1];
           if (!name) return null;
 
@@ -104,9 +117,10 @@ export async function startDFSWorker(dfsId) {
       });
 
       global.liveStatsCache[dfsId] = {
-  ...data,
-  timestamp: Date.now()
-};
+        ...data,
+        timestamp: Date.now()
+      };
+
       console.log("DFS worker updated stats:", data.players.length);
 
     } catch (err) {
