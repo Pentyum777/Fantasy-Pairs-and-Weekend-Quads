@@ -89497,7 +89497,8 @@ for(l=k.b,h=J.au(e),d=0;d<l.length;++d){f=l[d]
 if(d>=h.gt(e)){f.c=f.b=null
 continue}c=h.i(e,d)
 b=c.a
-a=typeof b=="string"?B.c.br(b):""
+if(typeof b=="string")a=B.c.br(b)
+else a=""
 if(a.length===0){f.c=f.b=null
 continue}b=a4.a.f
 a0=A.M(b).h("aa<1>")

@@ -1065,8 +1065,8 @@ _controllers[row.punterNumber]?.text = safeName;
       // SAFE PLAYER ID
       // -----------------------------
       final pid = (snapPick.playerId is String)
-          ? snapPick.playerId!.trim()
-          : "";
+    ? (snapPick.playerId ?? "").trim()
+    : "";
 
       if (pid.isEmpty) {
         pick.player = null;
