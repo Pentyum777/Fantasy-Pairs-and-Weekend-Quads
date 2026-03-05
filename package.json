@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/Pentyum777/Fantasy-Pairs-and-Weekend-Quads#readme",
   "dependencies": {
-    "playwright": "^1.58.1"
+    "playwright": "^1.58.1",
+    "puppeteer": "^24.38.0"
   }
 }
