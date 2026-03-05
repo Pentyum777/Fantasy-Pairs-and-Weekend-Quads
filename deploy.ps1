@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
-# SIMPLE DEPLOY SCRIPT FOR FLUTTER WEB → GITHUB PAGES
-# Build → wipe /docs → copy → commit source + deploy → push
+# DEPLOY SCRIPT FOR FLUTTER WEB → GITHUB PAGES
+# Fixes MSAL 404 errors by restoring index.html and copying MSAL files correctly
 # ---------------------------------------------------------------------------
 
 Write-Host "=== Starting Deployment ==="
@@ -24,11 +24,11 @@ if (!(Test-Path $webDir)) {
 Write-Host "Flutter build complete."
 
 # ---------------------------------------------------------------------------
-# 1B. RESTORE CUSTOM index.html + MSAL FILES
+# 1B. RESTORE CUSTOM index.html + MSAL FILES INTO BUILD
 # ---------------------------------------------------------------------------
-Write-Host "Restoring custom index.html and MSAL scripts..."
+Write-Host "Restoring custom index.html and MSAL scripts into build..."
 
-# Copy your custom index.html into the build output
+# Copy custom index.html
 Copy-Item "web/index.html" "$webDir/index.html" -Force
 
 # Ensure build/web/assets exists
@@ -37,26 +37,23 @@ if (!(Test-Path $buildAssets)) {
     New-Item -ItemType Directory -Path $buildAssets | Out-Null
 }
 
-# Copy MSAL JS files into build output assets folder
+# Copy MSAL JS files into build/web/assets
 Copy-Item "web/assets/msal.js" "$buildAssets/msal.js" -Force
 Copy-Item "web/assets/msal_interop.js" "$buildAssets/msal_interop.js" -Force
 
-Write-Host "Custom index.html and MSAL scripts restored."
+Write-Host "Custom index.html and MSAL scripts restored into build."
 
 # ---------------------------------------------------------------------------
-# 1C. REMOVE SERVICE WORKER (HARD DELETE)
+# 1C. REMOVE SERVICE WORKER
 # ---------------------------------------------------------------------------
 $swPath = Join-Path $webDir "flutter_service_worker.js"
 if (Test-Path $swPath) {
-    Write-Host "Removing flutter_service_worker.js to prevent stale caching..."
+    Write-Host "Removing flutter_service_worker.js..."
     Remove-Item -Force $swPath
-    Write-Host "Service worker removed."
-} else {
-    Write-Host "No service worker found -- nothing to remove."
 }
 
 # ---------------------------------------------------------------------------
-# 2. CLEAN /docs COMPLETELY AND COPY BUILD
+# 2. CLEAN /docs AND COPY BUILD
 # ---------------------------------------------------------------------------
 $docsDir = "docs"
 
@@ -68,10 +65,11 @@ if (Test-Path $docsDir) {
 Write-Host "Creating /docs and copying build..."
 New-Item -ItemType Directory -Path $docsDir | Out-Null
 Copy-Item "$webDir\*" $docsDir -Recurse
+
 Write-Host "Copied build to /docs."
 
 # ---------------------------------------------------------------------------
-# 2B. ENSURE MSAL FILES ARE IN /docs/assets/
+# 2B. COPY MSAL FILES INTO /docs/assets (CRITICAL FIX)
 # ---------------------------------------------------------------------------
 Write-Host "Copying MSAL scripts into /docs/assets..."
 
@@ -86,9 +84,8 @@ Copy-Item "web/assets/msal_interop.js" "$docsAssets/msal_interop.js" -Force
 Write-Host "MSAL scripts copied into /docs/assets."
 
 # ---------------------------------------------------------------------------
-# 3. GIT COMMIT + PUSH (SOURCE CODE FIRST, THEN DEPLOY)
+# 3. GIT COMMIT + PUSH
 # ---------------------------------------------------------------------------
-
 Write-Host "Committing source code changes..."
 git add .
 git commit -m "Source update" --allow-empty
