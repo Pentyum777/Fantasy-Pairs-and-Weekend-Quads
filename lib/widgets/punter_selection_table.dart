@@ -1134,19 +1134,19 @@ Future<void> _saveSnapshotToBackend(_TableSnapshot snap) async {
       url,
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
-        "gameType": widget.gameType,
-        "season": widget.season,
-        "round": safeRound,
-        "punterNames": snap.punterNames,
-        "picks": snap.picks.map((row) {
-          return row.map((p) {
-            return {
-              "playerId": p.playerId,
-              "stats": p.stats,
-            };
-          }).toList();
-        }).toList(),
-      }),
+  "gameType": widget.gameType,
+  "season": widget.season.toString(),
+  "round": safeRound.toString(),
+  "punterNames": snap.punterNames,
+  "picks": snap.picks.map((row) {
+    return row.map((p) {
+      return {
+        "playerId": p.playerId,
+        "stats": p.stats,
+      };
+    }).toList();
+  }).toList(),
+}),
     );
 
     dynamic json;
@@ -1176,14 +1176,14 @@ Future<void> _loadSnapshotFromBackend() async {
     final int safeRound = widget.round ;
 
     final url = Uri.https(
-      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
-      "/loadSelections",
-      {
-        "gameType": widget.gameType,
-        "season": widget.season,
-        "round": safeRound.toString(),
-      },
-    );
+  "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+  "/loadSelections",
+  {
+    "gameType": widget.gameType,
+    "season": widget.season.toString(),
+    "round": safeRound.toString(),
+  },
+);
 
 print("DEBUG URL = $url");
 
