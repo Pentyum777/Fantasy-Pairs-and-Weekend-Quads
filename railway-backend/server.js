@@ -5,7 +5,7 @@ import cors from "cors";
 import { fileURLToPath } from "url";
 
 
-import { scrapeDFS } from "./dfs_scraper.js";
+import { scrapeDFS_HTML } from "./dfs_scraper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -262,12 +262,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
   let dfsData;
   try {
     try {
-  dfsData = await scrapeDFS(dfsId);
-
-  if (!dfsData.players?.length) {
-    console.warn("JSON empty — falling back to HTML scraper");
-    dfsData = await scrapeDFS_HTML(dfsId);
-  }
+  dfsData = await scrapeDFS_HTML(dfsId);
 } catch {
   console.warn("JSON failed — using HTML scraper");
   dfsData = await scrapeDFS_HTML(dfsId);
