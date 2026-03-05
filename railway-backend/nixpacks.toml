@@ -11,7 +11,7 @@ cmd = "npm start"
 NIXPACKS_USE_NIX = "1"
 
 [phases.setup]
-nixPkgs = ["chromium", "nss", "freetype", "fontconfig"]
+nixPkgs = ["nodejs", "chromium", "nss", "freetype", "fontconfig"]
 
 [phases.setup.apt]
 packages = []
