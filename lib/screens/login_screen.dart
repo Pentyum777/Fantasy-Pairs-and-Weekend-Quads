@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/msal_service.dart';
+
 
 class LoginScreen extends StatefulWidget {
   final void Function() onLoggedIn;
@@ -13,13 +13,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   bool _hovering = false;
-
-  void _login() {
-  setState(() => _loading = true);
-
-  // Trigger MSAL login
-  MsalService.startLogin(["User.Read"]);
-}
 
   bool isPortraitPhone(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -64,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onEnter: (_) => setState(() => _hovering = true),
                   onExit: (_) => setState(() => _hovering = false),
                   child: GestureDetector(
-                    onTap: _login,
+                    onTap: widget.onLoggedIn,   // ⭐ FIXED: no MSAL here
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       padding: EdgeInsets.all(mobile ? 12 : 20),
@@ -73,7 +66,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         boxShadow: _hovering
                             ? [
                                 BoxShadow(
-                                  color: Colors.blueAccent.withAlpha((255 * 0.55).round()),
+                                  color: Colors.blueAccent.withAlpha(
+                                      (255 * 0.55).round()),
                                   blurRadius: 25,
                                   spreadRadius: 4,
                                 ),
