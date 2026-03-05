@@ -261,7 +261,17 @@ app.get("/fantasy/:matchId", async (req, res) => {
 
   let dfsData;
   try {
-    dfsData = await scrapeDFS(dfsId);
+    try {
+  dfsData = await scrapeDFS(dfsId);
+
+  if (!dfsData.players?.length) {
+    console.warn("JSON empty — falling back to HTML scraper");
+    dfsData = await scrapeDFS_HTML(dfsId);
+  }
+} catch {
+  console.warn("JSON failed — using HTML scraper");
+  dfsData = await scrapeDFS_HTML(dfsId);
+}
 
     if (!dfsData || typeof dfsData !== "object") {
       throw new Error("DFS returned invalid payload");

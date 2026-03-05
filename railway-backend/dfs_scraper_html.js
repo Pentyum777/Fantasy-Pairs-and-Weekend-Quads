@@ -1,3 +1,4 @@
+// dfs_scraper_html.js
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 
@@ -10,7 +11,6 @@ export async function scrapeDFS_HTML(dfsId) {
         "User-Agent": "Mozilla/5.0",
         "Accept": "text/html",
       },
-      timeout: 10000,
     });
 
     if (!res.ok) {
@@ -23,7 +23,7 @@ export async function scrapeDFS_HTML(dfsId) {
 
     const players = [];
 
-    // Select both tables (home + away)
+    // Select both home + away tables
     const tables = $("table.dataTable");
 
     tables.each((_, table) => {
@@ -56,17 +56,15 @@ export async function scrapeDFS_HTML(dfsId) {
         players.push({
           id: playerId,
           name,
-          stats: {
-            fantasyPoints,
-            goals,
-            behinds,
-            disposals,
-            marks,
-            tackles,
-            hitouts,
-            freesFor,
-            freesAgainst,
-          },
+          fantasyPoints,
+          goals,
+          behinds,
+          disposals,
+          marks,
+          tackles,
+          hitouts,
+          freesFor,
+          freesAgainst,
         });
       });
     });
