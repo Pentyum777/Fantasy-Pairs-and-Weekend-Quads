@@ -683,37 +683,65 @@ Widget _buildPickCell(
     ),
 
     dropdownBuilder: (context, player) {
-      final safeName = (player?.fullName ?? "").trim();
-final text = safeName.isEmpty ? hintText : safeName;
-      final colours =
-          player == null ? null : _getTeamColoursForPlayer(player);
+  final safeName = (player?.fullName ?? "").trim();
+  final text = safeName.isEmpty ? hintText : safeName;
+  final colours = player == null ? null : _getTeamColoursForPlayer(player);
 
-      return Container(
-        width: kPickColumnWidth,
-        alignment: Alignment.center,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          decoration: colours == null
-              ? null
-              : BoxDecoration(
-                  color: colours["bg"]?.withAlpha(230),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-          child: Text(
-            text,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colours == null ? cs.onSurfaceVariant : colours["fg"],
+  return Container(
+    width: kPickColumnWidth,
+    alignment: Alignment.center,
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: colours == null
+                ? null
+                : BoxDecoration(
+                    color: colours["bg"]?.withAlpha(230),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+            child: Text(
+              text,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colours == null ? cs.onSurfaceVariant : colours["fg"],
+              ),
             ),
           ),
         ),
-      );
-    },
+
+        // --- CLEAR BUTTON (Admins only) ---
+        if (widget.userRoleService.isAdmin && player != null)
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                owner.picks[colIndex].player = null;
+                owner.picks[colIndex].stats = null;
+              });
+
+              widget.onChanged?.call();
+              _saveSnapshot();
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Icon(
+                Icons.clear,
+                size: 16,
+                color: cs.error,
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+},
+
 
     onChanged: (player) {
       setState(() {
@@ -1191,7 +1219,7 @@ print("DEBUG URL = $url");
 
 
 print("DEBUG STATUS = ${res.statusCode}");
-print("DEBUG RESPONSE START = ${res.body.substring(0, 200)}");
+print("DEBUG RESPONSE START = ${res.body.substring(0, res.body.length.clamp(0, 200))}");
 
     if (res.statusCode != 200) {
       debugPrint("❌ loadSelections returned ${res.statusCode}");

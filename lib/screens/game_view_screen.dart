@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../helpers/round_helper.dart';
@@ -39,7 +39,6 @@ class GameViewScreen extends StatefulWidget {
   final UserRoleService userRoleService;
   final List<String>? selectedFixtureIds;
   final List<AflPlayer>? overridePlayers;
-  
 
   const GameViewScreen({
     super.key,
@@ -65,8 +64,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   int _visiblePunterCount = 10;
   bool _isCompleted = false;
 
-  bool _isSubmitted = false;
-  bool _leaderboardCollapsed = false;
+    bool _leaderboardCollapsed = false;
   bool _fixturesCollapsed = false;
   bool _controlsCollapsed = false;
 
@@ -75,12 +73,19 @@ class _GameViewScreenState extends State<GameViewScreen> {
   AflFixture? _selectedFixture;
   Timer? _liveTimer;
   final ScrollController _punterScrollController = ScrollController();
+
   Map<String, AflPlayerMatchStats> _currentStatsByPlayerId = {};
+  List<AflFixture> _currentFixtures = []; // NEW: cache fixtures
 
   final FridayPairsService _fridayPairsService = FridayPairsService();
   bool _fridayWinnerSelected = false;
   int _fridayWinnerPosition = 0;
-  
+
+  // NEW: cache players (replaces FutureBuilder)
+  List<AflPlayer>? _seasonPlayers;
+  bool _loadingPlayers = true;
+
+  String _timestampLabel = "--:--";
 
   bool get isLandscapePhone {
     final size = MediaQuery.of(context).size;
@@ -124,12 +129,11 @@ class _GameViewScreenState extends State<GameViewScreen> {
     }
   }
 
-  
-
   @override
   void initState() {
     super.initState();
-    _startLivePolling();
+    _loadSeasonPlayers(); // NEW
+    _startLivePolling();  // updated
   }
 
   @override
@@ -139,116 +143,220 @@ class _GameViewScreenState extends State<GameViewScreen> {
     super.dispose();
   }
 
+  // ------------------------------------------------------------
+  // NEW: load players once (removes FutureBuilder)
+  // ------------------------------------------------------------
+  Future<void> _loadSeasonPlayers() async {
+    try {
+      final players = await widget.playerRepo.playersForSeason(widget.season);
+      if (!mounted) return;
+      setState(() {
+        _seasonPlayers = players;
+        _loadingPlayers = false;
+      });
+    } catch (e, st) {
+      debugPrint("❌ Failed to load players: $e\n$st");
+      if (!mounted) return;
+      setState(() {
+        _seasonPlayers = [];
+        _loadingPlayers = false;
+      });
+    }
+  }
+
+  // ------------------------------------------------------------
+  // LIVE POLLING (flicker‑free)
+  // ------------------------------------------------------------
   void _startLivePolling() {
     _liveTimer?.cancel();
     _liveTimer = Timer.periodic(
       const Duration(seconds: 5),
       (_) async {
-        await _refreshLive();
-        setState(() {});
+        await _refreshLive(); // no setState here
       },
     );
   }
 
-// -------------------------------------------------------------
-// ROUND-WIDE STATS FETCHER
-// -------------------------------------------------------------
-Future<Map<String, AflPlayerMatchStats>> _fetchRoundStats() async {
-  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-    widget.season,
-    widget.round,
-  );
-
-  final Map<String, AflPlayerMatchStats> roundStats = {};
-
-  for (final f in fixtures) {
-    final matchId = f.matchId?.trim();
-    if (matchId == null || matchId.isEmpty) continue;
-
-    final stats = await MatchStatsParser.fetchMatchStats(
-      matchId,
-      widget.playerRepo,
-      widget.fixtureRepo,
-    );
-
-    if (stats.isEmpty) continue;
-
-    for (final s in stats) {
-      if (s.player != null) {
-        roundStats[s.player!.id] = s;
-      }
-    }
-  }
-
-  return roundStats;
-}
-
   // -------------------------------------------------------------
-  // ROUND-WIDE STATS
+  // ROUND-WIDE STATS FETCHER
   // -------------------------------------------------------------
-  Future<void> _refreshLive() async {
-  try {
-    // Refresh fixture metadata (scores, quarter, clock, status)
+  Future<Map<String, AflPlayerMatchStats>> _fetchRoundStats() async {
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
       widget.season,
       widget.round,
     );
 
+    final Map<String, AflPlayerMatchStats> roundStats = {};
+
     for (final f in fixtures) {
       final matchId = f.matchId?.trim();
-      if (matchId != null && matchId.isNotEmpty) {
-        await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
+      if (matchId == null || matchId.isEmpty) continue;
+
+      final stats = await MatchStatsParser.fetchMatchStats(
+        matchId,
+        widget.playerRepo,
+        widget.fixtureRepo,
+      );
+
+      if (stats.isEmpty) continue;
+
+      for (final s in stats) {
+        if (s.player != null) {
+          roundStats[s.player!.id] = s;
+        }
       }
     }
 
-    if (!mounted) return;
-
-    _checkRoundCompletion();
-
-    // ⭐ NEW — Check if Friday Pairs final winner should be applied
-    _finaliseFridayPairsWinner();
-
-    // Fetch and store round-wide stats
-    final roundStats = await _fetchRoundStats();
-    _currentStatsByPlayerId = roundStats;
-
-    // Apply live stats to the punter table (only if mounted)
-    final tableState = _punterTableKey.currentState;
-    if (tableState != null) {
-      final dynamic dyn = tableState;
-
-      dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
-
-      // Admins save snapshot after live update
-      // (your saveSnapshot call goes here if needed)
-    }
-
-    _checkAndCompleteWeekendQuadsRound();
-
-  } catch (e, st) {
-    debugPrint("❌ Live refresh error: $e\n$st");
+    return roundStats;
   }
-}
-  
 
-void _finaliseFridayPairsWinner() {
-  if (widget.gameType != "friday_pairs") return;
-  if (!_fridayWinnerSelected) return;
+  // -------------------------------------------------------------
+  // HELPERS: live detection + equality checks
+  // -------------------------------------------------------------
+  bool _anyGameLive(List<AflFixture> fixtures) {
+    return fixtures.any((f) {
+      if (f.complete) return false;
+      if (f.quarterText.isNotEmpty) return true;
+      if (f.timeText.isNotEmpty) return true;
+      return false;
+    });
+  }
 
-  final fixtures = _fixturesForGameType();
-  if (fixtures.isEmpty) return;
-
-  final allComplete = fixtures.every((f) => f.complete);
-  if (!allComplete) return;
-
-  setState(() {
-    for (final p in widget.selections) {
-      p.isPrizeWinner = (p.punterNumber == _fridayWinnerPosition);
+  bool _fixturesEqual(List<AflFixture> a, List<AflFixture> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      final fa = a[i];
+      final fb = b[i];
+      if (fa.matchId != fb.matchId ||
+          fa.homeScore != fb.homeScore ||
+          fa.awayScore != fb.awayScore ||
+          fa.quarterText != fb.quarterText ||
+          fa.timeText != fb.timeText ||
+          fa.complete != fb.complete) {
+        return false;
+      }
     }
-  });
+    return true;
+  }
 
-  debugPrint("🏁 Friday Pairs final winner = $_fridayWinnerPosition");
+  bool _statsEqual(
+  Map<String, AflPlayerMatchStats> a,
+  Map<String, AflPlayerMatchStats> b,
+) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+
+  for (final key in a.keys) {
+    final sa = a[key];
+    final sb = b[key];
+    if (sa == null || sb == null) return false;
+
+    if ((sa.fantasyPoints ?? 0) != (sb.fantasyPoints ?? 0)) return false;
+    if ((sa.kicks ?? 0) != (sb.kicks ?? 0)) return false;
+    if ((sa.handballs ?? 0) != (sb.handballs ?? 0)) return false;
+    if ((sa.disposals ?? 0) != (sb.disposals ?? 0)) return false;
+    if ((sa.marks ?? 0) != (sb.marks ?? 0)) return false;
+    if ((sa.tackles ?? 0) != (sb.tackles ?? 0)) return false;
+    if ((sa.goals ?? 0) != (sb.goals ?? 0)) return false;
+    if ((sa.behinds ?? 0) != (sb.behinds ?? 0)) return false;
+  }
+
+  return true;
 }
+
+  // -------------------------------------------------------------
+  // ROUND-WIDE STATS + FIXTURES REFRESH (flicker‑free)
+  // -------------------------------------------------------------
+  Future<void> _refreshLive() async {
+    try {
+      // 1. Get fixtures for this round
+      final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+        widget.season,
+        widget.round,
+      );
+
+      // 2. Refresh live scores for each fixture
+      for (final f in fixtures) {
+        final matchId = f.matchId?.trim();
+        if (matchId != null && matchId.isNotEmpty) {
+          await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
+        }
+      }
+
+      if (!mounted) return;
+
+      // 3. Re-read fixtures after refresh
+      final updatedFixtures = widget.fixtureRepo.fixturesForSeasonRound(
+        widget.season,
+        widget.round,
+      );
+
+      // 4. Always run completion checks
+      _checkRoundCompletion();
+      _finaliseFridayPairsWinner();
+      _checkAndCompleteWeekendQuadsRound();
+
+      // 5. Decide if any game is live
+      final gamesLive = _anyGameLive(updatedFixtures);
+
+      // If no games are live → only update fixtures if changed
+      if (!gamesLive) {
+        if (!_fixturesEqual(updatedFixtures, _currentFixtures)) {
+          setState(() {
+            _currentFixtures = updatedFixtures;
+          });
+        }
+        return;
+      }
+
+      // 6. Games ARE live → fetch round-wide stats
+      final roundStats = await _fetchRoundStats();
+
+      // 7. Decide if anything actually changed
+      final fixturesChanged =
+          !_fixturesEqual(updatedFixtures, _currentFixtures);
+      final statsChanged =
+          !_statsEqual(roundStats, _currentStatsByPlayerId);
+
+      if (!fixturesChanged && !statsChanged) {
+        return;
+      }
+
+      // 8. Apply changes in a single, atomic rebuild
+      setState(() {
+        _currentFixtures = updatedFixtures;
+        _currentStatsByPlayerId = roundStats;
+
+        final tableState = _punterTableKey.currentState;
+        if (tableState != null) {
+          final dynamic dyn = tableState;
+          dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
+        }
+      });
+    } catch (e, st) {
+      debugPrint("❌ Live refresh error: $e\n$st");
+    }
+  }
+
+  void _finaliseFridayPairsWinner() {
+    if (widget.gameType != "friday_pairs") return;
+    if (!_fridayWinnerSelected) return;
+
+    final fixtures = _fixturesForGameType();
+    if (fixtures.isEmpty) return;
+
+    final allComplete = fixtures.every((f) => f.complete);
+    if (!allComplete) return;
+
+    setState(() {
+      for (final p in widget.selections) {
+        p.isPrizeWinner = (p.punterNumber == _fridayWinnerPosition);
+      }
+    });
+
+    debugPrint("🏁 Friday Pairs final winner = $_fridayWinnerPosition");
+  }
 
   void _checkRoundCompletion() {
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
@@ -262,8 +370,6 @@ void _finaliseFridayPairsWinner() {
 
     if (allComplete) {
       widget.roundCompletionService.markCompleted(widget.round);
-
-      // Save season results for Pairs games
       _saveRoundResultsToBackend(widget.selections);
     }
   }
@@ -294,8 +400,6 @@ void _finaliseFridayPairsWinner() {
         : _monthName(firstFixture.date!.month);
 
     widget.championshipService.addRound(month, widget.selections);
-
-    // Save season results for Weekend Quads
     _saveRoundResultsToBackend(widget.selections);
 
     debugPrint("🏆 Weekend Quads completed for $month");
@@ -409,93 +513,7 @@ void _finaliseFridayPairsWinner() {
     };
   }
 
-  // ignore: unused_element
-  bool _canSubmit() {
-    if (_isSubmitted) return true;
-    if (!widget.userRoleService.isAdmin) return false;
-
-    for (final row in widget.selections) {
-      for (final pick in row.picks) {
-        if (pick.player == null) return false;
-      }
-    }
-
-    final seen = <String>{};
-
-for (final row in widget.selections) {
-  for (final pick in row.picks) {
-    final player = pick.player;
-
-    // Skip empty picks safely
-    if (player == null) continue;
-
-    final id = player.id;
-
-    // Skip invalid IDs
-    if (id.isEmpty) continue;
-
-    if (seen.contains(id)) return false;
-
-    seen.add(id);
-  }
-}
-
-    return true;
-  }
-
-  // ignore: unused_element
-  void _toggleSubmit() {
-    setState(() => _isSubmitted = !_isSubmitted);
-
-    if (_isSubmitted) {
-      _submitGame();
-    } else {
-      _unsubmitGame();
-    }
-  }
-
-  void _submitGame() {
-    if (widget.gameType == "weekend_quads") {
-      final fixtures = _fixturesForGameType();
-      if (fixtures.isEmpty) return;
-
-      final first = fixtures.firstWhere(
-        (f) => f.date != null,
-        orElse: () => fixtures.first,
-      );
-
-      final month = first.date == null
-          ? "Unknown"
-          : widget.championshipService.monthName(first.date!.month);
-
-      widget.championshipService.addRound(month, widget.selections);
-      debugPrint("🏆 Submitted to Championship for $month");
-    }
-  }
-
-  void _unsubmitGame() {
-    if (widget.gameType == "weekend_quads") {
-      final fixtures = _fixturesForGameType();
-      if (fixtures.isEmpty) return;
-
-      final first = fixtures.firstWhere(
-        (f) => f.date != null,
-        orElse: () => fixtures.first,
-      );
-
-      final month = first.date == null
-          ? "Unknown"
-          : widget.championshipService.monthName(first.date!.month);
-
-      widget.championshipService.roundsByMonth[month]
-          ?.removeWhere((round) => identical(round, widget.selections));
-
-      widget.championshipService.allRounds
-          .removeWhere((round) => identical(round, widget.selections));
-
-      debugPrint("⚠️ Unsubmitted from Championship");
-    }
-  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -595,28 +613,28 @@ for (final row in widget.selections) {
     );
   }
 
-void _handleFridayPairsTrigger(AflFixture f) {
-  if (widget.gameType != "friday_pairs") return;
-  if (_fridayWinnerSelected) return;
+  void _handleFridayPairsTrigger(AflFixture f) {
+    if (widget.gameType != "friday_pairs") return;
+    if (_fridayWinnerSelected) return;
 
-  if (f.quarterText.isEmpty && !f.complete) return;
+    if (f.quarterText.isEmpty && !f.complete) return;
 
-  final punterCount = widget.selections.length;
+    final punterCount = widget.selections.length;
 
-  final pos =
-      _fridayPairsService.selectRandomBottomHalfPosition(punterCount);
+    final pos =
+        _fridayPairsService.selectRandomBottomHalfPosition(punterCount);
 
-  _fridayWinnerPosition = pos;
-  _fridayWinnerSelected = true;
+    _fridayWinnerPosition = pos;
+    _fridayWinnerSelected = true;
 
-  setState(() {
-    for (final p in widget.selections) {
-      p.isPrizeWinner = (p.punterNumber == pos);
-    }
-  });
+    setState(() {
+      for (final p in widget.selections) {
+        p.isPrizeWinner = (p.punterNumber == pos);
+      }
+    });
 
-  debugPrint("🎯 Friday Pairs random position = $pos");
-}
+    debugPrint("🎯 Friday Pairs random position = $pos");
+  }
 
   Widget _buildFixtureCard(AflFixture f) {
     final theme = Theme.of(context);
@@ -633,6 +651,14 @@ void _handleFridayPairsTrigger(AflFixture f) {
     final quarter = _quarterLabel(f);
     final time = _timeLabel(f);
 
+    final isLive = !f.complete && quarter.isNotEmpty;
+
+    final metaText = isLive
+        ? "LIVE • $quarter $time"
+        : quarter.isEmpty
+            ? time
+            : "$quarter • $time";
+
     final scoreBaseStyle = TextStyle(
       fontSize: isLandscapePhone ? 12 : 13,
       fontWeight: FontWeight.w500,
@@ -642,7 +668,7 @@ void _handleFridayPairsTrigger(AflFixture f) {
     final metaStyle = TextStyle(
       fontSize: isLandscapePhone ? 10 : 11,
       fontWeight: FontWeight.w500,
-      color: Colors.grey.shade700,
+      color: isLive ? Colors.red.shade400 : Colors.grey.shade700,
       height: 1.1,
     );
 
@@ -715,7 +741,7 @@ void _handleFridayPairsTrigger(AflFixture f) {
               Align(
                 alignment: Alignment.center,
                 child: Text(
-                  quarter.isEmpty ? time : "$quarter • $time",
+                  metaText,
                   style: metaStyle,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -726,6 +752,7 @@ void _handleFridayPairsTrigger(AflFixture f) {
       ),
     );
   }
+
   Future<void> _onFixtureTap(AflFixture f) async {
     setState(() => _selectedFixture = f);
 
@@ -773,8 +800,6 @@ void _handleFridayPairsTrigger(AflFixture f) {
       ),
     );
   }
-
-  String _timestampLabel = "--:--";
 
   Widget _buildPunterControls() {
     final theme = Theme.of(context);
@@ -875,8 +900,8 @@ void _handleFridayPairsTrigger(AflFixture f) {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceVariant
-                        .withAlpha(64),
+                    color:
+                        theme.colorScheme.surfaceVariant.withAlpha(64),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -896,119 +921,109 @@ void _handleFridayPairsTrigger(AflFixture f) {
   }
 
   Widget _buildPunterAndLeaderboard() {
-  return Expanded(
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final theme = Theme.of(context);
-        final innerWidth = constraints.maxWidth;
-        final picks = widget.gameType == "weekend_quads" ? 4 : 2;
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final theme = Theme.of(context);
+          final innerWidth = constraints.maxWidth;
+          final picks = widget.gameType == "weekend_quads" ? 4 : 2;
 
-        final leaderboardWidth = _leaderboardCollapsed
-            ? UIDimensions.collapsedLeaderboardWidth
-            : UIDimensions.rankColumnWidth +
-                UIDimensions.punterNameColumnWidth +
-                UIDimensions.totalColumnWidth;
+          final leaderboardWidth = _leaderboardCollapsed
+              ? UIDimensions.collapsedLeaderboardWidth
+              : UIDimensions.rankColumnWidth +
+                  UIDimensions.punterNameColumnWidth +
+                  UIDimensions.totalColumnWidth;
 
-        final double punterTableWidth =
-            _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
+          final double punterTableWidth =
+              _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
 
-        // ✅ Safe round for pre‑season (round can be null)
-        final int safeRound = widget.round ?? 0;
+          final int safeRound = widget.round ?? 0;
 
-        return FutureBuilder<List<AflPlayer>>(
-          future: widget.playerRepo.playersForSeason(widget.season),
-          builder: (context, snapshot) {
-            print(
-                "🔥 FUTUREBUILDER snapshot: hasData=${snapshot.hasData}, error=${snapshot.error}");
+          if (_loadingPlayers) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
+          if (_seasonPlayers == null || _seasonPlayers!.isEmpty) {
+            return const Center(child: Text("Failed to load players"));
+          }
 
-            if (snapshot.hasError || !snapshot.hasData) {
-              return const Center(child: Text("Failed to load players"));
-            }
+          final seasonPlayers = _seasonPlayers!;
+          List<AflPlayer> availablePlayers = [];
 
-            final seasonPlayers = snapshot.data!;
-            List<AflPlayer> availablePlayers = [];
+          if (widget.gameType == "custom_pairs" &&
+              widget.overridePlayers != null) {
+            availablePlayers = widget.overridePlayers!;
+          } else {
+            final fixtures = _fixturesForGameType();
+            final fixtureClubCodes =
+                fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
 
-            // ⭐ If custom pairs, use overridePlayers directly
-            if (widget.gameType == "custom_pairs" &&
-                widget.overridePlayers != null) {
-              availablePlayers = widget.overridePlayers!;
-            } else {
-              final fixtures = _fixturesForGameType();
-              final fixtureClubCodes =
-                  fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
+            availablePlayers = seasonPlayers
+                .where((p) => p.club.isNotEmpty)
+                .where((p) => fixtureClubCodes.contains(p.club))
+                .toList();
+          }
 
-              availablePlayers = seasonPlayers
-                  .where((p) => p.club.isNotEmpty)
-                  .where((p) => fixtureClubCodes.contains(p.club))
-                  .toList();
-            }
-
-            return Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withAlpha(64),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: PunterSelectionTable(
-                      key: _punterTableKey,
-                      gameType: widget.gameType,
-                      season: widget.season,
-                      round: safeRound, // ✅ no bang
-                      tableWidth: punterTableWidth,
-                      visiblePunterCount: _visiblePunterCount,
-                      playersPerPunter: picks,
-                      availablePlayers: availablePlayers,
-                      selections: widget.selections,
-                      isCompleted: _isCompleted,
-                      readOnly: !widget.userRoleService.isAdmin,
-                      onChanged:
-                          widget.userRoleService.isAdmin ? () {} : null,
-                      collapsed: _leaderboardCollapsed,
-                      scrollController: _punterScrollController,
-                      fantasyService: widget.fantasyService,
-                      userRoleService: widget.userRoleService,
-                      onTimestampChanged: (t) {
-                        setState(() => _timestampLabel = t);
-                      },
-                      onLiveScoreUpdateSave: () {
-                        final tableState = _punterTableKey.currentState;
-                        if (tableState != null) {
-                          (tableState as dynamic).saveSnapshot();
-                        }
-                      },
-                    ),
+          return Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceVariant.withAlpha(64),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: PunterSelectionTable(
+                    key: _punterTableKey,
+                    gameType: widget.gameType,
+                    season: widget.season,
+                    round: safeRound,
+                    tableWidth: punterTableWidth,
+                    visiblePunterCount: _visiblePunterCount,
+                    playersPerPunter: picks,
+                    availablePlayers: availablePlayers,
+                    selections: widget.selections,
+                    isCompleted: _isCompleted,
+                    readOnly: !widget.userRoleService.isAdmin,
+                    onChanged:
+                        widget.userRoleService.isAdmin ? () {} : null,
+                    collapsed: _leaderboardCollapsed,
+                    scrollController: _punterScrollController,
+                    fantasyService: widget.fantasyService,
+                    userRoleService: widget.userRoleService,
+                    onTimestampChanged: (t) {
+                      setState(() => _timestampLabel = t);
+                    },
+                    onLiveScoreUpdateSave: () {
+                      final tableState = _punterTableKey.currentState;
+                      if (tableState != null) {
+                        (tableState as dynamic).saveSnapshot();
+                      }
+                    },
                   ),
-                  SizedBox(
-                    width: leaderboardWidth,
-                    child: LeaderboardPanel(
-                      punters: widget.selections
-                          .take(_visiblePunterCount)
-                          .toList(),
-                      rowHeight: UIDimensions.rowHeight,
-                      collapsed: _leaderboardCollapsed,
-                      scrollController: _punterScrollController,
-                      onCollapseChanged: (collapsed) {
-                        setState(() => _leaderboardCollapsed = collapsed);
-                      },
-                    ),
+                ),
+                SizedBox(
+                  width: leaderboardWidth,
+                  child: LeaderboardPanel(
+                    punters: widget.selections
+                        .take(_visiblePunterCount)
+                        .toList(),
+                    rowHeight: UIDimensions.rowHeight,
+                    collapsed: _leaderboardCollapsed,
+                    scrollController: _punterScrollController,
+                    onCollapseChanged: (collapsed) {
+                      setState(() => _leaderboardCollapsed = collapsed);
+                    },
                   ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ),
-  );
-}
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   Widget _buildMainContent() {
     return Padding(
@@ -1024,46 +1039,41 @@ void _handleFridayPairsTrigger(AflFixture f) {
     );
   }
 
-  
-
-
   void validateAflData(
-  List<AflFixture> fixtures,
-  PlayerRepository repo,
-  int season,
-) async {
-  // Collect fixture clubs
-  final fixtureClubs = fixtures
-      .expand((f) => [
-            f.homeTeam.trim().toUpperCase(),
-            f.awayTeam.trim().toUpperCase(),
-          ])
-      .toSet();
+    List<AflFixture> fixtures,
+    PlayerRepository repo,
+    int season,
+  ) async {
+    final fixtureClubs = fixtures
+        .expand((f) => [
+              f.homeTeam.trim().toUpperCase(),
+              f.awayTeam.trim().toUpperCase(),
+            ])
+        .toSet();
 
-  // Load players for the selected season only
-  final seasonPlayers = await repo.playersForSeason(season);
+    final seasonPlayers = await repo.playersForSeason(season);
 
-  final playerClubs = seasonPlayers
-      .map((p) => p.club.trim().toUpperCase())
-      .toSet();
+    final playerClubs = seasonPlayers
+        .map((p) => p.club.trim().toUpperCase())
+        .toSet();
 
-  final missingInPlayers = fixtureClubs.difference(playerClubs);
-  final missingInFixtures = playerClubs.difference(fixtureClubs);
+    final missingInPlayers = fixtureClubs.difference(playerClubs);
+    final missingInFixtures = playerClubs.difference(fixtureClubs);
 
-  debugPrint("=== AFL DATA VALIDATION ===");
+    debugPrint("=== AFL DATA VALIDATION ===");
 
-  if (missingInPlayers.isNotEmpty) {
-    debugPrint("❌ Clubs in FIXTURES but NOT in PLAYERS:");
-    debugPrint(missingInPlayers.toString());
+    if (missingInPlayers.isNotEmpty) {
+      debugPrint("❌ Clubs in FIXTURES but NOT in PLAYERS:");
+      debugPrint(missingInPlayers.toString());
+    }
+
+    if (missingInFixtures.isNotEmpty) {
+      debugPrint("❌ Clubs in PLAYERS but NOT in FIXTURES:");
+      debugPrint(missingInFixtures.toString());
+    }
+
+    if (missingInPlayers.isEmpty && missingInFixtures.isEmpty) {
+      debugPrint("✅ Fixtures and players are aligned.");
+    }
   }
-
-  if (missingInFixtures.isNotEmpty) {
-    debugPrint("❌ Clubs in PLAYERS but NOT in FIXTURES:");
-    debugPrint(missingInFixtures.toString());
-  }
-
-  if (missingInPlayers.isEmpty && missingInFixtures.isEmpty) {
-    debugPrint("✅ Fixtures and players are aligned.");
-  }
-}
 }
