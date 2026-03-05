@@ -125,7 +125,14 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
         child: _token == null
-            ? LoginScreen(onLoggedIn: () {})
+            ? LoginScreen(
+  onLoggedIn: () {
+    setState(() {
+      _token = "local-login";   // or whatever you use after MSAL login
+      _fixtureLoadFuture = _loadAllFixtures();
+    });
+  },
+)
             : FutureBuilder(
                 future: _fixtureLoadFuture,
                 builder: (context, snapshot) {
