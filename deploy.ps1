@@ -31,8 +31,15 @@ Write-Host "Restoring custom index.html and MSAL scripts..."
 # Copy your custom index.html into the build output
 Copy-Item "web/index.html" "$webDir/index.html" -Force
 
-# Copy MSAL JS files into build output
-Copy-Item "web/assets" "$webDir/assets" -Recurse -Force
+# Ensure build/web/assets exists
+$buildAssets = "$webDir/assets"
+if (!(Test-Path $buildAssets)) {
+    New-Item -ItemType Directory -Path $buildAssets | Out-Null
+}
+
+# Copy MSAL JS files into build output assets folder
+Copy-Item "web/assets/msal.js" "$buildAssets/msal.js" -Force
+Copy-Item "web/assets/msal_interop.js" "$buildAssets/msal_interop.js" -Force
 
 Write-Host "Custom index.html and MSAL scripts restored."
 
@@ -62,6 +69,21 @@ Write-Host "Creating /docs and copying build..."
 New-Item -ItemType Directory -Path $docsDir | Out-Null
 Copy-Item "$webDir\*" $docsDir -Recurse
 Write-Host "Copied build to /docs."
+
+# ---------------------------------------------------------------------------
+# 2B. ENSURE MSAL FILES ARE IN /docs/assets/
+# ---------------------------------------------------------------------------
+Write-Host "Copying MSAL scripts into /docs/assets..."
+
+$docsAssets = "$docsDir/assets"
+if (!(Test-Path $docsAssets)) {
+    New-Item -ItemType Directory -Path $docsAssets | Out-Null
+}
+
+Copy-Item "web/assets/msal.js" "$docsAssets/msal.js" -Force
+Copy-Item "web/assets/msal_interop.js" "$docsAssets/msal_interop.js" -Force
+
+Write-Host "MSAL scripts copied into /docs/assets."
 
 # ---------------------------------------------------------------------------
 # 3. GIT COMMIT + PUSH (SOURCE CODE FIRST, THEN DEPLOY)
