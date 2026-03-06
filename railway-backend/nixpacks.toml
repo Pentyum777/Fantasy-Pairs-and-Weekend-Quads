@@ -1,17 +1,17 @@
 [build]
 builder = "node"
 
+[variables]
+NIXPACKS_USE_NIX = "1"
+
+[phases.setup]
+nixPkgs = ["nodejs"]
+
+[phases.setup.apt]
+packages = []
+
 [phases.install]
 cmds = ["npm ci"]
 
 [phases.start]
 cmd = "npm start"
-
-[variables]
-NIXPACKS_USE_NIX = "1"
-
-[phases.setup]
-nixPkgs = ["nodejs", "chromium", "nss", "freetype", "fontconfig"]
-
-[phases.setup.apt]
-packages = []

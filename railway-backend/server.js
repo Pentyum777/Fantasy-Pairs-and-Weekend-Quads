@@ -1,7 +1,7 @@
 // server.js
 global.liveStatsCache = {};
 
-import { startDFSWorker } from "./dfs_puppeteer_worker.js";
+import { startDFSWorker } from "./dfs_worker.js";
 import express from "express";
 import fs from "fs";
 import path from "path";
@@ -23,7 +23,7 @@ console.log("🚀 DFS + Squiggle backend starting...");
 
 // Start Puppeteer worker for each DFS match
 Object.values(dfsMap).forEach((dfsId) => {
-  startDFSWorker(String(dfsId));
+  if (dfsId) startDFSWorker(String(dfsId));
 });
 
 const port = process.env.PORT || 8080;

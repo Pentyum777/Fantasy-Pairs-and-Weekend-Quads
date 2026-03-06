@@ -1,6 +1,6 @@
 // dfs_puppeteer_worker.js (browserless version)
 import fetch from "node-fetch";
-import cheerio from "cheerio";
+import { load } from "cheerio";
 
 export async function startDFSWorker(dfsId) {
   const url = `https://dfsaustralia.com/live-scoring/?gameId=${dfsId}`;
@@ -9,7 +9,7 @@ export async function startDFSWorker(dfsId) {
     try {
       const res = await fetch(url, { timeout: 30000 });
       const html = await res.text();
-      const $ = cheerio.load(html);
+      const $ = load(html);
 
       const tables = $("table").toArray();
 
@@ -47,8 +47,7 @@ export async function startDFSWorker(dfsId) {
           const freesFor = parse(cells[6]);
           const freesAgainst = parse(cells[7]);
 
-          let goals = 0,
-            behinds = 0;
+          let goals = 0, behinds = 0;
           if (cells[8]?.includes(".")) {
             const [g, b] = cells[8].split(".");
             goals = parse(g);
@@ -76,8 +75,7 @@ export async function startDFSWorker(dfsId) {
       const scoreEl = $("div.scoreboard h2").first().text();
       const metaEl = $("div.scoreboard h3").first().text();
 
-      let homeScore = 0,
-        awayScore = 0;
+      let homeScore = 0, awayScore = 0;
       const match = scoreEl.match(/(\d+)\s*-\s*(\d+)/);
       if (match) {
         homeScore = parseInt(match[1]);
