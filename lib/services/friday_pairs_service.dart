@@ -8,10 +8,13 @@ class FridayPairsService {
   // STEP 1 — Choose a random finishing position from the bottom half
   // ---------------------------------------------------------------------------
   //
-  // Example:
-  // If there are 10 punters:
-  //   bottom half = positions 6,7,8,9,10
-  //   randomly pick one of those positions
+  // Correct Friday Pairs rule:
+  //   bottomCount = ceil(total / 2)
+  //   start = total - bottomCount + 1
+  //
+  // Examples:
+  //   total = 10 → bottomCount = 5 → positions 6–10
+  //   total = 15 → bottomCount = 8 → positions 8–15
   //
   // Returns a 1-based finishing position.
   //
@@ -20,25 +23,19 @@ class FridayPairsService {
       throw ArgumentError("Need at least 2 punters.");
     }
 
-    // 1-based index where bottom half starts
-    final halfStart = (punterCount ~/ 2) + 1;
+    // Number of entries in the bottom half
+    final bottomCount = (punterCount / 2).ceil();
 
-    // Generate list of positions in the bottom half
-    final positions = List.generate(
-      punterCount - halfStart + 1,
-      (i) => halfStart + i,
-    );
+    // First position in the bottom half
+    final start = punterCount - bottomCount + 1;
 
-    positions.shuffle(_rng);
-    return positions.first;
+    // Random position in [start .. punterCount]
+    return _rng.nextInt(bottomCount) + start;
   }
 
   // ---------------------------------------------------------------------------
   // STEP 2 — Get the punter currently sitting in a given finishing position
   // ---------------------------------------------------------------------------
-  //
-  // selections must be in punterNumber order (1..N)
-  //
   PunterSelection getPunterAtPosition(
     List<PunterSelection> selections,
     int position,
@@ -53,10 +50,6 @@ class FridayPairsService {
   // ---------------------------------------------------------------------------
   // STEP 3 — Resolve ties using highest individual player score
   // ---------------------------------------------------------------------------
-  //
-  // Given a list of tied punters, return the one whose single best player
-  // score is the highest.
-  //
   PunterSelection resolveTieByBestPlayer(List<PunterSelection> tied) {
     tied.sort((a, b) {
       final aBest = _bestPlayerScore(a);
@@ -67,12 +60,12 @@ class FridayPairsService {
     return tied.first;
   }
 
-  // Helper: compute highest individual player score for a punter
   int _bestPlayerScore(PunterSelection p) {
     int best = 0;
 
     for (final pick in p.picks) {
-      final score = pick.stats?["score"] ?? 0;
+      // FIX: use AF (AFL Fantasy) not "score"
+      final score = pick.stats?["AF"] ?? 0;
       if (score > best) best = score;
     }
 
@@ -82,10 +75,6 @@ class FridayPairsService {
   // ---------------------------------------------------------------------------
   // STEP 4 — Determine the final Friday Pairs winner at round completion
   // ---------------------------------------------------------------------------
-  //
-  // sortedSelections must be sorted DESC by totalScore.
-  // randomPosition is the 1-based finishing slot chosen earlier.
-  //
   PunterSelection determineFinalWinner(
     List<PunterSelection> sortedSelections,
     int randomPosition,
@@ -93,7 +82,6 @@ class FridayPairsService {
     final index = randomPosition - 1;
     final targetScore = sortedSelections[index].totalScore;
 
-    // All punters tied at that finishing score
     final tied = sortedSelections
         .where((p) => p.totalScore == targetScore)
         .toList();
@@ -102,7 +90,6 @@ class FridayPairsService {
       return tied.first;
     }
 
-    // Tie-breaker: highest individual player score
     return resolveTieByBestPlayer(tied);
   }
 }

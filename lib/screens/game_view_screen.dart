@@ -615,27 +615,28 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   void _handleFridayPairsTrigger(AflFixture f) {
-    if (widget.gameType != "friday_pairs") return;
-    if (_fridayWinnerSelected) return;
+  if (widget.gameType != "friday_pairs") return;
+  if (_fridayWinnerSelected) return;
 
-    if (f.quarterText.isEmpty && !f.complete) return;
+  // Only trigger when the game is officially underway
+  final isLive = f.quarterText.isNotEmpty && !f.complete;
+  if (!isLive) return;
 
-    final punterCount = widget.selections.length;
+  final punterCount = widget.selections.length;
 
-    final pos =
-        _fridayPairsService.selectRandomBottomHalfPosition(punterCount);
+  final pos = _fridayPairsService.selectRandomBottomHalfPosition(punterCount);
 
-    _fridayWinnerPosition = pos;
-    _fridayWinnerSelected = true;
+  _fridayWinnerPosition = pos;
+  _fridayWinnerSelected = true;
 
-    setState(() {
-      for (final p in widget.selections) {
-        p.isPrizeWinner = (p.punterNumber == pos);
-      }
-    });
+  setState(() {
+    for (final p in widget.selections) {
+      p.isPrizeWinner = (p.punterNumber == pos);
+    }
+  });
 
-    debugPrint("🎯 Friday Pairs random position = $pos");
-  }
+  debugPrint("🎯 Friday Pairs random position = $pos (of $punterCount)");
+}
 
   Widget _buildFixtureCard(AflFixture f) {
     final theme = Theme.of(context);

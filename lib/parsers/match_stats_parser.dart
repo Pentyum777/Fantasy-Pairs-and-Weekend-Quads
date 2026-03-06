@@ -42,7 +42,8 @@ class MatchStatsParser {
     final playersRaw = decoded['players'];
     if (playersRaw is! List) return [];
 
-    final seasonPlayers = await repo.playersForSeason(2025);
+    final currentYear = DateTime.now().year;
+final seasonPlayers = await repo.playersForSeason(currentYear);
 
     final List<AflPlayerMatchStats> results = [];
 
