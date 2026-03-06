@@ -61,6 +61,9 @@ app.get("/", (req, res) => {
 // Save selections
 // ------------------------------------------------------
 app.post("/saveSelections", (req, res) => {
+res.header("Access-Control-Allow-Origin", "*");
+
+
   try {
     const { gameType, season, round, punterNames, picks } = req.body;
 
@@ -112,6 +115,7 @@ app.post("/saveSelections", (req, res) => {
 // Load selections
 // ------------------------------------------------------
 app.get("/loadSelections", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   try {
     const gameType = req.query.gameType;
     const season = req.query.season;
@@ -170,6 +174,8 @@ app.get("/loadSelections", (req, res) => {
 // Save round results
 // ------------------------------------------------------
 app.post("/saveRoundResults", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+
   try {
     const { season, round, gameType, punters } = req.body;
 
@@ -230,6 +236,7 @@ app.post("/saveRoundResults", (req, res) => {
 // Load season results
 // ------------------------------------------------------
 app.get("/seasonResults", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   try {
     const { season, gameType } = req.query;
 
