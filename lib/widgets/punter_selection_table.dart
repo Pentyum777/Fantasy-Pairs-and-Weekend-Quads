@@ -268,10 +268,10 @@ Widget _buildBody(
         final invalid = _hasAnyGlobalDuplicate();
 
         final bg = invalid
-            ? Colors.red.withAlpha(15)
-            : isStriped
-                ? cs.surfaceVariant.withAlpha(64)
-                : cs.surface;
+    ? Colors.red.withOpacity(0.10)
+    : isStriped
+        ? Colors.black.withOpacity(0.08)   // subtle stripe
+        : Colors.black.withOpacity(0.04);  // base row
 
         return Container(
   height: UIDimensions.rowHeight,   // ⭐ FIXED HEIGHT — matches leaderboard
@@ -696,7 +696,7 @@ Widget _buildPickCell(
     decoration: colours == null
         ? null
         : BoxDecoration(
-            color: colours["bg"]?.withAlpha(230),   // 🔥 BACKGROUND NOW FILLS FULL WIDTH
+            color: colours["bg"]?.withAlpha(280),   // 🔥 BACKGROUND NOW FILLS FULL WIDTH
             borderRadius: BorderRadius.circular(4),
           ),
 
@@ -898,14 +898,14 @@ Widget _totalCell(BuildContext context, PunterSelection row) {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
-        color: cs.primary.withAlpha(15),
-        borderRadius: BorderRadius.circular(4),
-      ),
+  color: Colors.black.withOpacity(0.20),   // ⭐ clean, dark, readable
+  borderRadius: BorderRadius.circular(4),
+),
       child: Text(
         "${row.totalScore}",
         style: theme.textTheme.bodyMedium?.copyWith(
           fontWeight: FontWeight.w700,
-          color: cs.primary,
+          color: Colors.white,
         ),
       ),
     ),
