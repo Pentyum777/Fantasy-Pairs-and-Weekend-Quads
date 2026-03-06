@@ -791,7 +791,7 @@ void applyLiveStatsToTable(Map<String, AflPlayerMatchStats> statsById) {
       final id = pick.player?.id;
 
       // No player selected
-      if (id == null) {
+      if (id == null || id.isEmpty) {
         pick.fantasyPoints = 0;
         pick.stats = {
           "AF": 0,
@@ -824,11 +824,11 @@ void applyLiveStatsToTable(Map<String, AflPlayerMatchStats> statsById) {
         continue;
       }
 
-      // ⭐ Normalize all stats BEFORE assigning
-      final af = s.fantasyPoints ?? 0;
+      // Normalize all stats BEFORE assigning
+      final af = s.fantasyPoints ?? 0;          // dreamTeamPoints
       final k = s.kicks ?? 0;
       final hb = s.handballs ?? 0;
-      final d = s.disposals ?? 0;
+      final d = s.disposals ?? (k + hb);
       final m = s.marks ?? 0;
       final t = s.tackles ?? 0;
       final g = s.goals ?? 0;
@@ -856,9 +856,9 @@ void applyLiveStatsToTable(Map<String, AflPlayerMatchStats> statsById) {
   }
 
   setState(() {});
-
   widget.onLiveScoreUpdateSave?.call();
 }
+
 
 
 // ---------------------------------------------------------------------------

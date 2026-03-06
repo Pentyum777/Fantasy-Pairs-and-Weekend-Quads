@@ -1,11 +1,11 @@
 class AflPlayer {
-  final String id;              // Stable identity ID (CD_Ixxxxx)
-  final String name;            // Full or short name
-  final String club;            // Normalized club code (GCS, GEE, MELB, etc.)
+  final String id;          // Stable identity (CD_Ixxxxx)
+  final String name;        // Full or short name
+  final String club;        // Normalized club code
   final int guernseyNumber;
   final int season;
 
-  /// Live fantasy score (used only at runtime)
+  /// Live fantasy score (runtime only)
   int fantasyScore;
 
   AflPlayer({
@@ -19,9 +19,6 @@ class AflPlayer {
         name = (name ?? "").trim(),
         club = (club ?? "").trim();
 
-  // -----------------------------
-  // Derived names
-  // -----------------------------
   String get fullName => name;
 
   String get shortName {
@@ -33,9 +30,6 @@ class AflPlayer {
 
   bool get isUnknown => id == "UNKNOWN" || name == "Unknown";
 
-  // -----------------------------
-  // Empty placeholder
-  // -----------------------------
   static AflPlayer empty() => AflPlayer(
         id: "UNKNOWN",
         name: "Unknown",
@@ -45,9 +39,6 @@ class AflPlayer {
         fantasyScore: 0,
       );
 
-  // -----------------------------
-  // JSON parsing (supports DFS + AFL.com + static)
-  // -----------------------------
   factory AflPlayer.fromJson(Map<String, dynamic> json) {
     final rawId = json['playerId'] ?? json['id'] ?? "";
     final rawName = json['playerName'] ?? json['name'] ?? json['fullName'] ?? "";
@@ -74,9 +65,6 @@ class AflPlayer {
     };
   }
 
-  // -----------------------------
-  // CopyWith
-  // -----------------------------
   AflPlayer copyWith({
     String? id,
     String? name,
@@ -95,9 +83,6 @@ class AflPlayer {
     );
   }
 
-  // -----------------------------
-  // Equality + Hashing
-  // -----------------------------
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -106,9 +91,6 @@ class AflPlayer {
   @override
   int get hashCode => id.hashCode;
 
-  // -----------------------------
-  // Utils
-  // -----------------------------
   static int _asInt(dynamic v) {
     if (v is int) return v;
     return int.tryParse(v?.toString() ?? "") ?? 0;

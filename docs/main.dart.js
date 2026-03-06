@@ -89507,7 +89507,7 @@ for(s=a3.a.r,r=s.length,q=t.N,p=t.z,o=J.as(a4),n=0;n<s.length;s.length===r||(0,A
 for(l=m.b,k=l.length,j=0;j<l.length;l.length===k||(0,A.J)(l),++j){i=l[j]
 h=i.b
 g=h==null?null:h.a
-if(g==null){i.d=0
+if(g==null||g.length===0){i.d=0
 i.c=A.au(["AF",0,"K",0,"HB",0,"D",0,"M",0,"T",0,"G",0,"B",0],q,p)
 continue}f=o.i(a4,g)
 if(f==null){i.d=0
