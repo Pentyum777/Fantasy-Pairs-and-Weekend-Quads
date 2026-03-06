@@ -203,7 +203,24 @@ Future<void> _loadSelectionsSnapshot() async {
     // ⭐ Apply snapshot directly to widget.selections
     _applySnapshotToSelections(data);
 
-    setState(() {}); // rebuild UI with restored selections
+// ⭐ Determine how many punters to show
+final hasAnySelections = widget.selections.any((p) {
+  final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
+  final hasPicks = p.picks.any((pick) => pick.player != null);
+  return hasName || hasPicks;
+});
+
+setState(() {
+  if (hasAnySelections) {
+    // Use the number of punters actually entered
+    _visiblePunterCount = widget.selections.length;
+  } else {
+    // Default to 10 punters
+    _visiblePunterCount = 10;
+  }
+});
+
+debugPrint("📥 Snapshot restored. Visible punters = $_visiblePunterCount");
 
     debugPrint("📥 Snapshot restored before UI build");
 
