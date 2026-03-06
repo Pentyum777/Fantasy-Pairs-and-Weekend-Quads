@@ -429,9 +429,20 @@ void _applySnapshotToSelections(Map<String, dynamic> data) {
     final statsChanged =
         !_statsEqual(roundStats, _currentStatsByPlayerId);
 
-    if (!fixturesChanged && !statsChanged) {
-      return;
-    }
+    // ⭐ DESKTOP FIX:
+    // Always rebuild when stats are fetched, even if unchanged.
+    // Desktop timers are throttled and can skip dirty-marking.
+    // Desktop-safe: always rebuild when stats are fetched
+final shouldRebuild = fixturesChanged || statsChanged;
+
+// On desktop, timers can be throttled, so force rebuild every cycle
+final isDesktop = Theme.of(context).platform == TargetPlatform.macOS ||
+                  Theme.of(context).platform == TargetPlatform.windows ||
+                  Theme.of(context).platform == TargetPlatform.linux;
+
+if (!shouldRebuild && !isDesktop) {
+  return;
+}
 
     // 7. Apply changes atomically
     setState(() {
@@ -449,6 +460,7 @@ void _applySnapshotToSelections(Map<String, dynamic> data) {
     debugPrint("❌ Live refresh error: $e\n$st");
   }
 }
+
 
 
   void _finaliseFridayPairsWinner() {
