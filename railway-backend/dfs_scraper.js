@@ -20,14 +20,16 @@ export async function scrapeDFS(dfsId) {
 
     const json = await res.json();
 
-    // Ensure playerStats exists
     if (!json.playerStats || !Array.isArray(json.playerStats)) {
       console.error("DFS feed missing playerStats array");
       return [];
     }
 
+    // Convert dfsId to number
+    const matchId = Number(dfsId);
+
     // Filter players for this match
-    const players = json.playerStats.filter(p => p.id === dfsId);
+    const players = json.playerStats.filter(p => p.id === matchId);
 
     return players;
   } catch (err) {
