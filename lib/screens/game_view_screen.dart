@@ -71,6 +71,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   final GlobalKey _punterTableKey = GlobalKey();
 
+  late List<PunterSelection> _selections;
+
   AflFixture? _selectedFixture;
   Timer? _liveTimer;
   final ScrollController _punterScrollController = ScrollController();
@@ -133,9 +135,11 @@ class _GameViewScreenState extends State<GameViewScreen> {
   @override
 void initState() {
   super.initState();
-  _loadSeasonPlayers().then((_) {
-    _loadSelectionsSnapshot();   // ⭐ Restore snapshot AFTER players load
-  });
+  _selections = _selections;   // ⭐ Make selections persistent
+
+_loadSeasonPlayers().then((_) {
+  _loadSelectionsSnapshot();       // Snapshot now applies to _selections
+});
   _startLivePolling();
 }
 
@@ -204,7 +208,7 @@ Future<void> _loadSelectionsSnapshot() async {
     _applySnapshotToSelections(data);
 
 // ⭐ Determine how many punters to show
-final hasAnySelections = widget.selections.any((p) {
+final hasAnySelections = _selections.any((p) {
   final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
   final hasPicks = p.picks.any((pick) => pick.player != null);
   return hasName || hasPicks;
@@ -213,7 +217,7 @@ final hasAnySelections = widget.selections.any((p) {
 setState(() {
   if (hasAnySelections) {
     // Use the number of punters actually entered
-    _visiblePunterCount = widget.selections.length;
+    _visiblePunterCount = _selections.length;
   } else {
     // Default to 10 punters
     _visiblePunterCount = 10;
@@ -236,8 +240,8 @@ void _applySnapshotToSelections(Map<String, dynamic> data) {
 
   final picksJson = (data["picks"] as List<dynamic>? ?? []);
 
-  for (int i = 0; i < widget.selections.length; i++) {
-    final row = widget.selections[i];
+  for (int i = 0; i < _selections.length; i++) {
+    final row = _selections[i];
 
     // ---- Restore punter name ----
     if (i < punterNames.length) {
@@ -491,7 +495,7 @@ if (!shouldRebuild && !isDesktop) {
     if (!allComplete) return;
 
     setState(() {
-      for (final p in widget.selections) {
+      for (final p in _selections) {
         p.isPrizeWinner = (p.punterNumber == _fridayWinnerPosition);
       }
     });
@@ -511,7 +515,7 @@ if (!shouldRebuild && !isDesktop) {
 
     if (allComplete) {
       widget.roundCompletionService.markCompleted(widget.round);
-      _saveRoundResultsToBackend(widget.selections);
+      _saveRoundResultsToBackend(_selections);
     }
   }
 
@@ -540,8 +544,8 @@ if (!shouldRebuild && !isDesktop) {
         ? "Unknown"
         : _monthName(firstFixture.date!.month);
 
-    widget.championshipService.addRound(month, widget.selections);
-    _saveRoundResultsToBackend(widget.selections);
+    widget.championshipService.addRound(month, _selections);
+    _saveRoundResultsToBackend(_selections);
 
     debugPrint("🏆 Weekend Quads completed for $month");
   }
@@ -762,7 +766,7 @@ if (!shouldRebuild && !isDesktop) {
   final isLive = f.quarterText.isNotEmpty && !f.complete;
   if (!isLive) return;
 
-  final punterCount = widget.selections.length;
+  final punterCount = _selections.length;
 
   final pos = _fridayPairsService.selectRandomBottomHalfPosition(punterCount);
 
@@ -770,7 +774,7 @@ if (!shouldRebuild && !isDesktop) {
   _fridayWinnerSelected = true;
 
   setState(() {
-    for (final p in widget.selections) {
+    for (final p in _selections) {
       p.isPrizeWinner = (p.punterNumber == pos);
     }
   });
@@ -1125,7 +1129,7 @@ if (!shouldRebuild && !isDesktop) {
                     visiblePunterCount: _visiblePunterCount,
                     playersPerPunter: picks,
                     availablePlayers: availablePlayers,
-                    selections: widget.selections,
+                    selections: _selections,
                     isCompleted: _isCompleted,
                     readOnly: !widget.userRoleService.isAdmin,
                     onChanged:
@@ -1148,7 +1152,7 @@ if (!shouldRebuild && !isDesktop) {
                 SizedBox(
                   width: leaderboardWidth,
                   child: LeaderboardPanel(
-                    punters: widget.selections
+                    punters: _selections
                         .take(_visiblePunterCount)
                         .toList(),
                     rowHeight: UIDimensions.rowHeight,

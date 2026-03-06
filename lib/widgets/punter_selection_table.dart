@@ -890,7 +890,7 @@ Widget _pickScoreCell(PlayerPick pick) {
 
 Widget _totalCell(BuildContext context, PunterSelection row) {
   final theme = Theme.of(context);
-  final cs = theme.colorScheme;
+  
 
   return Container(
     alignment: Alignment.center,
