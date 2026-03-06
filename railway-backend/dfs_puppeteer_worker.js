@@ -5,33 +5,37 @@ export async function startDFSWorker(dfsId) {
   const url = `https://dfsaustralia.com/live-scoring/?gameId=${dfsId}`;
 
   const browser = await puppeteer.launch({
-    executablePath: "/nix/var/nix/profiles/default/bin/chromium",
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-      "--disable-software-rasterizer",
-      "--disable-dev-tools",
-      "--no-zygote",
-      "--single-process",
-      "--disable-background-networking",
-      "--disable-background-timer-throttling",
-      "--disable-breakpad",
-      "--disable-client-side-phishing-detection",
-      "--disable-default-apps",
-      "--disable-hang-monitor",
-      "--disable-popup-blocking",
-      "--disable-prompt-on-repost",
-      "--disable-sync",
-      "--metrics-recording-only",
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--ignore-certificate-errors",
-      "--ignore-ssl-errors"
-    ]
-  });
+  executablePath: puppeteer.executablePath(),
+  headless: true,
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-software-rasterizer",
+    "--disable-dev-tools",
+    "--no-zygote",
+    "--single-process",
+    "--disable-background-networking",
+    "--disable-background-timer-throttling",
+    "--disable-breakpad",
+    "--disable-client-side-phishing-detection",
+    "--disable-default-apps",
+    "--disable-hang-monitor",
+    "--disable-popup-blocking",
+    "--disable-prompt-on-repost",
+    "--disable-sync",
+    "--metrics-recording-only",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--ignore-certificate-errors",
+    "--ignore-ssl-errors",
+    "--disable-features=AudioServiceOutOfProcess,IsolateOrigins,site-per-process",
+    "--disable-ipc-flooding-protection",
+    "--disable-renderer-backgrounding",
+    "--disable-web-security"
+  ]
+});
 
   const page = await browser.newPage();
 

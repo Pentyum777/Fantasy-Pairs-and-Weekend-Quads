@@ -12,11 +12,6 @@
     "csv-parser": "^3.2.0",
     "express": "^4.19.0",
     "node-fetch": "^3.3.2",
-    "playwright": "^1.45.0",
-    "playwright-core": "^1.45.0",
     "puppeteer": "^24.38.0"
-  },
-  "puppeteer": {
-    "skipChromeDownload": true
   }
 }
