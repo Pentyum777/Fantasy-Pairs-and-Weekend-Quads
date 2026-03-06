@@ -1,131 +1,114 @@
-// dfs_scraper_html.js
 import fetch from "node-fetch";
-import * as cheerio from "cheerio";
 
-export async function scrapeDFS_HTML(dfsId) {
-  const url = `https://dfsaustralia.com/live-scoring/?gameId=${dfsId}`;
-
+/**
+ * Scrape DFS stats using the official event feed.
+ * @param {number} dfsId - The DFS gameId (e.g., 8041)
+ * @returns {Promise<Array>} Array of aggregated player stats
+ */
+export async function scrapeDFS(dfsId) {
   try {
+    // 1. Fetch the full season event feed
+    const url = "https://dfsaustralia-apps.com/shiny/afl-live-scoring/liveScoring2026.json";
     const res = await fetch(url, {
-  signal: controller.signal,
-  headers: {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-      "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Connection": "keep-alive",
-  },
-});
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+          "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+      },
+      timeout: 10000,
+    });
 
     if (!res.ok) {
-      console.error("DFS HTML page returned error:", res.status);
-      return { players: [], meta: {} };
+      console.error("DFS event feed returned error:", res.status);
+      return [];
     }
 
-    const html = await res.text();
-    const $ = cheerio.load(html);
+    const events = await res.json();
 
-    const players = [];
+    // 2. Filter events for this specific match
+    const matchEvents = events.filter((e) => e.id === dfsId);
 
-    // Find ALL tables and detect the stats table by header names
-    const allTables = $("table");
-
-    let statsTable = null;
-
-    allTables.each((_, table) => {
-      const headers = $(table).find("thead th").map((__, th) =>
-        $(th).text().trim().toUpperCase()
-      ).get();
-
-      // Look for the known DFS stats headers
-      if (
-        headers.includes("PLAYER") &&
-        headers.includes("D") &&
-        headers.includes("M") &&
-        headers.includes("T") &&
-        headers.includes("HO") &&
-        headers.includes("FF") &&
-        headers.includes("FA") &&
-        (headers.includes("G.B") || headers.includes("G.B.")) &&
-        headers.includes("FP")
-      ) {
-        statsTable = table;
-      }
-    });
-
-    if (!statsTable) {
-      console.warn("⚠ No DFS stats table found in HTML");
-      return { players: [], meta: {} };
+    if (matchEvents.length === 0) {
+      console.warn(`No DFS events found for gameId ${dfsId}`);
+      return [];
     }
 
-    // Parse rows
-    const rows = $(statsTable).find("tbody tr");
+    // 3. Aggregate stats by player
+    const stats = {};
 
-    rows.each((_, row) => {
-      const cells = $(row).find("td");
-      if (cells.length < 10) return;
+    for (const ev of matchEvents) {
+      const pid = ev.playerId;
 
-      const name = $(cells[1]).text().trim(); // Column 1 = PLAYER
-      if (!name) return;
-
-      const parse = (v) => parseInt(String(v).trim() || "0", 10);
-
-      const disposals = parse($(cells[2]).text());
-      const marks = parse($(cells[3]).text());
-      const tackles = parse($(cells[4]).text());
-      const hitouts = parse($(cells[5]).text());
-      const freesFor = parse($(cells[6]).text());
-      const freesAgainst = parse($(cells[7]).text());
-
-      // G.B column → "1.2" or "0.1" or "2.0"
-      const gb = $(cells[8]).text().trim();
-      let goals = 0;
-      let behinds = 0;
-      if (gb.includes(".")) {
-        const [g, b] = gb.split(".");
-        goals = parse(g);
-        behinds = parse(b);
+      if (!stats[pid]) {
+        stats[pid] = {
+          id: pid,
+          name: ev.playerName,
+          team: ev.teamAbbr,
+          kicks: 0,
+          handballs: 0,
+          marks: 0,
+          tackles: 0,
+          hitouts: 0,
+          freesFor: 0,
+          freesAgainst: 0,
+          goals: 0,
+          behinds: 0,
+          fantasyPoints: 0,
+        };
       }
 
-      const fantasyPoints = parse($(cells[11]).text()); // FP column
+      // 4. Increment stat counters
+      switch (ev.statRank) {
+        case "kick":
+          stats[pid].kicks++;
+          break;
+        case "handball":
+          stats[pid].handballs++;
+          break;
+        case "mark":
+          stats[pid].marks++;
+          break;
+        case "tackle":
+          stats[pid].tackles++;
+          break;
+        case "hitout":
+          stats[pid].hitouts++;
+          break;
+        case "freefor":
+          stats[pid].freesFor++;
+          break;
+        case "freeagainst":
+          stats[pid].freesAgainst++;
+          break;
+        case "goal":
+          stats[pid].goals++;
+          break;
+        case "behind":
+          stats[pid].behinds++;
+          break;
+      }
+    }
 
-      players.push({
-        id: name, // DFS does not expose playerId in this table
-        name,
-        fantasyPoints,
-        goals,
-        behinds,
-        disposals,
-        marks,
-        tackles,
-        hitouts,
-        freesFor,
-        freesAgainst,
-      });
-    });
+    // 5. Compute fantasy points for each player
+    for (const pid of Object.keys(stats)) {
+      const s = stats[pid];
 
-    // Extract scoreboard metadata
-    const scoreText = $("div.scoreboard h2").text().trim();
-    const scoreMatch = scoreText.match(/(\d+)\s*-\s*(\d+)/);
-    const homeScore = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
-    const awayScore = scoreMatch ? parseInt(scoreMatch[2], 10) : 0;
+      s.fantasyPoints =
+        s.kicks * 3 +
+        s.handballs * 2 +
+        s.marks * 3 +
+        s.tackles * 4 +
+        s.hitouts * 1 +
+        s.freesFor * 1 -
+        s.freesAgainst * 3 +
+        s.goals * 6 +
+        s.behinds * 1;
+    }
 
-    const quarterText = $("div.scoreboard h3").text().trim();
-    const quarterMatch = quarterText.match(/(Q\d|Final)/i);
-    const clockMatch = quarterText.match(/(\d{1,2}:\d{2})/);
-
-    const meta = {
-      homeScore,
-      awayScore,
-      quarter: quarterMatch ? quarterMatch[1] : "",
-      clock: clockMatch ? clockMatch[1] : "",
-      status: quarterMatch ? "In Progress" : "",
-    };
-
-    return { players, meta };
+    // 6. Return as array
+    return Object.values(stats);
   } catch (err) {
-    console.error("DFS HTML scrape failed:", err);
-    return { players: [], meta: {} };
+    console.error("DFS scraper failed:", err);
+    return [];
   }
 }
