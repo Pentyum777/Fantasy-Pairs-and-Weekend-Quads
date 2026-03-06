@@ -1,64 +1,40 @@
-// dfs_puppeteer_worker.js
-import puppeteer from "puppeteer";
+// dfs_puppeteer_worker.js (browserless version)
+import fetch from "node-fetch";
+import cheerio from "cheerio";
 
 export async function startDFSWorker(dfsId) {
   const url = `https://dfsaustralia.com/live-scoring/?gameId=${dfsId}`;
 
-  const browser = await puppeteer.launch({
-  executablePath: puppeteer.executablePath(),
-  headless: true,
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-    "--disable-software-rasterizer",
-    "--disable-dev-tools",
-    "--no-zygote",
-    "--single-process",
-    "--disable-background-networking",
-    "--disable-background-timer-throttling",
-    "--disable-breakpad",
-    "--disable-client-side-phishing-detection",
-    "--disable-default-apps",
-    "--disable-hang-monitor",
-    "--disable-popup-blocking",
-    "--disable-prompt-on-repost",
-    "--disable-sync",
-    "--metrics-recording-only",
-    "--no-first-run",
-    "--no-default-browser-check",
-    "--ignore-certificate-errors",
-    "--ignore-ssl-errors",
-    "--disable-features=AudioServiceOutOfProcess,IsolateOrigins,site-per-process",
-    "--disable-ipc-flooding-protection",
-    "--disable-renderer-backgrounding",
-    "--disable-web-security"
-  ]
-});
-
-  const page = await browser.newPage();
-
   async function scrape() {
     try {
-      await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
-      await page.waitForSelector("table", { timeout: 15000 });
+      const res = await fetch(url, { timeout: 30000 });
+      const html = await res.text();
+      const $ = cheerio.load(html);
 
-      const data = await page.evaluate(() => {
-        const tables = Array.from(document.querySelectorAll("table"));
+      const tables = $("table").toArray();
 
-        const statsTable = tables.find(t => {
-          const headers = Array.from(t.querySelectorAll("th"))
-            .map(th => th.innerText.trim().toUpperCase());
-          return headers.includes("PLAYER") && headers.includes("FP");
-        });
+      const statsTable = tables.find(t => {
+        const headers = $(t)
+          .find("th")
+          .toArray()
+          .map(th => $(th).text().trim().toUpperCase());
+        return headers.includes("PLAYER") && headers.includes("FP");
+      });
 
-        if (!statsTable) return { players: [], meta: {} };
+      if (!statsTable) {
+        console.log("No stats table found");
+        return;
+      }
 
-        const rows = Array.from(statsTable.querySelectorAll("tbody tr"));
+      const rows = $(statsTable).find("tbody tr").toArray();
 
-        const players = rows.map(row => {
-          const cells = Array.from(row.querySelectorAll("td")).map(td => td.innerText.trim());
+      const players = rows
+        .map(row => {
+          const cells = $(row)
+            .find("td")
+            .toArray()
+            .map(td => $(td).text().trim());
+
           const name = cells[1];
           if (!name) return null;
 
@@ -71,7 +47,8 @@ export async function startDFSWorker(dfsId) {
           const freesFor = parse(cells[6]);
           const freesAgainst = parse(cells[7]);
 
-          let goals = 0, behinds = 0;
+          let goals = 0,
+            behinds = 0;
           if (cells[8]?.includes(".")) {
             const [g, b] = cells[8].split(".");
             goals = parse(g);
@@ -93,40 +70,38 @@ export async function startDFSWorker(dfsId) {
             behinds,
             fantasyPoints
           };
-        }).filter(Boolean);
+        })
+        .filter(Boolean);
 
-        const scoreEl = document.querySelector("div.scoreboard h2");
-        const metaEl = document.querySelector("div.scoreboard h3");
+      const scoreEl = $("div.scoreboard h2").first().text();
+      const metaEl = $("div.scoreboard h3").first().text();
 
-        let homeScore = 0, awayScore = 0;
-        if (scoreEl) {
-          const match = scoreEl.innerText.match(/(\d+)\s*-\s*(\d+)/);
-          if (match) {
-            homeScore = parseInt(match[1]);
-            awayScore = parseInt(match[2]);
-          }
+      let homeScore = 0,
+        awayScore = 0;
+      const match = scoreEl.match(/(\d+)\s*-\s*(\d+)/);
+      if (match) {
+        homeScore = parseInt(match[1]);
+        awayScore = parseInt(match[2]);
+      }
+
+      const quarter = metaEl || "";
+
+      const data = {
+        players,
+        meta: {
+          homeScore,
+          awayScore,
+          quarter,
+          status: quarter ? "In Progress" : ""
         }
-
-        const quarter = metaEl?.innerText || "";
-
-        return {
-          players,
-          meta: {
-            homeScore,
-            awayScore,
-            quarter,
-            status: quarter ? "In Progress" : ""
-          }
-        };
-      });
+      };
 
       global.liveStatsCache[dfsId] = {
         ...data,
         timestamp: Date.now()
       };
 
-      console.log("DFS worker updated stats:", data.players.length);
-
+      console.log("DFS worker updated stats:", players.length);
     } catch (err) {
       console.error("DFS worker error:", err);
     }
