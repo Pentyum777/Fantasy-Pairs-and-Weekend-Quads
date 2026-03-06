@@ -131,11 +131,13 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _loadSeasonPlayers(); // NEW
-    _startLivePolling();  // updated
-  }
+void initState() {
+  super.initState();
+  _loadSeasonPlayers().then((_) {
+    _loadSelectionsSnapshot();   // ⭐ Restore snapshot AFTER players load
+  });
+  _startLivePolling();
+}
 
   @override
   void dispose() {
@@ -164,6 +166,125 @@ class _GameViewScreenState extends State<GameViewScreen> {
       });
     }
   }
+
+Future<void> _loadSelectionsSnapshot() async {
+  try {
+    final url = Uri.https(
+      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+      "/loadSelections",
+      {
+        "gameType": widget.gameType,
+        "season": widget.season.toString(),
+        "round": widget.round.toString(),
+      },
+    );
+
+    final res = await http.get(url);
+
+    if (res.statusCode != 200) {
+      debugPrint("⚠️ loadSelectionsSnapshot: HTTP ${res.statusCode}");
+      return;
+    }
+
+    dynamic json;
+    try {
+      json = jsonDecode(res.body);
+    } catch (_) {
+      debugPrint("❌ loadSelectionsSnapshot: invalid JSON");
+      return;
+    }
+
+    final data = json["data"];
+    if (data is! Map<String, dynamic>) {
+      debugPrint("⚠️ loadSelectionsSnapshot: missing data field");
+      return;
+    }
+
+    // ⭐ Apply snapshot directly to widget.selections
+    _applySnapshotToSelections(data);
+
+    setState(() {}); // rebuild UI with restored selections
+
+    debugPrint("📥 Snapshot restored before UI build");
+
+  } catch (e, st) {
+    debugPrint("❌ Failed to load selections snapshot: $e\n$st");
+  }
+}
+
+void _applySnapshotToSelections(Map<String, dynamic> data) {
+  final punterNames = (data["punterNames"] as List<dynamic>? ?? [])
+      .map((e) => e?.toString() ?? "")
+      .toList();
+
+  final picksJson = (data["picks"] as List<dynamic>? ?? []);
+
+  for (int i = 0; i < widget.selections.length; i++) {
+    final row = widget.selections[i];
+
+    // ---- Restore punter name ----
+    if (i < punterNames.length) {
+      final name = punterNames[i].trim();
+      row.punterName = name.isEmpty ? "P${row.punterNumber}" : name;
+    }
+
+    // ---- Restore picks ----
+    if (i >= picksJson.length) {
+      for (final pick in row.picks) {
+        pick.player = null;
+        pick.stats = null;
+      }
+      continue;
+    }
+
+    final snapRow = picksJson[i];
+    if (snapRow is! List) continue;
+
+    for (int j = 0; j < row.picks.length; j++) {
+      final pick = row.picks[j];
+
+      if (j >= snapRow.length) {
+        pick.player = null;
+        pick.stats = null;
+        continue;
+      }
+
+      final snapPick = snapRow[j];
+      if (snapPick is! Map) {
+        pick.player = null;
+        pick.stats = null;
+        continue;
+      }
+
+      final pid = (snapPick["playerId"] ?? "").toString().trim();
+
+      if (pid.isEmpty) {
+        pick.player = null;
+        pick.stats = null;
+        continue;
+      }
+
+      // ---- Restore player from seasonPlayers ----
+      final restored = _seasonPlayers?.where((p) => p.id == pid).toList() ?? [];
+
+      pick.player = restored.isEmpty
+          ? AflPlayer(
+              id: pid,
+              name: "Unknown ($pid)",
+              club: "UNK",
+              guernseyNumber: 0,
+              season: widget.season,
+            )
+          : restored.first;
+
+      // ---- Restore stats ----
+      final rawStats = snapPick["stats"];
+      pick.stats = rawStats is Map<String, dynamic>
+          ? Map<String, dynamic>.from(rawStats)
+          : null;
+    }
+  }
+}
 
   // ------------------------------------------------------------
   // LIVE POLLING (flicker‑free)
@@ -214,14 +335,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   // -------------------------------------------------------------
   // HELPERS: live detection + equality checks
   // -------------------------------------------------------------
-  bool _anyGameLive(List<AflFixture> fixtures) {
-    return fixtures.any((f) {
-      if (f.complete) return false;
-      if (f.quarterText.isNotEmpty) return true;
-      if (f.timeText.isNotEmpty) return true;
-      return false;
-    });
-  }
+  
 
   bool _fixturesEqual(List<AflFixture> a, List<AflFixture> b) {
     if (identical(a, b)) return true;
@@ -270,75 +384,72 @@ class _GameViewScreenState extends State<GameViewScreen> {
   // ROUND-WIDE STATS + FIXTURES REFRESH (flicker‑free)
   // -------------------------------------------------------------
   Future<void> _refreshLive() async {
-    try {
-      // 1. Get fixtures for this round
-      final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-        widget.season,
-        widget.round,
-      );
+  try {
+    // 1. Get fixtures for this round
+    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+      widget.season,
+      widget.round,
+    );
 
-      // 2. Refresh live scores for each fixture
-      for (final f in fixtures) {
-        final matchId = f.matchId?.trim();
-        if (matchId != null && matchId.isNotEmpty) {
-          await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
-        }
+    // 2. Refresh live scores for each fixture
+    for (final f in fixtures) {
+      final matchId = f.matchId?.trim();
+      if (matchId != null && matchId.isNotEmpty) {
+        await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
       }
-
-      if (!mounted) return;
-
-      // 3. Re-read fixtures after refresh
-      final updatedFixtures = widget.fixtureRepo.fixturesForSeasonRound(
-        widget.season,
-        widget.round,
-      );
-
-      // 4. Always run completion checks
-      _checkRoundCompletion();
-      _finaliseFridayPairsWinner();
-      _checkAndCompleteWeekendQuadsRound();
-
-      // 5. Decide if any game is live
-      final gamesLive = _anyGameLive(updatedFixtures);
-
-      // If no games are live → only update fixtures if changed
-      if (!gamesLive) {
-        if (!_fixturesEqual(updatedFixtures, _currentFixtures)) {
-          setState(() {
-            _currentFixtures = updatedFixtures;
-          });
-        }
-        return;
-      }
-
-      // 6. Games ARE live → fetch round-wide stats
-      final roundStats = await _fetchRoundStats();
-
-      // 7. Decide if anything actually changed
-      final fixturesChanged =
-          !_fixturesEqual(updatedFixtures, _currentFixtures);
-      final statsChanged =
-          !_statsEqual(roundStats, _currentStatsByPlayerId);
-
-      if (!fixturesChanged && !statsChanged) {
-        return;
-      }
-
-      // 8. Apply changes in a single, atomic rebuild
-      setState(() {
-        _currentFixtures = updatedFixtures;
-        _currentStatsByPlayerId = roundStats;
-
-        final tableState = _punterTableKey.currentState;
-        if (tableState != null) {
-          final dynamic dyn = tableState;
-          dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
-        }
-      });
-    } catch (e, st) {
-      debugPrint("❌ Live refresh error: $e\n$st");
     }
+
+    if (!mounted) return;
+
+    // 3. Re-read fixtures after refresh
+    final updatedFixtures = widget.fixtureRepo.fixturesForSeasonRound(
+      widget.season,
+      widget.round,
+    );
+
+    // 4. Always run completion checks
+    _checkRoundCompletion();
+    _finaliseFridayPairsWinner();
+    _checkAndCompleteWeekendQuadsRound();
+
+    // 5. Determine if round is fully complete
+    final allComplete = updatedFixtures.every((f) => f.complete);
+
+    // ⭐ ALWAYS fetch stats unless the entire round is complete
+    Map<String, AflPlayerMatchStats> roundStats = _currentStatsByPlayerId;
+
+    if (!allComplete) {
+      roundStats = await _fetchRoundStats();
+    }
+
+    // 6. Detect changes
+    final fixturesChanged =
+        !_fixturesEqual(updatedFixtures, _currentFixtures);
+
+    final statsChanged =
+        !_statsEqual(roundStats, _currentStatsByPlayerId);
+
+    if (!fixturesChanged && !statsChanged) {
+      return;
+    }
+
+    // 7. Apply changes atomically
+    setState(() {
+      _currentFixtures = updatedFixtures;
+      _currentStatsByPlayerId = roundStats;
+
+      final tableState = _punterTableKey.currentState;
+      if (tableState != null) {
+        final dynamic dyn = tableState;
+        dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
+      }
+    });
+
+  } catch (e, st) {
+    debugPrint("❌ Live refresh error: $e\n$st");
   }
+}
+
 
   void _finaliseFridayPairsWinner() {
     if (widget.gameType != "friday_pairs") return;
