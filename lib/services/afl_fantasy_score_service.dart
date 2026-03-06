@@ -16,7 +16,7 @@ class AFLFantasyService {
       final decoded = jsonDecode(jsonString);
 
       if (decoded is Map<String, dynamic>) {
-        dfsMap = decoded.map((k, v) => MapEntry(k, v as int));
+        dfsMap = decoded.map((k, v) => MapEntry(k, int.tryParse(v.toString()) ?? 0));
         print("DFS MAP LOADED: ${dfsMap.length} entries");
       }
     } catch (e) {

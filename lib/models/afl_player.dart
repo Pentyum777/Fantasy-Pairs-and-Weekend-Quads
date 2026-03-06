@@ -1,11 +1,11 @@
 class AflPlayer {
-  final String id;
-  final String name;
-  final String club;
+  final String id;              // Stable identity ID (CD_Ixxxxx)
+  final String name;            // Full or short name
+  final String club;            // Normalized club code (GCS, GEE, MELB, etc.)
   final int guernseyNumber;
   final int season;
 
-  /// Live fantasy score (mirrors stats.fantasyPoints)
+  /// Live fantasy score (used only at runtime)
   int fantasyScore;
 
   AflPlayer({
@@ -46,18 +46,18 @@ class AflPlayer {
       );
 
   // -----------------------------
-  // JSON parsing (hardened)
+  // JSON parsing (supports DFS + AFL.com + static)
   // -----------------------------
   factory AflPlayer.fromJson(Map<String, dynamic> json) {
-    dynamic rawId = json['id'] ?? "";
-    dynamic rawName = json['name'] ?? json['fullName'] ?? "";
-    dynamic rawClub = json['club'] ?? json['team'] ?? "";
+    final rawId = json['playerId'] ?? json['id'] ?? "";
+    final rawName = json['playerName'] ?? json['name'] ?? json['fullName'] ?? "";
+    final rawClub = json['teamAbbr'] ?? json['club'] ?? json['team'] ?? "";
 
     return AflPlayer(
       id: rawId.toString(),
       name: rawName.toString(),
       club: rawClub.toString(),
-      guernseyNumber: _asInt(json['guernseyNumber']),
+      guernseyNumber: _asInt(json['guernseyNumber'] ?? json['number']),
       season: _asInt(json['season']) == 0 ? 2026 : _asInt(json['season']),
       fantasyScore: _asInt(json['fantasyScore']),
     );
@@ -101,9 +101,7 @@ class AflPlayer {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is AflPlayer &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
+      other is AflPlayer && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;

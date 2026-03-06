@@ -78,7 +78,7 @@ class PlayerRepository {
           id: id,
           name: name,
           club: normalizedClub,
-          guernseyNumber: _asInt(map['guernseyNumber']),
+          guernseyNumber: _asInt(map['guernseyNumber'] ?? map['number']),
           season: seasonValue == 0 ? season : seasonValue,
         ),
       );
