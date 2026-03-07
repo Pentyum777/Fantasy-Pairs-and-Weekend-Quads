@@ -691,9 +691,9 @@ Widget _buildPickCell(
     width: kPickColumnWidth,                 // 🔥 FULL WIDTH OF CELL
     height: double.infinity,
     alignment: Alignment.center,
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+    padding: const EdgeInsets.symmetric()
 
-    decoration: colours == null
+    ,decoration: colours == null
     ? null
     : BoxDecoration(
         color: colours["bg"]!.withOpacity(0.85),  // ⭐ strong but not solid

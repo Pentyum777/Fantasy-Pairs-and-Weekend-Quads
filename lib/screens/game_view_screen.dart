@@ -78,7 +78,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   final ScrollController _punterScrollController = ScrollController();
 
   Map<String, AflPlayerMatchStats> _currentStatsByPlayerId = {};
-  List<AflFixture> _currentFixtures = []; // NEW: cache fixtures
+  
 
   final FridayPairsService _fridayPairsService = FridayPairsService();
   bool _fridayWinnerSelected = false;
@@ -359,52 +359,7 @@ void _applySnapshotToSelections(Map<String, dynamic> data) {
   }
 
   // -------------------------------------------------------------
-  // HELPERS: live detection + equality checks
-  // -------------------------------------------------------------
   
-
-  bool _fixturesEqual(List<AflFixture> a, List<AflFixture> b) {
-    if (identical(a, b)) return true;
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      final fa = a[i];
-      final fb = b[i];
-      if (fa.matchId != fb.matchId ||
-          fa.homeScore != fb.homeScore ||
-          fa.awayScore != fb.awayScore ||
-          fa.quarterText != fb.quarterText ||
-          fa.timeText != fb.timeText ||
-          fa.complete != fb.complete) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  bool _statsEqual(
-  Map<String, AflPlayerMatchStats> a,
-  Map<String, AflPlayerMatchStats> b,
-) {
-  if (identical(a, b)) return true;
-  if (a.length != b.length) return false;
-
-  for (final key in a.keys) {
-    final sa = a[key];
-    final sb = b[key];
-    if (sa == null || sb == null) return false;
-
-    if ((sa.fantasyPoints ?? 0) != (sb.fantasyPoints ?? 0)) return false;
-    if ((sa.kicks ?? 0) != (sb.kicks ?? 0)) return false;
-    if ((sa.handballs ?? 0) != (sb.handballs ?? 0)) return false;
-    if ((sa.disposals ?? 0) != (sb.disposals ?? 0)) return false;
-    if ((sa.marks ?? 0) != (sb.marks ?? 0)) return false;
-    if ((sa.tackles ?? 0) != (sb.tackles ?? 0)) return false;
-    if ((sa.goals ?? 0) != (sb.goals ?? 0)) return false;
-    if ((sa.behinds ?? 0) != (sb.behinds ?? 0)) return false;
-  }
-
-  return true;
-}
 
   // -------------------------------------------------------------
   // ROUND-WIDE STATS + FIXTURES REFRESH (flicker‑free)
@@ -441,38 +396,15 @@ void _applySnapshotToSelections(Map<String, dynamic> data) {
     // 5. Determine if round is fully complete
     final allComplete = updatedFixtures.every((f) => f.complete);
 
-    // ⭐ ALWAYS fetch stats unless the entire round is complete
+    // 6. Fetch stats (always fetch unless round fully complete)
     Map<String, AflPlayerMatchStats> roundStats = _currentStatsByPlayerId;
 
     if (!allComplete) {
       roundStats = await _fetchRoundStats();
     }
 
-    // 6. Detect changes
-    final fixturesChanged =
-        !_fixturesEqual(updatedFixtures, _currentFixtures);
-
-    final statsChanged =
-        !_statsEqual(roundStats, _currentStatsByPlayerId);
-
-    // ⭐ DESKTOP FIX:
-    // Always rebuild when stats are fetched, even if unchanged.
-    // Desktop timers are throttled and can skip dirty-marking.
-    // Desktop-safe: always rebuild when stats are fetched
-final shouldRebuild = fixturesChanged || statsChanged;
-
-// On desktop, timers can be throttled, so force rebuild every cycle
-final isDesktop = Theme.of(context).platform == TargetPlatform.macOS ||
-                  Theme.of(context).platform == TargetPlatform.windows ||
-                  Theme.of(context).platform == TargetPlatform.linux;
-
-if (!shouldRebuild && !isDesktop) {
-  return;
-}
-
-    // 7. Apply changes atomically
+    // ⭐ Force rebuild every cycle
     setState(() {
-      _currentFixtures = updatedFixtures;
       _currentStatsByPlayerId = roundStats;
 
       final tableState = _punterTableKey.currentState;
@@ -481,11 +413,12 @@ if (!shouldRebuild && !isDesktop) {
         dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
       }
     });
-
   } catch (e, st) {
     debugPrint("❌ Live refresh error: $e\n$st");
   }
 }
+
+
 
 
 
