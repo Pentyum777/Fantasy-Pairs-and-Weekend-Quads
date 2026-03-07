@@ -62,7 +62,8 @@ class GameViewScreen extends StatefulWidget {
 }
 
 class _GameViewScreenState extends State<GameViewScreen> {
-  int _visiblePunterCount = 10;
+  int _visiblePunterCount = 15;     // default for blank table
+int _maxPunterDropdown = 25;      // expands automatically if snapshot > 25
   bool _isCompleted = false;
 
     bool _leaderboardCollapsed = false;
@@ -79,6 +80,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   Map<String, AflPlayerMatchStats> _currentStatsByPlayerId = {};
   
+
+
 
   final FridayPairsService _fridayPairsService = FridayPairsService();
   bool _fridayWinnerSelected = false;
@@ -143,15 +146,15 @@ Future<void> _loadSelectionsSnapshot() async {
   try {
     final int safeRound = widget.round ?? 0;
 
-final url = Uri.https(
-  "fantasy-pairs-and-weekend-quads-production.up.railway.app",
-  "/loadSelections",
-  {
-    "gameType": widget.gameType,
-    "season": widget.season.toString(),
-    "round": safeRound.toString(),
-  },
-);
+    final url = Uri.https(
+      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+      "/loadSelections",
+      {
+        "gameType": widget.gameType,
+        "season": widget.season.toString(),
+        "round": safeRound.toString(),
+      },
+    );
 
     final res = await http.get(url);
 
@@ -174,34 +177,38 @@ final url = Uri.https(
       return;
     }
 
-    // ⭐ Apply snapshot directly to widget.selections
+    // Apply snapshot to selections
     _applySnapshotToSelections(data);
 
-// ⭐ Determine how many punters to show
-final hasAnySelections = _selections.any((p) {
-  final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
-  final hasPicks = p.picks.any((pick) => pick.player != null);
-  return hasName || hasPicks;
-});
+    // Determine if any punters are actually filled
+    final hasAnySelections = _selections.any((p) {
+      final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
+      final hasPicks = p.picks.any((pick) => pick.player != null);
+      return hasName || hasPicks;
+    });
 
-setState(() {
-  if (hasAnySelections) {
-    // Use the number of punters actually entered
-    _visiblePunterCount = _selections.length;
-  } else {
-    // Default to 10 punters
-    _visiblePunterCount = 10;
-  }
-});
+    setState(() {
+      if (hasAnySelections) {
+        // Use the number of punters actually entered
+        _visiblePunterCount = _selections.length;
 
-debugPrint("📥 Snapshot restored. Visible punters = $_visiblePunterCount");
+        // Expand dropdown if snapshot has more than 25 punters
+        if (_visiblePunterCount > _maxPunterDropdown) {
+          _maxPunterDropdown = _visiblePunterCount;
+        }
+      } else {
+        // Default for blank table
+        _visiblePunterCount = 15;
+      }
+    });
 
-    debugPrint("📥 Snapshot restored before UI build");
+    debugPrint("📥 Snapshot restored. Visible punters = $_visiblePunterCount");
 
   } catch (e, st) {
     debugPrint("❌ Failed to load selections snapshot: $e\n$st");
   }
 }
+
 
 void _applySnapshotToSelections(Map<String, dynamic> data) {
   final punterNames = (data["punterNames"] as List<dynamic>? ?? [])
@@ -966,7 +973,7 @@ if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) 
                       menuMaxHeight: 280,
                       itemHeight: 32,
                       style: theme.textTheme.bodyMedium,
-                      items: List.generate(25, (i) => i + 1)
+                      items: List.generate(_maxPunterDropdown, (i) => i + 1)
                           .map(
                             (v) => DropdownMenuItem<int>(
                               value: v,

@@ -248,7 +248,6 @@ void initState() {
 // ---------------------------------------------------------------------------
 
 Widget _buildBody(
-  
   ThemeData theme,
   ColorScheme cs,
   List<PunterSelection> visible,
@@ -257,9 +256,7 @@ Widget _buildBody(
   double fontSize,
 ) {
   return ListView.builder(
-    // ⭐ FIX: Do NOT share vertical scroll controller with leaderboard
-    controller: ScrollController(),
-
+    controller: ScrollController(), // independent vertical scroll
     itemCount: visible.length,
     itemBuilder: (context, index) {
       try {
@@ -268,47 +265,74 @@ Widget _buildBody(
         final invalid = _hasAnyGlobalDuplicate();
 
         final bg = invalid
-    ? Colors.red.withOpacity(0.10)
-    : isStriped
-        ? Colors.black.withOpacity(0.08)   // subtle stripe
-        : Colors.black.withOpacity(0.04);  // base row
+            ? Colors.red.withOpacity(0.10)
+            : isStriped
+                ? Colors.black.withOpacity(0.08)
+                : Colors.black.withOpacity(0.04);
 
         return Container(
-  height: UIDimensions.rowHeight,   // ⭐ FIXED HEIGHT — matches leaderboard
-  decoration: BoxDecoration(
-    color: bg,
-    border: Border(
-      bottom: BorderSide(
-        color: cs.outlineVariant.withAlpha(153),
-        width: 0.5,
-      ),
-    ),
-  ),
+          height: UIDimensions.rowHeight,
+          decoration: BoxDecoration(
+            color: bg,
+            border: Border.all(
+              color: Colors.red,   // 🔥 DEBUG: border around entire row
+              width: 1,
+            ),
+          ),
           child: Row(
             children: [
-              SizedBox(
+              // 🔵 Punter column
+              Container(
                 width: kPunterColumnWidth,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.blue, // 🔵 punter column border
+                    width: 1,
+                  ),
+                ),
                 child: _punterCell(context, row),
               ),
 
-              // Picks
+              // 🟢 Picks + 🟠 Scores
               for (int i = 0; i < pickCount; i++) ...[
-                SizedBox(
+                // 🟢 Pick column
+                Container(
                   width: kPickColumnWidth,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.green, // 🟢 pick column border
+                      width: 1,
+                    ),
+                  ),
                   child: i < row.picks.length
                       ? _buildPickCell(context, row, row.picks[i])
                       : const SizedBox(),
                 ),
-                SizedBox(
+
+                // 🟠 Pick score column
+                Container(
                   width: kPickScoreColumnWidth,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.orange, // 🟠 score column border
+                      width: 1,
+                    ),
+                  ),
                   child: i < row.picks.length
                       ? _pickScoreCell(row.picks[i])
                       : const SizedBox(),
                 ),
               ],
 
-              SizedBox(
+              // 🟣 Total column
+              Container(
                 width: kTotalColumnWidth,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.purple, // 🟣 total column border
+                    width: 1,
+                  ),
+                ),
                 child: _totalCell(context, row),
               ),
             ],
@@ -905,7 +929,7 @@ Widget _totalCell(BuildContext context, PunterSelection row) {
         "${row.totalScore}",
         style: theme.textTheme.bodyMedium?.copyWith(
           fontWeight: FontWeight.w700,
-          color: Colors.white,
+          color: Colors.black,
         ),
       ),
     ),
