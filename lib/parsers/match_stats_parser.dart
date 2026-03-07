@@ -10,17 +10,14 @@ class MatchStatsParser {
   static const String baseUrl =
       "https://fantasy-pairs-and-weekend-quads-production.up.railway.app";
 
-  static final Map<String, List<AflPlayerMatchStats>> _cache = {};
+  // ❌ REMOVE this:
+  // static final Map<String, List<AflPlayerMatchStats>> _cache = {};
 
   static Future<List<AflPlayerMatchStats>> fetchMatchStats(
     String matchId,
     PlayerRepository repo,
     FixtureRepository fixtureRepo,
   ) async {
-    if (_cache.containsKey(matchId)) {
-      return _cache[matchId]!;
-    }
-
     http.Response res;
     try {
       res = await http.get(Uri.parse('$baseUrl/fantasy/$matchId'));
@@ -43,7 +40,7 @@ class MatchStatsParser {
     if (playersRaw is! List) return [];
 
     final currentYear = DateTime.now().year;
-final seasonPlayers = await repo.playersForSeason(currentYear);
+    final seasonPlayers = await repo.playersForSeason(currentYear);
 
     final List<AflPlayerMatchStats> results = [];
 
@@ -74,7 +71,6 @@ final seasonPlayers = await repo.playersForSeason(currentYear);
     for (final raw in playersRaw) {
       if (raw is! Map) continue;
 
-      // NEW FIELD NAMES
       final id = raw['playerId']?.toString().trim() ?? "";
       final name = raw['playerName']?.toString().trim() ?? "";
 
@@ -93,8 +89,6 @@ final seasonPlayers = await repo.playersForSeason(currentYear);
         AflPlayerMatchStats(
           player: player,
           team: raw['teamAbbr']?.toString() ?? player.club,
-
-          // DIRECT FIELDS (no stats{} object anymore)
           kicks: asInt(raw['kicks']),
           handballs: asInt(raw['handballs']),
           disposals: asInt(raw['kicks']) + asInt(raw['handballs']),
@@ -106,19 +100,14 @@ final seasonPlayers = await repo.playersForSeason(currentYear);
           freesFor: asInt(raw['freesFor']),
           freesAgainst: asInt(raw['freesAgainst']),
           timeOnGroundPercentage: asInt(raw['timeOnGroundPercentage']),
-
-          // DFS fantasy points
           fantasyPoints: asInt(raw['dreamTeamPoints']),
         ),
       );
     }
 
-    if (results.isNotEmpty) {
-      _cache[matchId] = results;
-    }
-
     return results;
   }
 
-  static void clearCache() => _cache.clear();
+  // ❌ You can delete this too:
+  // static void clearCache() => _cache.clear();
 }

@@ -372,13 +372,12 @@ Future<void> _saveSnapshot() async {
   // -------------------------------------------------------------
   Future<void> _refreshLive() async {
   try {
-    // 1. Get fixtures for this round
+    // 1. Refresh live scores for each fixture
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
       widget.season,
       widget.round,
     );
 
-    // 2. Refresh live scores for each fixture
     for (final f in fixtures) {
       final matchId = f.matchId?.trim();
       if (matchId != null && matchId.isNotEmpty) {
@@ -388,38 +387,25 @@ Future<void> _saveSnapshot() async {
 
     if (!mounted) return;
 
-    // 3. Re-read fixtures after refresh
-    final updatedFixtures = widget.fixtureRepo.fixturesForSeasonRound(
-      widget.season,
-      widget.round,
-    );
-
-    // 4. Always run completion checks
+    // 2. Run completion checks
     _checkRoundCompletion();
     _finaliseFridayPairsWinner();
     _checkAndCompleteWeekendQuadsRound();
 
-    // 5. Determine if round is fully complete
-    final allComplete = updatedFixtures.every((f) => f.complete);
+    // 3. Always fetch fresh stats
+    final roundStats = await _fetchRoundStats();
 
-    // 6. Fetch stats (always fetch unless round fully complete)
-    Map<String, AflPlayerMatchStats> roundStats = _currentStatsByPlayerId;
+    // 4. Apply stats to table
+    _currentStatsByPlayerId = roundStats;
 
-    if (!allComplete) {
-      roundStats = await _fetchRoundStats();
+    final tableState = _punterTableKey.currentState;
+    if (tableState != null) {
+      final dynamic dyn = tableState;
+      dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
     }
 
-    // ⭐ Force rebuild every cycle
-    setState(() {
-      _currentStatsByPlayerId = roundStats;
-
-      final tableState = _punterTableKey.currentState;
-      debugPrint("tableState = $tableState");
-      if (tableState != null) {
-        final dynamic dyn = tableState;
-        dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
-      }
-    });
+    // 5. Rebuild UI
+    setState(() {});
   } catch (e, st) {
     debugPrint("❌ Live refresh error: $e\n$st");
   }
