@@ -694,11 +694,11 @@ Widget _buildPickCell(
     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
 
     decoration: colours == null
-        ? null
-        : BoxDecoration(
-            color: colours["bg"]?.withAlpha(280),   // 🔥 BACKGROUND NOW FILLS FULL WIDTH
-            borderRadius: BorderRadius.circular(4),
-          ),
+    ? null
+    : BoxDecoration(
+        color: colours["bg"]!.withOpacity(0.85),  // ⭐ strong but not solid
+        borderRadius: BorderRadius.circular(4),
+      ),
 
     child: Row(
       mainAxisAlignment: MainAxisAlignment.center,

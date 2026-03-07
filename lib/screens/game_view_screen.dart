@@ -176,15 +176,17 @@ void initState() {
 
 Future<void> _loadSelectionsSnapshot() async {
   try {
-    final url = Uri.https(
-      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
-      "/loadSelections",
-      {
-        "gameType": widget.gameType,
-        "season": widget.season.toString(),
-        "round": widget.round.toString(),
-      },
-    );
+    final int safeRound = widget.round ?? 0;
+
+final url = Uri.https(
+  "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+  "/loadSelections",
+  {
+    "gameType": widget.gameType,
+    "season": widget.season.toString(),
+    "round": safeRound.toString(),
+  },
+);
 
     final res = await http.get(url);
 

@@ -88615,38 +88615,40 @@ break
 case 6:case 1:return A.X(q,r)
 case 2:return A.W(o,r)}})
 return A.Y($async$xp,r)},
-xq(){var s=0,r=A.Z(t.H),q,p=2,o,n=this,m,l,k,j,i,h,g,f,e,d
-var $async$xq=A.a_(function(a,b){if(a===1){o=b
+xq(){var s=0,r=A.Z(t.H),q,p=2,o,n=this,m,l,k,j,i,h,g,f,e,d,c,b
+var $async$xq=A.a_(function(a0,a1){if(a0===1){o=a1
 s=p}while(true)switch(s){case 0:p=4
-f=n.a
-m=A.aF2("https",u.Y,"/loadSelections",A.au(["gameType",f.e,"season",B.e.k(f.c),"round",J.bL(n.a.d)],t.N,t.z))
+e=n.a
+d=e.d
+m=d==null?0:d
+l=A.aF2("https",u.Y,"/loadSelections",A.au(["gameType",e.e,"season",B.e.k(e.c),"round",J.bL(m)],t.N,t.z))
 s=7
-return A.a0(A.av0(m),$async$xq)
-case 7:l=b
-if(l.b!==200){A.eg().$1("\u26a0\ufe0f loadSelectionsSnapshot: HTTP "+l.b)
+return A.a0(A.av0(l),$async$xq)
+case 7:k=a1
+if(k.b!==200){A.eg().$1("\u26a0\ufe0f loadSelectionsSnapshot: HTTP "+k.b)
 s=1
-break}k=null
-try{f=l
-k=B.aX.q6(0,A.os(A.on(f.e).c.a.i(0,"charset")).cd(0,f.w),null)}catch(c){A.eg().$1("\u274c loadSelectionsSnapshot: invalid JSON")
+break}j=null
+try{e=k
+j=B.aX.q6(0,A.os(A.on(e.e).c.a.i(0,"charset")).cd(0,e.w),null)}catch(a){A.eg().$1("\u274c loadSelectionsSnapshot: invalid JSON")
 s=1
-break}j=J.bb(k,"data")
-if(!t.a.b(j)){A.eg().$1("\u26a0\ufe0f loadSelectionsSnapshot: missing data field")
+break}i=J.bb(j,"data")
+if(!t.a.b(i)){A.eg().$1("\u26a0\ufe0f loadSelectionsSnapshot: missing data field")
 s=1
-break}n.a2W(j)
-f=n.y
-f===$&&A.a()
-i=B.b.iH(f,new A.anV())
-n.a8(new A.anW(n,i))
+break}n.a2W(i)
+e=n.y
+e===$&&A.a()
+h=B.b.iH(e,new A.anV())
+n.a8(new A.anW(n,h))
 A.eg().$1("\ud83d\udce5 Snapshot restored. Visible punters = "+n.d)
 A.eg().$1("\ud83d\udce5 Snapshot restored before UI build")
 p=2
 s=6
 break
 case 4:p=3
-d=o
-h=A.al(d)
-g=A.aO(d)
-A.eg().$1("\u274c Failed to load selections snapshot: "+A.j(h)+"\n"+A.j(g))
+b=o
+g=A.al(b)
+f=A.aO(b)
+A.eg().$1("\u274c Failed to load selections snapshot: "+A.j(g)+"\n"+A.j(f))
 s=6
 break
 case 3:s=2
@@ -89836,10 +89838,8 @@ i=l.a
 s=i.goj()
 r=f==null
 if(r)q=k
-else{q=f.i(0,"bg")
-if(q==null)q=k
-else{q=q.a
-q=A.K(280,q>>>16&255,q>>>8&255,q&255)}q=new A.bG(q,k,k,A.db(4),k,k,B.M)}p=i.goj()
+else{q=f.i(0,"bg").a
+q=new A.bG(A.K(217,q>>>16&255,q>>>8&255,q&255),k,k,A.db(4),k,k,B.M)}p=i.goj()
 j=!j
 o=j?20:0
 n=l.c.p3.Q
