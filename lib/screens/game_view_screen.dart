@@ -95,42 +95,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
     return size.width > size.height && size.width < 900;
   }
 
-  // ------------------------------------------------------------
-  // Save round results for season-long storage
-  // ------------------------------------------------------------
-  Future<void> _saveRoundResultsToBackend(List<PunterSelection> punters) async {
-    try {
-      final url = Uri.parse(
-        "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/saveRoundResults",
-      );
-
-      final body = jsonEncode({
-        "season": widget.season,
-        "round": widget.round,
-        "gameType": widget.gameType,
-        "punters": punters.map((p) {
-          return {
-            "name": p.punterName,
-            "total": p.totalScore,
-            "picks": p.picks.map((pick) {
-              return {
-                "playerId": pick.player?.id,
-                "score": pick.stats?["score"] ?? 0,
-              };
-            }).toList(),
-          };
-        }).toList(),
-      });
-
-      await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: body,
-      );
-    } catch (e) {
-      debugPrint("❌ Failed to save round results: $e");
-    }
-  }
+  
 
   @override
 void initState() {
@@ -312,6 +277,46 @@ void _applySnapshotToSelections(Map<String, dynamic> data) {
   }
 }
 
+Future<void> _saveSnapshot() async {
+  try {
+    final safeRound = widget.round ?? 0;
+
+    final url = Uri.https(
+      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+      "/saveSelections",
+    );
+
+    final punterNames = _selections.map((p) => p.punterName).toList();
+
+    final picks = _selections.map((p) {
+      return p.picks.map((pick) {
+        return {
+          "playerId": pick.player?.id ?? "",
+          "stats": pick.stats ?? {},
+        };
+      }).toList();
+    }).toList();
+
+    final body = jsonEncode({
+      "gameType": widget.gameType,
+      "season": widget.season,
+      "round": safeRound,
+      "punterNames": punterNames,
+      "picks": picks,
+    });
+
+    await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: body,
+    );
+
+    debugPrint("💾 Snapshot saved.");
+  } catch (e) {
+    debugPrint("❌ Failed to save snapshot: $e");
+  }
+}
+
   // ------------------------------------------------------------
   // LIVE POLLING (flicker‑free)
   // ------------------------------------------------------------
@@ -329,34 +334,35 @@ void _applySnapshotToSelections(Map<String, dynamic> data) {
   // ROUND-WIDE STATS FETCHER
   // -------------------------------------------------------------
   Future<Map<String, AflPlayerMatchStats>> _fetchRoundStats() async {
-    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-      widget.season,
-      widget.round,
+  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+    widget.season,
+    widget.round,
+  );
+
+  final Map<String, AflPlayerMatchStats> roundStats = {};
+
+  for (final f in fixtures) {
+    final matchId = f.matchId?.trim();
+    if (matchId == null || matchId.isEmpty) continue;
+
+    // ⭐ Correct: use your existing backend parser
+    final stats = await MatchStatsParser.fetchMatchStats(
+      matchId,
+      widget.playerRepo,
+      widget.fixtureRepo,
     );
 
-    final Map<String, AflPlayerMatchStats> roundStats = {};
+    if (stats.isEmpty) continue;
 
-    for (final f in fixtures) {
-      final matchId = f.matchId?.trim();
-      if (matchId == null || matchId.isEmpty) continue;
-
-      final stats = await MatchStatsParser.fetchMatchStats(
-        matchId,
-        widget.playerRepo,
-        widget.fixtureRepo,
-      );
-
-      if (stats.isEmpty) continue;
-
-      for (final s in stats) {
-        if (s.player != null) {
-          roundStats[s.player!.id] = s;
-        }
+    for (final s in stats) {
+      if (s.player != null) {
+        roundStats[s.player!.id] = s;
       }
     }
-
-    return roundStats;
   }
+
+  return roundStats;
+}
 
   // -------------------------------------------------------------
   
@@ -408,6 +414,7 @@ void _applySnapshotToSelections(Map<String, dynamic> data) {
       _currentStatsByPlayerId = roundStats;
 
       final tableState = _punterTableKey.currentState;
+      debugPrint("tableState = $tableState");
       if (tableState != null) {
         final dynamic dyn = tableState;
         dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
@@ -453,7 +460,7 @@ void _applySnapshotToSelections(Map<String, dynamic> data) {
 
     if (allComplete) {
       widget.roundCompletionService.markCompleted(widget.round);
-      _saveRoundResultsToBackend(_selections);
+      _saveSnapshot(); // your existing snapshot save method
     }
   }
 
@@ -483,7 +490,7 @@ void _applySnapshotToSelections(Map<String, dynamic> data) {
         : _monthName(firstFixture.date!.month);
 
     widget.championshipService.addRound(month, _selections);
-    _saveRoundResultsToBackend(_selections);
+    _saveSnapshot(); // your existing snapshot save method
 
     debugPrint("🏆 Weekend Quads completed for $month");
   }
