@@ -178,8 +178,10 @@ Future<void> _loadSelectionsSnapshot() async {
       return;
     }
 
-    // Apply snapshot to selections
-    _applySnapshotToSelections(data);
+   _applySnapshotToSelections(data);
+
+// ⭐ Force full rebuild so leaderboard sees updated selections
+setState(() {});
 
     // Determine if any punters are actually filled
     final hasAnySelections = _selections.any((p) {
