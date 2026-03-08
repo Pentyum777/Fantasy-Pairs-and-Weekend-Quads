@@ -18,7 +18,15 @@ export async function scrapeDFS(dfsId) {
       return [];
     }
 
-    const json = await res.json();
+    let json;
+try {
+  json = await res.json();
+} catch (err) {
+  const text = await res.text();
+  console.error("❌ DFS feed returned invalid JSON");
+  console.error("Raw response snippet:", text.slice(0, 500));
+  throw err;
+}
 
     if (!json.playerStats || !Array.isArray(json.playerStats)) {
       console.error("DFS feed missing playerStats array");
