@@ -1150,7 +1150,7 @@ if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) 
         final int safeRound = widget.round ?? 0;
 
         // ------------------------------------------------------------
-        // SAFETY GATES (prevents grey screen)
+        // SAFETY GATES
         // ------------------------------------------------------------
         if (_loadingPlayers) {
           return const Center(child: CircularProgressIndicator());
@@ -1169,10 +1169,8 @@ if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) 
         if (widget.gameType == "custom_pairs" &&
             widget.overridePlayers != null &&
             widget.overridePlayers!.isNotEmpty) {
-          // ⭐ Custom game uses override players
-availablePlayers = players;
+          availablePlayers = players;
         } else {
-          // ⭐ Normal game uses season players filtered by fixtures
           final fixtures = _fixturesForGameType();
           final fixtureClubCodes =
               fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
@@ -1200,7 +1198,7 @@ availablePlayers = players;
               // --------------------------------------------------------
               Expanded(
                 child: PunterSelectionTable(
-                  key: _punterTableKey,
+                  key: _punterTableKey,   // ⭐ REQUIRED FIX
                   gameType: widget.gameType,
                   season: widget.season,
                   round: safeRound,
@@ -1208,7 +1206,7 @@ availablePlayers = players;
                   visiblePunterCount: _visiblePunterCount,
                   playersPerPunter: picks,
                   availablePlayers: availablePlayers,
-                  selections: selections,     // ⭐ persistent selections
+                  selections: selections,
                   isCompleted: _isCompleted,
                   readOnly: !widget.userRoleService.isAdmin,
                   onChanged: widget.userRoleService.isAdmin ? () {} : null,
@@ -1219,11 +1217,10 @@ availablePlayers = players;
                   onTimestampChanged: (t) {
                     setState(() => _timestampLabel = t);
                   },
+
+                  // ⭐ Correct: snapshot saving is handled by GameViewScreen
                   onLiveScoreUpdateSave: () {
-                    final tableState = _punterTableKey.currentState;
-                    if (tableState != null) {
-                      (tableState as dynamic).saveSnapshot();
-                    }
+                    _saveSnapshot();
                   },
                 ),
               ),

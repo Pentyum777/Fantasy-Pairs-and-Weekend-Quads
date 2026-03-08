@@ -411,7 +411,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       decoration: BoxDecoration(
         color: bg,
         border: Border.all(
-          color: Colors.red, // DEBUG
+          
           width: 1,
         ),
       ),
@@ -422,7 +422,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
             width: kPunterColumnWidth,
             decoration: BoxDecoration(
               border: Border.all(
-                color: Colors.blue, // DEBUG
+                
                 width: 1,
               ),
             ),
@@ -436,7 +436,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
               width: kPickColumnWidth,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Colors.green, // DEBUG
+                  
                   width: 1,
                 ),
               ),
@@ -450,7 +450,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
               width: kPickScoreColumnWidth,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Colors.orange, // DEBUG
+                  
                   width: 1,
                 ),
               ),
@@ -465,8 +465,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
             width: kTotalColumnWidth,
             decoration: BoxDecoration(
               border: Border.all(
-                color: Colors.purple, // DEBUG
-                width: 1,
+                                width: 1,
               ),
             ),
             child: _totalCell(context, row),
