@@ -87,17 +87,17 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
   }
 
   void _openGame(String type) {
-    if (type == "championship") {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ChampionshipScreen(service: championshipService),
-        ),
-      );
-      return;
-    }
+    // ------------------------------------------------------------
+    // NEW: Custom Builder (admin only)
+    // ------------------------------------------------------------
+    if (type == "custom_builder") {
+      if (!widget.userRoleService.isAdmin) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Admins only")),
+        );
+        return;
+      }
 
-    if (type == "custom_pairs") {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -116,6 +116,48 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       return;
     }
 
+    // ------------------------------------------------------------
+    // NEW: Custom Game (everyone can view)
+    // ------------------------------------------------------------
+    if (type == "custom_game") {
+      final selections = _getSelectionsForGameType("custom_game");
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GameViewScreen(
+            season: widget.season,
+            round: widget.round,
+            gameType: "custom_game",
+            selections: selections,
+            fixtureRepo: widget.fixtureRepo,
+            playerRepo: widget.playerRepo,
+            fantasyService: widget.fantasyService,
+            championshipService: championshipService,
+            roundCompletionService: widget.roundCompletionService,
+            userRoleService: widget.userRoleService,
+          ),
+        ),
+      );
+      return;
+    }
+
+    // ------------------------------------------------------------
+    // Championship
+    // ------------------------------------------------------------
+    if (type == "championship") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChampionshipScreen(service: championshipService),
+        ),
+      );
+      return;
+    }
+
+    // ------------------------------------------------------------
+    // Normal game types
+    // ------------------------------------------------------------
     final selections = _getSelectionsForGameType(type);
 
     Navigator.push(
@@ -187,6 +229,9 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ------------------------------------------------------------
+    // UPDATED: Added custom_builder + custom_game
+    // ------------------------------------------------------------
     final gameTypes = [
       "thursday_pairs",
       "friday_pairs",
@@ -194,7 +239,8 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       "sunday_pairs",
       "monday_pairs",
       "weekend_quads",
-      "custom_pairs",
+      "custom_builder",   // ⭐ NEW
+      "custom_game",      // ⭐ NEW
       "championship",
     ];
 
@@ -212,8 +258,10 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
           return "Monday Pairs";
         case "weekend_quads":
           return "Weekend Quads";
-        case "custom_pairs":
-          return "Custom Pairs Builder";
+        case "custom_builder":
+          return "Custom Builder";     // ⭐ NEW
+        case "custom_game":
+          return "Custom Game";        // ⭐ NEW
         case "championship":
           return "The Championship";
         default:

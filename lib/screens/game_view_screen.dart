@@ -61,8 +61,14 @@ class GameViewScreen extends StatefulWidget {
 }
 
 class _GameViewScreenState extends State<GameViewScreen> {
-  int _visiblePunterCount = 15; // default for blank table
-  int _maxPunterDropdown = 25; // expands automatically if snapshot > 25
+  // ------------------------------------------------------------
+  // NEW: Mode detection
+  // ------------------------------------------------------------
+  bool get isCustomBuilder => widget.gameType == "custom_builder";
+  bool get isCustomGame => widget.gameType == "custom_game";
+
+  int _visiblePunterCount = 15;
+  int _maxPunterDropdown = 25;
   bool _isCompleted = false;
 
   bool _leaderboardCollapsed = false;
@@ -83,28 +89,25 @@ class _GameViewScreenState extends State<GameViewScreen> {
   bool _fridayWinnerSelected = false;
   int _fridayWinnerPosition = 0;
 
-  // NEW: cache players (replaces FutureBuilder)
   List<AflPlayer>? _seasonPlayers;
   bool _loadingPlayers = true;
 
   String _timestampLabel = "--:--";
+  bool _isSubmitted = false;
 
   bool get isLandscapePhone {
     final size = MediaQuery.of(context).size;
     return size.width > size.height && size.width < 900;
   }
 
-  bool _isSubmitted = false;
-
   @override
   void initState() {
     super.initState();
 
-    // ✅ Make selections persistent from the widget’s initial value
     _selections = widget.selections;
 
     _loadSeasonPlayers().then((_) {
-      _loadSelectionsSnapshot(); // Snapshot now applies to _selections
+      _loadSelectionsSnapshot();
     });
 
     _startLivePolling();
@@ -117,9 +120,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
     super.dispose();
   }
 
-  // ------------------------------------------------------------
-  // NEW: load players once (removes FutureBuilder)
-  // ------------------------------------------------------------
   Future<void> _loadSeasonPlayers() async {
     try {
       final players = await widget.playerRepo.playersForSeason(widget.season);
@@ -128,8 +128,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
         _seasonPlayers = players;
         _loadingPlayers = false;
       });
-    } catch (e, st) {
-      debugPrint("❌ Failed to load players: $e\n$st");
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _seasonPlayers = [];
@@ -140,7 +139,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   Future<void> _loadSelectionsSnapshot() async {
     try {
-      final int safeRound = widget.round ?? 0;
+      final safeRound = widget.round ?? 0;
 
       final url = Uri.https(
         "fantasy-pairs-and-weekend-quads-production.up.railway.app",
@@ -153,155 +152,130 @@ class _GameViewScreenState extends State<GameViewScreen> {
       );
 
       final res = await http.get(url);
+      if (res.statusCode != 200) return;
 
-      if (res.statusCode != 200) {
-        debugPrint("⚠️ loadSelectionsSnapshot: HTTP ${res.statusCode}");
-        return;
-      }
-
-      dynamic json;
-      try {
-        json = jsonDecode(res.body);
-      } catch (_) {
-        debugPrint("❌ loadSelectionsSnapshot: invalid JSON");
-        return;
-      }
-
+      final json = jsonDecode(res.body);
       final data = json["data"];
-      if (data is! Map<String, dynamic>) {
-        debugPrint("⚠️ loadSelectionsSnapshot: missing data field");
-        return;
-      }
+      if (data is! Map<String, dynamic>) return;
 
       _applySnapshotToSelections(data);
-
-      // ⭐ Force full rebuild so leaderboard sees updated selections
       setState(() {});
 
-      // Determine if any punters are actually filled
-      final hasAnySelections = _selections.any((p) {
-        final hasName =
-            p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
-        final hasPicks = p.picks.any((pick) => pick.player != null);
-        return hasName || hasPicks;
+      final hasAny = _selections.any((p) {
+        final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
+        final hasPick = p.picks.any((pick) => pick.player != null);
+        return hasName || hasPick;
       });
 
-      setState(() {
-        if (hasAnySelections) {
-          // Count only punters with real names or picks
-          final filledCount = _selections.where((p) {
-            final hasName =
-                p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
-            final hasPicks = p.picks.any((pick) => pick.player != null);
-            return hasName || hasPicks;
-          }).length;
+      if (hasAny) {
+        final count = _selections.where((p) {
+          final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
+          final hasPick = p.picks.any((pick) => pick.player != null);
+          return hasName || hasPick;
+        }).length;
 
-          _visiblePunterCount = filledCount;
-
-          // Expand dropdown if needed
-          if (_visiblePunterCount > _maxPunterDropdown) {
-            _maxPunterDropdown = _visiblePunterCount;
-          }
-        } else {
-          _visiblePunterCount = 15;
-        }
-      });
-
-      debugPrint("📥 Snapshot restored. Visible punters = $_visiblePunterCount");
-    } catch (e, st) {
-      debugPrint("❌ Failed to load selections snapshot: $e\n$st");
-    }
+        _visiblePunterCount = count;
+        if (count > _maxPunterDropdown) _maxPunterDropdown = count;
+      } else {
+        _visiblePunterCount = 15;
+      }
+    } catch (_) {}
   }
 
   void _applySnapshotToSelections(Map<String, dynamic> data) {
-    final punterNames = (data["punterNames"] as List<dynamic>? ?? [])
-        .map((e) => e?.toString() ?? "")
-        .toList();
+  final punterNames = (data["punterNames"] as List<dynamic>? ?? [])
+      .map((e) => e?.toString() ?? "")
+      .toList();
 
-    final picksJson = (data["picks"] as List<dynamic>? ?? []);
+  final picksJson = (data["picks"] as List<dynamic>? ?? []);
 
-    for (int i = 0; i < _selections.length; i++) {
-      final row = _selections[i];
+  for (int i = 0; i < _selections.length; i++) {
+    final row = _selections[i];
 
-      // ---- Restore punter name ----
-      if (i < punterNames.length) {
-        final name = punterNames[i].trim();
-        row.punterName = name.isEmpty ? "P${row.punterNumber}" : name;
+    if (i < punterNames.length) {
+      final name = punterNames[i].trim();
+      row.punterName = name.isEmpty ? "P${row.punterNumber}" : name;
+    }
+
+    if (i >= picksJson.length) {
+      for (final pick in row.picks) {
+        pick.player = null;
+        pick.stats = null;
       }
+      continue;
+    }
 
-      // ---- Restore picks ----
-      if (i >= picksJson.length) {
-        for (final pick in row.picks) {
-          pick.player = null;
-          pick.stats = null;
-        }
+    final snapRow = picksJson[i];
+    if (snapRow is! List) continue;
+
+    for (int j = 0; j < row.picks.length; j++) {
+      final pick = row.picks[j];
+
+      if (j >= snapRow.length) {
+        pick.player = null;
+        pick.stats = null;
         continue;
       }
 
-      final snapRow = picksJson[i];
-      if (snapRow is! List) continue;
-
-      for (int j = 0; j < row.picks.length; j++) {
-        final pick = row.picks[j];
-
-        if (j >= snapRow.length) {
-          pick.player = null;
-          pick.stats = null;
-          continue;
-        }
-
-        final snapPick = snapRow[j];
-        if (snapPick is! Map) {
-          pick.player = null;
-          pick.stats = null;
-          continue;
-        }
-
-        final pid = (snapPick["playerId"] ?? "").toString().trim();
-
-        if (pid.isEmpty) {
-          pick.player = null;
-          pick.stats = null;
-          continue;
-        }
-
-        // ---- Restore player from seasonPlayers ----
-        final restored =
-            _seasonPlayers?.where((p) => p.id == pid).toList() ?? [];
-
-        pick.player = restored.isEmpty
-            ? AflPlayer(
-                id: pid,
-                name: "Unknown ($pid)",
-                club: "UNK",
-                guernseyNumber: 0,
-                season: widget.season,
-              )
-            : restored.first;
-
-        // ---- Restore stats ----
-        final rawStats = snapPick["stats"];
-        pick.stats = rawStats is Map<String, dynamic>
-            ? Map<String, dynamic>.from(rawStats)
-            : null;
+      final snapPick = snapRow[j];
+      if (snapPick is! Map) {
+        pick.player = null;
+        pick.stats = null;
+        continue;
       }
+
+      final pid = (snapPick["playerId"] ?? "").toString().trim();
+      if (pid.isEmpty) {
+        pick.player = null;
+        pick.stats = null;
+        continue;
+      }
+
+      final restored = _seasonPlayers?.where((p) => p.id == pid).toList() ?? [];
+      pick.player = restored.isEmpty
+          ? AflPlayer(
+              id: pid,
+              name: "Unknown ($pid)",
+              club: "UNK",
+              guernseyNumber: 0,
+              season: widget.season,
+            )
+          : restored.first;
+
+      final rawStats = snapPick["stats"];
+      pick.stats = rawStats is Map<String, dynamic>
+          ? Map<String, dynamic>.from(rawStats)
+          : null;
     }
   }
 
+  // ------------------------------------------------------------
+  // FIX: Reset any rows beyond snapshot length
+  // ------------------------------------------------------------
+  for (int i = punterNames.length; i < _selections.length; i++) {
+    final row = _selections[i];
+
+    row.punterName = "P${row.punterNumber}";
+
+    for (final pick in row.picks) {
+      pick.player = null;
+      pick.stats = null;
+    }
+  }
+}
+
+
+
+
   Future<void> _saveSnapshot() async {
     try {
-      // ✅ Option A guard: only save when there are real selections
-      final hasAnySelections = _selections.any((p) {
-        final hasName =
-            p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
-        final hasPicks = p.picks.any((pick) => pick.player != null);
-        return hasName || hasPicks;
+      final hasAny = _selections.any((p) {
+        final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
+        final hasPick = p.picks.any((pick) => pick.player != null);
+        return hasName || hasPick;
       });
 
-      if (!hasAnySelections) {
-        debugPrint("⛔ Skipping snapshot save — no real selections yet.");
-        return;
-      }
+      if (!hasAny) return;
 
       final safeRound = widget.round ?? 0;
 
@@ -334,27 +308,10 @@ class _GameViewScreenState extends State<GameViewScreen> {
         headers: {"Content-Type": "application/json"},
         body: body,
       );
-
-      debugPrint("💾 Snapshot saved.");
-    } catch (e) {
-      debugPrint("❌ Failed to save snapshot: $e");
-    }
+    } catch (_) {}
   }
 
-  // ------------------------------------------------------------
-  // LIVE POLLING (flicker‑free)
-  // ------------------------------------------------------------
-  void _startLivePolling() {
-    _liveTimer?.cancel();
-    _liveTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) async {
-        await _refreshLive(); // no snapshot saving here
-      },
-    );
-  }
-
-  // -------------------------------------------------------------
+ // -------------------------------------------------------------
   // ROUND-WIDE STATS FETCHER
   // -------------------------------------------------------------
   Future<Map<String, AflPlayerMatchStats>> _fetchRoundStats() async {
@@ -388,51 +345,125 @@ class _GameViewScreenState extends State<GameViewScreen> {
     return roundStats;
   }
 
-  // -------------------------------------------------------------
-  // ROUND-WIDE STATS + FIXTURES REFRESH (flicker‑free)
-  // -------------------------------------------------------------
-  Future<void> _refreshLive() async {
+  // ------------------------------------------------------------
+  // NEW: Publish Custom Game (PUB‑A)
+  // ------------------------------------------------------------
+  Future<void> _publishCustomGame() async {
     try {
-      // 1. Refresh live scores for each fixture
-      final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-        widget.season,
-        widget.round,
+      final safeRound = widget.round ?? 0;
+
+      final url = Uri.https(
+        "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+        "/saveSelections",
       );
 
-      for (final f in fixtures) {
-        final matchId = f.matchId?.trim();
-        if (matchId != null && matchId.isNotEmpty) {
-          await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
-        }
-      }
+      final punterNames = _selections.map((p) => p.punterName).toList();
+
+      final picks = _selections.map((p) {
+        return p.picks.map((pick) {
+          return {
+            "playerId": pick.player?.id ?? "",
+            "stats": pick.stats ?? {},
+          };
+        }).toList();
+      }).toList();
+
+      final body = jsonEncode({
+        "gameType": "custom_game",   // ⭐ publish target
+        "season": widget.season,
+        "round": safeRound,
+        "punterNames": punterNames,
+        "picks": picks,
+      });
+
+      await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: body,
+      );
 
       if (!mounted) return;
 
-      // 2. Run completion checks
-      _checkRoundCompletion();
-      _finaliseFridayPairsWinner();
-      _checkAndCompleteWeekendQuadsRound();
-
-      // 3. Always fetch fresh stats
-      final roundStats = await _fetchRoundStats();
-
-      // 4. Apply stats to table
-      _currentStatsByPlayerId = roundStats;
-
-      final tableState = _punterTableKey.currentState;
-      if (tableState != null) {
-        final dynamic dyn = tableState;
-        dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
-      }
-
-      // 5. Rebuild UI
-      setState(() {});
-    } catch (e, st) {
-      debugPrint("❌ Live refresh error: $e\n$st");
-    }
+      // ⭐ Navigate to Custom Game
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GameViewScreen(
+            season: widget.season,
+            round: widget.round,
+            gameType: "custom_game",
+            selections: _selections,
+            fixtureRepo: widget.fixtureRepo,
+            playerRepo: widget.playerRepo,
+            fantasyService: widget.fantasyService,
+            championshipService: widget.championshipService,
+            roundCompletionService: widget.roundCompletionService,
+            userRoleService: widget.userRoleService,
+            selectedFixtureIds: widget.selectedFixtureIds,
+            overridePlayers: widget.overridePlayers,
+          ),
+        ),
+      );
+    } catch (_) {}
   }
 
-  void _finaliseFridayPairsWinner() {
+  // ------------------------------------------------------------
+  // LIVE POLLING
+  // ------------------------------------------------------------
+  void _startLivePolling() {
+    _liveTimer?.cancel();
+    _liveTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) async {
+        await _refreshLive();
+      },
+    );
+  }
+
+  Future<void> _refreshLive() async {
+  try {
+    // 1. Refresh live scores for each fixture
+    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+      widget.season,
+      widget.round,
+    );
+
+    for (final f in fixtures) {
+      final matchId = f.matchId?.trim();
+      if (matchId != null && matchId.isNotEmpty) {
+        await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
+      }
+    }
+
+    if (!mounted) return;
+
+    // 2. Run completion checks
+    _checkRoundCompletion();
+    _finaliseFridayPairsWinner();
+    _checkAndCompleteWeekendQuadsRound();
+
+    debugPrint("🏁 Friday Pairs final winner = $_fridayWinnerPosition (position)");
+
+    // 3. Always fetch fresh stats
+    final roundStats = await _fetchRoundStats();
+
+    // 4. Apply stats to table
+    _currentStatsByPlayerId = roundStats;
+
+    final tableState = _punterTableKey.currentState;
+    if (tableState != null) {
+      final dynamic dyn = tableState;
+      dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
+    }
+
+    // 5. Rebuild UI
+    setState(() {});
+  } catch (e, st) {
+    debugPrint("❌ Live refresh error: $e\n$st");
+  }
+}
+
+void _finaliseFridayPairsWinner() {
     if (widget.gameType != "friday_pairs") return;
     if (!_fridayWinnerSelected) return;
 
@@ -450,7 +481,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     debugPrint("🏁 Friday Pairs final winner = $_fridayWinnerPosition");
   }
-
+    // ------------------------------------------------------------
+  // ROUND COMPLETION + WEEKEND QUADS COMPLETION
+  // ------------------------------------------------------------
   void _checkRoundCompletion() {
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
       widget.season,
@@ -463,7 +496,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     if (allComplete) {
       widget.roundCompletionService.markCompleted(widget.round);
-      _saveSnapshot(); // ✅ allowed: round completion
+      _saveSnapshot(); // allowed
     }
   }
 
@@ -493,11 +526,15 @@ class _GameViewScreenState extends State<GameViewScreen> {
         : _monthName(firstFixture.date!.month);
 
     widget.championshipService.addRound(month, _selections);
-    _saveSnapshot(); // ✅ allowed: round completion
+    _saveSnapshot();
 
     debugPrint("🏆 Weekend Quads completed for $month");
   }
-    List<AflFixture> _fixturesForGameType() {
+
+  // ------------------------------------------------------------
+  // FIXTURE FILTERING (custom_pairs removed)
+  // ------------------------------------------------------------
+  List<AflFixture> _fixturesForGameType() {
     final all = widget.round == null
         ? widget.fixtureRepo.preseasonFixturesForSeason(widget.season)
         : widget.fixtureRepo.fixturesForSeasonRound(
@@ -528,26 +565,25 @@ class _GameViewScreenState extends State<GameViewScreen> {
                   d.weekday == DateTime.sunday ||
                   d.weekday == DateTime.monday);
         }).toList();
-      case "custom_pairs":
+
+      // ⭐ custom_pairs removed (CP‑B)
+      // custom_builder + custom_game use ALL fixtures
+      case "custom_builder":
+      case "custom_game":
+        return all;
+
       default:
         return all;
     }
   }
 
+  // ------------------------------------------------------------
+  // LABEL HELPERS
+  // ------------------------------------------------------------
   String _monthName(int m) {
     const names = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December"
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December"
     ];
     return names[m - 1];
   }
@@ -567,32 +603,23 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   String _metaText(AflFixture f) {
     if (f.complete) return "FT";
-
     final q = _quarterLabel(f);
     final t = _timeLabel(f);
-
     if (q.isEmpty) return t;
     return "$q • $t";
   }
 
   String _gameTypeLabel() {
     switch (widget.gameType) {
-      case "thursday_pairs":
-        return "Thursday Pairs";
-      case "friday_pairs":
-        return "Friday Pairs";
-      case "saturday_pairs":
-        return "Saturday Pairs";
-      case "sunday_pairs":
-        return "Sunday Pairs";
-      case "monday_pairs":
-        return "Monday Pairs";
-      case "weekend_quads":
-        return "Weekend Quads";
-      case "custom_pairs":
-        return "Custom Pairs";
-      default:
-        return widget.gameType;
+      case "thursday_pairs": return "Thursday Pairs";
+      case "friday_pairs": return "Friday Pairs";
+      case "saturday_pairs": return "Saturday Pairs";
+      case "sunday_pairs": return "Sunday Pairs";
+      case "monday_pairs": return "Monday Pairs";
+      case "weekend_quads": return "Weekend Quads";
+      case "custom_builder": return "Custom Builder";
+      case "custom_game": return "Custom Game";
+      default: return widget.gameType;
     }
   }
 
@@ -615,15 +642,15 @@ class _GameViewScreenState extends State<GameViewScreen> {
     };
   }
 
+  // ------------------------------------------------------------
+  // MAIN BUILD
+  // ------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    // ✅ Don’t build UI until players are loaded
     if (_loadingPlayers || _seasonPlayers == null) {
       return const Scaffold(
         backgroundColor: Colors.transparent,
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -667,6 +694,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
     );
   }
 
+  // ------------------------------------------------------------
+  // FIXTURE STRIP
+  // ------------------------------------------------------------
   Widget _buildFixtureStrip(List<AflFixture> fixtures) {
     if (fixtures.isEmpty) {
       return const SizedBox(
@@ -724,11 +754,13 @@ class _GameViewScreenState extends State<GameViewScreen> {
     );
   }
 
+  // ------------------------------------------------------------
+  // FRIDAY PAIRS TRIGGER
+  // ------------------------------------------------------------
   void _handleFridayPairsTrigger(AflFixture f) {
     if (widget.gameType != "friday_pairs") return;
     if (_fridayWinnerSelected) return;
 
-    // Only trigger when the game is officially underway
     final isLive = f.quarterText.isNotEmpty && !f.complete;
     if (!isLive) return;
 
@@ -744,10 +776,11 @@ class _GameViewScreenState extends State<GameViewScreen> {
         p.isPrizeWinner = (p.punterNumber == pos);
       }
     });
-
-    debugPrint("🎯 Friday Pairs random position = $pos (of $punterCount)");
   }
 
+  // ------------------------------------------------------------
+  // FIXTURE CARD
+  // ------------------------------------------------------------
   Widget _buildFixtureCard(AflFixture f) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -760,11 +793,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
     final homeWinning = homeScore > awayScore;
     final awayWinning = awayScore > homeScore;
 
-    // Use quarterLabel directly for live detection
     final quarterLabel = _quarterLabel(f);
     final isLive = !f.complete && quarterLabel.isNotEmpty;
 
-    // Clean FT / LIVE / Qx • time text
     final metaText = _metaText(f);
 
     final scoreBaseStyle = TextStyle(
@@ -861,6 +892,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
     );
   }
 
+  // ------------------------------------------------------------
+  // FIXTURE TAP → STATS OVERLAY
+  // ------------------------------------------------------------
   Future<void> _onFixtureTap(AflFixture f) async {
     setState(() => _selectedFixture = f);
 
@@ -881,15 +915,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
     final noStats = rowsA.isEmpty && rowsB.isEmpty;
 
     const columns = [
-      "Player",
-      "AF",
-      "K",
-      "HB",
-      "D",
-      "M",
-      "T",
-      "G",
-      "B",
+      "Player","AF","K","HB","D","M","T","G","B",
     ];
 
     showDialog<void>(
@@ -904,7 +930,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
       ),
     );
   }
-
+    // ------------------------------------------------------------
+  // PUNTER CONTROLS (with Publish button for custom_builder)
+  // ------------------------------------------------------------
   Widget _buildPunterControls() {
     final theme = Theme.of(context);
 
@@ -943,8 +971,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
                       color: theme.colorScheme.primary,
                     ),
                     onPressed: () {
-                      setState(
-                          () => _leaderboardCollapsed = !_leaderboardCollapsed);
+                      setState(() => _leaderboardCollapsed = !_leaderboardCollapsed);
                     },
                   ),
                   const SizedBox(width: 4),
@@ -959,15 +986,16 @@ class _GameViewScreenState extends State<GameViewScreen> {
               ),
             ),
           ),
+
           if (!_controlsCollapsed)
             Row(
               children: [
+                // ------------------------------------------------------------
+                // PUNTER COUNT DROPDOWN
+                // ------------------------------------------------------------
                 Text("Punters Playing", style: theme.textTheme.bodyMedium),
                 const SizedBox(width: 6),
 
-                // ------------------------------------------------------------
-                // PUNTER COUNT DROPDOWN (disabled when submitted)
-                // ------------------------------------------------------------
                 DropdownButtonHideUnderline(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -987,86 +1015,75 @@ class _GameViewScreenState extends State<GameViewScreen> {
                       style: theme.textTheme.bodyMedium,
                       items: [
                         ...List.generate(_maxPunterDropdown, (i) => i + 1)
-                            .map(
-                              (v) => DropdownMenuItem<int>(
-                                value: v,
-                                child: Text("$v"),
-                              ),
-                            ),
+                            .map((v) => DropdownMenuItem<int>(
+                                  value: v,
+                                  child: Text("$v"),
+                                )),
                         const DropdownMenuItem<int>(
                           value: -1,
                           child: Text("Custom…"),
                         ),
                       ],
-                      onChanged:
-                          (widget.userRoleService.isAdmin && !_isSubmitted)
-                              ? (value) async {
-                                  if (value == null) return;
+                      onChanged: (widget.userRoleService.isAdmin && !_isSubmitted)
+                          ? (value) async {
+                              if (value == null) return;
 
-                                  if (value == -1) {
-                                    final controller = TextEditingController();
+                              if (value == -1) {
+                                final controller = TextEditingController();
 
-                                    final custom = await showDialog<int>(
-                                      context: context,
-                                      builder: (_) => AlertDialog(
-                                        title:
-                                            const Text("Custom punter count"),
-                                        content: TextField(
-                                          controller: controller,
-                                          keyboardType: TextInputType.number,
-                                          decoration: const InputDecoration(
-                                            hintText:
-                                                "Enter number (e.g., 30)",
-                                          ),
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context),
-                                            child: const Text("Cancel"),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              final n = int.tryParse(
-                                                  controller.text.trim());
-                                              Navigator.pop(context, n);
-                                            },
-                                            child: const Text("OK"),
-                                          ),
-                                        ],
+                                final custom = await showDialog<int>(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text("Custom punter count"),
+                                    content: TextField(
+                                      controller: controller,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(
+                                        hintText: "Enter number (e.g., 30)",
                                       ),
-                                    );
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text("Cancel"),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          final n = int.tryParse(
+                                              controller.text.trim());
+                                          Navigator.pop(context, n);
+                                        },
+                                        child: const Text("OK"),
+                                      ),
+                                    ],
+                                  ),
+                                );
 
-                                    if (custom != null && custom > 0) {
-                                      setState(() {
-                                        _maxPunterDropdown = custom;
-                                        _visiblePunterCount = custom;
+                                if (custom != null && custom > 0) {
+                                  setState(() {
+                                    _maxPunterDropdown = custom;
+                                    _visiblePunterCount = custom;
 
-                                        while (_selections.length < custom) {
-                                          _selections.add(
-                                            PunterSelection.empty(
-                                              punterNumber:
-                                                  _selections.length + 1,
-                                              playersPerPunter: widget
-                                                  .selections
-                                                  .first
-                                                  .picks
-                                                  .length,
-                                            ),
-                                          );
-                                        }
-                                      });
-
-                                      _saveSnapshot(); // ✅ user edit
+                                    while (_selections.length < custom) {
+                                      _selections.add(
+                                        PunterSelection.empty(
+                                          punterNumber: _selections.length + 1,
+                                          playersPerPunter:
+                                              widget.selections.first.picks.length,
+                                        ),
+                                      );
                                     }
+                                  });
 
-                                    return;
-                                  }
-
-                                  setState(
-                                      () => _visiblePunterCount = value);
+                                  _saveSnapshot();
                                 }
-                              : null,
+
+                                return;
+                              }
+
+                              setState(() => _visiblePunterCount = value);
+                            }
+                          : null,
                     ),
                   ),
                 ),
@@ -1077,8 +1094,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
                 // TIMESTAMP LABEL
                 // ------------------------------------------------------------
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceVariant.withAlpha(64),
                     borderRadius: BorderRadius.circular(6),
@@ -1095,29 +1111,50 @@ class _GameViewScreenState extends State<GameViewScreen> {
                 const SizedBox(width: 12),
 
                 // ------------------------------------------------------------
-                // SUBMIT / UNSUBMIT BUTTON
+                // SUBMIT / UNSUBMIT BUTTON (all game types)
                 // ------------------------------------------------------------
                 if (widget.userRoleService.isAdmin)
                   ElevatedButton(
                     onPressed: () {
-                      setState(() {
-                        _isSubmitted = !_isSubmitted;
-                      });
-
-                      if (_isSubmitted) {
-                        _saveSnapshot(); // ✅ user action
-                      }
+                      setState(() => _isSubmitted = !_isSubmitted);
+                      if (_isSubmitted) _saveSnapshot();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isSubmitted
                           ? Colors.red.shade600
                           : Colors.green.shade600,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                     ),
                     child: Text(
                       _isSubmitted ? "Unsubmit" : "Submit",
                       style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(width: 12),
+
+                // ------------------------------------------------------------
+                // ⭐ PUBLISH BUTTON (custom_builder only)
+                // ------------------------------------------------------------
+                if (isCustomBuilder && widget.userRoleService.isAdmin)
+                  ElevatedButton(
+                    onPressed: _publishCustomGame,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade700,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: const Text(
+                      "Publish",
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -1131,6 +1168,10 @@ class _GameViewScreenState extends State<GameViewScreen> {
       ),
     );
   }
+
+  // ------------------------------------------------------------
+  // PUNTER TABLE + LEADERBOARD
+  // ------------------------------------------------------------
   Widget _buildPunterAndLeaderboard({
     required List<AflPlayer> players,
     required List<PunterSelection> selections,
@@ -1153,9 +1194,6 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
           final int safeRound = widget.round ?? 0;
 
-          // ------------------------------------------------------------
-          // SAFETY GATES
-          // ------------------------------------------------------------
           if (_loadingPlayers) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -1164,16 +1202,15 @@ class _GameViewScreenState extends State<GameViewScreen> {
             return const Center(child: Text("Failed to load players"));
           }
 
-          // ------------------------------------------------------------
-          // DETERMINE AVAILABLE PLAYERS
-          // ------------------------------------------------------------
+          // Determine available players
           final seasonPlayers = _seasonPlayers!;
           List<AflPlayer> availablePlayers;
 
-          if (widget.gameType == "custom_pairs" &&
-              widget.overridePlayers != null &&
-              widget.overridePlayers!.isNotEmpty) {
-            availablePlayers = players;
+          if (isCustomBuilder || isCustomGame) {
+            // Custom modes use overridePlayers if provided
+            availablePlayers = (widget.overridePlayers?.isNotEmpty ?? false)
+                ? widget.overridePlayers!
+                : seasonPlayers;
           } else {
             final fixtures = _fixturesForGameType();
             final fixtureClubCodes =
@@ -1186,8 +1223,13 @@ class _GameViewScreenState extends State<GameViewScreen> {
           }
 
           // ------------------------------------------------------------
-          // MAIN LAYOUT
+          // READ-ONLY RULES
           // ------------------------------------------------------------
+          final bool readOnly =
+              !widget.userRoleService.isAdmin && !isCustomBuilder
+                  ? true
+                  : false;
+
           return Container(
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceVariant.withAlpha(64),
@@ -1197,12 +1239,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --------------------------------------------------------
-                // LEFT: Punter Table
-                // --------------------------------------------------------
                 Expanded(
                   child: PunterSelectionTable(
-                    key: _punterTableKey, // ⭐ REQUIRED
+                    key: _punterTableKey,
                     gameType: widget.gameType,
                     season: widget.season,
                     round: safeRound,
@@ -1212,10 +1251,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
                     availablePlayers: availablePlayers,
                     selections: selections,
                     isCompleted: _isCompleted,
-                    readOnly: !widget.userRoleService.isAdmin,
-                    onChanged: widget.userRoleService.isAdmin
+                    readOnly: readOnly,
+                    onChanged: (!readOnly)
                         ? () {
-                            // ✅ Option 1: save immediately on user edits
                             _saveSnapshot();
                             setState(() {});
                           }
@@ -1227,15 +1265,10 @@ class _GameViewScreenState extends State<GameViewScreen> {
                     onTimestampChanged: (t) {
                       setState(() => _timestampLabel = t);
                     },
-
-                    // ✅ Option A: do NOT save snapshot on live score updates
                     onLiveScoreUpdateSave: null,
                   ),
                 ),
 
-                // --------------------------------------------------------
-                // RIGHT: Leaderboard
-                // --------------------------------------------------------
                 SizedBox(
                   width: leaderboardWidth,
                   child: LeaderboardPanel(
@@ -1256,8 +1289,10 @@ class _GameViewScreenState extends State<GameViewScreen> {
     );
   }
 
+  // ------------------------------------------------------------
+  // MAIN CONTENT
+  // ------------------------------------------------------------
   Widget _buildMainContent() {
-    // Determine which players to use
     final allPlayers = (widget.overridePlayers?.isNotEmpty ?? false)
         ? widget.overridePlayers!
         : _seasonPlayers!;
@@ -1270,14 +1305,17 @@ class _GameViewScreenState extends State<GameViewScreen> {
           _buildPunterControls(),
           const SizedBox(height: 6),
           _buildPunterAndLeaderboard(
-            players: allPlayers, // ⭐ pass safe players
-            selections: _selections, // ⭐ use persistent selections
+            players: allPlayers,
+            selections: _selections,
           ),
         ],
       ),
     );
   }
 
+  // ------------------------------------------------------------
+  // AFL DATA VALIDATION (unchanged)
+  // ------------------------------------------------------------
   void validateAflData(
     List<AflFixture> fixtures,
     PlayerRepository repo,

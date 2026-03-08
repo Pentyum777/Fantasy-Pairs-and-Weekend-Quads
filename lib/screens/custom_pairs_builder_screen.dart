@@ -86,7 +86,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                       itemBuilder: (context, index) {
                         final f = fixtures[index];
 
-                        // ⭐ Hardened fixture ID
+                        // Hardened fixture ID
                         final fixtureId = f.matchId?.trim().isNotEmpty == true
                             ? f.matchId!.trim()
                             : "fixture_$index";
@@ -169,7 +169,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                   ElevatedButton(
                     onPressed: widget.userRoleService.isAdmin &&
                             _selectedFixtureIds.isNotEmpty
-                        ? () => _startCustomPairs(context, fixtures)
+                        ? () => _startCustomBuilder(context, fixtures)
                         : null,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
@@ -178,7 +178,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
                       ),
                     ),
                     child: const Text(
-                      "Start Custom Pairs",
+                      "Start Custom Builder",
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
@@ -192,8 +192,8 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
     );
   }
 
-  // ⭐ Hardened start logic
-  void _startCustomPairs(BuildContext context, List<AflFixture> fixtures) async {
+  // ⭐ NEW: Launches GameViewScreen in "custom_builder" mode
+  void _startCustomBuilder(BuildContext context, List<AflFixture> fixtures) async {
     // Build a stable ID map
     final idMap = <AflFixture, String>{
       for (int i = 0; i < fixtures.length; i++)
@@ -220,6 +220,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
       return club.isNotEmpty && clubs.contains(club);
     }).toList();
 
+    // Empty selections for builder mode
     final selections = List.generate(
       25,
       (i) => PunterSelection(
@@ -238,7 +239,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
         builder: (_) => GameViewScreen(
           season: widget.season,
           round: widget.round,
-          gameType: "custom_pairs",
+          gameType: "custom_builder",   // ⭐ NEW
           selections: selections,
           fixtureRepo: widget.fixtureRepo,
           playerRepo: widget.playerRepo,
