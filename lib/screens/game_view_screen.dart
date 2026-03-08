@@ -551,18 +551,28 @@ Future<void> _saveSnapshot() async {
     return names[m - 1];
   }
 
-  String _quarterLabel(AflFixture f) {
-    if (f.complete) return "FT";
-    if (f.quarterText.isNotEmpty) return f.quarterText;
-    return "";
-  }
+String _quarterLabel(AflFixture f) {
+  if (f.complete) return "FT";
+  if (f.quarterText.isNotEmpty) return f.quarterText;
+  return "";
+}
 
-  String _timeLabel(AflFixture f) {
-    if (f.complete) return "FT";
-    if (f.timeText.isNotEmpty) return f.timeText;
-    if (f.time.isNotEmpty) return f.time;
-    return "--:--";
-  }
+String _timeLabel(AflFixture f) {
+  if (f.complete) return "FT";
+  if (f.timeText.isNotEmpty) return f.timeText;
+  if (f.time.isNotEmpty) return f.time;
+  return "--:--";
+}
+
+  String _metaText(AflFixture f) {
+  if (f.complete) return "FT";
+
+  final q = _quarterLabel(f);
+  final t = _timeLabel(f);
+
+  if (q.isEmpty) return t;
+  return "$q • $t";
+}
 
   String _gameTypeLabel() {
     switch (widget.gameType) {
@@ -740,121 +750,118 @@ if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) 
 }
 
   Widget _buildFixtureCard(AflFixture f) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    final selected = f == _selectedFixture;
-    _handleFridayPairsTrigger(f);
+  final selected = f == _selectedFixture;
+  _handleFridayPairsTrigger(f);
 
-    final homeScore = f.homeScore;
-    final awayScore = f.awayScore;
-    final homeWinning = homeScore > awayScore;
-    final awayWinning = awayScore > homeScore;
+  final homeScore = f.homeScore;
+  final awayScore = f.awayScore;
+  final homeWinning = homeScore > awayScore;
+  final awayWinning = awayScore > homeScore;
 
-    final quarter = _quarterLabel(f);
-    final time = _timeLabel(f);
+  // Use quarterLabel directly for live detection
+  final quarterLabel = _quarterLabel(f);
+  final isLive = !f.complete && quarterLabel.isNotEmpty;
 
-    final isLive = !f.complete && quarter.isNotEmpty;
+  // Clean FT / LIVE / Qx • time text
+  final metaText = _metaText(f);
 
-    final metaText = isLive
-        ? "LIVE • $quarter $time"
-        : quarter.isEmpty
-            ? time
-            : "$quarter • $time";
+  final scoreBaseStyle = TextStyle(
+    fontSize: isLandscapePhone ? 12 : 13,
+    fontWeight: FontWeight.w500,
+    color: cs.onSurface,
+  );
 
-    final scoreBaseStyle = TextStyle(
-      fontSize: isLandscapePhone ? 12 : 13,
-      fontWeight: FontWeight.w500,
-      color: cs.onSurface,
-    );
+  final metaStyle = TextStyle(
+    fontSize: isLandscapePhone ? 10 : 11,
+    fontWeight: FontWeight.w500,
+    color: isLive ? Colors.red.shade400 : Colors.grey.shade700,
+    height: 1.1,
+  );
 
-    final metaStyle = TextStyle(
-      fontSize: isLandscapePhone ? 10 : 11,
-      fontWeight: FontWeight.w500,
-      color: isLive ? Colors.red.shade400 : Colors.grey.shade700,
-      height: 1.1,
-    );
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _onFixtureTap(f),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          width: isLandscapePhone ? 100 : 125,
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: selected
-                ? cs.surfaceVariant.withAlpha(72)
-                : cs.surfaceVariant.withAlpha(40),
-            border: Border.all(
-              color: selected ? cs.primary : cs.outlineVariant,
-              width: selected ? 2 : 1,
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _onFixtureTap(f),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: isLandscapePhone ? 100 : 125,
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: selected
+              ? cs.surfaceVariant.withAlpha(72)
+              : cs.surfaceVariant.withAlpha(40),
+          border: Border.all(
+            color: selected ? cs.primary : cs.outlineVariant,
+            width: selected ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(20),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(20),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TeamLogo(f.homeTeam, size: isLandscapePhone ? 22 : 26),
-                  Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        style: scoreBaseStyle,
-                        children: [
-                          TextSpan(
-                            text: "$homeScore",
-                            style: TextStyle(
-                              fontWeight: homeWinning
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TeamLogo(f.homeTeam, size: isLandscapePhone ? 22 : 26),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      style: scoreBaseStyle,
+                      children: [
+                        TextSpan(
+                          text: "$homeScore",
+                          style: TextStyle(
+                            fontWeight: homeWinning
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                           ),
-                          const TextSpan(text: "–"),
-                          TextSpan(
-                            text: "$awayScore",
-                            style: TextStyle(
-                              fontWeight: awayWinning
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
+                        ),
+                        const TextSpan(text: "–"),
+                        TextSpan(
+                          text: "$awayScore",
+                          style: TextStyle(
+                            fontWeight: awayWinning
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                           ),
-                        ],
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.visible,
-                      softWrap: false,
+                        ),
+                      ],
                     ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
+                    softWrap: false,
                   ),
-                  TeamLogo(f.awayTeam, size: isLandscapePhone ? 22 : 26),
-                ],
-              ),
-              Align(
-                alignment: Alignment.center,
-                child: Text(
-                  metaText,
-                  style: metaStyle,
-                  overflow: TextOverflow.ellipsis,
                 ),
+                TeamLogo(f.awayTeam, size: isLandscapePhone ? 22 : 26),
+              ],
+            ),
+            Align(
+              alignment: Alignment.center,
+              child: Text(
+                metaText,
+                style: metaStyle,
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Future<void> _onFixtureTap(AflFixture f) async {
     setState(() => _selectedFixture = f);

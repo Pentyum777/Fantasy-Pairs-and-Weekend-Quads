@@ -191,21 +191,14 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
             height: UIDimensions.rowHeight,
             decoration: BoxDecoration(
               color: bg,
-              border: Border.all(
-                color: Colors.red, // DEBUG
-                width: 1,
-              ),
-            ),
+                          ),
             child: Row(
               children: [
                 // Punter column
                 Container(
                   width: kPunterColumnWidth,
                   decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.blue, // DEBUG
-                      width: 1,
-                    ),
+                    
                   ),
                   child: _punterCell(context, row),
                 ),
@@ -216,11 +209,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                   Container(
                     width: kPickColumnWidth,
                     decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.green, // DEBUG
-                        width: 1,
-                      ),
-                    ),
+                                          ),
                     child: i < row.picks.length
                         ? _buildPickCell(context, row, row.picks[i])
                         : const SizedBox(),
@@ -230,10 +219,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                   Container(
                     width: kPickScoreColumnWidth,
                     decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.orange, // DEBUG
-                        width: 1,
-                      ),
+                      
                     ),
                     child: i < row.picks.length
                         ? _pickScoreCell(row.picks[i])
@@ -245,10 +231,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
                 Container(
                   width: kTotalColumnWidth,
                   decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.purple, // DEBUG
-                      width: 1,
-                    ),
+                    
                   ),
                   child: _totalCell(context, row),
                 ),
@@ -410,10 +393,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
       height: UIDimensions.rowHeight,
       decoration: BoxDecoration(
         color: bg,
-        border: Border.all(
-          
-          width: 1,
-        ),
+        
       ),
       child: Row(
         children: [
@@ -421,10 +401,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
           Container(
             width: kPunterColumnWidth,
             decoration: BoxDecoration(
-              border: Border.all(
-                
-                width: 1,
-              ),
+              
             ),
             child: _punterCell(context, row),
           ),
@@ -435,11 +412,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
             Container(
               width: kPickColumnWidth,
               decoration: BoxDecoration(
-                border: Border.all(
-                  
-                  width: 1,
-                ),
-              ),
+                              ),
               child: i < row.picks.length
                   ? _buildPickCell(context, row, row.picks[i])
                   : const SizedBox(),
@@ -449,10 +422,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
             Container(
               width: kPickScoreColumnWidth,
               decoration: BoxDecoration(
-                border: Border.all(
-                  
-                  width: 1,
-                ),
+                
               ),
               child: i < row.picks.length
                   ? _pickScoreCell(row.picks[i])
@@ -464,10 +434,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
           Container(
             width: kTotalColumnWidth,
             decoration: BoxDecoration(
-              border: Border.all(
-                                width: 1,
-              ),
-            ),
+                         ),
             child: _totalCell(context, row),
           ),
         ],
@@ -504,17 +471,18 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     }
 
     return Container(
-      alignment: Alignment.centerLeft,
-      padding: EdgeInsets.zero,
-      child: TextField(
-        enabled: widget.userRoleService.isAdmin && !widget.readOnly,
-        controller: controller,
-        focusNode: focusNode,
-        textAlign: TextAlign.left,
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-        ),
+  alignment: Alignment.centerLeft,
+  padding: const EdgeInsets.only(left: 1),   // ⭐ Add 1px breathing room
+  child: TextField(
+    enabled: widget.userRoleService.isAdmin && !widget.readOnly,
+    controller: controller,
+    focusNode: focusNode,
+    textAlign: TextAlign.left,
+    style: theme.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.1,
+    ),
+
         decoration: InputDecoration(
           border: InputBorder.none,
           isDense: true,
@@ -751,78 +719,90 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
 
   void applyLiveStatsToTable(Map<String, AflPlayerMatchStats> statsById) {
-    for (final selection in widget.selections) {
-      for (final pick in selection.picks) {
-        final id = pick.player?.id;
+  for (final selection in widget.selections) {
+    for (final pick in selection.picks) {
+      final id = pick.player?.id;
 
-        // No player selected
-        if (id == null || id.isEmpty) {
-          pick.fantasyPoints = 0;
-          pick.stats = {
-            "AF": 0,
-            "K": 0,
-            "HB": 0,
-            "D": 0,
-            "M": 0,
-            "T": 0,
-            "G": 0,
-            "B": 0,
-          };
-          continue;
-        }
-
-        final s = statsById[id];
-
-        // No stats yet for this player
-        if (s == null) {
-          pick.fantasyPoints = 0;
-          pick.stats = {
-            "AF": 0,
-            "K": 0,
-            "HB": 0,
-            "D": 0,
-            "M": 0,
-            "T": 0,
-            "G": 0,
-            "B": 0,
-          };
-          continue;
-        }
-
-        // Normalize all stats BEFORE assigning
-        final af = s.fantasyPoints ?? 0;
-        final k = s.kicks ?? 0;
-        final hb = s.handballs ?? 0;
-        final d = s.disposals ?? (k + hb);
-        final m = s.marks ?? 0;
-        final t = s.tackles ?? 0;
-        final g = s.goals ?? 0;
-        final b = s.behinds ?? 0;
-
-        pick.fantasyPoints = af;
-
+      // No player selected
+      if (id == null || id.isEmpty) {
+        pick.fantasyPoints = 0;
         pick.stats = {
-          "AF": af,
-          "K": k,
-          "HB": hb,
-          "D": d,
-          "M": m,
-          "T": t,
-          "G": g,
-          "B": b,
+          "AF": 0,
+          "K": 0,
+          "HB": 0,
+          "D": 0,
+          "M": 0,
+          "T": 0,
+          "G": 0,
+          "B": 0,
         };
+        continue;
       }
 
-      // Recalculate punter total
-      selection.liveScore = widget.fantasyService.calculatePunterScore(
-        selection: selection,
-        liveStatsByPlayerId: statsById,
-      );
+      final s = statsById[id];
+
+      // No stats yet for this player
+      if (s == null) {
+        pick.fantasyPoints = 0;
+        pick.stats = {
+          "AF": 0,
+          "K": 0,
+          "HB": 0,
+          "D": 0,
+          "M": 0,
+          "T": 0,
+          "G": 0,
+          "B": 0,
+        };
+        continue;
+      }
+
+      // Normalize all stats BEFORE assigning
+      final af = s.fantasyPoints ?? 0;
+      final k = s.kicks ?? 0;
+      final hb = s.handballs ?? 0;
+      final d = s.disposals ?? (k + hb);
+      final m = s.marks ?? 0;
+      final t = s.tackles ?? 0;
+      final g = s.goals ?? 0;
+      final b = s.behinds ?? 0;
+
+      pick.fantasyPoints = af;
+
+      pick.stats = {
+        "AF": af,
+        "K": k,
+        "HB": hb,
+        "D": d,
+        "M": m,
+        "T": t,
+        "G": g,
+        "B": b,
+      };
     }
 
-    setState(() {});
-    widget.onLiveScoreUpdateSave?.call();
+    // Recalculate punter total
+    selection.liveScore = widget.fantasyService.calculatePunterScore(
+      selection: selection,
+      liveStatsByPlayerId: statsById,
+    );
   }
+
+  // Rebuild table UI
+  setState(() {});
+
+  // Notify GameViewScreen to save snapshot (admin only)
+  widget.onLiveScoreUpdateSave?.call();
+
+  // ⭐ Update timestamp label in GameViewScreen
+  final now = DateTime.now();
+  final formatted = "${now.hour.toString().padLeft(2, '0')}:"
+                    "${now.minute.toString().padLeft(2, '0')}:"
+                    "${now.second.toString().padLeft(2, '0')}";
+
+  widget.onTimestampChanged?.call(formatted);
+}
+
 
   // ---------------------------------------------------------------------------
   // SCORE CELL
