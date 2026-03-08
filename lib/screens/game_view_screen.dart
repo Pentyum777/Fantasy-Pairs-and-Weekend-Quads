@@ -957,57 +957,108 @@ if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) 
                 Text("Punters Playing", style: theme.textTheme.bodyMedium),
                 const SizedBox(width: 6),
                 DropdownButtonHideUnderline(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
-                        width: 1,
+  child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(
+        color: theme.colorScheme.outlineVariant,
+        width: 1,
+      ),
+      color: theme.colorScheme.surface,
+    ),
+    child: DropdownButton<int>(
+      value: _visiblePunterCount,
+      isDense: true,
+      menuMaxHeight: 280,
+      itemHeight: 32,
+      style: theme.textTheme.bodyMedium,
+
+      items: [
+        // Normal punter counts
+        ...List.generate(_maxPunterDropdown, (i) => i + 1)
+            .map(
+              (v) => DropdownMenuItem<int>(
+                value: v,
+                child: Text("$v"),
+              ),
+            ),
+
+        // ⭐ Custom option
+        const DropdownMenuItem<int>(
+          value: -1,
+          child: Text("Custom…"),
+        ),
+      ],
+
+      onChanged: widget.userRoleService.isAdmin
+          ? (value) async {
+              if (value == null) return;
+
+              // ⭐ Handle custom option
+              if (value == -1) {
+                final controller = TextEditingController();
+
+                final custom = await showDialog<int>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text("Custom punter count"),
+                    content: TextField(
+                      controller: controller,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        hintText: "Enter number (e.g., 30)",
                       ),
-                      color: theme.colorScheme.surface,
                     ),
-                    child: DropdownButton<int>(
-                      value: _visiblePunterCount,
-                      isDense: true,
-                      menuMaxHeight: 280,
-                      itemHeight: 32,
-                      style: theme.textTheme.bodyMedium,
-                      items: List.generate(_maxPunterDropdown, (i) => i + 1)
-                          .map(
-                            (v) => DropdownMenuItem<int>(
-                              value: v,
-                              child: Text("$v"),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: widget.userRoleService.isAdmin
-                          ? (value) {
-                              if (value == null) return;
-                              setState(() => _visiblePunterCount = value);
-                            }
-                          : null,
-                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text("Cancel"),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          final n = int.tryParse(controller.text.trim());
+                          Navigator.pop(context, n);
+                        },
+                        child: const Text("OK"),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color:
-                        theme.colorScheme.surfaceVariant.withAlpha(64),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    "Updated $_timestampLabel",
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-                const Spacer(),
+                );
+
+                if (custom != null && custom > 0) {
+                  setState(() {
+                    _maxPunterDropdown = custom;
+                    _visiblePunterCount = custom;
+                  });
+                }
+
+                return;
+              }
+
+              // Normal selection
+              setState(() => _visiblePunterCount = value);
+            }
+          : null,
+    ),
+  ),
+),
+const SizedBox(width: 12),
+Container(
+  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  decoration: BoxDecoration(
+    color: theme.colorScheme.surfaceVariant.withAlpha(64),
+    borderRadius: BorderRadius.circular(6),
+  ),
+  child: Text(
+    "Updated $_timestampLabel",
+    style: theme.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: theme.colorScheme.primary,
+    ),
+  ),
+),
+const Spacer(),
               ],
             ),
         ],

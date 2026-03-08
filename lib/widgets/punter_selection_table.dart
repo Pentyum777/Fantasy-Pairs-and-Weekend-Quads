@@ -184,19 +184,7 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
     return "$hh:$mm:$ss";
   }
 
-  @override
-void initState() {
-  super.initState();
-  _initControllers();
-  _initFocusNodes();
-
-  // Delay snapshot loading until the UI is fully built AND the event loop is stable
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    Future.microtask(() {
-      _loadSnapshotFromBackend();
-    });
-  });
-}
+  
 
   @override
   void dispose() {
@@ -376,7 +364,7 @@ Widget _buildTableHeader(
           ),
           SizedBox(
             width: kPickScoreColumnWidth,
-            child: _headerCell(theme, "Score", alignCenter: true),
+            child: _headerCell(theme, "S", alignCenter: true),
           ),
         ],
         SizedBox(
@@ -562,7 +550,12 @@ Widget _punterCell(BuildContext context, PunterSelection row) {
 
 
 
-Widget _buildRow(ThemeData theme, ColorScheme cs, PunterSelection row, int pickCount) {
+Widget _buildRow(
+  ThemeData theme,
+  ColorScheme cs,
+  PunterSelection row,
+  int pickCount,
+) {
   final index = row.punterNumber - 1;
   final isStriped = index.isOdd;
 
@@ -574,41 +567,72 @@ Widget _buildRow(ThemeData theme, ColorScheme cs, PunterSelection row, int pickC
     height: UIDimensions.rowHeight,
     decoration: BoxDecoration(
       color: bg,
-      border: Border(
-        bottom: BorderSide(
-          color: cs.outlineVariant.withAlpha(153),
-          width: 0.5,
-        ),
+      border: Border.all(
+        color: Colors.red,   // 🔥 DEBUG: border around entire row
+        width: 1,
       ),
     ),
     child: Row(
       children: [
-        SizedBox(
+        // 🔵 Punter column
+        Container(
           width: kPunterColumnWidth,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.blue, // 🔵 punter column border
+              width: 1,
+            ),
+          ),
           child: _punterCell(context, row),
         ),
+
+        // 🟢 Picks + 🟠 Scores
         for (int i = 0; i < pickCount; i++) ...[
-          SizedBox(
+          // 🟢 Pick column
+          Container(
             width: kPickColumnWidth,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.green, // 🟢 pick column border
+                width: 1,
+              ),
+            ),
             child: i < row.picks.length
                 ? _buildPickCell(context, row, row.picks[i])
                 : const SizedBox(),
           ),
-          SizedBox(
+
+          // 🟠 Score column
+          Container(
             width: kPickScoreColumnWidth,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.orange, // 🟠 score column border
+                width: 1,
+              ),
+            ),
             child: i < row.picks.length
                 ? _pickScoreCell(row.picks[i])
                 : const SizedBox(),
           ),
         ],
-        SizedBox(
+
+        // 🟣 Total column
+        Container(
           width: kTotalColumnWidth,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.purple, // 🟣 total column border
+              width: 1,
+            ),
+          ),
           child: _totalCell(context, row),
         ),
       ],
     ),
   );
 }
+
 
 
 // ---------------------------------------------------------------------------
