@@ -131,9 +131,9 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
 
   // Responsive column widths
   double get kPunterColumnWidth {
-    if (isPortraitPhone(context)) return 60;
-    if (isLandscapePhone) return 70;
-    return 90;
+    if (isPortraitPhone(context)) return 55;
+    if (isLandscapePhone) return 60;
+    return 70;
   }
 
   double get kPickColumnWidth {
@@ -143,15 +143,15 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   double get kPickScoreColumnWidth {
-    if (isPortraitPhone(context)) return 30;
-    if (isLandscapePhone) return 34;
-    return 40;
+    if (isPortraitPhone(context)) return 26;
+    if (isLandscapePhone) return 30;
+    return 36;
   }
 
   double get kTotalColumnWidth {
-    if (isPortraitPhone(context)) return 45;
-    if (isLandscapePhone) return 50;
-    return 60;
+    if (isPortraitPhone(context)) return 40;
+    if (isLandscapePhone) return 45;
+    return 55;
   }
 
   double _minTableWidth(int pickCount) {
@@ -494,7 +494,7 @@ Widget _punterCell(BuildContext context, PunterSelection row) {
 
   return Container(
     alignment: Alignment.centerLeft,
-    padding: const EdgeInsets.symmetric(horizontal: 4),
+    padding: EdgeInsets.zero,
     child: TextField(
       enabled: widget.userRoleService.isAdmin,
       controller: controller,
@@ -712,13 +712,10 @@ Widget _buildPickCell(
     ),
 
     dropdownDecoratorProps: DropDownDecoratorProps(
-      dropdownSearchDecoration: InputDecoration(
+      dropdownSearchDecoration: const InputDecoration(
         isDense: true,
         border: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 4,
-          vertical: 2,
-        ),
+        contentPadding: EdgeInsets.zero,
       ),
     ),
 
@@ -726,74 +723,71 @@ Widget _buildPickCell(
       icon: SizedBox.shrink(),
     ),
 
-    clearButtonProps: const ClearButtonProps(
-      isVisible: false,
-    ),
+    clearButtonProps: const ClearButtonProps(isVisible: false),
 
+    // ------------------------------------------------------------
+    // NEW: Compact, text-hugging team-colour chip
+    // ------------------------------------------------------------
     dropdownBuilder: (context, player) {
-  final safeName = (player?.fullName ?? "").trim();
-  final text = safeName.isEmpty ? hintText : safeName;
-  final colours = player == null ? null : _getTeamColoursForPlayer(player);
+      final safeName = (player?.fullName ?? "").trim();
+      final text = safeName.isEmpty ? hintText : safeName;
+      final colours = player == null ? null : _getTeamColoursForPlayer(player);
 
-  return Container(
-    width: kPickColumnWidth,                 // 🔥 FULL WIDTH OF CELL
-    height: double.infinity,
-    alignment: Alignment.center,
-    padding: const EdgeInsets.symmetric()
-
-    ,decoration: colours == null
-    ? null
-    : BoxDecoration(
-        color: colours["bg"]!.withOpacity(0.85),  // ⭐ strong but not solid
-        borderRadius: BorderRadius.circular(4),
-      ),
-
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // 🔥 FIX: No Expanded — it was collapsing the background
-        SizedBox(
-          width: kPickColumnWidth - (player != null ? 20 : 0), 
-          child: Text(
-            text,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colours == null ? cs.onSurfaceVariant : colours["fg"],
-            ),
-          ),
-        ),
-
-        // --- CLEAR BUTTON (Admins only) ---
-        if (widget.userRoleService.isAdmin && player != null)
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                owner.picks[colIndex].player = null;
-                owner.picks[colIndex].stats = null;
-              });
-
-              widget.onChanged?.call();
-              _saveSnapshot();
-            },
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Icon(
-                Icons.clear,
-                size: 16,
-                color: cs.error,
+      return Container(
+        width: kPickColumnWidth,
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // ⭐ Team-colour chip that hugs the text
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: colours == null
+                  ? null
+                  : BoxDecoration(
+                      color: colours["bg"]!.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+              child: IntrinsicWidth(
+                child: Text(
+                  text,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colours == null ? cs.onSurfaceVariant : colours["fg"],
+                  ),
+                ),
               ),
             ),
-          ),
-      ],
-    ),
-  );
-},
 
+            // ⭐ Clear button (admins only)
+            if (widget.userRoleService.isAdmin && player != null)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    owner.picks[colIndex].player = null;
+                    owner.picks[colIndex].stats = null;
+                  });
 
+                  widget.onChanged?.call();
+                  _saveSnapshot();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(
+                    Icons.clear,
+                    size: 16,
+                    color: cs.error,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    },
 
     onChanged: (player) {
       setState(() {
@@ -919,7 +913,7 @@ Widget _pickScoreCell(PlayerPick pick) {
 
   return Container(
     alignment: Alignment.center,
-    padding: const EdgeInsets.symmetric(horizontal: 4),
+    padding: EdgeInsets.zero,
     child: Text(
       "${pick.fantasyPoints ?? 0}",
       style: theme.textTheme.bodySmall?.copyWith(

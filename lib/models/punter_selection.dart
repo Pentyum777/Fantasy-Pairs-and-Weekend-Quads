@@ -16,9 +16,32 @@ class PunterSelection {
     this.isPrizeWinner = false,
   });
 
-  // -----------------------------
+  // ------------------------------------------------------------
+  // NEW: Create a clean, empty punter row (P26, P27, etc.)
+  // ------------------------------------------------------------
+  factory PunterSelection.empty({
+    required int punterNumber,
+    required int playersPerPunter,
+  }) {
+    return PunterSelection(
+      punterNumber: punterNumber,
+      punterName: "P$punterNumber",
+      picks: List.generate(
+        playersPerPunter,
+        (i) => PlayerPick(
+          pickNumber: i + 1,
+          player: null,
+          stats: null,
+        ),
+      ),
+      liveScore: 0,
+      isPrizeWinner: false,
+    );
+  }
+
+  // ------------------------------------------------------------
   // JSON Serialization
-  // -----------------------------
+  // ------------------------------------------------------------
   factory PunterSelection.fromJson(Map<String, dynamic> json) {
     return PunterSelection(
       punterNumber: json['punterNumber'] as int,
@@ -41,9 +64,9 @@ class PunterSelection {
     };
   }
 
-  // -----------------------------
+  // ------------------------------------------------------------
   // Null-safe total score
-  // -----------------------------
+  // ------------------------------------------------------------
   int get totalScore {
     int total = 0;
     for (final pick in picks) {

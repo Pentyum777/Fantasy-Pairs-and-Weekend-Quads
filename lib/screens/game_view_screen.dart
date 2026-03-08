@@ -188,19 +188,24 @@ Future<void> _loadSelectionsSnapshot() async {
     });
 
     setState(() {
-      if (hasAnySelections) {
-        // Use the number of punters actually entered
-        _visiblePunterCount = _selections.length;
+  if (hasAnySelections) {
+    // Count only punters with real names or picks
+    final filledCount = _selections.where((p) {
+      final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
+      final hasPicks = p.picks.any((pick) => pick.player != null);
+      return hasName || hasPicks;
+    }).length;
 
-        // Expand dropdown if snapshot has more than 25 punters
-        if (_visiblePunterCount > _maxPunterDropdown) {
-          _maxPunterDropdown = _visiblePunterCount;
-        }
-      } else {
-        // Default for blank table
-        _visiblePunterCount = 15;
-      }
-    });
+    _visiblePunterCount = filledCount;
+
+    // Expand dropdown if needed
+    if (_visiblePunterCount > _maxPunterDropdown) {
+      _maxPunterDropdown = _visiblePunterCount;
+    }
+  } else {
+    _visiblePunterCount = 15;
+  }
+});
 
     debugPrint("📥 Snapshot restored. Visible punters = $_visiblePunterCount");
 
@@ -1027,11 +1032,21 @@ if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) 
                 );
 
                 if (custom != null && custom > 0) {
-                  setState(() {
-                    _maxPunterDropdown = custom;
-                    _visiblePunterCount = custom;
-                  });
-                }
+  setState(() {
+    _maxPunterDropdown = custom;
+    _visiblePunterCount = custom;
+
+    // ⭐ Ensure selections list has enough rows
+    while (_selections.length < custom) {
+      _selections.add(
+        PunterSelection.empty(
+          punterNumber: _selections.length + 1,
+          playersPerPunter: widget.selections.first.picks.length,
+        ),
+      );
+    }
+  });
+}
 
                 return;
               }

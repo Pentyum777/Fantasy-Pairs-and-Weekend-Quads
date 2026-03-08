@@ -14,6 +14,32 @@ class PlayerPick {
     this.fantasyPoints,
   });
 
+  // ------------------------------------------------------------
+  // Recommended: default zero stats
+  // ------------------------------------------------------------
+  static const Map<String, dynamic> defaultStats = {
+    "AF": 0,
+    "K": 0,
+    "HB": 0,
+    "D": 0,
+    "M": 0,
+    "T": 0,
+    "G": 0,
+    "B": 0,
+  };
+
+  // ------------------------------------------------------------
+  // NEW: clean empty pick constructor
+  // ------------------------------------------------------------
+  factory PlayerPick.empty(int pickNumber) {
+    return PlayerPick(
+      pickNumber: pickNumber,
+      player: null,
+      stats: Map<String, dynamic>.from(defaultStats),
+      fantasyPoints: 0,
+    );
+  }
+
   // -----------------------------
   // Safe helpers
   // -----------------------------
@@ -21,7 +47,7 @@ class PlayerPick {
 
   AflPlayer get safePlayer => player ?? AflPlayer.empty();
 
-  Map<String, dynamic> get safeStats => stats ?? const {};
+  Map<String, dynamic> get safeStats => stats ?? defaultStats;
 
   // -----------------------------
   // JSON Serialization (hardened)
