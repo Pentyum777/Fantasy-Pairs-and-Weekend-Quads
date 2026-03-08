@@ -98,6 +98,7 @@ int _maxPunterDropdown = 25;      // expands automatically if snapshot > 25
     return size.width > size.height && size.width < 900;
   }
 
+bool _isSubmitted = false;
   
 
   @override
@@ -902,184 +903,227 @@ if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) 
   }
 
   Widget _buildPunterControls() {
-    final theme = Theme.of(context);
+  final theme = Theme.of(context);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      height: _controlsCollapsed ? 32 : null,
-      padding: EdgeInsets.symmetric(
-        vertical: _controlsCollapsed ? 0 : (isLandscapePhone ? 2 : 4),
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () =>
-                setState(() => _controlsCollapsed = !_controlsCollapsed),
-            child: Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Text(
-                    "Punter Controls",
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    iconSize: 18,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Icon(
-                      _leaderboardCollapsed
-                          ? Icons.chevron_left
-                          : Icons.chevron_right,
-                      color: theme.colorScheme.primary,
-                    ),
-                    onPressed: () {
-                      setState(
-                          () => _leaderboardCollapsed = !_leaderboardCollapsed);
-                    },
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    _controlsCollapsed
-                        ? Icons.keyboard_arrow_down
-                        : Icons.keyboard_arrow_up,
-                    size: 20,
+  return AnimatedContainer(
+    duration: const Duration(milliseconds: 200),
+    height: _controlsCollapsed ? 32 : null,
+    padding: EdgeInsets.symmetric(
+      vertical: _controlsCollapsed ? 0 : (isLandscapePhone ? 2 : 4),
+    ),
+    child: Column(
+      children: [
+        InkWell(
+          onTap: () => setState(() => _controlsCollapsed = !_controlsCollapsed),
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Text(
+                  "Punter Controls",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                     color: theme.colorScheme.primary,
                   ),
-                ],
-              ),
-            ),
-          ),
-          if (!_controlsCollapsed)
-            Row(
-              children: [
-                Text("Punters Playing", style: theme.textTheme.bodyMedium),
-                const SizedBox(width: 6),
-                DropdownButtonHideUnderline(
-  child: Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(
-        color: theme.colorScheme.outlineVariant,
-        width: 1,
-      ),
-      color: theme.colorScheme.surface,
-    ),
-    child: DropdownButton<int>(
-      value: _visiblePunterCount,
-      isDense: true,
-      menuMaxHeight: 280,
-      itemHeight: 32,
-      style: theme.textTheme.bodyMedium,
-
-      items: [
-        // Normal punter counts
-        ...List.generate(_maxPunterDropdown, (i) => i + 1)
-            .map(
-              (v) => DropdownMenuItem<int>(
-                value: v,
-                child: Text("$v"),
-              ),
-            ),
-
-        // ⭐ Custom option
-        const DropdownMenuItem<int>(
-          value: -1,
-          child: Text("Custom…"),
-        ),
-      ],
-
-      onChanged: widget.userRoleService.isAdmin
-          ? (value) async {
-              if (value == null) return;
-
-              // ⭐ Handle custom option
-              if (value == -1) {
-                final controller = TextEditingController();
-
-                final custom = await showDialog<int>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text("Custom punter count"),
-                    content: TextField(
-                      controller: controller,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        hintText: "Enter number (e.g., 30)",
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Cancel"),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          final n = int.tryParse(controller.text.trim());
-                          Navigator.pop(context, n);
-                        },
-                        child: const Text("OK"),
-                      ),
-                    ],
+                ),
+                const Spacer(),
+                IconButton(
+                  iconSize: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Icon(
+                    _leaderboardCollapsed
+                        ? Icons.chevron_left
+                        : Icons.chevron_right,
+                    color: theme.colorScheme.primary,
                   ),
-                );
-
-                if (custom != null && custom > 0) {
-  setState(() {
-    _maxPunterDropdown = custom;
-    _visiblePunterCount = custom;
-
-    // ⭐ Ensure selections list has enough rows
-    while (_selections.length < custom) {
-      _selections.add(
-        PunterSelection.empty(
-          punterNumber: _selections.length + 1,
-          playersPerPunter: widget.selections.first.picks.length,
-        ),
-      );
-    }
-  });
-}
-
-                return;
-              }
-
-              // Normal selection
-              setState(() => _visiblePunterCount = value);
-            }
-          : null,
-    ),
-  ),
-),
-const SizedBox(width: 12),
-Container(
-  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-  decoration: BoxDecoration(
-    color: theme.colorScheme.surfaceVariant.withAlpha(64),
-    borderRadius: BorderRadius.circular(6),
-  ),
-  child: Text(
-    "Updated $_timestampLabel",
-    style: theme.textTheme.bodySmall?.copyWith(
-      fontWeight: FontWeight.w600,
-      color: theme.colorScheme.primary,
-    ),
-  ),
-),
-const Spacer(),
+                  onPressed: () {
+                    setState(() =>
+                        _leaderboardCollapsed = !_leaderboardCollapsed);
+                  },
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _controlsCollapsed
+                      ? Icons.keyboard_arrow_down
+                      : Icons.keyboard_arrow_up,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
               ],
             ),
-        ],
-      ),
-    );
-  }
+          ),
+        ),
+
+        if (!_controlsCollapsed)
+          Row(
+            children: [
+              Text("Punters Playing", style: theme.textTheme.bodyMedium),
+              const SizedBox(width: 6),
+
+              // ------------------------------------------------------------
+              // PUNTER COUNT DROPDOWN (disabled when submitted)
+              // ------------------------------------------------------------
+              DropdownButtonHideUnderline(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant,
+                      width: 1,
+                    ),
+                    color: theme.colorScheme.surface,
+                  ),
+                  child: DropdownButton<int>(
+                    value: _visiblePunterCount,
+                    isDense: true,
+                    menuMaxHeight: 280,
+                    itemHeight: 32,
+                    style: theme.textTheme.bodyMedium,
+
+                    items: [
+                      ...List.generate(_maxPunterDropdown, (i) => i + 1)
+                          .map(
+                            (v) => DropdownMenuItem<int>(
+                              value: v,
+                              child: Text("$v"),
+                            ),
+                          ),
+                      const DropdownMenuItem<int>(
+                        value: -1,
+                        child: Text("Custom…"),
+                      ),
+                    ],
+
+                    onChanged: (widget.userRoleService.isAdmin && !_isSubmitted)
+                        ? (value) async {
+                            if (value == null) return;
+
+                            if (value == -1) {
+                              final controller = TextEditingController();
+
+                              final custom = await showDialog<int>(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title: const Text("Custom punter count"),
+                                  content: TextField(
+                                    controller: controller,
+                                    keyboardType: TextInputType.number,
+                                    decoration: const InputDecoration(
+                                      hintText: "Enter number (e.g., 30)",
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context),
+                                      child: const Text("Cancel"),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        final n = int.tryParse(
+                                            controller.text.trim());
+                                        Navigator.pop(context, n);
+                                      },
+                                      child: const Text("OK"),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (custom != null && custom > 0) {
+                                setState(() {
+                                  _maxPunterDropdown = custom;
+                                  _visiblePunterCount = custom;
+
+                                  while (_selections.length < custom) {
+                                    _selections.add(
+                                      PunterSelection.empty(
+                                        punterNumber:
+                                            _selections.length + 1,
+                                        playersPerPunter: widget
+                                            .selections.first.picks.length,
+                                      ),
+                                    );
+                                  }
+                                });
+
+                                _saveSnapshot();
+                              }
+
+                              return;
+                            }
+
+                            setState(() => _visiblePunterCount = value);
+                          }
+                        : null,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // ------------------------------------------------------------
+              // TIMESTAMP LABEL
+              // ------------------------------------------------------------
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceVariant.withAlpha(64),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  "Updated $_timestampLabel",
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // ------------------------------------------------------------
+              // SUBMIT / UNSUBMIT BUTTON
+              // ------------------------------------------------------------
+              if (widget.userRoleService.isAdmin)
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _isSubmitted = !_isSubmitted;
+                    });
+
+                    if (_isSubmitted) {
+                      _saveSnapshot();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isSubmitted
+                        ? Colors.red.shade600
+                        : Colors.green.shade600,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                  ),
+                  child: Text(
+                    _isSubmitted ? "Unsubmit" : "Submit",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+
+              const Spacer(),
+            ],
+          ),
+      ],
+    ),
+  );
+}
 
   Widget _buildPunterAndLeaderboard({
   required List<AflPlayer> players,
