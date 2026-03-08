@@ -39,7 +39,6 @@ class GameViewScreen extends StatefulWidget {
   final UserRoleService userRoleService;
   final List<String>? selectedFixtureIds;
   final List<AflPlayer>? overridePlayers;
-  
 
   const GameViewScreen({
     super.key,
@@ -62,11 +61,11 @@ class GameViewScreen extends StatefulWidget {
 }
 
 class _GameViewScreenState extends State<GameViewScreen> {
-  int _visiblePunterCount = 15;     // default for blank table
-int _maxPunterDropdown = 25;      // expands automatically if snapshot > 25
+  int _visiblePunterCount = 15; // default for blank table
+  int _maxPunterDropdown = 25; // expands automatically if snapshot > 25
   bool _isCompleted = false;
 
-    bool _leaderboardCollapsed = false;
+  bool _leaderboardCollapsed = false;
   bool _fixturesCollapsed = false;
   bool _controlsCollapsed = false;
 
@@ -79,9 +78,6 @@ int _maxPunterDropdown = 25;      // expands automatically if snapshot > 25
   final ScrollController _punterScrollController = ScrollController();
 
   Map<String, AflPlayerMatchStats> _currentStatsByPlayerId = {};
-  
-
-
 
   final FridayPairsService _fridayPairsService = FridayPairsService();
   bool _fridayWinnerSelected = false;
@@ -98,22 +94,21 @@ int _maxPunterDropdown = 25;      // expands automatically if snapshot > 25
     return size.width > size.height && size.width < 900;
   }
 
-bool _isSubmitted = false;
-  
+  bool _isSubmitted = false;
 
   @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
 
-  // ✅ Make selections persistent from the widget’s initial value
-  _selections = widget.selections;
+    // ✅ Make selections persistent from the widget’s initial value
+    _selections = widget.selections;
 
-  _loadSeasonPlayers().then((_) {
-    _loadSelectionsSnapshot();   // Snapshot now applies to _selections
-  });
+    _loadSeasonPlayers().then((_) {
+      _loadSelectionsSnapshot(); // Snapshot now applies to _selections
+    });
 
-  _startLivePolling();
-}
+    _startLivePolling();
+  }
 
   @override
   void dispose() {
@@ -143,194 +138,208 @@ void initState() {
     }
   }
 
-Future<void> _loadSelectionsSnapshot() async {
-  try {
-    final int safeRound = widget.round ?? 0;
-
-    final url = Uri.https(
-      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
-      "/loadSelections",
-      {
-        "gameType": widget.gameType,
-        "season": widget.season.toString(),
-        "round": safeRound.toString(),
-      },
-    );
-
-    final res = await http.get(url);
-
-    if (res.statusCode != 200) {
-      debugPrint("⚠️ loadSelectionsSnapshot: HTTP ${res.statusCode}");
-      return;
-    }
-
-    dynamic json;
+  Future<void> _loadSelectionsSnapshot() async {
     try {
-      json = jsonDecode(res.body);
-    } catch (_) {
-      debugPrint("❌ loadSelectionsSnapshot: invalid JSON");
-      return;
-    }
+      final int safeRound = widget.round ?? 0;
 
-    final data = json["data"];
-    if (data is! Map<String, dynamic>) {
-      debugPrint("⚠️ loadSelectionsSnapshot: missing data field");
-      return;
-    }
+      final url = Uri.https(
+        "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+        "/loadSelections",
+        {
+          "gameType": widget.gameType,
+          "season": widget.season.toString(),
+          "round": safeRound.toString(),
+        },
+      );
 
-   _applySnapshotToSelections(data);
+      final res = await http.get(url);
 
-// ⭐ Force full rebuild so leaderboard sees updated selections
-setState(() {});
-
-    // Determine if any punters are actually filled
-    final hasAnySelections = _selections.any((p) {
-      final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
-      final hasPicks = p.picks.any((pick) => pick.player != null);
-      return hasName || hasPicks;
-    });
-
-    setState(() {
-  if (hasAnySelections) {
-    // Count only punters with real names or picks
-    final filledCount = _selections.where((p) {
-      final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
-      final hasPicks = p.picks.any((pick) => pick.player != null);
-      return hasName || hasPicks;
-    }).length;
-
-    _visiblePunterCount = filledCount;
-
-    // Expand dropdown if needed
-    if (_visiblePunterCount > _maxPunterDropdown) {
-      _maxPunterDropdown = _visiblePunterCount;
-    }
-  } else {
-    _visiblePunterCount = 15;
-  }
-});
-
-    debugPrint("📥 Snapshot restored. Visible punters = $_visiblePunterCount");
-
-  } catch (e, st) {
-    debugPrint("❌ Failed to load selections snapshot: $e\n$st");
-  }
-}
-
-
-void _applySnapshotToSelections(Map<String, dynamic> data) {
-  final punterNames = (data["punterNames"] as List<dynamic>? ?? [])
-      .map((e) => e?.toString() ?? "")
-      .toList();
-
-  final picksJson = (data["picks"] as List<dynamic>? ?? []);
-
-  for (int i = 0; i < _selections.length; i++) {
-    final row = _selections[i];
-
-    // ---- Restore punter name ----
-    if (i < punterNames.length) {
-      final name = punterNames[i].trim();
-      row.punterName = name.isEmpty ? "P${row.punterNumber}" : name;
-    }
-
-    // ---- Restore picks ----
-    if (i >= picksJson.length) {
-      for (final pick in row.picks) {
-        pick.player = null;
-        pick.stats = null;
+      if (res.statusCode != 200) {
+        debugPrint("⚠️ loadSelectionsSnapshot: HTTP ${res.statusCode}");
+        return;
       }
-      continue;
+
+      dynamic json;
+      try {
+        json = jsonDecode(res.body);
+      } catch (_) {
+        debugPrint("❌ loadSelectionsSnapshot: invalid JSON");
+        return;
+      }
+
+      final data = json["data"];
+      if (data is! Map<String, dynamic>) {
+        debugPrint("⚠️ loadSelectionsSnapshot: missing data field");
+        return;
+      }
+
+      _applySnapshotToSelections(data);
+
+      // ⭐ Force full rebuild so leaderboard sees updated selections
+      setState(() {});
+
+      // Determine if any punters are actually filled
+      final hasAnySelections = _selections.any((p) {
+        final hasName =
+            p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
+        final hasPicks = p.picks.any((pick) => pick.player != null);
+        return hasName || hasPicks;
+      });
+
+      setState(() {
+        if (hasAnySelections) {
+          // Count only punters with real names or picks
+          final filledCount = _selections.where((p) {
+            final hasName =
+                p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
+            final hasPicks = p.picks.any((pick) => pick.player != null);
+            return hasName || hasPicks;
+          }).length;
+
+          _visiblePunterCount = filledCount;
+
+          // Expand dropdown if needed
+          if (_visiblePunterCount > _maxPunterDropdown) {
+            _maxPunterDropdown = _visiblePunterCount;
+          }
+        } else {
+          _visiblePunterCount = 15;
+        }
+      });
+
+      debugPrint("📥 Snapshot restored. Visible punters = $_visiblePunterCount");
+    } catch (e, st) {
+      debugPrint("❌ Failed to load selections snapshot: $e\n$st");
     }
+  }
 
-    final snapRow = picksJson[i];
-    if (snapRow is! List) continue;
+  void _applySnapshotToSelections(Map<String, dynamic> data) {
+    final punterNames = (data["punterNames"] as List<dynamic>? ?? [])
+        .map((e) => e?.toString() ?? "")
+        .toList();
 
-    for (int j = 0; j < row.picks.length; j++) {
-      final pick = row.picks[j];
+    final picksJson = (data["picks"] as List<dynamic>? ?? []);
 
-      if (j >= snapRow.length) {
-        pick.player = null;
-        pick.stats = null;
+    for (int i = 0; i < _selections.length; i++) {
+      final row = _selections[i];
+
+      // ---- Restore punter name ----
+      if (i < punterNames.length) {
+        final name = punterNames[i].trim();
+        row.punterName = name.isEmpty ? "P${row.punterNumber}" : name;
+      }
+
+      // ---- Restore picks ----
+      if (i >= picksJson.length) {
+        for (final pick in row.picks) {
+          pick.player = null;
+          pick.stats = null;
+        }
         continue;
       }
 
-      final snapPick = snapRow[j];
-      if (snapPick is! Map) {
-        pick.player = null;
-        pick.stats = null;
-        continue;
+      final snapRow = picksJson[i];
+      if (snapRow is! List) continue;
+
+      for (int j = 0; j < row.picks.length; j++) {
+        final pick = row.picks[j];
+
+        if (j >= snapRow.length) {
+          pick.player = null;
+          pick.stats = null;
+          continue;
+        }
+
+        final snapPick = snapRow[j];
+        if (snapPick is! Map) {
+          pick.player = null;
+          pick.stats = null;
+          continue;
+        }
+
+        final pid = (snapPick["playerId"] ?? "").toString().trim();
+
+        if (pid.isEmpty) {
+          pick.player = null;
+          pick.stats = null;
+          continue;
+        }
+
+        // ---- Restore player from seasonPlayers ----
+        final restored =
+            _seasonPlayers?.where((p) => p.id == pid).toList() ?? [];
+
+        pick.player = restored.isEmpty
+            ? AflPlayer(
+                id: pid,
+                name: "Unknown ($pid)",
+                club: "UNK",
+                guernseyNumber: 0,
+                season: widget.season,
+              )
+            : restored.first;
+
+        // ---- Restore stats ----
+        final rawStats = snapPick["stats"];
+        pick.stats = rawStats is Map<String, dynamic>
+            ? Map<String, dynamic>.from(rawStats)
+            : null;
       }
-
-      final pid = (snapPick["playerId"] ?? "").toString().trim();
-
-      if (pid.isEmpty) {
-        pick.player = null;
-        pick.stats = null;
-        continue;
-      }
-
-      // ---- Restore player from seasonPlayers ----
-      final restored = _seasonPlayers?.where((p) => p.id == pid).toList() ?? [];
-
-      pick.player = restored.isEmpty
-          ? AflPlayer(
-              id: pid,
-              name: "Unknown ($pid)",
-              club: "UNK",
-              guernseyNumber: 0,
-              season: widget.season,
-            )
-          : restored.first;
-
-      // ---- Restore stats ----
-      final rawStats = snapPick["stats"];
-      pick.stats = rawStats is Map<String, dynamic>
-          ? Map<String, dynamic>.from(rawStats)
-          : null;
     }
   }
-}
 
-Future<void> _saveSnapshot() async {
-  try {
-    final safeRound = widget.round ?? 0;
+  Future<void> _saveSnapshot() async {
+    try {
+      // ✅ Option A guard: only save when there are real selections
+      final hasAnySelections = _selections.any((p) {
+        final hasName =
+            p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
+        final hasPicks = p.picks.any((pick) => pick.player != null);
+        return hasName || hasPicks;
+      });
 
-    final url = Uri.https(
-      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
-      "/saveSelections",
-    );
+      if (!hasAnySelections) {
+        debugPrint("⛔ Skipping snapshot save — no real selections yet.");
+        return;
+      }
 
-    final punterNames = _selections.map((p) => p.punterName).toList();
+      final safeRound = widget.round ?? 0;
 
-    final picks = _selections.map((p) {
-      return p.picks.map((pick) {
-        return {
-          "playerId": pick.player?.id ?? "",
-          "stats": pick.stats ?? {},
-        };
+      final url = Uri.https(
+        "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+        "/saveSelections",
+      );
+
+      final punterNames = _selections.map((p) => p.punterName).toList();
+
+      final picks = _selections.map((p) {
+        return p.picks.map((pick) {
+          return {
+            "playerId": pick.player?.id ?? "",
+            "stats": pick.stats ?? {},
+          };
+        }).toList();
       }).toList();
-    }).toList();
 
-    final body = jsonEncode({
-      "gameType": widget.gameType,
-      "season": widget.season,
-      "round": safeRound,
-      "punterNames": punterNames,
-      "picks": picks,
-    });
+      final body = jsonEncode({
+        "gameType": widget.gameType,
+        "season": widget.season,
+        "round": safeRound,
+        "punterNames": punterNames,
+        "picks": picks,
+      });
 
-    await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: body,
-    );
+      await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: body,
+      );
 
-    debugPrint("💾 Snapshot saved.");
-  } catch (e) {
-    debugPrint("❌ Failed to save snapshot: $e");
+      debugPrint("💾 Snapshot saved.");
+    } catch (e) {
+      debugPrint("❌ Failed to save snapshot: $e");
+    }
   }
-}
 
   // ------------------------------------------------------------
   // LIVE POLLING (flicker‑free)
@@ -340,7 +349,7 @@ Future<void> _saveSnapshot() async {
     _liveTimer = Timer.periodic(
       const Duration(seconds: 5),
       (_) async {
-        await _refreshLive(); // no setState here
+        await _refreshLive(); // no snapshot saving here
       },
     );
   }
@@ -349,86 +358,79 @@ Future<void> _saveSnapshot() async {
   // ROUND-WIDE STATS FETCHER
   // -------------------------------------------------------------
   Future<Map<String, AflPlayerMatchStats>> _fetchRoundStats() async {
-  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-    widget.season,
-    widget.round,
-  );
-
-  final Map<String, AflPlayerMatchStats> roundStats = {};
-
-  for (final f in fixtures) {
-    final matchId = f.matchId?.trim();
-    if (matchId == null || matchId.isEmpty) continue;
-
-    // ⭐ Correct: use your existing backend parser
-    final stats = await MatchStatsParser.fetchMatchStats(
-      matchId,
-      widget.playerRepo,
-      widget.fixtureRepo,
-    );
-
-    if (stats.isEmpty) continue;
-
-    for (final s in stats) {
-      if (s.player != null) {
-        roundStats[s.player!.id] = s;
-      }
-    }
-  }
-
-  return roundStats;
-}
-
-  // -------------------------------------------------------------
-  
-
-  // -------------------------------------------------------------
-  // ROUND-WIDE STATS + FIXTURES REFRESH (flicker‑free)
-  // -------------------------------------------------------------
-  Future<void> _refreshLive() async {
-  try {
-    // 1. Refresh live scores for each fixture
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
       widget.season,
       widget.round,
     );
 
+    final Map<String, AflPlayerMatchStats> roundStats = {};
+
     for (final f in fixtures) {
       final matchId = f.matchId?.trim();
-      if (matchId != null && matchId.isNotEmpty) {
-        await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
+      if (matchId == null || matchId.isEmpty) continue;
+
+      // ⭐ Correct: use your existing backend parser
+      final stats = await MatchStatsParser.fetchMatchStats(
+        matchId,
+        widget.playerRepo,
+        widget.fixtureRepo,
+      );
+
+      if (stats.isEmpty) continue;
+
+      for (final s in stats) {
+        if (s.player != null) {
+          roundStats[s.player!.id] = s;
+        }
       }
     }
 
-    if (!mounted) return;
-
-    // 2. Run completion checks
-    _checkRoundCompletion();
-    _finaliseFridayPairsWinner();
-    _checkAndCompleteWeekendQuadsRound();
-
-    // 3. Always fetch fresh stats
-    final roundStats = await _fetchRoundStats();
-
-    // 4. Apply stats to table
-    _currentStatsByPlayerId = roundStats;
-
-    final tableState = _punterTableKey.currentState;
-    if (tableState != null) {
-      final dynamic dyn = tableState;
-      dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
-    }
-
-    // 5. Rebuild UI
-    setState(() {});
-  } catch (e, st) {
-    debugPrint("❌ Live refresh error: $e\n$st");
+    return roundStats;
   }
-}
 
+  // -------------------------------------------------------------
+  // ROUND-WIDE STATS + FIXTURES REFRESH (flicker‑free)
+  // -------------------------------------------------------------
+  Future<void> _refreshLive() async {
+    try {
+      // 1. Refresh live scores for each fixture
+      final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+        widget.season,
+        widget.round,
+      );
 
+      for (final f in fixtures) {
+        final matchId = f.matchId?.trim();
+        if (matchId != null && matchId.isNotEmpty) {
+          await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
+        }
+      }
 
+      if (!mounted) return;
 
+      // 2. Run completion checks
+      _checkRoundCompletion();
+      _finaliseFridayPairsWinner();
+      _checkAndCompleteWeekendQuadsRound();
+
+      // 3. Always fetch fresh stats
+      final roundStats = await _fetchRoundStats();
+
+      // 4. Apply stats to table
+      _currentStatsByPlayerId = roundStats;
+
+      final tableState = _punterTableKey.currentState;
+      if (tableState != null) {
+        final dynamic dyn = tableState;
+        dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
+      }
+
+      // 5. Rebuild UI
+      setState(() {});
+    } catch (e, st) {
+      debugPrint("❌ Live refresh error: $e\n$st");
+    }
+  }
 
   void _finaliseFridayPairsWinner() {
     if (widget.gameType != "friday_pairs") return;
@@ -461,7 +463,7 @@ Future<void> _saveSnapshot() async {
 
     if (allComplete) {
       widget.roundCompletionService.markCompleted(widget.round);
-      _saveSnapshot(); // your existing snapshot save method
+      _saveSnapshot(); // ✅ allowed: round completion
     }
   }
 
@@ -491,12 +493,11 @@ Future<void> _saveSnapshot() async {
         : _monthName(firstFixture.date!.month);
 
     widget.championshipService.addRound(month, _selections);
-    _saveSnapshot(); // your existing snapshot save method
+    _saveSnapshot(); // ✅ allowed: round completion
 
     debugPrint("🏆 Weekend Quads completed for $month");
   }
-
-  List<AflFixture> _fixturesForGameType() {
+    List<AflFixture> _fixturesForGameType() {
     final all = widget.round == null
         ? widget.fixtureRepo.preseasonFixturesForSeason(widget.season)
         : widget.fixtureRepo.fixturesForSeasonRound(
@@ -551,28 +552,28 @@ Future<void> _saveSnapshot() async {
     return names[m - 1];
   }
 
-String _quarterLabel(AflFixture f) {
-  if (f.complete) return "FT";
-  if (f.quarterText.isNotEmpty) return f.quarterText;
-  return "";
-}
+  String _quarterLabel(AflFixture f) {
+    if (f.complete) return "FT";
+    if (f.quarterText.isNotEmpty) return f.quarterText;
+    return "";
+  }
 
-String _timeLabel(AflFixture f) {
-  if (f.complete) return "FT";
-  if (f.timeText.isNotEmpty) return f.timeText;
-  if (f.time.isNotEmpty) return f.time;
-  return "--:--";
-}
+  String _timeLabel(AflFixture f) {
+    if (f.complete) return "FT";
+    if (f.timeText.isNotEmpty) return f.timeText;
+    if (f.time.isNotEmpty) return f.time;
+    return "--:--";
+  }
 
   String _metaText(AflFixture f) {
-  if (f.complete) return "FT";
+    if (f.complete) return "FT";
 
-  final q = _quarterLabel(f);
-  final t = _timeLabel(f);
+    final q = _quarterLabel(f);
+    final t = _timeLabel(f);
 
-  if (q.isEmpty) return t;
-  return "$q • $t";
-}
+    if (q.isEmpty) return t;
+    return "$q • $t";
+  }
 
   String _gameTypeLabel() {
     switch (widget.gameType) {
@@ -614,30 +615,28 @@ String _timeLabel(AflFixture f) {
     };
   }
 
-  
-
   @override
-Widget build(BuildContext context) {
-  // ✅ Don’t build UI until players are loaded
-  if (_loadingPlayers || _seasonPlayers == null) {
-    return const Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
-
+  Widget build(BuildContext context) {
+    // ✅ Don’t build UI until players are loaded
+    if (_loadingPlayers || _seasonPlayers == null) {
+      return const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     final allFixtures = _fixturesForGameType();
 
     var fixtures = allFixtures;
-if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) {
-  fixtures = allFixtures.where((f) {
-    final id = f.matchId ?? allFixtures.indexOf(f).toString();
-    return widget.selectedFixtureIds!.contains(id);
-  }).toList();
-}
+    if (widget.selectedFixtureIds != null &&
+        widget.selectedFixtureIds!.isNotEmpty) {
+      fixtures = allFixtures.where((f) {
+        final id = f.matchId ?? allFixtures.indexOf(f).toString();
+        return widget.selectedFixtureIds!.contains(id);
+      }).toList();
+    }
 
     if (_selectedFixture == null && fixtures.isNotEmpty) {
       _selectedFixture = fixtures.first;
@@ -726,142 +725,141 @@ if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) 
   }
 
   void _handleFridayPairsTrigger(AflFixture f) {
-  if (widget.gameType != "friday_pairs") return;
-  if (_fridayWinnerSelected) return;
+    if (widget.gameType != "friday_pairs") return;
+    if (_fridayWinnerSelected) return;
 
-  // Only trigger when the game is officially underway
-  final isLive = f.quarterText.isNotEmpty && !f.complete;
-  if (!isLive) return;
+    // Only trigger when the game is officially underway
+    final isLive = f.quarterText.isNotEmpty && !f.complete;
+    if (!isLive) return;
 
-  final punterCount = _selections.length;
+    final punterCount = _selections.length;
 
-  final pos = _fridayPairsService.selectRandomBottomHalfPosition(punterCount);
+    final pos = _fridayPairsService.selectRandomBottomHalfPosition(punterCount);
 
-  _fridayWinnerPosition = pos;
-  _fridayWinnerSelected = true;
+    _fridayWinnerPosition = pos;
+    _fridayWinnerSelected = true;
 
-  setState(() {
-    for (final p in _selections) {
-      p.isPrizeWinner = (p.punterNumber == pos);
-    }
-  });
+    setState(() {
+      for (final p in _selections) {
+        p.isPrizeWinner = (p.punterNumber == pos);
+      }
+    });
 
-  debugPrint("🎯 Friday Pairs random position = $pos (of $punterCount)");
-}
+    debugPrint("🎯 Friday Pairs random position = $pos (of $punterCount)");
+  }
 
   Widget _buildFixtureCard(AflFixture f) {
-  final theme = Theme.of(context);
-  final cs = theme.colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
-  final selected = f == _selectedFixture;
-  _handleFridayPairsTrigger(f);
+    final selected = f == _selectedFixture;
+    _handleFridayPairsTrigger(f);
 
-  final homeScore = f.homeScore;
-  final awayScore = f.awayScore;
-  final homeWinning = homeScore > awayScore;
-  final awayWinning = awayScore > homeScore;
+    final homeScore = f.homeScore;
+    final awayScore = f.awayScore;
+    final homeWinning = homeScore > awayScore;
+    final awayWinning = awayScore > homeScore;
 
-  // Use quarterLabel directly for live detection
-  final quarterLabel = _quarterLabel(f);
-  final isLive = !f.complete && quarterLabel.isNotEmpty;
+    // Use quarterLabel directly for live detection
+    final quarterLabel = _quarterLabel(f);
+    final isLive = !f.complete && quarterLabel.isNotEmpty;
 
-  // Clean FT / LIVE / Qx • time text
-  final metaText = _metaText(f);
+    // Clean FT / LIVE / Qx • time text
+    final metaText = _metaText(f);
 
-  final scoreBaseStyle = TextStyle(
-    fontSize: isLandscapePhone ? 12 : 13,
-    fontWeight: FontWeight.w500,
-    color: cs.onSurface,
-  );
+    final scoreBaseStyle = TextStyle(
+      fontSize: isLandscapePhone ? 12 : 13,
+      fontWeight: FontWeight.w500,
+      color: cs.onSurface,
+    );
 
-  final metaStyle = TextStyle(
-    fontSize: isLandscapePhone ? 10 : 11,
-    fontWeight: FontWeight.w500,
-    color: isLive ? Colors.red.shade400 : Colors.grey.shade700,
-    height: 1.1,
-  );
+    final metaStyle = TextStyle(
+      fontSize: isLandscapePhone ? 10 : 11,
+      fontWeight: FontWeight.w500,
+      color: isLive ? Colors.red.shade400 : Colors.grey.shade700,
+      height: 1.1,
+    );
 
-  return Material(
-    color: Colors.transparent,
-    child: InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => _onFixtureTap(f),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        width: isLandscapePhone ? 100 : 125,
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: selected
-              ? cs.surfaceVariant.withAlpha(72)
-              : cs.surfaceVariant.withAlpha(40),
-          border: Border.all(
-            color: selected ? cs.primary : cs.outlineVariant,
-            width: selected ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(20),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _onFixtureTap(f),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: isLandscapePhone ? 100 : 125,
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: selected
+                ? cs.surfaceVariant.withAlpha(72)
+                : cs.surfaceVariant.withAlpha(40),
+            border: Border.all(
+              color: selected ? cs.primary : cs.outlineVariant,
+              width: selected ? 2 : 1,
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TeamLogo(f.homeTeam, size: isLandscapePhone ? 22 : 26),
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      style: scoreBaseStyle,
-                      children: [
-                        TextSpan(
-                          text: "$homeScore",
-                          style: TextStyle(
-                            fontWeight: homeWinning
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                        ),
-                        const TextSpan(text: "–"),
-                        TextSpan(
-                          text: "$awayScore",
-                          style: TextStyle(
-                            fontWeight: awayWinning
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.visible,
-                    softWrap: false,
-                  ),
-                ),
-                TeamLogo(f.awayTeam, size: isLandscapePhone ? 22 : 26),
-              ],
-            ),
-            Align(
-              alignment: Alignment.center,
-              child: Text(
-                metaText,
-                style: metaStyle,
-                overflow: TextOverflow.ellipsis,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(20),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TeamLogo(f.homeTeam, size: isLandscapePhone ? 22 : 26),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        style: scoreBaseStyle,
+                        children: [
+                          TextSpan(
+                            text: "$homeScore",
+                            style: TextStyle(
+                              fontWeight: homeWinning
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                          const TextSpan(text: "–"),
+                          TextSpan(
+                            text: "$awayScore",
+                            style: TextStyle(
+                              fontWeight: awayWinning
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
+                      softWrap: false,
+                    ),
+                  ),
+                  TeamLogo(f.awayTeam, size: isLandscapePhone ? 22 : 26),
+                ],
+              ),
+              Align(
+                alignment: Alignment.center,
+                child: Text(
+                  metaText,
+                  style: metaStyle,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   Future<void> _onFixtureTap(AflFixture f) async {
     setState(() => _selectedFixture = f);
@@ -874,15 +872,11 @@ if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) 
     final homeTeam = f.homeTeam;
     final awayTeam = f.awayTeam;
 
-    final rowsA = stats
-        .where((s) => s.player?.club == homeTeam)
-        .map(_mapStats)
-        .toList();
+    final rowsA =
+        stats.where((s) => s.player?.club == homeTeam).map(_mapStats).toList();
 
-    final rowsB = stats
-        .where((s) => s.player?.club == awayTeam)
-        .map(_mapStats)
-        .toList();
+    final rowsB =
+        stats.where((s) => s.player?.club == awayTeam).map(_mapStats).toList();
 
     final noStats = rowsA.isEmpty && rowsB.isEmpty;
 
@@ -912,370 +906,377 @@ if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) 
   }
 
   Widget _buildPunterControls() {
-  final theme = Theme.of(context);
+    final theme = Theme.of(context);
 
-  return AnimatedContainer(
-    duration: const Duration(milliseconds: 200),
-    height: _controlsCollapsed ? 32 : null,
-    padding: EdgeInsets.symmetric(
-      vertical: _controlsCollapsed ? 0 : (isLandscapePhone ? 2 : 4),
-    ),
-    child: Column(
-      children: [
-        InkWell(
-          onTap: () => setState(() => _controlsCollapsed = !_controlsCollapsed),
-          child: Container(
-            height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      height: _controlsCollapsed ? 32 : null,
+      padding: EdgeInsets.symmetric(
+        vertical: _controlsCollapsed ? 0 : (isLandscapePhone ? 2 : 4),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _controlsCollapsed = !_controlsCollapsed),
+            child: Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: [
+                  Text(
+                    "Punter Controls",
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    iconSize: 18,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Icon(
+                      _leaderboardCollapsed
+                          ? Icons.chevron_left
+                          : Icons.chevron_right,
+                      color: theme.colorScheme.primary,
+                    ),
+                    onPressed: () {
+                      setState(
+                          () => _leaderboardCollapsed = !_leaderboardCollapsed);
+                    },
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _controlsCollapsed
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_up,
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (!_controlsCollapsed)
+            Row(
               children: [
-                Text(
-                  "Punter Controls",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
+                Text("Punters Playing", style: theme.textTheme.bodyMedium),
+                const SizedBox(width: 6),
+
+                // ------------------------------------------------------------
+                // PUNTER COUNT DROPDOWN (disabled when submitted)
+                // ------------------------------------------------------------
+                DropdownButtonHideUnderline(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                        width: 1,
+                      ),
+                      color: theme.colorScheme.surface,
+                    ),
+                    child: DropdownButton<int>(
+                      value: _visiblePunterCount,
+                      isDense: true,
+                      menuMaxHeight: 280,
+                      itemHeight: 32,
+                      style: theme.textTheme.bodyMedium,
+                      items: [
+                        ...List.generate(_maxPunterDropdown, (i) => i + 1)
+                            .map(
+                              (v) => DropdownMenuItem<int>(
+                                value: v,
+                                child: Text("$v"),
+                              ),
+                            ),
+                        const DropdownMenuItem<int>(
+                          value: -1,
+                          child: Text("Custom…"),
+                        ),
+                      ],
+                      onChanged:
+                          (widget.userRoleService.isAdmin && !_isSubmitted)
+                              ? (value) async {
+                                  if (value == null) return;
+
+                                  if (value == -1) {
+                                    final controller = TextEditingController();
+
+                                    final custom = await showDialog<int>(
+                                      context: context,
+                                      builder: (_) => AlertDialog(
+                                        title:
+                                            const Text("Custom punter count"),
+                                        content: TextField(
+                                          controller: controller,
+                                          keyboardType: TextInputType.number,
+                                          decoration: const InputDecoration(
+                                            hintText:
+                                                "Enter number (e.g., 30)",
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                            child: const Text("Cancel"),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              final n = int.tryParse(
+                                                  controller.text.trim());
+                                              Navigator.pop(context, n);
+                                            },
+                                            child: const Text("OK"),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (custom != null && custom > 0) {
+                                      setState(() {
+                                        _maxPunterDropdown = custom;
+                                        _visiblePunterCount = custom;
+
+                                        while (_selections.length < custom) {
+                                          _selections.add(
+                                            PunterSelection.empty(
+                                              punterNumber:
+                                                  _selections.length + 1,
+                                              playersPerPunter: widget
+                                                  .selections
+                                                  .first
+                                                  .picks
+                                                  .length,
+                                            ),
+                                          );
+                                        }
+                                      });
+
+                                      _saveSnapshot(); // ✅ user edit
+                                    }
+
+                                    return;
+                                  }
+
+                                  setState(
+                                      () => _visiblePunterCount = value);
+                                }
+                              : null,
+                    ),
                   ),
                 ),
+
+                const SizedBox(width: 12),
+
+                // ------------------------------------------------------------
+                // TIMESTAMP LABEL
+                // ------------------------------------------------------------
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceVariant.withAlpha(64),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    "Updated $_timestampLabel",
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // ------------------------------------------------------------
+                // SUBMIT / UNSUBMIT BUTTON
+                // ------------------------------------------------------------
+                if (widget.userRoleService.isAdmin)
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _isSubmitted = !_isSubmitted;
+                      });
+
+                      if (_isSubmitted) {
+                        _saveSnapshot(); // ✅ user action
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isSubmitted
+                          ? Colors.red.shade600
+                          : Colors.green.shade600,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                    ),
+                    child: Text(
+                      _isSubmitted ? "Unsubmit" : "Submit",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+
                 const Spacer(),
-                IconButton(
-                  iconSize: 18,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  icon: Icon(
-                    _leaderboardCollapsed
-                        ? Icons.chevron_left
-                        : Icons.chevron_right,
-                    color: theme.colorScheme.primary,
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+  Widget _buildPunterAndLeaderboard({
+    required List<AflPlayer> players,
+    required List<PunterSelection> selections,
+  }) {
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final theme = Theme.of(context);
+          final innerWidth = constraints.maxWidth;
+          final picks = widget.gameType == "weekend_quads" ? 4 : 2;
+
+          final leaderboardWidth = _leaderboardCollapsed
+              ? UIDimensions.collapsedLeaderboardWidth
+              : UIDimensions.rankColumnWidth +
+                  UIDimensions.punterNameColumnWidth +
+                  UIDimensions.totalColumnWidth;
+
+          final double punterTableWidth =
+              _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
+
+          final int safeRound = widget.round ?? 0;
+
+          // ------------------------------------------------------------
+          // SAFETY GATES
+          // ------------------------------------------------------------
+          if (_loadingPlayers) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (_seasonPlayers == null || _seasonPlayers!.isEmpty) {
+            return const Center(child: Text("Failed to load players"));
+          }
+
+          // ------------------------------------------------------------
+          // DETERMINE AVAILABLE PLAYERS
+          // ------------------------------------------------------------
+          final seasonPlayers = _seasonPlayers!;
+          List<AflPlayer> availablePlayers;
+
+          if (widget.gameType == "custom_pairs" &&
+              widget.overridePlayers != null &&
+              widget.overridePlayers!.isNotEmpty) {
+            availablePlayers = players;
+          } else {
+            final fixtures = _fixturesForGameType();
+            final fixtureClubCodes =
+                fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
+
+            availablePlayers = seasonPlayers
+                .where((p) => p.club.isNotEmpty)
+                .where((p) => fixtureClubCodes.contains(p.club))
+                .toList();
+          }
+
+          // ------------------------------------------------------------
+          // MAIN LAYOUT
+          // ------------------------------------------------------------
+          return Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceVariant.withAlpha(64),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // --------------------------------------------------------
+                // LEFT: Punter Table
+                // --------------------------------------------------------
+                Expanded(
+                  child: PunterSelectionTable(
+                    key: _punterTableKey, // ⭐ REQUIRED
+                    gameType: widget.gameType,
+                    season: widget.season,
+                    round: safeRound,
+                    tableWidth: punterTableWidth,
+                    visiblePunterCount: _visiblePunterCount,
+                    playersPerPunter: picks,
+                    availablePlayers: availablePlayers,
+                    selections: selections,
+                    isCompleted: _isCompleted,
+                    readOnly: !widget.userRoleService.isAdmin,
+                    onChanged: widget.userRoleService.isAdmin
+                        ? () {
+                            // ✅ Option 1: save immediately on user edits
+                            _saveSnapshot();
+                            setState(() {});
+                          }
+                        : null,
+                    collapsed: _leaderboardCollapsed,
+                    scrollController: _punterScrollController,
+                    fantasyService: widget.fantasyService,
+                    userRoleService: widget.userRoleService,
+                    onTimestampChanged: (t) {
+                      setState(() => _timestampLabel = t);
+                    },
+
+                    // ✅ Option A: do NOT save snapshot on live score updates
+                    onLiveScoreUpdateSave: null,
                   ),
-                  onPressed: () {
-                    setState(() =>
-                        _leaderboardCollapsed = !_leaderboardCollapsed);
-                  },
                 ),
-                const SizedBox(width: 4),
-                Icon(
-                  _controlsCollapsed
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_up,
-                  size: 20,
-                  color: theme.colorScheme.primary,
+
+                // --------------------------------------------------------
+                // RIGHT: Leaderboard
+                // --------------------------------------------------------
+                SizedBox(
+                  width: leaderboardWidth,
+                  child: LeaderboardPanel(
+                    punters: selections.take(_visiblePunterCount).toList(),
+                    rowHeight: UIDimensions.rowHeight,
+                    collapsed: _leaderboardCollapsed,
+                    scrollController: _punterScrollController,
+                    onCollapseChanged: (collapsed) {
+                      setState(() => _leaderboardCollapsed = collapsed);
+                    },
+                  ),
                 ),
               ],
             ),
-          ),
-        ),
-
-        if (!_controlsCollapsed)
-          Row(
-            children: [
-              Text("Punters Playing", style: theme.textTheme.bodyMedium),
-              const SizedBox(width: 6),
-
-              // ------------------------------------------------------------
-              // PUNTER COUNT DROPDOWN (disabled when submitted)
-              // ------------------------------------------------------------
-              DropdownButtonHideUnderline(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: theme.colorScheme.outlineVariant,
-                      width: 1,
-                    ),
-                    color: theme.colorScheme.surface,
-                  ),
-                  child: DropdownButton<int>(
-                    value: _visiblePunterCount,
-                    isDense: true,
-                    menuMaxHeight: 280,
-                    itemHeight: 32,
-                    style: theme.textTheme.bodyMedium,
-
-                    items: [
-                      ...List.generate(_maxPunterDropdown, (i) => i + 1)
-                          .map(
-                            (v) => DropdownMenuItem<int>(
-                              value: v,
-                              child: Text("$v"),
-                            ),
-                          ),
-                      const DropdownMenuItem<int>(
-                        value: -1,
-                        child: Text("Custom…"),
-                      ),
-                    ],
-
-                    onChanged: (widget.userRoleService.isAdmin && !_isSubmitted)
-                        ? (value) async {
-                            if (value == null) return;
-
-                            if (value == -1) {
-                              final controller = TextEditingController();
-
-                              final custom = await showDialog<int>(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                  title: const Text("Custom punter count"),
-                                  content: TextField(
-                                    controller: controller,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      hintText: "Enter number (e.g., 30)",
-                                    ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context),
-                                      child: const Text("Cancel"),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        final n = int.tryParse(
-                                            controller.text.trim());
-                                        Navigator.pop(context, n);
-                                      },
-                                      child: const Text("OK"),
-                                    ),
-                                  ],
-                                ),
-                              );
-
-                              if (custom != null && custom > 0) {
-                                setState(() {
-                                  _maxPunterDropdown = custom;
-                                  _visiblePunterCount = custom;
-
-                                  while (_selections.length < custom) {
-                                    _selections.add(
-                                      PunterSelection.empty(
-                                        punterNumber:
-                                            _selections.length + 1,
-                                        playersPerPunter: widget
-                                            .selections.first.picks.length,
-                                      ),
-                                    );
-                                  }
-                                });
-
-                                _saveSnapshot();
-                              }
-
-                              return;
-                            }
-
-                            setState(() => _visiblePunterCount = value);
-                          }
-                        : null,
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // ------------------------------------------------------------
-              // TIMESTAMP LABEL
-              // ------------------------------------------------------------
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceVariant.withAlpha(64),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  "Updated $_timestampLabel",
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // ------------------------------------------------------------
-              // SUBMIT / UNSUBMIT BUTTON
-              // ------------------------------------------------------------
-              if (widget.userRoleService.isAdmin)
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isSubmitted = !_isSubmitted;
-                    });
-
-                    if (_isSubmitted) {
-                      _saveSnapshot();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isSubmitted
-                        ? Colors.red.shade600
-                        : Colors.green.shade600,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                  ),
-                  child: Text(
-                    _isSubmitted ? "Unsubmit" : "Submit",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-
-              const Spacer(),
-            ],
-          ),
-      ],
-    ),
-  );
-}
-
-  Widget _buildPunterAndLeaderboard({
-  required List<AflPlayer> players,
-  required List<PunterSelection> selections,
-}) {
-  return Expanded(
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final theme = Theme.of(context);
-        final innerWidth = constraints.maxWidth;
-        final picks = widget.gameType == "weekend_quads" ? 4 : 2;
-
-        final leaderboardWidth = _leaderboardCollapsed
-            ? UIDimensions.collapsedLeaderboardWidth
-            : UIDimensions.rankColumnWidth +
-                UIDimensions.punterNameColumnWidth +
-                UIDimensions.totalColumnWidth;
-
-        final double punterTableWidth =
-            _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
-
-        final int safeRound = widget.round ?? 0;
-
-        // ------------------------------------------------------------
-        // SAFETY GATES
-        // ------------------------------------------------------------
-        if (_loadingPlayers) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (_seasonPlayers == null || _seasonPlayers!.isEmpty) {
-          return const Center(child: Text("Failed to load players"));
-        }
-
-        // ------------------------------------------------------------
-        // DETERMINE AVAILABLE PLAYERS
-        // ------------------------------------------------------------
-        final seasonPlayers = _seasonPlayers!;
-        List<AflPlayer> availablePlayers;
-
-        if (widget.gameType == "custom_pairs" &&
-            widget.overridePlayers != null &&
-            widget.overridePlayers!.isNotEmpty) {
-          availablePlayers = players;
-        } else {
-          final fixtures = _fixturesForGameType();
-          final fixtureClubCodes =
-              fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
-
-          availablePlayers = seasonPlayers
-              .where((p) => p.club.isNotEmpty)
-              .where((p) => fixtureClubCodes.contains(p.club))
-              .toList();
-        }
-
-        // ------------------------------------------------------------
-        // MAIN LAYOUT
-        // ------------------------------------------------------------
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceVariant.withAlpha(64),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --------------------------------------------------------
-              // LEFT: Punter Table
-              // --------------------------------------------------------
-              Expanded(
-                child: PunterSelectionTable(
-                  key: _punterTableKey,   // ⭐ REQUIRED FIX
-                  gameType: widget.gameType,
-                  season: widget.season,
-                  round: safeRound,
-                  tableWidth: punterTableWidth,
-                  visiblePunterCount: _visiblePunterCount,
-                  playersPerPunter: picks,
-                  availablePlayers: availablePlayers,
-                  selections: selections,
-                  isCompleted: _isCompleted,
-                  readOnly: !widget.userRoleService.isAdmin,
-                  onChanged: widget.userRoleService.isAdmin ? () {} : null,
-                  collapsed: _leaderboardCollapsed,
-                  scrollController: _punterScrollController,
-                  fantasyService: widget.fantasyService,
-                  userRoleService: widget.userRoleService,
-                  onTimestampChanged: (t) {
-                    setState(() => _timestampLabel = t);
-                  },
-
-                  // ⭐ Correct: snapshot saving is handled by GameViewScreen
-                  onLiveScoreUpdateSave: () {
-                    _saveSnapshot();
-                  },
-                ),
-              ),
-
-              // --------------------------------------------------------
-              // RIGHT: Leaderboard
-              // --------------------------------------------------------
-              SizedBox(
-                width: leaderboardWidth,
-                child: LeaderboardPanel(
-                  punters: selections.take(_visiblePunterCount).toList(),
-                  rowHeight: UIDimensions.rowHeight,
-                  collapsed: _leaderboardCollapsed,
-                  scrollController: _punterScrollController,
-                  onCollapseChanged: (collapsed) {
-                    setState(() => _leaderboardCollapsed = collapsed);
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    ),
-  );
-}
+          );
+        },
+      ),
+    );
+  }
 
   Widget _buildMainContent() {
-  // Determine which players to use
-  final allPlayers = (widget.overridePlayers?.isNotEmpty ?? false)
-      ? widget.overridePlayers!
-      : _seasonPlayers!;
+    // Determine which players to use
+    final allPlayers = (widget.overridePlayers?.isNotEmpty ?? false)
+        ? widget.overridePlayers!
+        : _seasonPlayers!;
 
-  return Padding(
-    padding: const EdgeInsets.all(12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildPunterControls(),
-        const SizedBox(height: 6),
-        _buildPunterAndLeaderboard(
-          players: allPlayers,          // ⭐ pass safe players
-          selections: _selections,      // ⭐ use persistent selections
-        ),
-      ],
-    ),
-  );
-}
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPunterControls(),
+          const SizedBox(height: 6),
+          _buildPunterAndLeaderboard(
+            players: allPlayers, // ⭐ pass safe players
+            selections: _selections, // ⭐ use persistent selections
+          ),
+        ],
+      ),
+    );
+  }
 
   void validateAflData(
     List<AflFixture> fixtures,
@@ -1291,9 +1292,8 @@ if (widget.selectedFixtureIds != null && widget.selectedFixtureIds!.isNotEmpty) 
 
     final seasonPlayers = await repo.playersForSeason(season);
 
-    final playerClubs = seasonPlayers
-        .map((p) => p.club.trim().toUpperCase())
-        .toSet();
+    final playerClubs =
+        seasonPlayers.map((p) => p.club.trim().toUpperCase()).toSet();
 
     final missingInPlayers = fixtureClubs.difference(playerClubs);
     final missingInFixtures = playerClubs.difference(fixtureClubs);
