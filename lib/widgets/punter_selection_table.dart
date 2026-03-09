@@ -20,7 +20,7 @@ import '../constants/ui_dimensions.dart';
 // ---------------------------------------------------------------------------
 
 class PunterSelectionTable extends StatefulWidget {
-  final double tableWidth;
+  final double? tableWidth;
 
   final int visiblePunterCount;
   final int playersPerPunter;
@@ -310,67 +310,73 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+Widget build(BuildContext context) {
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    final pickCount = widget.playersPerPunter;
-    final minWidth = _minTableWidth(pickCount);
+  final pickCount = widget.playersPerPunter;
+  final minWidth = _minTableWidth(pickCount);
 
-    final visibleRows =
-        widget.selections.take(widget.visiblePunterCount).toList();
+  final visibleRows =
+      widget.selections.take(widget.visiblePunterCount).toList();
 
-    return Align(
-      alignment: Alignment.topLeft,
-      child: SizedBox(
-        width: widget.tableWidth,
-        child: Scrollbar(
-          controller: _horizontalController,
-          thumbVisibility: true,
-          child: SingleChildScrollView(
-            controller: _horizontalController,
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: minWidth,
-                maxWidth: widget.tableWidth,
+  return Align(
+    alignment: Alignment.topLeft,
+    child: Scrollbar(
+      controller: _horizontalController,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: _horizontalController,
+        scrollDirection: Axis.horizontal,
+
+        // ⭐ Allow table to grow to full intrinsic width
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: minWidth,
+            maxWidth: double.infinity,   // ⭐ CRITICAL FIX
+          ),
+
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ------------------------------------------------------------
+              // HEADER
+              // ------------------------------------------------------------
+              _buildTableHeader(
+                theme,
+                cs,
+                pickCount,
+                minWidth,   // ⭐ Use minWidth, not tableWidth
+                theme.textTheme.bodySmall?.fontSize ?? 12,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Sticky header
-                  _buildTableHeader(
-                    theme,
-                    cs,
-                    pickCount,
-                    widget.tableWidth,
-                    theme.textTheme.bodySmall?.fontSize ?? 12,
-                  ),
-                  const Divider(height: 1),
 
-                  // Scrollable body
-                  Expanded(
-                    child: ListView.builder(
-                      controller: ScrollController(),
-                      itemCount: visibleRows.length,
-                      itemBuilder: (context, index) {
-                        return _buildRow(
-                          theme,
-                          cs,
-                          visibleRows[index],
-                          pickCount,
-                        );
-                      },
-                    ),
-                  ),
-                ],
+              const Divider(height: 1),
+
+              // ------------------------------------------------------------
+              // BODY (scrolls vertically)
+              // ------------------------------------------------------------
+              SizedBox(
+                height: UIDimensions.rowHeight * visibleRows.length,
+                child: ListView.builder(
+                  controller: ScrollController(),
+                  itemCount: visibleRows.length,
+                  itemBuilder: (context, index) {
+                    return _buildRow(
+                      theme,
+                      cs,
+                      visibleRows[index],
+                      pickCount,
+                    );
+                  },
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ---------------------------------------------------------------------------
   // ROW (used by build + debug version you pasted)
@@ -447,97 +453,82 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
 
   Widget _punterCell(BuildContext context, PunterSelection row) {
-  final theme = Theme.of(context);
-  final cs = theme.colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
-  // ------------------------------------------------------------
-  // FIX: Controller must always reflect the actual punterName
-  // ------------------------------------------------------------
-  final controller = _controllers[row.punterNumber] ??=
-      TextEditingController(text: row.punterName);
+    final controller = _controllers[row.punterNumber] ??=
+        TextEditingController(text: row.punterName);
+    final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
 
-  // If snapshot restored a name, ensure controller matches it
-  if (controller.text != row.punterName) {
-    controller.text = row.punterName;
-    controller.selection =
-        TextSelection.collapsed(offset: controller.text.length);
-  }
+    if (!_punterListenerAdded.contains(row.punterNumber)) {
+      _punterListenerAdded.add(row.punterNumber);
 
-  final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
-
-  if (!_punterListenerAdded.contains(row.punterNumber)) {
-    _punterListenerAdded.add(row.punterNumber);
-
-    focusNode.addListener(() {
-      if (!focusNode.hasFocus) {
-        // ------------------------------------------------------------
-        // FIX: Do NOT overwrite restored names with P#
-        // Only apply default if user truly left it blank
-        // ------------------------------------------------------------
-        if (controller.text.trim().isEmpty) {
-          controller.text = "P${row.punterNumber}";
-          row.punterName = controller.text;
-        }
-      }
-    });
-  }
-
-  return Container(
-    alignment: Alignment.centerLeft,
-    padding: const EdgeInsets.only(left: 1),
-    child: TextField(
-      enabled: widget.userRoleService.isAdmin && !widget.readOnly,
-      controller: controller,
-      focusNode: focusNode,
-      textAlign: TextAlign.left,
-      style: theme.textTheme.bodySmall?.copyWith(
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.1,
-      ),
-      decoration: InputDecoration(
-        border: InputBorder.none,
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(vertical: 2),
-        hintText: "P${row.punterNumber}",
-        hintStyle: theme.textTheme.bodySmall?.copyWith(
-          color: cs.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-
-      onChanged: (value) {
-        final formatted = value.isEmpty
-            ? value
-            : value[0].toUpperCase() + value.substring(1);
-
-        if (formatted != value) {
-          controller.value = controller.value.copyWith(
-            text: formatted,
-            selection: TextSelection.collapsed(offset: formatted.length),
-          );
-        }
-
-        // ------------------------------------------------------------
-        // FIX: This is the ONLY place punterName should ever update
-        // ------------------------------------------------------------
-        row.punterName = formatted;
-        widget.onChanged?.call();
-      },
-
-      onEditingComplete: () {
-        final nextIndex = row.punterNumber + 1;
-        final nextNode = _punterFocusNodes[nextIndex];
-
-        if (nextNode != null) {
-          FocusScope.of(context).requestFocus(nextNode);
+      focusNode.addListener(() {
+        if (focusNode.hasFocus) {
+          if (controller.text.trim() == "P${row.punterNumber}") {
+            controller.clear();
+          }
         } else {
-          FocusScope.of(context).unfocus();
+          if (controller.text.trim().isEmpty) {
+            controller.text = "P${row.punterNumber}";
+          }
         }
-      },
-    ),
-  );
-}
+      });
+    }
 
+    return Container(
+  alignment: Alignment.centerLeft,
+  padding: const EdgeInsets.only(left: 1),   // ⭐ Add 1px breathing room
+  child: TextField(
+    enabled: widget.userRoleService.isAdmin && !widget.readOnly,
+    controller: controller,
+    focusNode: focusNode,
+    textAlign: TextAlign.left,
+    style: theme.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.1,
+    ),
+
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 2),
+          hintText: "P${row.punterNumber}",
+          hintStyle: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+
+        onChanged: (value) {
+          final formatted = value.isEmpty
+              ? value
+              : value[0].toUpperCase() + value.substring(1);
+
+          if (formatted != value) {
+            controller.value = controller.value.copyWith(
+              text: formatted,
+              selection: TextSelection.collapsed(offset: formatted.length),
+            );
+          }
+
+          row.punterName = formatted;
+          widget.onChanged?.call();
+        },
+
+        onEditingComplete: () {
+          final nextIndex = row.punterNumber + 1;
+          final nextNode = _punterFocusNodes[nextIndex];
+
+          if (nextNode != null) {
+            FocusScope.of(context).requestFocus(nextNode);
+          } else {
+            FocusScope.of(context).unfocus();
+          }
+        },
+      ),
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // PICK CELL (Dropdown)

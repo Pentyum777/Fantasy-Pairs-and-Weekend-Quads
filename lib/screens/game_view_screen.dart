@@ -1189,8 +1189,8 @@ void _finaliseFridayPairsWinner() {
                 UIDimensions.punterNameColumnWidth +
                 UIDimensions.totalColumnWidth;
 
-        // This is still used, but the scroll container will allow overflow
-        final double punterTableWidth =
+        // Only used for minWidth, not maxWidth
+        final double punterTableMinWidth =
             _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
 
         final int safeRound = widget.round ?? 0;
@@ -1238,22 +1238,26 @@ void _finaliseFridayPairsWinner() {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ------------------------------------------------------------
-              // ⭐ FIXED: Horizontal scroll wrapper for the punter table
+              // ⭐ FIXED: TRUE horizontal scroll — no width constraints
               // ------------------------------------------------------------
               Expanded(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      minWidth: punterTableWidth,
-                      maxWidth: double.infinity, // ⭐ allows full table width
+                      minWidth: punterTableMinWidth,
+                      // ⭐ CRITICAL FIX: allow table to grow fully
+                      maxWidth: double.infinity,
                     ),
                     child: PunterSelectionTable(
-                      key: _punterTableKey,
+                      key: ValueKey(
+                        "punter-table-${widget.gameType}-${widget.season}-${widget.round}",
+                      ),
                       gameType: widget.gameType,
                       season: widget.season,
                       round: safeRound,
-                      tableWidth: punterTableWidth,
+                      // ⭐ CRITICAL FIX: REMOVE width constraints inside table
+                      tableWidth: null,
                       visiblePunterCount: _visiblePunterCount,
                       playersPerPunter: picks,
                       availablePlayers: availablePlayers,
