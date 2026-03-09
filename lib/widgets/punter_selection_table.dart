@@ -447,82 +447,97 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   // ---------------------------------------------------------------------------
 
   Widget _punterCell(BuildContext context, PunterSelection row) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    final controller = _controllers[row.punterNumber] ??=
-        TextEditingController(text: row.punterName);
-    final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
+  // ------------------------------------------------------------
+  // FIX: Controller must always reflect the actual punterName
+  // ------------------------------------------------------------
+  final controller = _controllers[row.punterNumber] ??=
+      TextEditingController(text: row.punterName);
 
-    if (!_punterListenerAdded.contains(row.punterNumber)) {
-      _punterListenerAdded.add(row.punterNumber);
-
-      focusNode.addListener(() {
-        if (focusNode.hasFocus) {
-          if (controller.text.trim() == "P${row.punterNumber}") {
-            controller.clear();
-          }
-        } else {
-          if (controller.text.trim().isEmpty) {
-            controller.text = "P${row.punterNumber}";
-          }
-        }
-      });
-    }
-
-    return Container(
-  alignment: Alignment.centerLeft,
-  padding: const EdgeInsets.only(left: 1),   // ⭐ Add 1px breathing room
-  child: TextField(
-    enabled: widget.userRoleService.isAdmin && !widget.readOnly,
-    controller: controller,
-    focusNode: focusNode,
-    textAlign: TextAlign.left,
-    style: theme.textTheme.bodySmall?.copyWith(
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.1,
-    ),
-
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 2),
-          hintText: "P${row.punterNumber}",
-          hintStyle: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-
-        onChanged: (value) {
-          final formatted = value.isEmpty
-              ? value
-              : value[0].toUpperCase() + value.substring(1);
-
-          if (formatted != value) {
-            controller.value = controller.value.copyWith(
-              text: formatted,
-              selection: TextSelection.collapsed(offset: formatted.length),
-            );
-          }
-
-          row.punterName = formatted;
-          widget.onChanged?.call();
-        },
-
-        onEditingComplete: () {
-          final nextIndex = row.punterNumber + 1;
-          final nextNode = _punterFocusNodes[nextIndex];
-
-          if (nextNode != null) {
-            FocusScope.of(context).requestFocus(nextNode);
-          } else {
-            FocusScope.of(context).unfocus();
-          }
-        },
-      ),
-    );
+  // If snapshot restored a name, ensure controller matches it
+  if (controller.text != row.punterName) {
+    controller.text = row.punterName;
+    controller.selection =
+        TextSelection.collapsed(offset: controller.text.length);
   }
+
+  final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
+
+  if (!_punterListenerAdded.contains(row.punterNumber)) {
+    _punterListenerAdded.add(row.punterNumber);
+
+    focusNode.addListener(() {
+      if (!focusNode.hasFocus) {
+        // ------------------------------------------------------------
+        // FIX: Do NOT overwrite restored names with P#
+        // Only apply default if user truly left it blank
+        // ------------------------------------------------------------
+        if (controller.text.trim().isEmpty) {
+          controller.text = "P${row.punterNumber}";
+          row.punterName = controller.text;
+        }
+      }
+    });
+  }
+
+  return Container(
+    alignment: Alignment.centerLeft,
+    padding: const EdgeInsets.only(left: 1),
+    child: TextField(
+      enabled: widget.userRoleService.isAdmin && !widget.readOnly,
+      controller: controller,
+      focusNode: focusNode,
+      textAlign: TextAlign.left,
+      style: theme.textTheme.bodySmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+      ),
+      decoration: InputDecoration(
+        border: InputBorder.none,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 2),
+        hintText: "P${row.punterNumber}",
+        hintStyle: theme.textTheme.bodySmall?.copyWith(
+          color: cs.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+
+      onChanged: (value) {
+        final formatted = value.isEmpty
+            ? value
+            : value[0].toUpperCase() + value.substring(1);
+
+        if (formatted != value) {
+          controller.value = controller.value.copyWith(
+            text: formatted,
+            selection: TextSelection.collapsed(offset: formatted.length),
+          );
+        }
+
+        // ------------------------------------------------------------
+        // FIX: This is the ONLY place punterName should ever update
+        // ------------------------------------------------------------
+        row.punterName = formatted;
+        widget.onChanged?.call();
+      },
+
+      onEditingComplete: () {
+        final nextIndex = row.punterNumber + 1;
+        final nextNode = _punterFocusNodes[nextIndex];
+
+        if (nextNode != null) {
+          FocusScope.of(context).requestFocus(nextNode);
+        } else {
+          FocusScope.of(context).unfocus();
+        }
+      },
+    ),
+  );
+}
+
 
   // ---------------------------------------------------------------------------
   // PICK CELL (Dropdown)

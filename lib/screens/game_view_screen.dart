@@ -1173,121 +1173,135 @@ void _finaliseFridayPairsWinner() {
   // PUNTER TABLE + LEADERBOARD
   // ------------------------------------------------------------
   Widget _buildPunterAndLeaderboard({
-    required List<AflPlayer> players,
-    required List<PunterSelection> selections,
-  }) {
-    return Expanded(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final theme = Theme.of(context);
-          final innerWidth = constraints.maxWidth;
-          final picks = widget.gameType == "weekend_quads" ? 4 : 2;
+  required List<AflPlayer> players,
+  required List<PunterSelection> selections,
+}) {
+  return Expanded(
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final theme = Theme.of(context);
+        final innerWidth = constraints.maxWidth;
+        final picks = widget.gameType == "weekend_quads" ? 4 : 2;
 
-          final leaderboardWidth = _leaderboardCollapsed
-              ? UIDimensions.collapsedLeaderboardWidth
-              : UIDimensions.rankColumnWidth +
-                  UIDimensions.punterNameColumnWidth +
-                  UIDimensions.totalColumnWidth;
+        final leaderboardWidth = _leaderboardCollapsed
+            ? UIDimensions.collapsedLeaderboardWidth
+            : UIDimensions.rankColumnWidth +
+                UIDimensions.punterNameColumnWidth +
+                UIDimensions.totalColumnWidth;
 
-          final double punterTableWidth =
-              _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
+        // This is still used, but the scroll container will allow overflow
+        final double punterTableWidth =
+            _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
 
-          final int safeRound = widget.round ?? 0;
+        final int safeRound = widget.round ?? 0;
 
-          if (_loadingPlayers) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        if (_loadingPlayers) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          if (_seasonPlayers == null || _seasonPlayers!.isEmpty) {
-            return const Center(child: Text("Failed to load players"));
-          }
+        if (_seasonPlayers == null || _seasonPlayers!.isEmpty) {
+          return const Center(child: Text("Failed to load players"));
+        }
 
-          // Determine available players
-          final seasonPlayers = _seasonPlayers!;
-          List<AflPlayer> availablePlayers;
+        // Determine available players
+        final seasonPlayers = _seasonPlayers!;
+        List<AflPlayer> availablePlayers;
 
-          if (isCustomBuilder || isCustomGame) {
-            // Custom modes use overridePlayers if provided
-            availablePlayers = (widget.overridePlayers?.isNotEmpty ?? false)
-                ? widget.overridePlayers!
-                : seasonPlayers;
-          } else {
-            final fixtures = _fixturesForGameType();
-            final fixtureClubCodes =
-                fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
+        if (isCustomBuilder || isCustomGame) {
+          availablePlayers = (widget.overridePlayers?.isNotEmpty ?? false)
+              ? widget.overridePlayers!
+              : seasonPlayers;
+        } else {
+          final fixtures = _fixturesForGameType();
+          final fixtureClubCodes =
+              fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
 
-            availablePlayers = seasonPlayers
-                .where((p) => p.club.isNotEmpty)
-                .where((p) => fixtureClubCodes.contains(p.club))
-                .toList();
-          }
+          availablePlayers = seasonPlayers
+              .where((p) => p.club.isNotEmpty)
+              .where((p) => fixtureClubCodes.contains(p.club))
+              .toList();
+        }
 
-          // ------------------------------------------------------------
-          // READ-ONLY RULES
-          // ------------------------------------------------------------
-          final bool readOnly =
-              !widget.userRoleService.isAdmin && !isCustomBuilder
-                  ? true
-                  : false;
+        // READ-ONLY RULES
+        final bool readOnly =
+            !widget.userRoleService.isAdmin && !isCustomBuilder
+                ? true
+                : false;
 
-          return Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant.withAlpha(64),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: PunterSelectionTable(
-                    key: _punterTableKey,
-                    gameType: widget.gameType,
-                    season: widget.season,
-                    round: safeRound,
-                    tableWidth: punterTableWidth,
-                    visiblePunterCount: _visiblePunterCount,
-                    playersPerPunter: picks,
-                    availablePlayers: availablePlayers,
-                    selections: selections,
-                    isCompleted: _isCompleted,
-                    readOnly: readOnly,
-                    onChanged: (!readOnly)
-                        ? () {
-                            _saveSnapshot();
-                            setState(() {});
-                          }
-                        : null,
-                    collapsed: _leaderboardCollapsed,
-                    scrollController: _punterScrollController,
-                    fantasyService: widget.fantasyService,
-                    userRoleService: widget.userRoleService,
-                    onTimestampChanged: (t) {
-                      setState(() => _timestampLabel = t);
-                    },
-                    onLiveScoreUpdateSave: null,
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceVariant.withAlpha(64),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ------------------------------------------------------------
+              // ⭐ FIXED: Horizontal scroll wrapper for the punter table
+              // ------------------------------------------------------------
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: punterTableWidth,
+                      maxWidth: double.infinity, // ⭐ allows full table width
+                    ),
+                    child: PunterSelectionTable(
+                      key: _punterTableKey,
+                      gameType: widget.gameType,
+                      season: widget.season,
+                      round: safeRound,
+                      tableWidth: punterTableWidth,
+                      visiblePunterCount: _visiblePunterCount,
+                      playersPerPunter: picks,
+                      availablePlayers: availablePlayers,
+                      selections: selections,
+                      isCompleted: _isCompleted,
+                      readOnly: readOnly,
+                      onChanged: (!readOnly)
+                          ? () {
+                              _saveSnapshot();
+                              setState(() {});
+                            }
+                          : null,
+                      collapsed: _leaderboardCollapsed,
+                      scrollController: _punterScrollController,
+                      fantasyService: widget.fantasyService,
+                      userRoleService: widget.userRoleService,
+                      onTimestampChanged: (t) {
+                        setState(() => _timestampLabel = t);
+                      },
+                      onLiveScoreUpdateSave: null,
+                    ),
                   ),
                 ),
+              ),
 
-                SizedBox(
-                  width: leaderboardWidth,
-                  child: LeaderboardPanel(
-                    punters: selections.take(_visiblePunterCount).toList(),
-                    rowHeight: UIDimensions.rowHeight,
-                    collapsed: _leaderboardCollapsed,
-                    scrollController: _punterScrollController,
-                    onCollapseChanged: (collapsed) {
-                      setState(() => _leaderboardCollapsed = collapsed);
-                    },
-                  ),
+              // ------------------------------------------------------------
+              // Leaderboard
+              // ------------------------------------------------------------
+              SizedBox(
+                width: leaderboardWidth,
+                child: LeaderboardPanel(
+                  punters: selections.take(_visiblePunterCount).toList(),
+                  rowHeight: UIDimensions.rowHeight,
+                  collapsed: _leaderboardCollapsed,
+                  scrollController: _punterScrollController,
+                  onCollapseChanged: (collapsed) {
+                    setState(() => _leaderboardCollapsed = collapsed);
+                  },
                 ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+
 
   // ------------------------------------------------------------
   // MAIN CONTENT
