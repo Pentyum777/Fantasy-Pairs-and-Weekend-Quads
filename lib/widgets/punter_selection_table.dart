@@ -72,7 +72,8 @@ class PunterSelectionTable extends StatefulWidget {
 // ---------------------------------------------------------------------------
 
 class _PunterSelectionTableState extends State<PunterSelectionTable> {
-  final ScrollController _horizontalController = ScrollController();
+  final ScrollController _verticalController = ScrollController();
+final ScrollController _horizontalController = ScrollController();
 
   bool get isLandscapePhone {
     final size = MediaQuery.of(context).size;
@@ -138,10 +139,11 @@ class _PunterSelectionTableState extends State<PunterSelectionTable> {
   }
 
   @override
-  void dispose() {
-    _horizontalController.dispose();
-    super.dispose();
-  }
+void dispose() {
+  _verticalController.dispose();
+  _horizontalController.dispose();
+  super.dispose();
+}
 
   // ---------------------------------------------------------------------------
   // INIT HELPERS
@@ -320,12 +322,19 @@ Widget build(BuildContext context) {
   final visibleRows =
       widget.selections.take(widget.visiblePunterCount).toList();
 
-  return Align(
-    alignment: Alignment.topLeft,
-    child: IntrinsicHeight(     // ⭐ CRITICAL FIX
+  return Scrollbar(
+    controller: _verticalController,
+    thumbVisibility: true,
+    child: SingleChildScrollView(
+      controller: _verticalController,
+      scrollDirection: Axis.vertical,
+
       child: Scrollbar(
         controller: _horizontalController,
         thumbVisibility: true,
+        notificationPredicate: (notification) =>
+            notification.metrics.axis == Axis.horizontal,
+
         child: SingleChildScrollView(
           controller: _horizontalController,
           scrollDirection: Axis.horizontal,
@@ -349,20 +358,17 @@ Widget build(BuildContext context) {
 
                 const Divider(height: 1),
 
-                SizedBox(
-                  height: UIDimensions.rowHeight * visibleRows.length,
-                  child: ListView.builder(
-                    controller: ScrollController(),
-                    itemCount: visibleRows.length,
-                    itemBuilder: (context, index) {
-                      return _buildRow(
+                // Vertical scroll is handled by the outer SingleChildScrollView
+                Column(
+                  children: [
+                    for (final row in visibleRows)
+                      _buildRow(
                         theme,
                         cs,
-                        visibleRows[index],
+                        row,
                         pickCount,
-                      );
-                    },
-                  ),
+                      ),
+                  ],
                 ),
               ],
             ),

@@ -1180,7 +1180,7 @@ void _finaliseFridayPairsWinner() {
     child: LayoutBuilder(
       builder: (context, constraints) {
         final theme = Theme.of(context);
-        final innerWidth = constraints.maxWidth;
+        
         final picks = widget.gameType == "weekend_quads" ? 4 : 2;
 
         final leaderboardWidth = _leaderboardCollapsed
@@ -1189,9 +1189,7 @@ void _finaliseFridayPairsWinner() {
                 UIDimensions.punterNameColumnWidth +
                 UIDimensions.totalColumnWidth;
 
-        // Only used for minWidth, not maxWidth
-        final double punterTableMinWidth =
-            _leaderboardCollapsed ? innerWidth : innerWidth - leaderboardWidth;
+        
 
         final int safeRound = widget.round ?? 0;
 
@@ -1222,11 +1220,8 @@ void _finaliseFridayPairsWinner() {
               .toList();
         }
 
-        // READ-ONLY RULES
         final bool readOnly =
-            !widget.userRoleService.isAdmin && !isCustomBuilder
-                ? true
-                : false;
+            !widget.userRoleService.isAdmin && !isCustomBuilder;
 
         return Container(
           decoration: BoxDecoration(
@@ -1238,53 +1233,42 @@ void _finaliseFridayPairsWinner() {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ------------------------------------------------------------
-              // ⭐ FIXED: TRUE horizontal scroll — no width constraints
+              // ⭐ PUNTER TABLE (no scroll wrapper here)
               // ------------------------------------------------------------
               Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minWidth: punterTableMinWidth,
-                      // ⭐ CRITICAL FIX: allow table to grow fully
-                      maxWidth: double.infinity,
-                    ),
-                    child: PunterSelectionTable(
-                      key: ValueKey(
-                        "punter-table-${widget.gameType}-${widget.season}-${widget.round}",
-                      ),
-                      gameType: widget.gameType,
-                      season: widget.season,
-                      round: safeRound,
-                      // ⭐ CRITICAL FIX: REMOVE width constraints inside table
-                      tableWidth: null,
-                      visiblePunterCount: _visiblePunterCount,
-                      playersPerPunter: picks,
-                      availablePlayers: availablePlayers,
-                      selections: selections,
-                      isCompleted: _isCompleted,
-                      readOnly: readOnly,
-                      onChanged: (!readOnly)
-                          ? () {
-                              _saveSnapshot();
-                              setState(() {});
-                            }
-                          : null,
-                      collapsed: _leaderboardCollapsed,
-                      scrollController: _punterScrollController,
-                      fantasyService: widget.fantasyService,
-                      userRoleService: widget.userRoleService,
-                      onTimestampChanged: (t) {
-                        setState(() => _timestampLabel = t);
-                      },
-                      onLiveScoreUpdateSave: null,
-                    ),
+                child: PunterSelectionTable(
+                  key: ValueKey(
+                    "punter-table-${widget.gameType}-${widget.season}-${widget.round}",
                   ),
+                  gameType: widget.gameType,
+                  season: widget.season,
+                  round: safeRound,
+                  tableWidth: null, // table handles its own scroll
+                  visiblePunterCount: _visiblePunterCount,
+                  playersPerPunter: picks,
+                  availablePlayers: availablePlayers,
+                  selections: selections,
+                  isCompleted: _isCompleted,
+                  readOnly: readOnly,
+                  onChanged: (!readOnly)
+                      ? () {
+                          _saveSnapshot();
+                          setState(() {});
+                        }
+                      : null,
+                  collapsed: _leaderboardCollapsed,
+                  scrollController: _punterScrollController,
+                  fantasyService: widget.fantasyService,
+                  userRoleService: widget.userRoleService,
+                  onTimestampChanged: (t) {
+                    setState(() => _timestampLabel = t);
+                  },
+                  onLiveScoreUpdateSave: null,
                 ),
               ),
 
               // ------------------------------------------------------------
-              // Leaderboard
+              // ⭐ LEADERBOARD (scrolls vertically with punter table)
               // ------------------------------------------------------------
               SizedBox(
                 width: leaderboardWidth,
