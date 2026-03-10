@@ -322,61 +322,57 @@ Widget build(BuildContext context) {
 
   return Align(
     alignment: Alignment.topLeft,
-    child: Scrollbar(
-      controller: _horizontalController,
-      thumbVisibility: true,
-      child: SingleChildScrollView(
+    child: IntrinsicHeight(     // ⭐ CRITICAL FIX
+      child: Scrollbar(
         controller: _horizontalController,
-        scrollDirection: Axis.horizontal,
+        thumbVisibility: true,
+        child: SingleChildScrollView(
+          controller: _horizontalController,
+          scrollDirection: Axis.horizontal,
 
-        // ⭐ Allow table to grow to full intrinsic width
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: minWidth,
-            maxWidth: double.infinity,   // ⭐ CRITICAL FIX
-          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: minWidth,
+              maxWidth: double.infinity,
+            ),
 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ------------------------------------------------------------
-              // HEADER
-              // ------------------------------------------------------------
-              _buildTableHeader(
-                theme,
-                cs,
-                pickCount,
-                minWidth,   // ⭐ Use minWidth, not tableWidth
-                theme.textTheme.bodySmall?.fontSize ?? 12,
-              ),
-
-              const Divider(height: 1),
-
-              // ------------------------------------------------------------
-              // BODY (scrolls vertically)
-              // ------------------------------------------------------------
-              SizedBox(
-                height: UIDimensions.rowHeight * visibleRows.length,
-                child: ListView.builder(
-                  controller: ScrollController(),
-                  itemCount: visibleRows.length,
-                  itemBuilder: (context, index) {
-                    return _buildRow(
-                      theme,
-                      cs,
-                      visibleRows[index],
-                      pickCount,
-                    );
-                  },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTableHeader(
+                  theme,
+                  cs,
+                  pickCount,
+                  minWidth,
+                  theme.textTheme.bodySmall?.fontSize ?? 12,
                 ),
-              ),
-            ],
+
+                const Divider(height: 1),
+
+                SizedBox(
+                  height: UIDimensions.rowHeight * visibleRows.length,
+                  child: ListView.builder(
+                    controller: ScrollController(),
+                    itemCount: visibleRows.length,
+                    itemBuilder: (context, index) {
+                      return _buildRow(
+                        theme,
+                        cs,
+                        visibleRows[index],
+                        pickCount,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     ),
   );
 }
+
 
   // ---------------------------------------------------------------------------
   // ROW (used by build + debug version you pasted)
