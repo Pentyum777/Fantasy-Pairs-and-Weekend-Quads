@@ -79,6 +79,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   final GlobalKey _punterTableKey = GlobalKey();
 
+  // ⭐ Correct: declared ONCE
   late List<PunterSelection> _selections;
 
   AflFixture? _selectedFixture;
@@ -102,23 +103,29 @@ class _GameViewScreenState extends State<GameViewScreen> {
     return size.width > size.height && size.width < 900;
   }
 
+  // ⭐ NEW: prevents table from building before snapshot loads
+  bool _snapshotLoaded = false;
 
-    
+  @override
+  void initState() {
+    super.initState();
 
-@override
-void initState() {
-  super.initState();
+    // ⭐ Only initialize once — prevents data loss on hot restart
+    _selections = widget.selections.isNotEmpty
+        ? widget.selections.map((p) => p.clone()).toList()
+        : [];
 
-  // ⭐ Initialize only once
-  _selections = widget.selections
-      .map((p) => p.clone())
-      .toList();
+    _loadSeasonPlayers().then((_) async {
+      await _loadSelectionsSnapshot();
 
-  _loadSeasonPlayers().then((_) async {
-    await _loadSelectionsSnapshot();
-    _startLivePolling();
-  });
-}
+      // ⭐ Snapshot is now applied BEFORE first table build
+      _snapshotLoaded = true;
+      if (mounted) setState(() {});
+
+      _startLivePolling();
+    });
+  }
+
 
   @override
   void dispose() {
@@ -710,13 +717,15 @@ void _finaliseFridayPairsWinner() {
   // MAIN BUILD
   // ------------------------------------------------------------
   @override
-  Widget build(BuildContext context) {
-    if (_loadingPlayers || _seasonPlayers == null) {
-      return const Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+Widget build(BuildContext context) {
+  // ⭐ Do not build table until BOTH players AND snapshot are loaded
+  if (_loadingPlayers || !_snapshotLoaded) {
+    return const Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
+
 
     final allFixtures = _fixturesForGameType();
 
