@@ -168,30 +168,21 @@ void initState() {
       _applySnapshotToSelections(data);
       setState(() {});
 
-      final hasAny = _selections.any((p) {
-  final hasName = p.punterName.trim().isNotEmpty;   // ⭐ treat "P1" as valid
+      
+
+final count = _selections.where((p) {
+  final hasName = p.punterName.trim().isNotEmpty;
   final hasPick = p.picks.any((pick) => pick.player != null);
   return hasName || hasPick;
-});
+}).length;
 
-if (hasAny) {
-  final count = _selections.where((p) {
-    final hasName = p.punterName.trim().isNotEmpty;
-    final hasPick = p.picks.any((pick) => pick.player != null);
-    return hasName || hasPick;
-  }).length;
-
-  // ⭐ Never shrink automatically — only grow
-  if (count > _visiblePunterCount) {
-    _visiblePunterCount = count;
-  }
-
-  // ⭐ Expand dropdown if needed
+// ⭐ Always use actual selection count if > 0
+if (count > 0) {
+  _visiblePunterCount = count;
   if (count > _maxPunterDropdown) {
     _maxPunterDropdown = count;
   }
 } else {
-  // ⭐ Only apply default if snapshot is truly empty
   _visiblePunterCount = 15;
 }
     } catch (_) {}
@@ -211,14 +202,23 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 
   final picksJson = (data["picks"] as List<dynamic>? ?? []);
 
+  // ------------------------------------------------------------
+  // APPLY SNAPSHOT TO EXISTING SELECTIONS
+  // ------------------------------------------------------------
   for (int i = 0; i < _selections.length; i++) {
     final row = _selections[i];
 
+    // -------------------------
+    // Restore punter names
+    // -------------------------
     if (i < punterNames.length) {
       final name = punterNames[i].trim();
       row.punterName = name.isEmpty ? "P${row.punterNumber}" : name;
     }
 
+    // -------------------------
+    // Restore picks
+    // -------------------------
     if (i >= picksJson.length) continue;
 
     final snapRow = picksJson[i];
@@ -266,7 +266,7 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   }
 
   // ------------------------------------------------------------
-  // FIX: Only reset rows if snapshot is truly empty
+  // CASE 1: SNAPSHOT IS TRULY EMPTY → RESET TO DEFAULTS
   // ------------------------------------------------------------
   if (punterNames.isEmpty) {
     for (int i = 0; i < _selections.length; i++) {
@@ -277,14 +277,27 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
         pick.stats = null;
       }
     }
+
+    // Default to 15 punters when no snapshot exists
+    _visiblePunterCount = 15;
+    return;
   }
+
+  // ------------------------------------------------------------
+  // CASE 2: SNAPSHOT HAS DATA → USE EXACT SNAPSHOT COUNT
+  // ------------------------------------------------------------
+  final snapshotCount = punterNames.length;
+
+  // Apply names again safely (no resets beyond snapshot length)
+  for (int i = 0; i < snapshotCount && i < _selections.length; i++) {
+    final name = punterNames[i].trim();
+    _selections[i].punterName =
+        name.isEmpty ? "P${_selections[i].punterNumber}" : name;
+  }
+
+  // ⭐ Set visible punter count to EXACT number of snapshot punters
+  _visiblePunterCount = snapshotCount;
 }
-
-
-// ⭐ IMPORTANT: Do NOT reset rows when snapshot has data.
-// Leave rows beyond snapshot length exactly as they are.
-  // Snapshot has data → DO NOT reset punter names or picks
-  // Leave rows beyond snapshot length exactly as they are
 
 
 

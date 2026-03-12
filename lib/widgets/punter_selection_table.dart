@@ -150,17 +150,25 @@ void dispose() {
   // ---------------------------------------------------------------------------
 
   void _initControllers() {
-    for (final row in widget.selections) {
-      _controllers[row.punterNumber] ??=
+  for (final row in widget.selections) {
+    final controller = _controllers[row.punterNumber];
+    if (controller == null) {
+      _controllers[row.punterNumber] =
           TextEditingController(text: row.punterName);
+    } else {
+      // ⭐ Keep controller text in sync with updated names
+      if (controller.text != row.punterName) {
+        controller.text = row.punterName;
+      }
     }
   }
+}
 
   void _initFocusNodes() {
-    for (final row in widget.selections) {
-      _punterFocusNodes[row.punterNumber] ??= FocusNode();
-    }
+  for (final row in widget.selections) {
+    _punterFocusNodes[row.punterNumber] ??= FocusNode();
   }
+}
 
   // ---------------------------------------------------------------------------
   // BUILD BODY
