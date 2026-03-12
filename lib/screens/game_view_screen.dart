@@ -1298,7 +1298,7 @@ void _finaliseFridayPairsWinner() {
                   visiblePunterCount: _visiblePunterCount,
                   playersPerPunter: picks,
                   availablePlayers: availablePlayers,
-                  selections: selections,
+                  selections: _selections,
                   isCompleted: _isCompleted,
                   readOnly: readOnly,
                   onChanged: (!readOnly)

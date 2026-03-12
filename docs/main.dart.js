@@ -90355,26 +90355,26 @@ $0(){var s=this.a
 return s.dx=!s.dx},
 $S:0}
 A.ao_.prototype={
-$2(a0,a1){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e=null,d=A.M(a0),c=this.a,b=c.a.e==="weekend_quads"?4:2,a=c.r?40:172
-if(c.cy)return B.iL
-s=c.cx
+$2(a1,a2){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d=null,c=A.M(a1),b=this.a,a=b.a.e==="weekend_quads"?4:2,a0=b.r?40:172
+if(b.cy)return B.iL
+s=b.cx
 if(s==null||J.ek(s))return B.CG
-s=c.cx
+s=b.cx
 s.toString
-r=c.a
+r=b.a
 q=r.e
 if(q==="custom_builder"||q==="custom_game"){r=r.at
-q=r==null?e:r.length!==0
+q=r==null?d:r.length!==0
 if(q===!0){r.toString
-p=r}else p=s}else{o=c.E3()
+p=r}else p=s}else{o=b.E3()
 r=A.O(o).h("hD<1,f>")
 n=A.h5(new A.hD(o,new A.anV(),r),r.h("l.E"))
 s=J.x8(s,new A.anW())
 r=s.$ti.h("ac<l.E>")
-p=A.Z(new A.ac(s,new A.anX(n),r),!0,r.h("l.E"))}s=c.a
+p=A.Z(new A.ac(s,new A.anX(n),r),!0,r.h("l.E"))}s=b.a
 r=s.Q
 m=r.b!==B.bD&&s.e!=="custom_builder"
-q=d.ax
+q=c.ax
 l=q.dx
 q=(l==null?q.cy:l).a
 q=A.K(64,q>>>16&255,q>>>8&255,q&255)
@@ -90382,10 +90382,12 @@ l=A.dc(12)
 k=s.e
 j=s.c
 i=s.d
-h=c.d
-g=this.b
-f=!m?new A.anY(c):e
-return A.bj(e,A.dy(A.b([A.e8(new A.AU(h,b,p,g,m,f,new A.anZ(c),e,r,s.x,new A.eP("punter-table-"+k+"-"+j+"-"+A.j(i),t.kK)),1),A.ci(new A.LU(A.ew(g,0,A.hu(h,"count",t.S),A.O(g).c).ep(0),34,c.r,c.at,e),e,a)],t.p),B.bL,B.K,B.N),B.i,e,e,new A.by(q,e,e,l,e,e,B.L),e,e,e,B.e8,e,e,e)},
+h=b.d
+g=b.z
+g===$&&A.a()
+f=!m?new A.anY(b):d
+e=this.b
+return A.bj(d,A.dy(A.b([A.e8(new A.AU(h,a,p,g,m,f,new A.anZ(b),d,r,s.x,new A.eP("punter-table-"+k+"-"+j+"-"+A.j(i),t.kK)),1),A.ci(new A.LU(A.ew(e,0,A.hu(h,"count",t.S),A.O(e).c).ep(0),34,b.r,b.at,d),d,a0)],t.p),B.bL,B.K,B.N),B.i,d,d,new A.by(q,d,d,l,d,d,B.L),d,d,d,B.e8,d,d,d)},
 $S:537}
 A.anV.prototype={
 $1(a){return A.b([a.d,a.e],t.s)},
