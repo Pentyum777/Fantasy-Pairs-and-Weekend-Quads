@@ -6,8 +6,7 @@ class UserRoleService {
     "paulfruin30@gmail.com",
     "wayne.penfold@gmail.com",
     "wayneliz7@outlook.com",
-    "chrisoakenfall@gmail.com",
-  };
+     };
 
   String? _currentUser;
   UserRole role = UserRole.readOnly;
