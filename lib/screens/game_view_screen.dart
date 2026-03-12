@@ -152,48 +152,41 @@ class _GameViewScreenState extends State<GameViewScreen> {
   }
 
   Future<void> _loadSelectionsSnapshot() async {
-    try {
-      final safeRound = widget.round ?? 0;
+  try {
+    final safeRound = widget.round ?? 0;
 
-      final url = Uri.https(
-        "fantasy-pairs-and-weekend-quads-production.up.railway.app",
-        "/loadSelections",
-        {
-          "gameType": widget.gameType,
-          "season": widget.season.toString(),
-          "round": safeRound.toString(),
-        },
-      );
+    final url = Uri.https(
+      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+      "/loadSelections",
+      {
+        "gameType": widget.gameType,
+        "season": widget.season.toString(),
+        "round": safeRound.toString(),
+      },
+    );
 
-      final res = await http.get(url);
-      if (res.statusCode != 200) return;
+    final res = await http.get(url);
 
+    if (res.statusCode == 200) {
       final json = jsonDecode(res.body);
       final data = json["data"];
-      if (data is! Map<String, dynamic>) return;
 
-      _applySnapshotToSelections(data);
-      setState(() {});
+      if (data is Map<String, dynamic>) {
+        _applySnapshotToSelections(data);
+      }
+    }
+  } catch (e) {
+    debugPrint("❌ Snapshot load failed: $e");
+  } finally {
+    _snapshotLoaded = true;
+    if (mounted) setState(() {});
+  }
+}
+
 
       
 
-final count = _selections.where((p) {
-  final hasName = p.punterName.trim().isNotEmpty;
-  final hasPick = p.picks.any((pick) => pick.player != null);
-  return hasName || hasPick;
-}).length;
 
-// ⭐ Always use actual selection count if > 0
-if (count > 0) {
-  _visiblePunterCount = count;
-  if (count > _maxPunterDropdown) {
-    _maxPunterDropdown = count;
-  }
-} else {
-  _visiblePunterCount = 15;
-}
-    } catch (_) {}
-  }
 
 void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   _currentStatsByPlayerId = {
@@ -209,23 +202,17 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 
   final picksJson = (data["picks"] as List<dynamic>? ?? []);
 
-  // ------------------------------------------------------------
-  // APPLY SNAPSHOT TO EXISTING SELECTIONS
-  // ------------------------------------------------------------
+  // Restore names + picks
   for (int i = 0; i < _selections.length; i++) {
     final row = _selections[i];
 
-    // -------------------------
     // Restore punter names
-    // -------------------------
     if (i < punterNames.length) {
       final name = punterNames[i].trim();
       row.punterName = name.isEmpty ? "P${row.punterNumber}" : name;
     }
 
-    // -------------------------
     // Restore picks
-    // -------------------------
     if (i >= picksJson.length) continue;
 
     final snapRow = picksJson[i];
@@ -273,40 +260,23 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   }
 
   // ------------------------------------------------------------
-  // CASE 1: SNAPSHOT IS TRULY EMPTY → RESET TO DEFAULTS
+  // DETERMINE VISIBLE PUNTER COUNT
   // ------------------------------------------------------------
-  if (punterNames.isEmpty) {
-    for (int i = 0; i < _selections.length; i++) {
-      final row = _selections[i];
-      row.punterName = "P${row.punterNumber}";
-      for (final pick in row.picks) {
-        pick.player = null;
-        pick.stats = null;
-      }
+  final count = _selections.where((p) {
+    final hasName = p.punterName.trim().isNotEmpty;
+    final hasPick = p.picks.any((pick) => pick.player != null);
+    return hasName || hasPick;
+  }).length;
+
+  if (count > 0) {
+    _visiblePunterCount = count;
+    if (count > _maxPunterDropdown) {
+      _maxPunterDropdown = count;
     }
-
-    // Default to 15 punters when no snapshot exists
+  } else {
     _visiblePunterCount = 15;
-    return;
   }
-
-  // ------------------------------------------------------------
-  // CASE 2: SNAPSHOT HAS DATA → USE EXACT SNAPSHOT COUNT
-  // ------------------------------------------------------------
-  final snapshotCount = punterNames.length;
-
-  // Apply names again safely (no resets beyond snapshot length)
-  for (int i = 0; i < snapshotCount && i < _selections.length; i++) {
-    final name = punterNames[i].trim();
-    _selections[i].punterName =
-        name.isEmpty ? "P${_selections[i].punterNumber}" : name;
-  }
-
-  // ⭐ Set visible punter count to EXACT number of snapshot punters
-  _visiblePunterCount = snapshotCount;
 }
-
-
 
 
 
