@@ -109,16 +109,17 @@ class _GameViewScreenState extends State<GameViewScreen> {
 void initState() {
   super.initState();
 
-  // Deep copy so rebuilds never overwrite restored data
-  _selections = widget.selections
-      .map((p) => p.clone())
-      .toList();
+  // ⭐ Only initialize selections ONCE
+  if (_selections.isEmpty) {
+    _selections = widget.selections
+        .map((p) => p.clone())
+        .toList();
+  }
 
-  _loadSeasonPlayers().then((_) {
-    _loadSelectionsSnapshot();
+  _loadSeasonPlayers().then((_) async {
+    await _loadSelectionsSnapshot();
+    _startLivePolling();
   });
-
-  _startLivePolling();
 }
 
   @override
