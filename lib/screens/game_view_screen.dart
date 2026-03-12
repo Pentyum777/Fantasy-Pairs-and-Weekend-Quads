@@ -109,13 +109,14 @@ class _GameViewScreenState extends State<GameViewScreen> {
 void initState() {
   super.initState();
 
-  // ⭐ Only initialize selections ONCE
+  // ⭐ Only initialize selections if empty
   if (_selections.isEmpty) {
     _selections = widget.selections
         .map((p) => p.clone())
         .toList();
   }
 
+  // ⭐ Load players → then snapshot → then start polling
   _loadSeasonPlayers().then((_) async {
     await _loadSelectionsSnapshot();
     _startLivePolling();
