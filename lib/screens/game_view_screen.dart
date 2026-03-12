@@ -104,7 +104,23 @@ class _GameViewScreenState extends State<GameViewScreen> {
   void initState() {
     super.initState();
 
-    _selections = widget.selections;
+    late List<PunterSelection> _selections;
+
+@override
+void initState() {
+  super.initState();
+
+  // Deep copy so rebuilds never overwrite restored data
+  _selections = widget.selections
+      .map((p) => p.clone())   // you may need to implement clone()
+      .toList();
+
+  _loadSeasonPlayers().then((_) {
+    _loadSelectionsSnapshot();
+  });
+
+  _startLivePolling();
+}
 
     _loadSeasonPlayers().then((_) {
       _loadSelectionsSnapshot();
