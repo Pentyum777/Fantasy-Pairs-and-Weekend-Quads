@@ -16,6 +16,7 @@ import '../models/afl_fixture.dart';
 import '../models/afl_player.dart';
 import '../models/punter_selection.dart';
 import '../models/afl_player_match_stats.dart';
+import '../models/punter_selection_clone.dart';
 
 import '../widgets/punter_selection_table.dart';
 import '../widgets/stats_overlay.dart';
@@ -39,6 +40,7 @@ class GameViewScreen extends StatefulWidget {
   final UserRoleService userRoleService;
   final List<String>? selectedFixtureIds;
   final List<AflPlayer>? overridePlayers;
+  
 
   const GameViewScreen({
     super.key,
@@ -100,11 +102,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
     return size.width > size.height && size.width < 900;
   }
 
-  @override
-  void initState() {
-    super.initState();
 
-    late List<PunterSelection> _selections;
+    
 
 @override
 void initState() {
@@ -112,7 +111,7 @@ void initState() {
 
   // Deep copy so rebuilds never overwrite restored data
   _selections = widget.selections
-      .map((p) => p.clone())   // you may need to implement clone()
+      .map((p) => p.clone())
       .toList();
 
   _loadSeasonPlayers().then((_) {
@@ -121,13 +120,6 @@ void initState() {
 
   _startLivePolling();
 }
-
-    _loadSeasonPlayers().then((_) {
-      _loadSelectionsSnapshot();
-    });
-
-    _startLivePolling();
-  }
 
   @override
   void dispose() {
