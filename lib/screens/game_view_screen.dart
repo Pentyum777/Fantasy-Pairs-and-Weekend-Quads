@@ -1285,9 +1285,8 @@ void _finaliseFridayPairsWinner() {
               // ------------------------------------------------------------
               Expanded(
                 child: PunterSelectionTable(
-                  key: ValueKey(
-                    "punter-table-${widget.gameType}-${widget.season}-${widget.round}",
-                  ),
+                  key: _punterTableKey,
+                  
                   gameType: widget.gameType,
                   season: widget.season,
                   round: safeRound,
