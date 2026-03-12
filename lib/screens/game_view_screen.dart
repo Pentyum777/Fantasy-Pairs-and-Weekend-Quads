@@ -162,23 +162,31 @@ class _GameViewScreenState extends State<GameViewScreen> {
       setState(() {});
 
       final hasAny = _selections.any((p) {
-        final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
-        final hasPick = p.picks.any((pick) => pick.player != null);
-        return hasName || hasPick;
-      });
+  final hasName = p.punterName.trim().isNotEmpty;   // ⭐ treat "P1" as valid
+  final hasPick = p.picks.any((pick) => pick.player != null);
+  return hasName || hasPick;
+});
 
-      if (hasAny) {
-        final count = _selections.where((p) {
-          final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
-          final hasPick = p.picks.any((pick) => pick.player != null);
-          return hasName || hasPick;
-        }).length;
+if (hasAny) {
+  final count = _selections.where((p) {
+    final hasName = p.punterName.trim().isNotEmpty;
+    final hasPick = p.picks.any((pick) => pick.player != null);
+    return hasName || hasPick;
+  }).length;
 
-        _visiblePunterCount = count;
-        if (count > _maxPunterDropdown) _maxPunterDropdown = count;
-      } else {
-        _visiblePunterCount = 15;
-      }
+  // ⭐ Never shrink automatically — only grow
+  if (count > _visiblePunterCount) {
+    _visiblePunterCount = count;
+  }
+
+  // ⭐ Expand dropdown if needed
+  if (count > _maxPunterDropdown) {
+    _maxPunterDropdown = count;
+  }
+} else {
+  // ⭐ Only apply default if snapshot is truly empty
+  _visiblePunterCount = 15;
+}
     } catch (_) {}
   }
 
@@ -204,13 +212,7 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
       row.punterName = name.isEmpty ? "P${row.punterNumber}" : name;
     }
 
-    if (i >= picksJson.length) {
-      for (final pick in row.picks) {
-        pick.player = null;
-        pick.stats = null;
-      }
-      continue;
-    }
+    if (i >= picksJson.length) continue;
 
     final snapRow = picksJson[i];
     if (snapRow is! List) continue;
@@ -257,19 +259,26 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   }
 
   // ------------------------------------------------------------
-  // FIX: Reset any rows beyond snapshot length
+  // FIX: Only reset rows if snapshot is truly empty
   // ------------------------------------------------------------
-  for (int i = punterNames.length; i < _selections.length; i++) {
-    final row = _selections[i];
-
-    row.punterName = "P${row.punterNumber}";
-
-    for (final pick in row.picks) {
-      pick.player = null;
-      pick.stats = null;
+  if (punterNames.isEmpty) {
+    for (int i = 0; i < _selections.length; i++) {
+      final row = _selections[i];
+      row.punterName = "P${row.punterNumber}";
+      for (final pick in row.picks) {
+        pick.player = null;
+        pick.stats = null;
+      }
     }
   }
 }
+
+
+// ⭐ IMPORTANT: Do NOT reset rows when snapshot has data.
+// Leave rows beyond snapshot length exactly as they are.
+  // Snapshot has data → DO NOT reset punter names or picks
+  // Leave rows beyond snapshot length exactly as they are
+
 
 
 
@@ -277,7 +286,7 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   Future<void> _saveSnapshot() async {
     try {
       final hasAny = _selections.any((p) {
-        final hasName = p.punterName.trim().isNotEmpty && !p.punterName.startsWith("P");
+        final hasName = p.punterName.trim().isNotEmpty;
         final hasPick = p.picks.any((pick) => pick.player != null);
         return hasName || hasPick;
       });
