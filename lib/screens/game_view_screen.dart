@@ -182,6 +182,13 @@ class _GameViewScreenState extends State<GameViewScreen> {
     } catch (_) {}
   }
 
+void _applyLiveStats(List<AflPlayerMatchStats> stats) {
+  _currentStatsByPlayerId = {
+    for (final s in stats)
+      if (s.player != null) s.player!.id: s,
+  };
+}
+
   void _applySnapshotToSelections(Map<String, dynamic> data) {
   final punterNames = (data["punterNames"] as List<dynamic>? ?? [])
       .map((e) => e?.toString() ?? "")
@@ -411,16 +418,18 @@ class _GameViewScreenState extends State<GameViewScreen> {
   // LIVE POLLING
   // ------------------------------------------------------------
   void _startLivePolling() {
-    _liveTimer?.cancel();
-    _liveTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) async {
-        await _refreshLive();
-      },
-    );
-  }
+  _liveTimer?.cancel();
+  _liveTimer = Timer.periodic(
+    const Duration(seconds: 5),
+    (_) async {
+      await _refreshLive();
+    },
+  );
+}
 
-  Future<void> _refreshLive() async {
+Future<void> _refreshLive() async {
+  if (_isCompleted) return; // ⭐ do not overwrite final results
+
   try {
     // 1. Refresh live scores for each fixture
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
@@ -437,12 +446,10 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
     if (!mounted) return;
 
-    // 2. Run completion checks
-    _checkRoundCompletion();
+    // 2. Run completion checks + special logic
+    await _checkRoundCompletion();          // ⭐ now async
     _finaliseFridayPairsWinner();
     _checkAndCompleteWeekendQuadsRound();
-
-    debugPrint("🏁 Friday Pairs final winner = $_fridayWinnerPosition (position)");
 
     // 3. Always fetch fresh stats
     final roundStats = await _fetchRoundStats();
@@ -484,21 +491,49 @@ void _finaliseFridayPairsWinner() {
     // ------------------------------------------------------------
   // ROUND COMPLETION + WEEKEND QUADS COMPLETION
   // ------------------------------------------------------------
-  void _checkRoundCompletion() {
-    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-      widget.season,
-      widget.round,
-    );
+  Future<void> _checkRoundCompletion() async {
+  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+    widget.season,
+    widget.round,
+  );
 
-    if (fixtures.isEmpty) return;
+  if (fixtures.isEmpty) return;
 
-    final allComplete = fixtures.every((f) => f.complete);
+  final allComplete = fixtures.every((f) => f.complete);
+  if (!allComplete) return;
 
-    if (allComplete) {
-      widget.roundCompletionService.markCompleted(widget.round);
-      _saveSnapshot(); // allowed
-    }
-  }
+  // ⭐ Stop live polling so we don't overwrite final results
+  _liveTimer?.cancel();
+
+  // ⭐ Final stats refresh
+  final roundStats = await _fetchRoundStats();
+  _applyLiveStats(roundStats.values.toList());
+
+  // ⭐ Build final punter results for backend
+  final punterResults = widget.fantasyService.buildCompletedRoundResults(
+    selections: _selections,
+    statsByPlayerId: _currentStatsByPlayerId,
+  );
+
+  // ⭐ Save completed round results to backend
+  await widget.roundCompletionService.saveRoundResults(
+    season: widget.season,
+    round: widget.round ?? 0,
+    gameType: widget.gameType,
+    punters: punterResults,
+  );
+
+  // ⭐ Mark completed locally + save snapshot
+  widget.roundCompletionService.markCompleted(widget.round);
+  await _saveSnapshot();
+
+  setState(() => _isCompleted = true);
+
+  debugPrint(
+    "✅ Round completed: season=${widget.season}, round=${widget.round}, gameType=${widget.gameType}",
+  );
+}
+
 
   void _checkAndCompleteWeekendQuadsRound() {
     if (widget.gameType != "weekend_quads") return;
