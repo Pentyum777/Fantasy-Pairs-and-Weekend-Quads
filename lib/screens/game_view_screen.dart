@@ -79,7 +79,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   final GlobalKey _punterTableKey = GlobalKey();
 
-  late List<PunterSelection> _selections;
+  late List<PunterSelection> _selections = [];
 
   AflFixture? _selectedFixture;
   Timer? _liveTimer;
@@ -109,14 +109,13 @@ class _GameViewScreenState extends State<GameViewScreen> {
 void initState() {
   super.initState();
 
-  // ⭐ Only initialize selections if empty
+  // Only initialize once
   if (_selections.isEmpty) {
     _selections = widget.selections
         .map((p) => p.clone())
         .toList();
   }
 
-  // ⭐ Load players → then snapshot → then start polling
   _loadSeasonPlayers().then((_) async {
     await _loadSelectionsSnapshot();
     _startLivePolling();
