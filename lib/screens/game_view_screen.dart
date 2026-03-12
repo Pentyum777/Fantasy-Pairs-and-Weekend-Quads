@@ -1165,30 +1165,27 @@ void _finaliseFridayPairsWinner() {
                 // SUBMIT / UNSUBMIT BUTTON (all game types)
                 // ------------------------------------------------------------
                 if (widget.userRoleService.isAdmin)
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() => _isSubmitted = !_isSubmitted);
-                      if (_isSubmitted) _saveSnapshot();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isSubmitted
-                          ? Colors.red.shade600
-                          : Colors.green.shade600,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                    ),
-                    child: Text(
-                      _isSubmitted ? "Unsubmit" : "Submit",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-
-                const SizedBox(width: 12),
+  ElevatedButton(
+    onPressed: () async {
+      await _refreshLive();     // ⭐ force live stats update
+      _saveSnapshot();          // ⭐ save after updating
+      setState(() {});          // ⭐ rebuild UI
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.blue.shade600,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 6,
+      ),
+    ),
+    child: const Text(
+      "Update",
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+    ),
+  ),
 
                 // ------------------------------------------------------------
                 // ⭐ PUBLISH BUTTON (custom_builder only)
