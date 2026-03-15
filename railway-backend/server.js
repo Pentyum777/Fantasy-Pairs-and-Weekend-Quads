@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import cors from "cors";
 import { fileURLToPath } from "url";
-import { scrapeDFS } from "./dfs_scraper.js";
+import { scrapeDFS, dfsHealth } from "./dfs_scraper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -265,6 +265,19 @@ app.get("/seasonResults", (req, res) => {
 
 // ------------------------------------------------------
 // Fantasy endpoint (NEW — uses DFS event feed)
+
+// ------------------------------------------------------
+// DFS Health Check
+// ------------------------------------------------------
+app.get("/health/dfs", (req, res) => {
+  res.json({
+    ok: true,
+    ...dfsHealth(),
+  });
+});
+// ------------------------------------------------------
+// ------------------------------------------------------
+// Fantasy endpoint (SAFE — uses DFS retry + cache)
 // ------------------------------------------------------
 app.get("/fantasy/:matchId", async (req, res) => {
   const cdMatchId = req.params.matchId;
@@ -275,21 +288,21 @@ app.get("/fantasy/:matchId", async (req, res) => {
     return res.status(404).json({
       ok: false,
       error: "No DFS mapping for matchId",
-      matchId: cdMatchId
+      matchId: cdMatchId,
     });
   }
 
   try {
-    // 1. DFS stats from event feed
+    // ⭐ DFS stats (retry + cache fallback)
     const dfsPlayers = await scrapeDFS(dfsId);
 
-    // 2. Squiggle metadata
+    // ⭐ Squiggle metadata (unchanged)
     let meta = {
       homeScore: 0,
       awayScore: 0,
       quarter: "",
       clock: "",
-      status: ""
+      status: "",
     };
 
     if (squiggleGameId) {
@@ -309,17 +322,17 @@ app.get("/fantasy/:matchId", async (req, res) => {
       quarter: meta.quarter,
       clock: meta.clock,
       status: meta.status,
-      players: dfsPlayers
+      players: dfsPlayers, // ⭐ always safe (live or cached)
     });
-
   } catch (err) {
     console.error("💥 /fantasy error:", err);
     return res.status(500).json({
       ok: false,
-      error: "Failed to load fantasy stats"
+      error: "Failed to load fantasy stats",
     });
   }
 });
+
 
 // ------------------------------------------------------
 // Squiggle metadata fetcher
