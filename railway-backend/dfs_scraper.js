@@ -2,8 +2,7 @@ import fetch from "node-fetch";
 
 export async function scrapeDFS(dfsId) {
   try {
-    const url =
-      "https://dfsaustralia-apps.com/shiny/afl-live-scoring/liveScoring2026.json";
+    const url = "https://dfsaustralia-apps.com/shiny/afl-live-scoring/liveScoring2026.json";
 
     const res = await fetch(url, {
       headers: {
@@ -19,31 +18,24 @@ export async function scrapeDFS(dfsId) {
       return [];
     }
 
-    // ------------------------------------------------------------
-    // SAFE JSON PARSE (bulletproof)
-    // ------------------------------------------------------------
+    // ⭐ Read body ONCE
+    const raw = await res.text();
+
     let json;
     try {
-      json = await res.json();
+      json = JSON.parse(raw);
     } catch (err) {
-      const text = await res.text();
       console.error("❌ DFS feed returned invalid JSON");
-      console.error("Raw response snippet:", text.slice(0, 500));
+      console.error("Raw response snippet:", raw.slice(0, 500));
       throw err;
     }
 
-    // ------------------------------------------------------------
-    // Validate structure
-    // ------------------------------------------------------------
     if (!json.playerStats || !Array.isArray(json.playerStats)) {
       console.error("DFS feed missing playerStats array");
       return [];
     }
 
-    // Convert dfsId to number
     const matchId = Number(dfsId);
-
-    // Filter players for this match
     const players = json.playerStats.filter((p) => p.id === matchId);
 
     return players;
