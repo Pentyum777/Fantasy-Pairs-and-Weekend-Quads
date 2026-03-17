@@ -210,30 +210,40 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 
   final picksJson = (data["picks"] as List<dynamic>? ?? []);
 
-  // Ensure we have enough rows to hold all snapshot punters
-  final int playersPerPunter =
-      widget.gameType == "weekend_quads" ? 4 : 2;
-  final int requiredRows = punterNames.length > 0
-      ? punterNames.length
-      : _selections.length;
+  // If we have no local rows yet, build them from snapshot
+  if (_selections.isEmpty) {
+    final snapshotRowCount = [
+      punterNames.length,
+      picksJson.length,
+      15, // minimum default
+    ].reduce((a, b) => a > b ? a : b);
 
-  while (_selections.length < requiredRows) {
-    _selections.add(
-      PunterSelection.empty(
-        punterNumber: _selections.length + 1,
-        playersPerPunter: playersPerPunter,
-      ),
-    );
+    final playersPerPunter = widget.selections.isNotEmpty
+        ? widget.selections.first.picks.length
+        : (widget.gameType == "weekend_quads" ? 4 : 2);
+
+    for (int i = 0; i < snapshotRowCount; i++) {
+      _selections.add(
+        PunterSelection.empty(
+          punterNumber: i + 1,
+          playersPerPunter: playersPerPunter,
+        ),
+      );
+    }
   }
 
-  // Restore names + picks
+  // Restore names + picks into existing rows
   for (int i = 0; i < _selections.length; i++) {
     final row = _selections[i];
 
     // Restore punter names
     if (i < punterNames.length) {
-      final name = punterNames[i].trim();
-      row.punterName = name.isEmpty ? "P${row.punterNumber}" : name;
+      final rawName = punterNames[i].trim();
+      // Treat "P1", "P2", ... as placeholder, not a real name
+      final isPlaceholder =
+          rawName.toUpperCase() == "P${row.punterNumber}".toUpperCase();
+      row.punterName =
+          (rawName.isEmpty || isPlaceholder) ? "P${row.punterNumber}" : rawName;
     }
 
     // Restore picks
@@ -284,72 +294,77 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
     }
   }
 
-  // ------------------------------------------------------------
-  // DETERMINE VISIBLE PUNTER COUNT
-  // ------------------------------------------------------------
-  final count = _selections.where((p) {
-    final hasName = p.punterName.trim().isNotEmpty;
+  // After restoring, recompute visible punter count
+  _recomputeVisiblePunterCount();
+}
+
+void _recomputeVisiblePunterCount() {
+  final usedCount = _selections.where((p) {
+    final name = p.punterName.trim();
+    final isPlaceholder =
+        name.toUpperCase() == "P${p.punterNumber}".toUpperCase();
+    final hasRealName = name.isNotEmpty && !isPlaceholder;
     final hasPick = p.picks.any((pick) => pick.player != null);
-    return hasName || hasPick;
+    return hasRealName || hasPick;
   }).length;
 
-  if (count > 0) {
-    _visiblePunterCount = count;
-    if (count > _maxPunterDropdown) {
-      _maxPunterDropdown = count;
+  if (usedCount > 0) {
+    _visiblePunterCount = usedCount;
+    if (usedCount > _maxPunterDropdown) {
+      _maxPunterDropdown = usedCount;
     }
   } else {
-    // No punters / picks → default to 15
     _visiblePunterCount = 15;
   }
 }
 
+Future<void> _saveSnapshot() async {
+  try {
+    final hasAny = _selections.any((p) {
+      final name = p.punterName.trim();
+      final isPlaceholder =
+          name.toUpperCase() == "P${p.punterNumber}".toUpperCase();
+      final hasRealName = name.isNotEmpty && !isPlaceholder;
+      final hasPick = p.picks.any((pick) => pick.player != null);
+      return hasRealName || hasPick;
+    });
 
+    if (!hasAny) return;
 
+    final safeRound = widget.round ?? 0;
 
-  Future<void> _saveSnapshot() async {
-    try {
-      final hasAny = _selections.any((p) {
-        final hasName = p.punterName.trim().isNotEmpty;
-        final hasPick = p.picks.any((pick) => pick.player != null);
-        return hasName || hasPick;
-      });
+    final url = Uri.https(
+      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+      "/saveSelections",
+    );
 
-      if (!hasAny) return;
+    final punterNames = _selections.map((p) => p.punterName).toList();
 
-      final safeRound = widget.round ?? 0;
-
-      final url = Uri.https(
-        "fantasy-pairs-and-weekend-quads-production.up.railway.app",
-        "/saveSelections",
-      );
-
-      final punterNames = _selections.map((p) => p.punterName).toList();
-
-      final picks = _selections.map((p) {
-        return p.picks.map((pick) {
-          return {
-            "playerId": pick.player?.id ?? "",
-            "stats": pick.stats ?? {},
-          };
-        }).toList();
+    final picks = _selections.map((p) {
+      return p.picks.map((pick) {
+        return {
+          "playerId": pick.player?.id ?? "",
+          "stats": pick.stats ?? {},
+        };
       }).toList();
+    }).toList();
 
-      final body = jsonEncode({
-        "gameType": widget.gameType,
-        "season": widget.season,
-        "round": safeRound,
-        "punterNames": punterNames,
-        "picks": picks,
-      });
+    final body = jsonEncode({
+      "gameType": widget.gameType,
+      "season": widget.season,
+      "round": safeRound,
+      "punterNames": punterNames,
+      "picks": picks,
+    });
 
-      await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: body,
-      );
-    } catch (_) {}
-  }
+    await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: body,
+    );
+  } catch (_) {}
+}
+
 
  // -------------------------------------------------------------
   // ROUND-WIDE STATS FETCHER
