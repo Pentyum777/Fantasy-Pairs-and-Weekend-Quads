@@ -107,25 +107,33 @@ class _GameViewScreenState extends State<GameViewScreen> {
   bool _snapshotLoaded = false;
 
   @override
-  void initState() {
-    super.initState();
+void initState() {
+  super.initState();
 
-    // ⭐ Only initialize once — prevents data loss on hot restart
-    _selections = widget.selections.isNotEmpty
-        ? widget.selections.map((p) => p.clone()).toList()
-        : [];
+  // Decide how many picks per punter (2 for pairs, 4 for weekend_quads)
+  final int playersPerPunter =
+      widget.gameType == "weekend_quads" ? 4 : 2;
 
-    _loadSeasonPlayers().then((_) async {
-      await _loadSelectionsSnapshot();
-
-      // ⭐ Snapshot is now applied BEFORE first table build
-      _snapshotLoaded = true;
-      if (mounted) setState(() {});
-
-      _startLivePolling();
-    });
+  if (widget.selections.isNotEmpty) {
+    // Clone existing selections (e.g. when navigating from builder)
+    _selections = widget.selections.map((p) => p.clone()).toList();
+  } else {
+    // Create a default 15 empty punters so snapshot has rows to apply into
+    _selections = List.generate(
+      15,
+      (i) => PunterSelection.empty(
+        punterNumber: i + 1,
+        playersPerPunter: playersPerPunter,
+      ),
+    );
   }
 
+  _loadSeasonPlayers().then((_) async {
+    await _loadSelectionsSnapshot();
+    // snapshotLoaded is set in _loadSelectionsSnapshot finally
+    _startLivePolling();
+  });
+}
 
   @override
   void dispose() {
@@ -202,6 +210,22 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 
   final picksJson = (data["picks"] as List<dynamic>? ?? []);
 
+  // Ensure we have enough rows to hold all snapshot punters
+  final int playersPerPunter =
+      widget.gameType == "weekend_quads" ? 4 : 2;
+  final int requiredRows = punterNames.length > 0
+      ? punterNames.length
+      : _selections.length;
+
+  while (_selections.length < requiredRows) {
+    _selections.add(
+      PunterSelection.empty(
+        punterNumber: _selections.length + 1,
+        playersPerPunter: playersPerPunter,
+      ),
+    );
+  }
+
   // Restore names + picks
   for (int i = 0; i < _selections.length; i++) {
     final row = _selections[i];
@@ -241,7 +265,8 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
         continue;
       }
 
-      final restored = _seasonPlayers?.where((p) => p.id == pid).toList() ?? [];
+      final restored =
+          _seasonPlayers?.where((p) => p.id == pid).toList() ?? [];
       pick.player = restored.isEmpty
           ? AflPlayer(
               id: pid,
@@ -274,9 +299,11 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
       _maxPunterDropdown = count;
     }
   } else {
+    // No punters / picks → default to 15
     _visiblePunterCount = 15;
   }
 }
+
 
 
 
