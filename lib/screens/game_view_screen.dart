@@ -311,7 +311,6 @@ void _recomputeVisiblePunterCount() {
 
 Future<void> _saveSnapshot() async {
   try {
-    // Skip if nothing meaningful to save
     final hasAny = _selections.any((p) {
       final name = p.punterName.trim();
       final hasRealName = name.isNotEmpty;
@@ -328,12 +327,12 @@ Future<void> _saveSnapshot() async {
       "/saveSelections",
     );
 
-    // ⭐ FORCE punter names to be clean strings
+    // Clean punter names
     final punterNames = _selections
-    .map((p) => p.punterName.toString().trim())
-    .toList(growable: false);
+        .map((p) => p.punterName.toString().trim())
+        .toList(growable: false);
 
-    // ⭐ FORCE stats to be JSON-safe maps
+    // Clean picks + stats
     final picks = _selections.map((p) {
       return p.picks.map((pick) {
         final stats = pick.stats;
@@ -364,6 +363,7 @@ Future<void> _saveSnapshot() async {
     debugPrint("❌ saveSnapshot failed: $e");
   }
 }
+
 
 
 
@@ -405,63 +405,71 @@ Future<void> _saveSnapshot() async {
   // NEW: Publish Custom Game (PUB‑A)
   // ------------------------------------------------------------
   Future<void> _publishCustomGame() async {
-    try {
-      final safeRound = widget.round ?? 0;
+  try {
+    final safeRound = widget.round ?? 0;
 
-      final url = Uri.https(
-        "fantasy-pairs-and-weekend-quads-production.up.railway.app",
-        "/saveSelections",
-      );
+    final url = Uri.https(
+      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+      "/saveSelections",
+    );
 
-      final punterNames = _selections.map((p) => p.punterName).toList();
+    // Clean punter names
+    final punterNames = _selections
+        .map((p) => p.punterName.toString().trim())
+        .toList(growable: false);
 
-      final picks = _selections.map((p) {
-        return p.picks.map((pick) {
-          return {
-            "playerId": pick.player?.id ?? "",
-            "stats": pick.stats is Map ? pick.stats : {},
-          };
-        }).toList();
+    // Clean picks + stats (same as _saveSnapshot)
+    final picks = _selections.map((p) {
+      return p.picks.map((pick) {
+        final stats = pick.stats;
+
+        return {
+          "playerId": pick.player?.id ?? "",
+          "stats": (stats is Map<String, dynamic>)
+              ? Map<String, dynamic>.from(stats)
+              : <String, dynamic>{},
+        };
       }).toList();
+    }).toList();
 
-      final body = jsonEncode({
-        "gameType": "custom_game",   // ⭐ publish target
-        "season": widget.season,
-        "round": safeRound,
-        "punterNames": punterNames,
-        "picks": picks,
-      });
+    final body = jsonEncode({
+      "gameType": "custom_game",
+      "season": widget.season,
+      "round": safeRound,
+      "punterNames": punterNames,
+      "picks": picks,   // ✔ now defined
+    });
 
-      await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: body,
-      );
+    await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: body,
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      // ⭐ Navigate to Custom Game
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => GameViewScreen(
-            season: widget.season,
-            round: widget.round,
-            gameType: "custom_game",
-            selections: _selections,
-            fixtureRepo: widget.fixtureRepo,
-            playerRepo: widget.playerRepo,
-            fantasyService: widget.fantasyService,
-            championshipService: widget.championshipService,
-            roundCompletionService: widget.roundCompletionService,
-            userRoleService: widget.userRoleService,
-            selectedFixtureIds: widget.selectedFixtureIds,
-            overridePlayers: widget.overridePlayers,
-          ),
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GameViewScreen(
+          season: widget.season,
+          round: widget.round,
+          gameType: "custom_game",
+          selections: _selections,
+          fixtureRepo: widget.fixtureRepo,
+          playerRepo: widget.playerRepo,
+          fantasyService: widget.fantasyService,
+          championshipService: widget.championshipService,
+          roundCompletionService: widget.roundCompletionService,
+          userRoleService: widget.userRoleService,
+          selectedFixtureIds: widget.selectedFixtureIds,
+          overridePlayers: widget.overridePlayers,
         ),
-      );
-    } catch (_) {}
-  }
+      ),
+    );
+  } catch (_) {}
+}
+
 
   // ------------------------------------------------------------
   // LIVE POLLING
