@@ -468,6 +468,7 @@ Widget build(BuildContext context) {
 
   final controller = _controllers[row.punterNumber] ??=
       TextEditingController(text: row.punterName);
+
   final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
 
   // Keep controller in sync with model
@@ -477,6 +478,9 @@ Widget build(BuildContext context) {
       offset: controller.text.length,
     );
   }
+
+  // ⭐ Hide hint when focused
+  final isFocused = focusNode.hasFocus;
 
   return Container(
     alignment: Alignment.centerLeft,
@@ -494,13 +498,15 @@ Widget build(BuildContext context) {
         border: InputBorder.none,
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(vertical: 2),
-        // Only a hint now – no automatic placeholder value
-        hintText: "P${row.punterNumber}",
+
+        // ⭐ Hint only when NOT focused
+        hintText: isFocused ? "" : "P${row.punterNumber}",
         hintStyle: theme.textTheme.bodySmall?.copyWith(
           color: cs.onSurfaceVariant,
           fontWeight: FontWeight.w600,
         ),
       ),
+
       onChanged: (value) {
         final formatted = value.isEmpty
             ? value
@@ -514,8 +520,9 @@ Widget build(BuildContext context) {
         }
 
         row.punterName = formatted;
-        if (widget.onChanged != null) widget.onChanged!();
+        widget.onChanged?.call();
       },
+
       onEditingComplete: () {
         final nextIndex = row.punterNumber + 1;
         final nextNode = _punterFocusNodes[nextIndex];
