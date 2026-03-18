@@ -311,6 +311,7 @@ void _recomputeVisiblePunterCount() {
 
 Future<void> _saveSnapshot() async {
   try {
+    // Skip if nothing meaningful to save
     final hasAny = _selections.any((p) {
       final name = p.punterName.trim();
       final hasRealName = name.isNotEmpty;
@@ -327,20 +328,24 @@ Future<void> _saveSnapshot() async {
       "/saveSelections",
     );
 
-    final punterNames = _selections.map((p) => p.punterName).toList();
+    // ⭐ FORCE punter names to be clean strings
+    final punterNames = _selections
+    .map((p) => p.punterName.toString().trim())
+    .toList(growable: false);
 
+    // ⭐ FORCE stats to be JSON-safe maps
     final picks = _selections.map((p) {
-  return p.picks.map((pick) {
-    final stats = pick.stats;
+      return p.picks.map((pick) {
+        final stats = pick.stats;
 
-    return {
-      "playerId": pick.player?.id ?? "",
-      "stats": stats is Map<String, dynamic>
-          ? Map<String, dynamic>.from(stats)
-          : {},
-    };
-  }).toList();
-}).toList();
+        return {
+          "playerId": pick.player?.id ?? "",
+          "stats": (stats is Map<String, dynamic>)
+              ? Map<String, dynamic>.from(stats)
+              : <String, dynamic>{},
+        };
+      }).toList();
+    }).toList();
 
     final body = jsonEncode({
       "gameType": widget.gameType,
@@ -355,8 +360,11 @@ Future<void> _saveSnapshot() async {
       headers: {"Content-Type": "application/json"},
       body: body,
     );
-  } catch (_) {}
+  } catch (e) {
+    debugPrint("❌ saveSnapshot failed: $e");
+  }
 }
+
 
 
  // -------------------------------------------------------------
