@@ -5,7 +5,14 @@ import fs from "fs";
 import path from "path";
 import cors from "cors";
 import { fileURLToPath } from "url";
-import { scrapeDFS, dfsHealth } from "./dfs_scraper.js";
+import { scrapeDFS } from "./dfs_scraper.js";
+import pkg from "pg";
+const { Pool } = pkg;
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,8 +38,7 @@ app.use(express.json());
 // ------------------------------------------------------
 // Helpers
 // ------------------------------------------------------
-const SELECTIONS_ROOT = path.join(process.cwd(), "selections");
-const SEASON_RESULTS_ROOT = path.join(process.cwd(), "season_results");
+const SEASON_RESULTS_ROOT = path.join("/data", "season_results");
 
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
@@ -53,9 +59,9 @@ app.get("/", (req, res) => {
 });
 
 // ------------------------------------------------------
-// Save selections
+// Save selections (Postgres)
 // ------------------------------------------------------
-app.post("/saveSelections", (req, res) => {
+app.post("/saveSelections", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
 
   try {
@@ -70,32 +76,38 @@ app.post("/saveSelections", (req, res) => {
       return res.status(400).json({ error: "Invalid gameType" });
     }
 
-    const safeSeason = season ?? "generic";
+    const safeSeason = season ?? 0;
     const safeRound = round ?? 0;
 
-    const dirPath = path.join(
-      SELECTIONS_ROOT,
-      String(safeSeason),
-      normalizedGameType
+    const result = await pool.query(
+      `
+      INSERT INTO selections (season, game_type, round, punter_names, picks)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (season, game_type, round)
+      DO UPDATE SET
+        punter_names = EXCLUDED.punter_names,
+        picks = EXCLUDED.picks,
+        updated_at = NOW()
+      RETURNING updated_at
+      `,
+      [
+        safeSeason,
+        normalizedGameType,
+        safeRound,
+        Array.isArray(punterNames) ? punterNames : [],
+        Array.isArray(picks) ? picks : [],
+      ]
     );
-    ensureDir(dirPath);
 
-    const filePath = path.join(
-      dirPath,
-      `${normalizedGameType}_round_${safeRound}.json`
+    const updatedAt = result.rows[0]?.updated_at
+      ? new Date(result.rows[0].updated_at).getTime()
+      : Date.now();
+
+    console.log(
+      `💾 Saved selections → season=${safeSeason}, gameType=${normalizedGameType}, round=${safeRound}`
     );
 
-    const payload = {
-      lastUpdated: Date.now(),
-      punterNames: Array.isArray(punterNames) ? punterNames : [],
-      picks: Array.isArray(picks) ? picks : [],
-    };
-
-    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf8");
-
-    console.log(`💾 Saved selections → ${filePath}`);
-
-    res.json({ ok: true, lastUpdated: payload.lastUpdated });
+    res.json({ ok: true, lastUpdated: updatedAt });
   } catch (err) {
     console.error("💥 saveSelections error:", err);
     res.status(500).json({ error: "Failed to save selections" });
@@ -103,9 +115,9 @@ app.post("/saveSelections", (req, res) => {
 });
 
 // ------------------------------------------------------
-// Load selections
+// Load selections (Postgres)
 // ------------------------------------------------------
-app.get("/loadSelections", (req, res) => {
+app.get("/loadSelections", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
 
   try {
@@ -122,20 +134,20 @@ app.get("/loadSelections", (req, res) => {
       return res.status(400).json({ error: "Invalid gameType" });
     }
 
-    const safeSeason = season ?? "generic";
+    const safeSeason = season ?? 0;
     const safeRound = round ?? 0;
 
-    const dirPath = path.join(
-      SELECTIONS_ROOT,
-      String(safeSeason),
-      normalizedGameType
-    );
-    const filePath = path.join(
-      dirPath,
-      `${normalizedGameType}_round_${safeRound}.json`
+    const result = await pool.query(
+      `
+      SELECT punter_names, picks, updated_at
+      FROM selections
+      WHERE season = $1 AND game_type = $2 AND round = $3
+      LIMIT 1
+      `,
+      [safeSeason, normalizedGameType, safeRound]
     );
 
-    if (!fs.existsSync(filePath)) {
+    if (result.rows.length === 0) {
       return res.json({
         ok: true,
         lastUpdated: 0,
@@ -143,14 +155,20 @@ app.get("/loadSelections", (req, res) => {
       });
     }
 
-    const json = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const row = result.rows[0];
+
+    const lastUpdated = row.updated_at
+      ? new Date(row.updated_at).getTime()
+      : 0;
 
     res.json({
       ok: true,
-      lastUpdated: json.lastUpdated || 0,
+      lastUpdated,
       data: {
-        punterNames: Array.isArray(json.punterNames) ? json.punterNames : [],
-        picks: Array.isArray(json.picks) ? json.picks : [],
+        punterNames: Array.isArray(row.punter_names)
+          ? row.punter_names
+          : [],
+        picks: Array.isArray(row.picks) ? row.picks : [],
       },
     });
   } catch (err) {
@@ -160,7 +178,7 @@ app.get("/loadSelections", (req, res) => {
 });
 
 // ------------------------------------------------------
-// Save round results
+// Save round results (filesystem under /data)
 // ------------------------------------------------------
 app.post("/saveRoundResults", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -219,7 +237,7 @@ app.post("/saveRoundResults", (req, res) => {
 });
 
 // ------------------------------------------------------
-// Load season results
+// Load season results (filesystem under /data)
 // ------------------------------------------------------
 app.get("/seasonResults", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -265,19 +283,6 @@ app.get("/seasonResults", (req, res) => {
 
 // ------------------------------------------------------
 // Fantasy endpoint (NEW — uses DFS event feed)
-
-// ------------------------------------------------------
-// DFS Health Check
-// ------------------------------------------------------
-app.get("/health/dfs", (req, res) => {
-  res.json({
-    ok: true,
-    ...dfsHealth(),
-  });
-});
-// ------------------------------------------------------
-// ------------------------------------------------------
-// Fantasy endpoint (SAFE — uses DFS retry + cache)
 // ------------------------------------------------------
 app.get("/fantasy/:matchId", async (req, res) => {
   const cdMatchId = req.params.matchId;
@@ -293,10 +298,10 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 
   try {
-    // ⭐ DFS stats (retry + cache fallback)
+    // 1. DFS stats from event feed
     const dfsPlayers = await scrapeDFS(dfsId);
 
-    // ⭐ Squiggle metadata (unchanged)
+    // 2. Squiggle metadata
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -322,7 +327,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
       quarter: meta.quarter,
       clock: meta.clock,
       status: meta.status,
-      players: dfsPlayers, // ⭐ always safe (live or cached)
+      players: dfsPlayers,
     });
   } catch (err) {
     console.error("💥 /fantasy error:", err);
@@ -333,7 +338,6 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 });
 
-
 // ------------------------------------------------------
 // Squiggle metadata fetcher
 // ------------------------------------------------------
@@ -342,7 +346,7 @@ async function fetchSquiggleMeta(gameId) {
 
   try {
     const response = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" }
+      headers: { "User-Agent": "Mozilla/5.0" },
     });
 
     const json = await response.json();
@@ -354,7 +358,7 @@ async function fetchSquiggleMeta(gameId) {
         awayScore: 0,
         quarter: "",
         clock: "",
-        status: ""
+        status: "",
       };
     }
 
@@ -366,7 +370,7 @@ async function fetchSquiggleMeta(gameId) {
         awayScore: g.ascore ?? 0,
         quarter: "Final",
         clock: "FT",
-        status: "Full Time"
+        status: "Full Time",
       };
     }
 
@@ -376,7 +380,7 @@ async function fetchSquiggleMeta(gameId) {
         awayScore: g.ascore ?? 0,
         quarter: g.timestr || "",
         clock: "",
-        status: "In Progress"
+        status: "In Progress",
       };
     }
 
@@ -385,7 +389,7 @@ async function fetchSquiggleMeta(gameId) {
       awayScore: 0,
       quarter: "",
       clock: "",
-      status: "Upcoming"
+      status: "Upcoming",
     };
   } catch {
     return {
@@ -393,7 +397,7 @@ async function fetchSquiggleMeta(gameId) {
       awayScore: 0,
       quarter: "",
       clock: "",
-      status: ""
+      status: "",
     };
   }
 }

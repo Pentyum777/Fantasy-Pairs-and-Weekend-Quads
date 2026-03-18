@@ -122,7 +122,7 @@ final ScrollController _horizontalController = ScrollController();
   final Map<String, FocusNode> _pickFocusNodes = {};
   final Map<int, TextEditingController> _controllers = {};
   final Map<int, FocusNode> _punterFocusNodes = {};
-  final Set<int> _punterListenerAdded = {};
+  
   final Map<String, FocusNode> _searchFocusNodes = {};
 
   int? _lastUpdated;
@@ -463,82 +463,72 @@ Widget build(BuildContext context) {
   // ---------------------------------------------------------------------------
 
   Widget _punterCell(BuildContext context, PunterSelection row) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    final controller = _controllers[row.punterNumber] ??=
-        TextEditingController(text: row.punterName);
-    final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
+  final controller = _controllers[row.punterNumber] ??=
+      TextEditingController(text: row.punterName);
+  final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
 
-    if (!_punterListenerAdded.contains(row.punterNumber)) {
-      _punterListenerAdded.add(row.punterNumber);
-
-      focusNode.addListener(() {
-        if (focusNode.hasFocus) {
-          if (controller.text.trim() == "P${row.punterNumber}") {
-            controller.clear();
-          }
-        } else {
-          if (controller.text.trim().isEmpty) {
-            controller.text = "P${row.punterNumber}";
-          }
-        }
-      });
-    }
-
-    return Container(
-  alignment: Alignment.centerLeft,
-  padding: const EdgeInsets.only(left: 1),   // ⭐ Add 1px breathing room
-  child: TextField(
-    enabled: widget.userRoleService.isAdmin && !widget.readOnly,
-    controller: controller,
-    focusNode: focusNode,
-    textAlign: TextAlign.left,
-    style: theme.textTheme.bodySmall?.copyWith(
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.1,
-    ),
-
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 2),
-          hintText: "P${row.punterNumber}",
-          hintStyle: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-
-        onChanged: (value) {
-          final formatted = value.isEmpty
-              ? value
-              : value[0].toUpperCase() + value.substring(1);
-
-          if (formatted != value) {
-            controller.value = controller.value.copyWith(
-              text: formatted,
-              selection: TextSelection.collapsed(offset: formatted.length),
-            );
-          }
-
-          row.punterName = formatted;
-          widget.onChanged?.call();
-        },
-
-        onEditingComplete: () {
-          final nextIndex = row.punterNumber + 1;
-          final nextNode = _punterFocusNodes[nextIndex];
-
-          if (nextNode != null) {
-            FocusScope.of(context).requestFocus(nextNode);
-          } else {
-            FocusScope.of(context).unfocus();
-          }
-        },
-      ),
+  // Keep controller in sync with model
+  if (controller.text != row.punterName) {
+    controller.text = row.punterName;
+    controller.selection = TextSelection.collapsed(
+      offset: controller.text.length,
     );
   }
+
+  return Container(
+    alignment: Alignment.centerLeft,
+    padding: const EdgeInsets.only(left: 1),
+    child: TextField(
+      enabled: widget.userRoleService.isAdmin && !widget.readOnly,
+      controller: controller,
+      focusNode: focusNode,
+      textAlign: TextAlign.left,
+      style: theme.textTheme.bodySmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+      ),
+      decoration: InputDecoration(
+        border: InputBorder.none,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 2),
+        // Only a hint now – no automatic placeholder value
+        hintText: "P${row.punterNumber}",
+        hintStyle: theme.textTheme.bodySmall?.copyWith(
+          color: cs.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      onChanged: (value) {
+        final formatted = value.isEmpty
+            ? value
+            : value[0].toUpperCase() + value.substring(1);
+
+        if (formatted != value) {
+          controller.value = controller.value.copyWith(
+            text: formatted,
+            selection: TextSelection.collapsed(offset: formatted.length),
+          );
+        }
+
+        row.punterName = formatted;
+        if (widget.onChanged != null) widget.onChanged!();
+      },
+      onEditingComplete: () {
+        final nextIndex = row.punterNumber + 1;
+        final nextNode = _punterFocusNodes[nextIndex];
+
+        if (nextNode != null) {
+          FocusScope.of(context).requestFocus(nextNode);
+        } else {
+          FocusScope.of(context).unfocus();
+        }
+      },
+    ),
+  );
+}
 
   // ---------------------------------------------------------------------------
   // PICK CELL (Dropdown)
@@ -681,7 +671,7 @@ Widget build(BuildContext context) {
                       owner.picks[colIndex].stats = null;
                     });
 
-                    widget.onChanged?.call();
+                    if (widget.onChanged != null) widget.onChanged!();
                   },
                   child: Padding(
                     padding: const EdgeInsets.only(left: 4),
@@ -703,7 +693,7 @@ Widget build(BuildContext context) {
           owner.picks[colIndex].stats = null;
         });
 
-        widget.onChanged?.call();
+        if (widget.onChanged != null) widget.onChanged!();
 
         final picks = row.picks;
         final isLastPickInRow = colIndex == picks.length - 1;

@@ -22,5 +22,8 @@
   "bugs": {
     "url": "https://github.com/Pentyum777/Fantasy-Pairs-and-Weekend-Quads/issues"
   },
-  "homepage": "https://github.com/Pentyum777/Fantasy-Pairs-and-Weekend-Quads#readme"
+  "homepage": "https://github.com/Pentyum777/Fantasy-Pairs-and-Weekend-Quads#readme",
+  "dependencies": {
+    "pg": "^8.20.0"
+  }
 }

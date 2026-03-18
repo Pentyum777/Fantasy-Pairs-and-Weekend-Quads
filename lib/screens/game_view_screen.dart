@@ -110,15 +110,15 @@ class _GameViewScreenState extends State<GameViewScreen> {
 void initState() {
   super.initState();
 
-  // Decide how many picks per punter (2 for pairs, 4 for weekend_quads)
-  final int playersPerPunter =
-      widget.gameType == "weekend_quads" ? 4 : 2;
+  // Base local model
+  final playersPerPunter = widget.selections.isNotEmpty
+      ? widget.selections.first.picks.length
+      : (widget.gameType == "weekend_quads" ? 4 : 2);
 
+  // Start with either cloned selections or 15 empty rows
   if (widget.selections.isNotEmpty) {
-    // Clone existing selections (e.g. when navigating from builder)
     _selections = widget.selections.map((p) => p.clone()).toList();
   } else {
-    // Create a default 15 empty punters so snapshot has rows to apply into
     _selections = List.generate(
       15,
       (i) => PunterSelection.empty(
@@ -130,7 +130,8 @@ void initState() {
 
   _loadSeasonPlayers().then((_) async {
     await _loadSelectionsSnapshot();
-    // snapshotLoaded is set in _loadSelectionsSnapshot finally
+    _snapshotLoaded = true;
+    if (mounted) setState(() {});
     _startLivePolling();
   });
 }
@@ -210,45 +211,38 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 
   final picksJson = (data["picks"] as List<dynamic>? ?? []);
 
-  // If we have no local rows yet, build them from snapshot
-  if (_selections.isEmpty) {
-    final snapshotRowCount = [
-      punterNames.length,
-      picksJson.length,
-      15, // minimum default
-    ].reduce((a, b) => a > b ? a : b);
+  // Ensure we have enough rows to hold snapshot
+  final snapshotRowCount = [
+    punterNames.length,
+    picksJson.length,
+    _selections.length,
+    15, // minimum default
+  ].reduce((a, b) => a > b ? a : b);
 
-    final playersPerPunter = widget.selections.isNotEmpty
-        ? widget.selections.first.picks.length
-        : (widget.gameType == "weekend_quads" ? 4 : 2);
+  final playersPerPunter = _selections.isNotEmpty
+      ? _selections.first.picks.length
+      : (widget.gameType == "weekend_quads" ? 4 : 2);
 
-    for (int i = 0; i < snapshotRowCount; i++) {
-      _selections.add(
-        PunterSelection.empty(
-          punterNumber: i + 1,
-          playersPerPunter: playersPerPunter,
-        ),
-      );
-    }
+  while (_selections.length < snapshotRowCount) {
+    _selections.add(
+      PunterSelection.empty(
+        punterNumber: _selections.length + 1,
+        playersPerPunter: playersPerPunter,
+      ),
+    );
   }
 
-  // Restore names + picks into existing rows
+  // Restore names + picks
   for (int i = 0; i < _selections.length; i++) {
     final row = _selections[i];
 
-    // Restore punter names
+    // Names: just use whatever is in JSON (can be empty)
     if (i < punterNames.length) {
-      final rawName = punterNames[i].trim();
-      // Treat "P1", "P2", ... as placeholder, not a real name
-      final isPlaceholder =
-          rawName.toUpperCase() == "P${row.punterNumber}".toUpperCase();
-      row.punterName =
-          (rawName.isEmpty || isPlaceholder) ? "P${row.punterNumber}" : rawName;
+      row.punterName = punterNames[i].trim();
     }
 
-    // Restore picks
+    // Picks
     if (i >= picksJson.length) continue;
-
     final snapRow = picksJson[i];
     if (snapRow is! List) continue;
 
@@ -294,16 +288,13 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
     }
   }
 
-  // After restoring, recompute visible punter count
   _recomputeVisiblePunterCount();
 }
 
 void _recomputeVisiblePunterCount() {
   final usedCount = _selections.where((p) {
     final name = p.punterName.trim();
-    final isPlaceholder =
-        name.toUpperCase() == "P${p.punterNumber}".toUpperCase();
-    final hasRealName = name.isNotEmpty && !isPlaceholder;
+    final hasRealName = name.isNotEmpty;
     final hasPick = p.picks.any((pick) => pick.player != null);
     return hasRealName || hasPick;
   }).length;
@@ -322,9 +313,7 @@ Future<void> _saveSnapshot() async {
   try {
     final hasAny = _selections.any((p) {
       final name = p.punterName.trim();
-      final isPlaceholder =
-          name.toUpperCase() == "P${p.punterNumber}".toUpperCase();
-      final hasRealName = name.isNotEmpty && !isPlaceholder;
+      final hasRealName = name.isNotEmpty;
       final hasPick = p.picks.any((pick) => pick.player != null);
       return hasRealName || hasPick;
     });
