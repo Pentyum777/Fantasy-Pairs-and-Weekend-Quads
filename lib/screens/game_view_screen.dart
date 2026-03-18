@@ -330,13 +330,17 @@ Future<void> _saveSnapshot() async {
     final punterNames = _selections.map((p) => p.punterName).toList();
 
     final picks = _selections.map((p) {
-      return p.picks.map((pick) {
-        return {
-          "playerId": pick.player?.id ?? "",
-          "stats": pick.stats ?? {},
-        };
-      }).toList();
-    }).toList();
+  return p.picks.map((pick) {
+    final stats = pick.stats;
+
+    return {
+      "playerId": pick.player?.id ?? "",
+      "stats": stats is Map<String, dynamic>
+          ? Map<String, dynamic>.from(stats)
+          : {},
+    };
+  }).toList();
+}).toList();
 
     final body = jsonEncode({
       "gameType": widget.gameType,
@@ -407,7 +411,7 @@ Future<void> _saveSnapshot() async {
         return p.picks.map((pick) {
           return {
             "playerId": pick.player?.id ?? "",
-            "stats": pick.stats ?? {},
+            "stats": pick.stats is Map ? pick.stats : {},
           };
         }).toList();
       }).toList();
