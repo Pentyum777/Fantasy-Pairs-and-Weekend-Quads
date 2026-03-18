@@ -503,13 +503,15 @@ Future<void> _refreshLive() async {
     final roundStats = await _fetchRoundStats();
 
     // 4. Apply stats to table
-    _currentStatsByPlayerId = roundStats;
+    // Always update the map (even if identical)
+_currentStatsByPlayerId = Map<String, AflPlayerMatchStats>.from(roundStats);
 
-    final tableState = _punterTableKey.currentState;
-    if (tableState != null) {
-      final dynamic dyn = tableState;
-      dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
-    }
+// Always reapply stats to the table
+final tableState = _punterTableKey.currentState;
+if (tableState != null) {
+  final dynamic dyn = tableState;
+  dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
+}
 
     // 5. Rebuild UI
     setState(() {});
@@ -977,6 +979,18 @@ Widget build(BuildContext context) {
     );
   }
 
+
+Future<void> _forceApplyStats() async {
+  final tableState = _punterTableKey.currentState;
+  if (tableState != null) {
+    final dynamic dyn = tableState;
+    dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
+  }
+
+  if (mounted) setState(() {});
+}
+
+
   // ------------------------------------------------------------
   // FIXTURE TAP → STATS OVERLAY
   // ------------------------------------------------------------
@@ -1019,237 +1033,247 @@ Widget build(BuildContext context) {
   // PUNTER CONTROLS (with Publish button for custom_builder)
   // ------------------------------------------------------------
   Widget _buildPunterControls() {
-    final theme = Theme.of(context);
+  final theme = Theme.of(context);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      height: _controlsCollapsed ? 32 : null,
-      padding: EdgeInsets.symmetric(
-        vertical: _controlsCollapsed ? 0 : (isLandscapePhone ? 2 : 4),
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () => setState(() => _controlsCollapsed = !_controlsCollapsed),
-            child: Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Text(
-                    "Punter Controls",
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    iconSize: 18,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Icon(
-                      _leaderboardCollapsed
-                          ? Icons.chevron_left
-                          : Icons.chevron_right,
-                      color: theme.colorScheme.primary,
-                    ),
-                    onPressed: () {
-                      setState(() => _leaderboardCollapsed = !_leaderboardCollapsed);
-                    },
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    _controlsCollapsed
-                        ? Icons.keyboard_arrow_down
-                        : Icons.keyboard_arrow_up,
-                    size: 20,
+  return AnimatedContainer(
+    duration: const Duration(milliseconds: 200),
+    height: _controlsCollapsed ? 32 : null,
+    padding: EdgeInsets.symmetric(
+      vertical: _controlsCollapsed ? 0 : (isLandscapePhone ? 2 : 4),
+    ),
+    child: Column(
+      children: [
+        // ------------------------------------------------------------
+        // HEADER BAR (collapsible)
+        // ------------------------------------------------------------
+        InkWell(
+          onTap: () => setState(() => _controlsCollapsed = !_controlsCollapsed),
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Text(
+                  "Punter Controls",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                     color: theme.colorScheme.primary,
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          if (!_controlsCollapsed)
-            Row(
-              children: [
-                // ------------------------------------------------------------
-                // PUNTER COUNT DROPDOWN
-                // ------------------------------------------------------------
-                Text("Punters Playing", style: theme.textTheme.bodyMedium),
-                const SizedBox(width: 6),
-
-                DropdownButtonHideUnderline(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
-                        width: 1,
-                      ),
-                      color: theme.colorScheme.surface,
-                    ),
-                    child: DropdownButton<int>(
-                      value: _visiblePunterCount,
-                      isDense: true,
-                      menuMaxHeight: 280,
-                      itemHeight: 32,
-                      style: theme.textTheme.bodyMedium,
-                      items: [
-                        ...List.generate(_maxPunterDropdown, (i) => i + 1)
-                            .map((v) => DropdownMenuItem<int>(
-                                  value: v,
-                                  child: Text("$v"),
-                                )),
-                        const DropdownMenuItem<int>(
-                          value: -1,
-                          child: Text("Custom…"),
-                        ),
-                      ],
-                      onChanged: (widget.userRoleService.isAdmin && !_isSubmitted)
-                          ? (value) async {
-                              if (value == null) return;
-
-                              if (value == -1) {
-                                final controller = TextEditingController();
-
-                                final custom = await showDialog<int>(
-                                  context: context,
-                                  builder: (_) => AlertDialog(
-                                    title: const Text("Custom punter count"),
-                                    content: TextField(
-                                      controller: controller,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(
-                                        hintText: "Enter number (e.g., 30)",
-                                      ),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text("Cancel"),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          final n = int.tryParse(
-                                              controller.text.trim());
-                                          Navigator.pop(context, n);
-                                        },
-                                        child: const Text("OK"),
-                                      ),
-                                    ],
-                                  ),
-                                );
-
-                                if (custom != null && custom > 0) {
-                                  setState(() {
-                                    _maxPunterDropdown = custom;
-                                    _visiblePunterCount = custom;
-
-                                    while (_selections.length < custom) {
-                                      _selections.add(
-                                        PunterSelection.empty(
-                                          punterNumber: _selections.length + 1,
-                                          playersPerPunter:
-                                              widget.selections.first.picks.length,
-                                        ),
-                                      );
-                                    }
-                                  });
-
-                                  _saveSnapshot();
-                                }
-
-                                return;
-                              }
-
-                              setState(() => _visiblePunterCount = value);
-                            }
-                          : null,
-                    ),
-                  ),
                 ),
-
-                const SizedBox(width: 12),
-
-                // ------------------------------------------------------------
-                // TIMESTAMP LABEL
-                // ------------------------------------------------------------
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceVariant.withAlpha(64),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    "Updated $_timestampLabel",
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                // ------------------------------------------------------------
-                // SUBMIT / UNSUBMIT BUTTON (all game types)
-                // ------------------------------------------------------------
-                if (widget.userRoleService.isAdmin)
-  ElevatedButton(
-    onPressed: () async {
-      await _refreshLive();     // ⭐ force live stats update
-      _saveSnapshot();          // ⭐ save after updating
-      setState(() {});          // ⭐ rebuild UI
-    },
-    style: ElevatedButton.styleFrom(
-      backgroundColor: Colors.blue.shade600,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
-    ),
-    child: const Text(
-      "Update",
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-    ),
-  ),
-
-                // ------------------------------------------------------------
-                // ⭐ PUBLISH BUTTON (custom_builder only)
-                // ------------------------------------------------------------
-                if (isCustomBuilder && widget.userRoleService.isAdmin)
-                  ElevatedButton(
-                    onPressed: _publishCustomGame,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade700,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                    ),
-                    child: const Text(
-                      "Publish",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-
                 const Spacer(),
+                IconButton(
+                  iconSize: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Icon(
+                    _leaderboardCollapsed
+                        ? Icons.chevron_left
+                        : Icons.chevron_right,
+                    color: theme.colorScheme.primary,
+                  ),
+                  onPressed: () {
+                    setState(() => _leaderboardCollapsed = !_leaderboardCollapsed);
+                  },
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _controlsCollapsed
+                      ? Icons.keyboard_arrow_down
+                      : Icons.keyboard_arrow_up,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
               ],
             ),
-        ],
-      ),
-    );
-  }
+          ),
+        ),
+
+        // ------------------------------------------------------------
+        // EXPANDED CONTROLS
+        // ------------------------------------------------------------
+        if (!_controlsCollapsed)
+          Row(
+            children: [
+              // ------------------------------------------------------------
+              // PUNTER COUNT DROPDOWN
+              // ------------------------------------------------------------
+              Text("Punters Playing", style: theme.textTheme.bodyMedium),
+              const SizedBox(width: 6),
+
+              DropdownButtonHideUnderline(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant,
+                      width: 1,
+                    ),
+                    color: theme.colorScheme.surface,
+                  ),
+                  child: DropdownButton<int>(
+                    value: _visiblePunterCount,
+                    isDense: true,
+                    menuMaxHeight: 280,
+                    itemHeight: 32,
+                    style: theme.textTheme.bodyMedium,
+                    items: [
+                      ...List.generate(_maxPunterDropdown, (i) => i + 1)
+                          .map((v) => DropdownMenuItem<int>(
+                                value: v,
+                                child: Text("$v"),
+                              )),
+                      const DropdownMenuItem<int>(
+                        value: -1,
+                        child: Text("Custom…"),
+                      ),
+                    ],
+                    onChanged: (widget.userRoleService.isAdmin && !_isSubmitted)
+                        ? (value) async {
+                            if (value == null) return;
+
+                            if (value == -1) {
+                              final controller = TextEditingController();
+
+                              final custom = await showDialog<int>(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title: const Text("Custom punter count"),
+                                  content: TextField(
+                                    controller: controller,
+                                    keyboardType: TextInputType.number,
+                                    decoration: const InputDecoration(
+                                      hintText: "Enter number (e.g., 30)",
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text("Cancel"),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        final n = int.tryParse(
+                                            controller.text.trim());
+                                        Navigator.pop(context, n);
+                                      },
+                                      child: const Text("OK"),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (custom != null && custom > 0) {
+                                setState(() {
+                                  _maxPunterDropdown = custom;
+                                  _visiblePunterCount = custom;
+
+                                  while (_selections.length < custom) {
+                                    _selections.add(
+                                      PunterSelection.empty(
+                                        punterNumber: _selections.length + 1,
+                                        playersPerPunter:
+                                            widget.selections.first.picks.length,
+                                      ),
+                                    );
+                                  }
+                                });
+
+                                _saveSnapshot();
+                              }
+
+                              return;
+                            }
+
+                            setState(() => _visiblePunterCount = value);
+                          }
+                        : null,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // ------------------------------------------------------------
+              // TIMESTAMP LABEL
+              // ------------------------------------------------------------
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceVariant.withAlpha(64),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  "Updated $_timestampLabel",
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // ------------------------------------------------------------
+              // UPDATE BUTTON (admin only)
+              // ------------------------------------------------------------
+              if (widget.userRoleService.isAdmin)
+                ElevatedButton(
+                  onPressed: () async {
+                    await _refreshLive();      // fetch latest stats
+                    await _forceApplyStats();  // force reapply even if unchanged
+                    await _saveSnapshot();     // persist snapshot
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade600,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                  ),
+                  child: const Text(
+                    "Update",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+
+              const SizedBox(width: 8),
+
+              // ------------------------------------------------------------
+              // PUBLISH BUTTON (custom_builder only)
+              // ------------------------------------------------------------
+              if (isCustomBuilder && widget.userRoleService.isAdmin)
+                ElevatedButton(
+                  onPressed: _publishCustomGame,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade700,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                  ),
+                  child: const Text(
+                    "Publish",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+
+              const Spacer(),
+            ],
+          ),
+      ],
+    ),
+  );
+}
+
+
 
   // ------------------------------------------------------------
   // PUNTER TABLE + LEADERBOARD
