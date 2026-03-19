@@ -57,6 +57,9 @@ function calculateFantasyPoints(p) {
     (p.handballs ?? 0) * 2 +
     (p.marks ?? 0) * 3 +
     (p.tackles ?? 0) * 4 +
+    (p.freesFor ?? 0) * 1 +
+    (p.freesAgainst ?? 0) * -3 +
+    (p.hitouts ?? 0) * 1 +
     (p.goals ?? 0) * 6 +
     (p.behinds ?? 0) * 1
   );
@@ -355,17 +358,10 @@ app.get("/fantasy/:matchId", async (req, res) => {
     // ------------------------------------------------------------
     // 3. Apply fantasy scoring (overwrite any existing value)
     // ------------------------------------------------------------
-    const players = dfsPlayers.map((p) => {
-      const af =
-        (p.kicks ?? 0) * 3 +
-        (p.handballs ?? 0) * 2 +
-        (p.marks ?? 0) * 3 +
-        (p.tackles ?? 0) * 4 +
-        (p.goals ?? 0) * 6 +
-        (p.behinds ?? 0) * 1;
-
-      return { ...p, af };
-    });
+    const players = dfsPlayers.map((p) => ({
+  ...p,
+  af: calculateFantasyPoints(p),
+}));
 
     // ------------------------------------------------------------
     // 4. Squiggle metadata
