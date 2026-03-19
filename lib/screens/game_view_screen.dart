@@ -193,7 +193,7 @@ void initState() {
 }
 
 
-      
+
 
 
 
@@ -205,17 +205,22 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 }
 
   void _applySnapshotToSelections(Map<String, dynamic> data) {
+  // SAFETY: Do not restore snapshot until players are loaded
+  if (_seasonPlayers == null || _seasonPlayers!.isEmpty) {
+    debugPrint("⚠️ Players not loaded yet — delaying snapshot restore");
+    return;
+  }
+
   final punterNames = (data["punterNames"] as List<dynamic>? ?? [])
       .map((e) => e?.toString() ?? "")
       .toList();
 
   final picksJson = (data["picks"] as List<dynamic>? ?? []);
 
-  // Ensure we have enough rows to hold snapshot
+  // Determine required row count
   final snapshotRowCount = [
     punterNames.length,
     picksJson.length,
-    _selections.length,
     15, // minimum default
   ].reduce((a, b) => a > b ? a : b);
 
@@ -223,6 +228,7 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
       ? _selections.first.picks.length
       : (widget.gameType == "weekend_quads" ? 4 : 2);
 
+  // Ensure enough rows exist
   while (_selections.length < snapshotRowCount) {
     _selections.add(
       PunterSelection.empty(
@@ -236,12 +242,12 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   for (int i = 0; i < _selections.length; i++) {
     final row = _selections[i];
 
-    // Names: just use whatever is in JSON (can be empty)
+    // Restore name
     if (i < punterNames.length) {
       row.punterName = punterNames[i].trim();
     }
 
-    // Picks
+    // Restore picks
     if (i >= picksJson.length) continue;
     final snapRow = picksJson[i];
     if (snapRow is! List) continue;
@@ -251,26 +257,26 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 
       if (j >= snapRow.length) {
         pick.player = null;
-        pick.stats = null;
+        pick.stats = <String, dynamic>{};
         continue;
       }
 
       final snapPick = snapRow[j];
       if (snapPick is! Map) {
         pick.player = null;
-        pick.stats = null;
+        pick.stats = <String, dynamic>{};
         continue;
       }
 
       final pid = (snapPick["playerId"] ?? "").toString().trim();
       if (pid.isEmpty) {
         pick.player = null;
-        pick.stats = null;
+        pick.stats = <String, dynamic>{};
         continue;
       }
 
-      final restored =
-          _seasonPlayers?.where((p) => p.id == pid).toList() ?? [];
+      // Restore player
+      final restored = _seasonPlayers!.where((p) => p.id == pid).toList();
       pick.player = restored.isEmpty
           ? AflPlayer(
               id: pid,
@@ -281,17 +287,24 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
             )
           : restored.first;
 
+      // Restore stats
       final rawStats = snapPick["stats"];
       pick.stats = rawStats is Map<String, dynamic>
-    ? Map<String, dynamic>.from(rawStats)
-    : <String, dynamic>{};
+          ? Map<String, dynamic>.from(rawStats)
+          : <String, dynamic>{};
     }
   }
 
+  // Recompute visible punters
   _recomputeVisiblePunterCount();
+
+  // Sync dropdown to real count
+  _maxPunterDropdown = _visiblePunterCount;
+
+  debugPrint("✅ Snapshot applied: visible=$_visiblePunterCount, maxDrop=$_maxPunterDropdown");
 }
 
-void _recomputeVisiblePunterCount() {
+  void _recomputeVisiblePunterCount() {
   final usedCount = _selections.where((p) {
     final name = p.punterName.trim();
     final hasRealName = name.isNotEmpty;
@@ -301,17 +314,12 @@ void _recomputeVisiblePunterCount() {
 
   if (usedCount > 0) {
     _visiblePunterCount = usedCount;
-    if (usedCount > _maxPunterDropdown) {
-      _maxPunterDropdown = usedCount;
-    }
   } else {
     _visiblePunterCount = 15;
-
-    _recomputeVisiblePunterCount();
-
-// ⭐ Ensure dropdown matches actual punter count
-_maxPunterDropdown = _visiblePunterCount;
   }
+
+  // Always sync dropdown to real count
+  _maxPunterDropdown = _visiblePunterCount;
 }
 
 
