@@ -29,13 +29,26 @@ function recordError(err) {
 }
 
 // ------------------------------------------------------------
-// NORMALIZATION LAYER (prevents nulls from reaching Flutter)
+// ⭐ FANTASY POINTS CALCULATION (restored)
+// ------------------------------------------------------------
+function calculateFantasyPoints(p) {
+  return (
+    (p.kicks ?? 0) * 3 +
+    (p.handballs ?? 0) * 2 +
+    (p.marks ?? 0) * 3 +
+    (p.tackles ?? 0) * 4 +
+    (p.goals ?? 0) * 6 +
+    (p.behinds ?? 0) * 1
+  );
+}
+
+// ------------------------------------------------------------
+// ⭐ NORMALIZATION LAYER (prevents nulls from reaching Flutter)
 // ------------------------------------------------------------
 function normalizePlayer(p) {
-  return {
+  const normalized = {
     id: p.id ?? p.matchId ?? p.match_id ?? 0,
     playerId: p.playerId ?? p.player_id ?? "",
-    fantasyPoints: p.fantasyPoints ?? p.fp ?? 0,
     kicks: p.kicks ?? p.k ?? 0,
     handballs: p.handballs ?? p.hb ?? 0,
     disposals:
@@ -47,6 +60,11 @@ function normalizePlayer(p) {
     goals: p.goals ?? p.g ?? 0,
     behinds: p.behinds ?? p.b ?? 0,
   };
+
+  // ⭐ Add fantasy points after normalization
+  normalized.fantasyPoints = calculateFantasyPoints(normalized);
+
+  return normalized;
 }
 
 // ------------------------------------------------------------
@@ -141,7 +159,7 @@ export async function scrapeDFS(dfsId) {
       return pid === matchId;
     });
 
-    // ⭐ Normalize before returning
+    // ⭐ Normalize + score before returning
     return playersRaw.map(normalizePlayer);
   } catch (err) {
     console.error("❌ DFS scraper failed:", err.message);
