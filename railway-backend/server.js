@@ -321,12 +321,42 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 
   try {
-    // 1. DFS stats (normalized)
-    const dfsPlayers = await scrapeDFS(dfsId);
+    // ------------------------------------------------------------
+    // 1. Try LIVE DFS feed first
+    // ------------------------------------------------------------
+    let dfsPlayers = await scrapeDFS(dfsId);
 
-    // 2. ⭐ FORCE fantasy scoring (overwrite any existing value)
-    const scoredPlayers = dfsPlayers.map((p) => {
-      const fantasyPoints =
+    // ------------------------------------------------------------
+    // 2. If no players found → FALL BACK to completed-game scraper
+    // ------------------------------------------------------------
+    if (!dfsPlayers || dfsPlayers.length === 0) {
+      console.log(`⚠️ No live DFS data for ${dfsId}. Trying completed-game stats...`);
+      try {
+        dfsPlayers = await scrapeCompletedDFS(dfsId);
+      } catch (err) {
+        console.error("Completed-game scraper error:", err);
+      }
+    }
+
+    // If still nothing → return empty
+    if (!dfsPlayers || dfsPlayers.length === 0) {
+      return res.json({
+        ok: true,
+        matchId: cdMatchId,
+        homeScore: 0,
+        awayScore: 0,
+        quarter: "",
+        clock: "",
+        status: "No Data",
+        players: [],
+      });
+    }
+
+    // ------------------------------------------------------------
+    // 3. Apply fantasy scoring (overwrite any existing value)
+    // ------------------------------------------------------------
+    const players = dfsPlayers.map((p) => {
+      const af =
         (p.kicks ?? 0) * 3 +
         (p.handballs ?? 0) * 2 +
         (p.marks ?? 0) * 3 +
@@ -334,10 +364,12 @@ app.get("/fantasy/:matchId", async (req, res) => {
         (p.goals ?? 0) * 6 +
         (p.behinds ?? 0) * 1;
 
-      return { ...p, fantasyPoints };
+      return { ...p, af };
     });
 
-    // 3. Squiggle metadata
+    // ------------------------------------------------------------
+    // 4. Squiggle metadata
+    // ------------------------------------------------------------
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -355,7 +387,9 @@ app.get("/fantasy/:matchId", async (req, res) => {
       }
     }
 
-    // 4. Final response
+    // ------------------------------------------------------------
+    // 5. Final response
+    // ------------------------------------------------------------
     return res.json({
       ok: true,
       matchId: cdMatchId,
@@ -364,7 +398,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
       quarter: meta.quarter,
       clock: meta.clock,
       status: meta.status,
-      players: scoredPlayers,
+      players,
     });
 
   } catch (err) {

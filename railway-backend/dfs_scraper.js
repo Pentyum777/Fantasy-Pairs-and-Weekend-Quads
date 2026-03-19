@@ -1,5 +1,6 @@
 // dfs_scraper.js
 import fetch from "node-fetch";
+import cheerio from "cheerio"; // make sure to install: npm install cheerio
 
 // ------------------------------------------------------------
 // INTERNAL CACHE (last known good DFS data)
@@ -140,6 +141,67 @@ async function fetchDfsWithRetry() {
   }
 
   throw lastErr;
+}
+
+// ------------------------------------------------------------
+// COMPLETED GAME SCRAPER (HTML → normalized stats)
+// ------------------------------------------------------------
+export async function scrapeCompletedDFS(dfsId) {
+  const url = `https://dfsaustralia.com/afl-game-stats/?gameId=${dfsId}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Accept: "text/html,*/*",
+      },
+      timeout: 10000,
+    });
+
+    if (!res.ok) {
+      throw new Error(`Completed DFS page returned ${res.status}`);
+    }
+
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    const players = [];
+
+    // DFS Game Stats table rows
+    $("table tbody tr").each((_, row) => {
+      const cells = $(row).find("td");
+      if (cells.length < 10) return; // skip invalid rows
+
+      const playerName = $(cells[0]).text().trim();
+      const kicks = parseInt($(cells[1]).text().trim()) || 0;
+      const handballs = parseInt($(cells[2]).text().trim()) || 0;
+      const disposals = kicks + handballs;
+      const marks = parseInt($(cells[3]).text().trim()) || 0;
+      const tackles = parseInt($(cells[4]).text().trim()) || 0;
+      const goals = parseInt($(cells[5]).text().trim()) || 0;
+      const behinds = parseInt($(cells[6]).text().trim()) || 0;
+      const fantasyPoints = parseInt($(cells[9]).text().trim()) || 0; // FP column
+
+      players.push({
+        id: `${dfsId}-${playerName}`, // fallback ID
+        playerId: `${dfsId}-${playerName}`,
+        playerName,
+        kicks,
+        handballs,
+        disposals,
+        marks,
+        tackles,
+        goals,
+        behinds,
+        fantasyPoints,
+      });
+    });
+
+    return players;
+  } catch (err) {
+    console.error("❌ scrapeCompletedDFS failed:", err.message);
+    return [];
+  }
 }
 
 // ------------------------------------------------------------
