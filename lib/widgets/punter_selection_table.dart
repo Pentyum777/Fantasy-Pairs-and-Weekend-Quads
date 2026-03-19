@@ -752,23 +752,25 @@ Widget build(BuildContext context) {
         continue;
       }
 
-      final s = statsById[id];
+      
 
       // No stats yet for this player
-      if (s == null) {
-        pick.fantasyPoints = 0;
-        pick.stats = {
-          "AF": 0,
-          "K": 0,
-          "HB": 0,
-          "D": 0,
-          "M": 0,
-          "T": 0,
-          "G": 0,
-          "B": 0,
-        };
-        continue;
-      }
+      final s = statsById[id];
+
+if (s == null || s.player == null) {
+  pick.fantasyPoints = 0;
+  pick.stats = {
+    "AF": 0,
+    "K": 0,
+    "HB": 0,
+    "D": 0,
+    "M": 0,
+    "T": 0,
+    "G": 0,
+    "B": 0,
+  };
+  continue;
+}
 
       // Normalize all stats BEFORE assigning
       final af = s.fantasyPoints ?? 0;

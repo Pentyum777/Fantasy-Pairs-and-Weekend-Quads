@@ -115,7 +115,10 @@ export async function scrapeDFS(dfsId) {
     updateCache(json);
 
     const matchId = Number(dfsId);
-    return json.playerStats.filter((p) => p.id === matchId);
+    return json.playerStats.filter((p) => {
+  const pid = Number(p.id ?? p.matchId ?? p.match_id);
+  return pid === matchId;
+});
   } catch (err) {
     console.error("❌ DFS scraper failed:", err.message);
 
