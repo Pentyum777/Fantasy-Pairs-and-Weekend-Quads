@@ -321,28 +321,23 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 
   try {
-    // ------------------------------------------------------------
-    // 1. DFS stats (already normalized by scraper)
-    // ------------------------------------------------------------
+    // 1. DFS stats (normalized)
     const dfsPlayers = await scrapeDFS(dfsId);
 
-    // ------------------------------------------------------------
-    // 2. Apply fantasy scoring
-    // ------------------------------------------------------------
-    const scoredPlayers = dfsPlayers.map((p) => ({
-      ...p,
-      fantasyPoints:
+    // 2. ⭐ FORCE fantasy scoring (overwrite any existing value)
+    const scoredPlayers = dfsPlayers.map((p) => {
+      const fantasyPoints =
         (p.kicks ?? 0) * 3 +
         (p.handballs ?? 0) * 2 +
         (p.marks ?? 0) * 3 +
         (p.tackles ?? 0) * 4 +
         (p.goals ?? 0) * 6 +
-        (p.behinds ?? 0) * 1,
-    }));
+        (p.behinds ?? 0) * 1;
 
-    // ------------------------------------------------------------
+      return { ...p, fantasyPoints };
+    });
+
     // 3. Squiggle metadata
-    // ------------------------------------------------------------
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -360,9 +355,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
       }
     }
 
-    // ------------------------------------------------------------
     // 4. Final response
-    // ------------------------------------------------------------
     return res.json({
       ok: true,
       matchId: cdMatchId,
@@ -382,6 +375,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
     });
   }
 });
+
 
 // ------------------------------------------------------
 // Squiggle metadata fetcher
