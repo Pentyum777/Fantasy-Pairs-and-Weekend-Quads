@@ -30,7 +30,7 @@ function recordError(err) {
 }
 
 // ------------------------------------------------------------
-// ⭐ FANTASY POINTS CALCULATION (restored)
+// ⭐ FANTASY POINTS CALCULATION
 // ------------------------------------------------------------
 function calculateFantasyPoints(p) {
   return (
@@ -44,12 +44,13 @@ function calculateFantasyPoints(p) {
 }
 
 // ------------------------------------------------------------
-// ⭐ NORMALIZATION LAYER (prevents nulls from reaching Flutter)
+// ⭐ NORMALIZATION LAYER
 // ------------------------------------------------------------
 function normalizePlayer(p) {
   const normalized = {
     id: p.id ?? p.matchId ?? p.match_id ?? 0,
     playerId: p.playerId ?? p.player_id ?? "",
+    playerName: p.playerName ?? p.name ?? "",
     kicks: p.kicks ?? p.k ?? 0,
     handballs: p.handballs ?? p.hb ?? 0,
     disposals:
@@ -62,9 +63,7 @@ function normalizePlayer(p) {
     behinds: p.behinds ?? p.b ?? 0,
   };
 
-  // ⭐ Add fantasy points after normalization
   normalized.fantasyPoints = calculateFantasyPoints(normalized);
-
   return normalized;
 }
 
@@ -89,8 +88,7 @@ async function fetchRawDfs() {
     throw new Error(`DFS feed returned error: ${res.status}`);
   }
 
-  const raw = await res.text(); // ⭐ read ONCE
-  return raw;
+  return await res.text();
 }
 
 // ------------------------------------------------------------
@@ -116,11 +114,10 @@ function parseDfsJson(raw) {
 }
 
 // ------------------------------------------------------------
-// RETRY WRAPPER (handles 502, HTML, Shiny resets)
+// RETRY WRAPPER
 // ------------------------------------------------------------
 async function fetchDfsWithRetry() {
   const MAX_RETRIES = 4;
-
   let lastErr;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -135,7 +132,7 @@ async function fetchDfsWithRetry() {
       );
 
       if (attempt < MAX_RETRIES) {
-        await sleep(1000 * attempt); // backoff
+        await sleep(1000 * attempt);
       }
     }
   }
@@ -167,10 +164,9 @@ export async function scrapeCompletedDFS(dfsId) {
 
     const players = [];
 
-    // DFS Game Stats table rows
     $("table tbody tr").each((_, row) => {
       const cells = $(row).find("td");
-      if (cells.length < 10) return; // skip invalid rows
+      if (cells.length < 10) return;
 
       const playerName = $(cells[0]).text().trim();
       const kicks = parseInt($(cells[1]).text().trim()) || 0;
@@ -180,10 +176,10 @@ export async function scrapeCompletedDFS(dfsId) {
       const tackles = parseInt($(cells[4]).text().trim()) || 0;
       const goals = parseInt($(cells[5]).text().trim()) || 0;
       const behinds = parseInt($(cells[6]).text().trim()) || 0;
-      const fantasyPoints = parseInt($(cells[9]).text().trim()) || 0; // FP column
+      const fantasyPoints = parseInt($(cells[9]).text().trim()) || 0;
 
       players.push({
-        id: `${dfsId}-${playerName}`, // fallback ID
+        id: `${dfsId}-${playerName}`,
         playerId: `${dfsId}-${playerName}`,
         playerName,
         kicks,
@@ -197,7 +193,7 @@ export async function scrapeCompletedDFS(dfsId) {
       });
     });
 
-    return players;
+    return players.map(normalizePlayer);
   } catch (err) {
     console.error("❌ scrapeCompletedDFS failed:", err.message);
     return [];
@@ -210,22 +206,18 @@ export async function scrapeCompletedDFS(dfsId) {
 export async function scrapeDFS(dfsId) {
   try {
     const json = await fetchDfsWithRetry();
-
     updateCache(json);
 
     const matchId = Number(dfsId);
 
-    // ⭐ Support old + new DFS formats
     const playersRaw = json.playerStats.filter((p) => {
       const pid = Number(p.id ?? p.matchId ?? p.match_id);
       return pid === matchId;
     });
 
-    // ⭐ Normalize + score before returning
     return playersRaw.map(normalizePlayer);
   } catch (err) {
     console.error("❌ DFS scraper failed:", err.message);
-
     recordError(err);
 
     if (lastGoodJson) {

@@ -6,6 +6,7 @@ import path from "path";
 import cors from "cors";
 import { fileURLToPath } from "url";
 import { scrapeDFS } from "./dfs_scraper.js";
+import { scrapeDFS, scrapeCompletedDFS } from "./dfs_scraper.js";
 import pkg from "pg";
 const { Pool } = pkg;
 
