@@ -79,10 +79,19 @@ app.post("/saveSelections", async (req, res) => {
     const safeSeason = season ?? 0;
     const safeRound = round ?? 0;
 
+    // ⭐ FIX: Convert JS arrays → JSON text for jsonb columns
+    const punterNamesJson = JSON.stringify(
+      Array.isArray(punterNames) ? punterNames : []
+    );
+
+    const picksJson = JSON.stringify(
+      Array.isArray(picks) ? picks : []
+    );
+
     const result = await pool.query(
       `
       INSERT INTO selections (season, game_type, round, punter_names, picks)
-      VALUES ($1, $2, $3, $4, $5)
+      VALUES ($1, $2, $3, $4::jsonb, $5::jsonb)
       ON CONFLICT (season, game_type, round)
       DO UPDATE SET
         punter_names = EXCLUDED.punter_names,
@@ -94,8 +103,8 @@ app.post("/saveSelections", async (req, res) => {
         safeSeason,
         normalizedGameType,
         safeRound,
-        Array.isArray(punterNames) ? punterNames : [],
-        Array.isArray(picks) ? picks : [],
+        punterNamesJson,
+        picksJson,
       ]
     );
 
@@ -113,6 +122,9 @@ app.post("/saveSelections", async (req, res) => {
     res.status(500).json({ error: "Failed to save selections" });
   }
 });
+
+
+
 
 // ------------------------------------------------------
 // Load selections (Postgres)
