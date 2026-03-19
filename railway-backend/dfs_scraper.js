@@ -1,6 +1,6 @@
 // dfs_scraper.js
 import fetch from "node-fetch";
-import cheerio from "cheerio"; // make sure to install: npm install cheerio
+import * as cheerio from "cheerio";
 
 // ------------------------------------------------------------
 // INTERNAL CACHE (last known good DFS data)
