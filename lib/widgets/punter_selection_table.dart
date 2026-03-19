@@ -464,7 +464,6 @@ Widget build(BuildContext context) {
 
   Widget _punterCell(BuildContext context, PunterSelection row) {
   final theme = Theme.of(context);
-  final cs = theme.colorScheme;
 
   final controller = _controllers[row.punterNumber] ??=
       TextEditingController(text: row.punterName);
@@ -479,9 +478,6 @@ Widget build(BuildContext context) {
     );
   }
 
-  // ⭐ Hide hint when focused
-  final isFocused = focusNode.hasFocus;
-
   return Container(
     alignment: Alignment.centerLeft,
     padding: const EdgeInsets.only(left: 1),
@@ -494,19 +490,14 @@ Widget build(BuildContext context) {
         fontWeight: FontWeight.w600,
         letterSpacing: 0.1,
       ),
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         border: InputBorder.none,
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(vertical: 2),
+        contentPadding: EdgeInsets.symmetric(vertical: 2),
 
-        // ⭐ Hint only when NOT focused
-        hintText: isFocused ? "" : "P${row.punterNumber}",
-        hintStyle: theme.textTheme.bodySmall?.copyWith(
-          color: cs.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-        ),
+        // ⭐ No placeholder at all
+        hintText: "",
       ),
-
       onChanged: (value) {
         final formatted = value.isEmpty
             ? value
@@ -522,7 +513,6 @@ Widget build(BuildContext context) {
         row.punterName = formatted;
         widget.onChanged?.call();
       },
-
       onEditingComplete: () {
         final nextIndex = row.punterNumber + 1;
         final nextNode = _punterFocusNodes[nextIndex];
@@ -536,6 +526,7 @@ Widget build(BuildContext context) {
     ),
   );
 }
+
 
   // ---------------------------------------------------------------------------
   // PICK CELL (Dropdown)
