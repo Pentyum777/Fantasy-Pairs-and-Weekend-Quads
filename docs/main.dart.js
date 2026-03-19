@@ -26844,18 +26844,18 @@ acO:function acO(){},
 a6e:function a6e(a){this.a=a},
 a6f:function a6f(){},
 Mb(a,b,c){return A.aOh(a,b,c)},
-aOh(b5,b6,b7){var s=0,r=A.W(t.IA),q,p=2,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4
-var $async$Mb=A.X(function(b9,c0){if(b9===1){o=c0
-s=p}while(true)switch(s){case 0:b3=null
+aOh(b7,b8,b9){var s=0,r=A.W(t.IA),q,p=2,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6
+var $async$Mb=A.X(function(c1,c2){if(c1===1){o=c2
+s=p}while(true)switch(s){case 0:b5=null
 p=4
 s=7
-return A.S(A.azx(A.hZ(u.r+b5)),$async$Mb)
-case 7:b3=c0
+return A.S(A.azx(A.hZ(u.r+b7)),$async$Mb)
+case 7:b5=c2
 p=2
 s=6
 break
 case 4:p=3
-b4=o
+b6=o
 l=A.b([],t.La)
 q=l
 s=1
@@ -26864,13 +26864,13 @@ s=6
 break
 case 3:s=2
 break
-case 6:if(b3.b===200){l=b3
+case 6:if(b5.b===200){l=b5
 l=A.a09(A.a_T(l.e).c.a.i(0,"charset")).cB(0,l.w).length===0}else l=!0
 if(l){q=A.b([],t.La)
 s=1
 break}n=null
-try{l=b3
-n=B.b3.zy(0,A.a09(A.a_T(l.e).c.a.i(0,"charset")).cB(0,l.w),null)}catch(b8){l=A.b([],t.La)
+try{l=b5
+n=B.b3.zy(0,A.a09(A.a_T(l.e).c.a.i(0,"charset")).cB(0,l.w),null)}catch(c0){l=A.b([],t.La)
 q=l
 s=1
 break}l=t.f
@@ -26880,8 +26880,8 @@ break}k=J.bn(n,"players")
 if(!t.j.b(k)){q=A.b([],t.La)
 s=1
 break}s=8
-return A.S(b6.oC(A.uz(new A.f5(Date.now(),!1))),$async$Mb)
-case 8:j=c0
+return A.S(b8.oC(A.uz(new A.f5(Date.now(),!1))),$async$Mb)
+case 8:j=c2
 i=A.b([],t.La)
 h=new A.aa4()
 g=new A.aa2(j)
@@ -26914,7 +26914,9 @@ a9=h.$1(d.i(e,"behinds"))
 b0=h.$1(d.i(e,"hitouts"))
 b1=h.$1(d.i(e,"freesFor"))
 b2=h.$1(d.i(e,"freesAgainst"))
-i.push(new A.iN(a5,c,a1,a2,a3+a4,a6,a7,a8,a9,b0,h.$1(d.i(e,"timeOnGroundPercentage")),b1,b2,h.$1(d.i(e,"dreamTeamPoints"))))}q=i
+b3=h.$1(d.i(e,"timeOnGroundPercentage"))
+b4=d.i(e,"af")
+i.push(new A.iN(a5,c,a1,a2,a3+a4,a6,a7,a8,a9,b0,b3,b1,b2,h.$1(b4==null?d.i(e,"fantasyPoints"):b4)))}q=i
 s=1
 break
 case 1:return A.U(q,r)

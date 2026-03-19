@@ -100,7 +100,7 @@ class MatchStatsParser {
           freesFor: asInt(raw['freesFor']),
           freesAgainst: asInt(raw['freesAgainst']),
           timeOnGroundPercentage: asInt(raw['timeOnGroundPercentage']),
-          fantasyPoints: asInt(raw['dreamTeamPoints']),
+          fantasyPoints: asInt(raw['af'] ?? raw['fantasyPoints']),
         ),
       );
     }
