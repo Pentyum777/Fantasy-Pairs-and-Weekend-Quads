@@ -51,6 +51,17 @@ function normalizeGameType(gameType) {
   return String(gameType).trim().toLowerCase();
 }
 
+function calculateFantasyPoints(p) {
+  return (
+    (p.kicks ?? 0) * 3 +
+    (p.handballs ?? 0) * 2 +
+    (p.marks ?? 0) * 3 +
+    (p.tackles ?? 0) * 4 +
+    (p.goals ?? 0) * 6 +
+    (p.behinds ?? 0) * 1
+  );
+}
+
 // ------------------------------------------------------
 // Root
 // ------------------------------------------------------
@@ -310,10 +321,28 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 
   try {
-    // 1. DFS stats from event feed
+    // ------------------------------------------------------------
+    // 1. DFS stats (already normalized by scraper)
+    // ------------------------------------------------------------
     const dfsPlayers = await scrapeDFS(dfsId);
 
-    // 2. Squiggle metadata
+    // ------------------------------------------------------------
+    // 2. Apply fantasy scoring
+    // ------------------------------------------------------------
+    const scoredPlayers = dfsPlayers.map((p) => ({
+      ...p,
+      fantasyPoints:
+        (p.kicks ?? 0) * 3 +
+        (p.handballs ?? 0) * 2 +
+        (p.marks ?? 0) * 3 +
+        (p.tackles ?? 0) * 4 +
+        (p.goals ?? 0) * 6 +
+        (p.behinds ?? 0) * 1,
+    }));
+
+    // ------------------------------------------------------------
+    // 3. Squiggle metadata
+    // ------------------------------------------------------------
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -331,6 +360,9 @@ app.get("/fantasy/:matchId", async (req, res) => {
       }
     }
 
+    // ------------------------------------------------------------
+    // 4. Final response
+    // ------------------------------------------------------------
     return res.json({
       ok: true,
       matchId: cdMatchId,
@@ -339,8 +371,9 @@ app.get("/fantasy/:matchId", async (req, res) => {
       quarter: meta.quarter,
       clock: meta.clock,
       status: meta.status,
-      players: dfsPlayers,
+      players: scoredPlayers,
     });
+
   } catch (err) {
     console.error("💥 /fantasy error:", err);
     return res.status(500).json({
