@@ -283,8 +283,8 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 
       final rawStats = snapPick["stats"];
       pick.stats = rawStats is Map<String, dynamic>
-          ? Map<String, dynamic>.from(rawStats)
-          : null;
+    ? Map<String, dynamic>.from(rawStats)
+    : <String, dynamic>{};
     }
   }
 
@@ -306,8 +306,15 @@ void _recomputeVisiblePunterCount() {
     }
   } else {
     _visiblePunterCount = 15;
+
+    _recomputeVisiblePunterCount();
+
+// ⭐ Ensure dropdown matches actual punter count
+_maxPunterDropdown = _visiblePunterCount;
   }
 }
+
+
 
 Future<void> _saveSnapshot() async {
   try {
