@@ -144,66 +144,51 @@ async function fetchDfsWithRetry() {
 // COMPLETED GAME SCRAPER (HTML → normalized stats)
 // ------------------------------------------------------------
 export async function scrapeCompletedDFS(dfsId) {
-  const url = `https://dfsaustralia.com/afl-game-stats/?gameId=${dfsId}`;
+  const url = `https://dfsaustralia.com/wp-json/dfs/v1/afl-game-stats?gameId=${dfsId}`;
 
   try {
     const res = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0",
-        Accept: "text/html,*/*",
+        Accept: "application/json",
       },
       timeout: 10000,
     });
 
     if (!res.ok) {
-      throw new Error(`Completed DFS page returned ${res.status}`);
+      throw new Error(`DFS JSON stats returned ${res.status}`);
     }
 
-    const html = await res.text();
-    const $ = cheerio.load(html);
+    const json = await res.json();
 
-    const players = [];
+    // Combine home + away players
+    const players = [...json.homeTeam, ...json.awayTeam];
 
-    $("table tbody tr").each((_, row) => {
-      const cells = $(row).find("td");
-      if (cells.length < 10) return;
-
-      const playerName = $(cells[0]).text().trim();
-      const kicks = parseInt($(cells[1]).text().trim()) || 0;
-      const handballs = parseInt($(cells[2]).text().trim()) || 0;
-      const disposals = kicks + handballs;
-      const marks = parseInt($(cells[3]).text().trim()) || 0;
-      const tackles = parseInt($(cells[4]).text().trim()) || 0;
-      const goals = parseInt($(cells[5]).text().trim()) || 0;
-      const behinds = parseInt($(cells[6]).text().trim()) || 0;
-      const fantasyPoints = parseInt($(cells[9]).text().trim()) || 0;
-
-      players.push({
-  id: `${dfsId}-${playerName}`,
-  playerId: `${dfsId}-${playerName}`,
-  playerName,
-  teamAbbr: "", // ⭐ required by Flutter
-  kicks,
-  handballs,
-  disposals,
-  marks,
-  tackles,
-  goals,
-  behinds,
-  hitouts: 0, // ⭐ required
-  freesFor: 0, // ⭐ required
-  freesAgainst: 0, // ⭐ required
-  timeOnGroundPercentage: 0, // ⭐ required
-  fantasyPoints,
-});
-    });
-
-    return players.map(normalizePlayer);
+    // Normalize to match live scraper
+    return players.map((p) => ({
+      id: p.playerId,
+      playerId: p.playerId,
+      playerName: p.playerName,
+      teamAbbr: p.teamAbbr ?? p.team ?? "",
+      kicks: p.kicks ?? 0,
+      handballs: p.handballs ?? 0,
+      disposals: (p.kicks ?? 0) + (p.handballs ?? 0),
+      marks: p.marks ?? 0,
+      tackles: p.tackles ?? 0,
+      goals: p.goals ?? 0,
+      behinds: p.behinds ?? 0,
+      hitouts: p.hitouts ?? 0,
+      freesFor: p.freesFor ?? 0,
+      freesAgainst: p.freesAgainst ?? 0,
+      timeOnGroundPercentage: p.timeOnGroundPercentage ?? 0,
+      fantasyPoints: p.fantasyPoints ?? 0,
+    }));
   } catch (err) {
     console.error("❌ scrapeCompletedDFS failed:", err.message);
     return [];
   }
 }
+
 
 // ------------------------------------------------------------
 // PUBLIC API — scrapeDFS(dfsId)
