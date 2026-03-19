@@ -29,6 +29,27 @@ function recordError(err) {
 }
 
 // ------------------------------------------------------------
+// NORMALIZATION LAYER (prevents nulls from reaching Flutter)
+// ------------------------------------------------------------
+function normalizePlayer(p) {
+  return {
+    id: p.id ?? p.matchId ?? p.match_id ?? 0,
+    playerId: p.playerId ?? p.player_id ?? "",
+    fantasyPoints: p.fantasyPoints ?? p.fp ?? 0,
+    kicks: p.kicks ?? p.k ?? 0,
+    handballs: p.handballs ?? p.hb ?? 0,
+    disposals:
+      p.disposals ??
+      p.d ??
+      ((p.kicks ?? 0) + (p.handballs ?? 0)),
+    marks: p.marks ?? p.m ?? 0,
+    tackles: p.tackles ?? p.t ?? 0,
+    goals: p.goals ?? p.g ?? 0,
+    behinds: p.behinds ?? p.b ?? 0,
+  };
+}
+
+// ------------------------------------------------------------
 // LOW‑LEVEL FETCH (read body ONCE)
 // ------------------------------------------------------------
 async function fetchRawDfs() {
@@ -57,7 +78,6 @@ async function fetchRawDfs() {
 // PARSE + SHINY QUIRK DETECTION
 // ------------------------------------------------------------
 function parseDfsJson(raw) {
-  // Shiny sometimes returns HTML error pages
   if (raw.trim().startsWith("<!DOCTYPE") || raw.includes("<html")) {
     throw new Error("DFS returned HTML instead of JSON (Shiny error page)");
   }
@@ -105,34 +125,41 @@ async function fetchDfsWithRetry() {
 }
 
 // ------------------------------------------------------------
-// PUBLIC API — your original scrapeDFS(dfsId)
+// PUBLIC API — scrapeDFS(dfsId)
 // ------------------------------------------------------------
 export async function scrapeDFS(dfsId) {
   try {
     const json = await fetchDfsWithRetry();
 
-    // ⭐ Update cache on success
     updateCache(json);
 
     const matchId = Number(dfsId);
-    return json.playerStats.filter((p) => {
-  const pid = Number(p.id ?? p.matchId ?? p.match_id);
-  return pid === matchId;
-});
+
+    // ⭐ Support old + new DFS formats
+    const playersRaw = json.playerStats.filter((p) => {
+      const pid = Number(p.id ?? p.matchId ?? p.match_id);
+      return pid === matchId;
+    });
+
+    // ⭐ Normalize before returning
+    return playersRaw.map(normalizePlayer);
   } catch (err) {
     console.error("❌ DFS scraper failed:", err.message);
 
-    // ⭐ Record error
     recordError(err);
 
-    // ⭐ Fallback to cache if available
     if (lastGoodJson) {
       console.warn("⚠ Using cached DFS data");
       const matchId = Number(dfsId);
-      return lastGoodJson.playerStats.filter((p) => p.id === matchId);
+
+      return lastGoodJson.playerStats
+        .filter((p) => {
+          const pid = Number(p.id ?? p.matchId ?? p.match_id);
+          return pid === matchId;
+        })
+        .map(normalizePlayer);
     }
 
-    // No cache → return empty
     return [];
   }
 }
