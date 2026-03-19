@@ -144,10 +144,11 @@ async function fetchDfsWithRetry() {
 // COMPLETED GAME SCRAPER (HTML → normalized stats)
 // ------------------------------------------------------------
 export async function scrapeCompletedDFS(dfsId) {
-  const url = `https://dfsaustralia.com/wp-json/dfs/v1/afl-game-stats?gameId=${dfsId}`;
+  const url = `https://dfsaustralia.com/wp-admin/admin-ajax.php?action=afl_game_stats_call_mysql&gameId=${dfsId}`;
 
   try {
     const res = await fetch(url, {
+      method: "GET",
       headers: {
         "User-Agent": "Mozilla/5.0",
         Accept: "application/json",
@@ -156,38 +157,40 @@ export async function scrapeCompletedDFS(dfsId) {
     });
 
     if (!res.ok) {
-      throw new Error(`DFS JSON stats returned ${res.status}`);
+      throw new Error(`Completed DFS returned ${res.status}`);
     }
 
     const json = await res.json();
 
     // Combine home + away players
-    const players = [...json.homeTeam, ...json.awayTeam];
+    const players = [...json.home, ...json.away];
 
-    // Normalize to match live scraper
     return players.map((p) => ({
       id: p.playerId,
       playerId: p.playerId,
       playerName: p.playerName,
-      teamAbbr: p.teamAbbr ?? p.team ?? "",
-      kicks: p.kicks ?? 0,
-      handballs: p.handballs ?? 0,
-      disposals: (p.kicks ?? 0) + (p.handballs ?? 0),
-      marks: p.marks ?? 0,
-      tackles: p.tackles ?? 0,
-      goals: p.goals ?? 0,
-      behinds: p.behinds ?? 0,
-      hitouts: p.hitouts ?? 0,
-      freesFor: p.freesFor ?? 0,
-      freesAgainst: p.freesAgainst ?? 0,
-      timeOnGroundPercentage: p.timeOnGroundPercentage ?? 0,
-      fantasyPoints: p.fantasyPoints ?? 0,
+      teamAbbr: p.teamAbbr ?? "",
+
+      kicks: Number(p.kicks ?? 0),
+      handballs: Number(p.handballs ?? 0),
+      disposals: Number(p.kicks ?? 0) + Number(p.handballs ?? 0),
+      marks: Number(p.marks ?? 0),
+      tackles: Number(p.tackles ?? 0),
+      goals: Number(p.goals ?? 0),
+      behinds: Number(p.behinds ?? 0),
+      hitouts: Number(p.hitouts ?? 0),
+      freesFor: Number(p.freesFor ?? 0),
+      freesAgainst: Number(p.freesAgainst ?? 0),
+      timeOnGroundPercentage: Number(p.timeOnGroundPercentage ?? 0),
+
+      fantasyPoints: Number(p.dreamTeamPoints ?? 0),
     }));
   } catch (err) {
     console.error("❌ scrapeCompletedDFS failed:", err.message);
     return [];
   }
 }
+
 
 
 // ------------------------------------------------------------
