@@ -179,18 +179,23 @@ export async function scrapeCompletedDFS(dfsId) {
       const fantasyPoints = parseInt($(cells[9]).text().trim()) || 0;
 
       players.push({
-        id: `${dfsId}-${playerName}`,
-        playerId: `${dfsId}-${playerName}`,
-        playerName,
-        kicks,
-        handballs,
-        disposals,
-        marks,
-        tackles,
-        goals,
-        behinds,
-        fantasyPoints,
-      });
+  id: `${dfsId}-${playerName}`,
+  playerId: `${dfsId}-${playerName}`,
+  playerName,
+  teamAbbr: "", // ⭐ required by Flutter
+  kicks,
+  handballs,
+  disposals,
+  marks,
+  tackles,
+  goals,
+  behinds,
+  hitouts: 0, // ⭐ required
+  freesFor: 0, // ⭐ required
+  freesAgainst: 0, // ⭐ required
+  timeOnGroundPercentage: 0, // ⭐ required
+  fantasyPoints,
+});
     });
 
     return players.map(normalizePlayer);
