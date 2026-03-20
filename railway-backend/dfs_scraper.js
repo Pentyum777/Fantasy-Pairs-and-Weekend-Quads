@@ -1,5 +1,6 @@
 // dfs_scraper.js
 import fetch from "node-fetch";
+import * as cheerio from "cheerio";
 
 // ------------------------------------------------------------
 // INTERNAL CACHE (last known good DFS data)
@@ -46,7 +47,7 @@ function calculateFantasyPoints(p) {
 }
 
 // ------------------------------------------------------------
-// ⭐ NORMALIZATION LAYER (FULL + CORRECT)
+// ⭐ NORMALIZATION LAYER (shared)
 // ------------------------------------------------------------
 function normalizePlayer(p) {
   const normalized = {
@@ -74,7 +75,7 @@ function normalizePlayer(p) {
 }
 
 // ------------------------------------------------------------
-// LOW‑LEVEL FETCH (read body ONCE)
+// LOW‑LEVEL FETCH (live JSON)
 // ------------------------------------------------------------
 async function fetchRawDfs() {
   const url =
@@ -120,7 +121,7 @@ function parseDfsJson(raw) {
 }
 
 // ------------------------------------------------------------
-// RETRY WRAPPER
+// RETRY WRAPPER (live JSON)
 // ------------------------------------------------------------
 async function fetchDfsWithRetry() {
   const MAX_RETRIES = 4;
@@ -147,7 +148,7 @@ async function fetchDfsWithRetry() {
 }
 
 // ------------------------------------------------------------
-// ⭐ COMPLETED GAME SCRAPER (with match‑integrity validation)
+// COMPLETED GAME SCRAPER — MySQL endpoint (JSON)
 // ------------------------------------------------------------
 export async function scrapeCompletedDFS(dfsId) {
   const url = `https://dfsaustralia.com/wp-admin/admin-ajax.php?action=afl_game_stats_call_mysql&gameId=${dfsId}`;
@@ -168,16 +169,21 @@ export async function scrapeCompletedDFS(dfsId) {
 
     const json = await res.json();
 
-    const players = [...json.home, ...json.away];
+    const players = [...(json.home ?? []), ...(json.away ?? [])];
 
-    // ❗ Reject empty responses
     if (players.length === 0) {
       throw new Error("Completed DFS returned no players");
     }
 
-    // ❗ Reject wrong-game responses (DFS bug)
-    if (!players.every((p) => Number(p.gameId) === Number(dfsId))) {
-      throw new Error("Completed DFS returned wrong game data");
+    // If gameId is present, enforce match integrity
+    const hasGameId = players.some((p) => p.gameId != null);
+    if (hasGameId) {
+      const allMatch = players.every(
+        (p) => Number(p.gameId) === Number(dfsId)
+      );
+      if (!allMatch) {
+        throw new Error("Completed DFS returned wrong game data");
+      }
     }
 
     return players.map((p) => ({
@@ -207,30 +213,124 @@ export async function scrapeCompletedDFS(dfsId) {
 }
 
 // ------------------------------------------------------------
-// ⭐ PUBLIC API — scrapeDFS(dfsId)
+// COMPLETED GAME SCRAPER — HTML fallback
+// ------------------------------------------------------------
+async function scrapeCompletedDFSHtml(dfsId) {
+  const url = `https://dfsaustralia.com/afl/game-stats/?gameId=${dfsId}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+      timeout: 10000,
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTML completed DFS returned ${res.status}`);
+    }
+
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    // This part depends on DFS HTML structure.
+    // Example: assume rows in a table with data attributes or columns.
+    // You may need to tweak selectors once you inspect the actual HTML.
+
+    const players = [];
+
+    $("table tr").each((_, row) => {
+      const cells = $(row).find("td");
+      if (cells.length === 0) return;
+
+      const playerName = $(cells[0]).text().trim();
+      if (!playerName) return;
+
+      const toNumber = (el) => {
+        const v = $(el).text().trim();
+        const n = Number(v);
+        return Number.isNaN(n) ? 0 : n;
+      };
+
+      const kicks = toNumber(cells[1]);
+      const handballs = toNumber(cells[2]);
+      const marks = toNumber(cells[3]);
+      const tackles = toNumber(cells[4]);
+      const hitouts = toNumber(cells[5]);
+      const freesFor = toNumber(cells[6]);
+      const freesAgainst = toNumber(cells[7]);
+      const goals = toNumber(cells[8]);
+      const behinds = toNumber(cells[9]);
+
+      players.push({
+        id: `${dfsId}-${playerName}`,
+        playerId: `${dfsId}-${playerName}`,
+        playerName,
+        kicks,
+        handballs,
+        disposals: kicks + handballs,
+        marks,
+        tackles,
+        goals,
+        behinds,
+        hitouts,
+        freesFor,
+        freesAgainst,
+      });
+    });
+
+    if (players.length === 0) {
+      throw new Error("HTML completed DFS returned no players");
+    }
+
+    return players.map(normalizePlayer);
+  } catch (err) {
+    console.error("❌ scrapeCompletedDFSHtml failed:", err.message);
+    return [];
+  }
+}
+
+// ------------------------------------------------------------
+// PUBLIC API — scrapeDFS(dfsId)
 // ------------------------------------------------------------
 export async function scrapeDFS(dfsId) {
+  const matchId = Number(dfsId);
+
   try {
+    // 1) Live JSON
     const json = await fetchDfsWithRetry();
     updateCache(json);
-
-    const matchId = Number(dfsId);
 
     const playersRaw = json.playerStats.filter((p) => {
       const pid = Number(p.id ?? p.matchId ?? p.match_id);
       return pid === matchId;
     });
 
-    return playersRaw.map(normalizePlayer);
+    if (playersRaw.length > 0) {
+      return playersRaw.map(normalizePlayer);
+    }
+
+    // 2) Completed JSON (MySQL)
+    let completedPlayers = await scrapeCompletedDFS(dfsId);
+    if (completedPlayers.length > 0) {
+      return completedPlayers;
+    }
+
+    // 3) Completed HTML fallback
+    completedPlayers = await scrapeCompletedDFSHtml(dfsId);
+    if (completedPlayers.length > 0) {
+      return completedPlayers;
+    }
+
+    return [];
   } catch (err) {
     console.error("❌ DFS scraper failed:", err.message);
     recordError(err);
 
-    // ⭐ Only use cache if it contains players for THIS match
+    // Use cache only if it has players for THIS match
     if (lastGoodJson) {
       console.warn("⚠ Using cached DFS data");
-
-      const matchId = Number(dfsId);
 
       const cachedPlayers = lastGoodJson.playerStats.filter((p) => {
         const pid = Number(p.id ?? p.matchId ?? p.match_id);
