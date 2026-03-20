@@ -51,16 +51,21 @@ function normalizePlayer(p) {
     id: p.id ?? p.matchId ?? p.match_id ?? 0,
     playerId: p.playerId ?? p.player_id ?? "",
     playerName: p.playerName ?? p.name ?? "",
-    kicks: p.kicks ?? p.k ?? 0,
-    handballs: p.handballs ?? p.hb ?? 0,
+
+    kicks: Number(p.kicks ?? p.k ?? 0),
+    handballs: Number(p.handballs ?? p.hb ?? 0),
     disposals:
-      p.disposals ??
-      p.d ??
-      ((p.kicks ?? 0) + (p.handballs ?? 0)),
-    marks: p.marks ?? p.m ?? 0,
-    tackles: p.tackles ?? p.t ?? 0,
-    goals: p.goals ?? p.g ?? 0,
-    behinds: p.behinds ?? p.b ?? 0,
+      Number(p.disposals ?? p.d ?? ((p.kicks ?? 0) + (p.handballs ?? 0))),
+    marks: Number(p.marks ?? p.m ?? 0),
+    tackles: Number(p.tackles ?? p.t ?? 0),
+
+    // ⭐ ADD THESE THREE
+    freesFor: Number(p.freesFor ?? p.ff ?? 0),
+    freesAgainst: Number(p.freesAgainst ?? p.fa ?? 0),
+    hitouts: Number(p.hitouts ?? p.ho ?? 0),
+
+    goals: Number(p.goals ?? p.g ?? 0),
+    behinds: Number(p.behinds ?? p.b ?? 0),
   };
 
   normalized.fantasyPoints = calculateFantasyPoints(normalized);
