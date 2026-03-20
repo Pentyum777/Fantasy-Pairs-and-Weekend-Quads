@@ -1,6 +1,5 @@
 // dfs_scraper.js
 import fetch from "node-fetch";
-import * as cheerio from "cheerio";
 
 // ------------------------------------------------------------
 // INTERNAL CACHE (last known good DFS data)
@@ -38,13 +37,16 @@ function calculateFantasyPoints(p) {
     (p.handballs ?? 0) * 2 +
     (p.marks ?? 0) * 3 +
     (p.tackles ?? 0) * 4 +
+    (p.freesFor ?? 0) * 1 +
+    (p.freesAgainst ?? 0) * -3 +
+    (p.hitouts ?? 0) * 1 +
     (p.goals ?? 0) * 6 +
     (p.behinds ?? 0) * 1
   );
 }
 
 // ------------------------------------------------------------
-// ⭐ NORMALIZATION LAYER
+// ⭐ NORMALIZATION LAYER (FULL + CORRECT)
 // ------------------------------------------------------------
 function normalizePlayer(p) {
   const normalized = {
@@ -59,7 +61,6 @@ function normalizePlayer(p) {
     marks: Number(p.marks ?? p.m ?? 0),
     tackles: Number(p.tackles ?? p.t ?? 0),
 
-    // ⭐ ADD THESE THREE
     freesFor: Number(p.freesFor ?? p.ff ?? 0),
     freesAgainst: Number(p.freesAgainst ?? p.fa ?? 0),
     hitouts: Number(p.hitouts ?? p.ho ?? 0),
@@ -146,7 +147,7 @@ async function fetchDfsWithRetry() {
 }
 
 // ------------------------------------------------------------
-// COMPLETED GAME SCRAPER (HTML → normalized stats)
+// ⭐ COMPLETED GAME SCRAPER (with match‑integrity validation)
 // ------------------------------------------------------------
 export async function scrapeCompletedDFS(dfsId) {
   const url = `https://dfsaustralia.com/wp-admin/admin-ajax.php?action=afl_game_stats_call_mysql&gameId=${dfsId}`;
@@ -167,8 +168,17 @@ export async function scrapeCompletedDFS(dfsId) {
 
     const json = await res.json();
 
-    // Combine home + away players
     const players = [...json.home, ...json.away];
+
+    // ❗ Reject empty responses
+    if (players.length === 0) {
+      throw new Error("Completed DFS returned no players");
+    }
+
+    // ❗ Reject wrong-game responses (DFS bug)
+    if (!players.every((p) => Number(p.gameId) === Number(dfsId))) {
+      throw new Error("Completed DFS returned wrong game data");
+    }
 
     return players.map((p) => ({
       id: p.playerId,
@@ -196,10 +206,8 @@ export async function scrapeCompletedDFS(dfsId) {
   }
 }
 
-
-
 // ------------------------------------------------------------
-// PUBLIC API — scrapeDFS(dfsId)
+// ⭐ PUBLIC API — scrapeDFS(dfsId)
 // ------------------------------------------------------------
 export async function scrapeDFS(dfsId) {
   try {
@@ -218,16 +226,20 @@ export async function scrapeDFS(dfsId) {
     console.error("❌ DFS scraper failed:", err.message);
     recordError(err);
 
+    // ⭐ Only use cache if it contains players for THIS match
     if (lastGoodJson) {
       console.warn("⚠ Using cached DFS data");
+
       const matchId = Number(dfsId);
 
-      return lastGoodJson.playerStats
-        .filter((p) => {
-          const pid = Number(p.id ?? p.matchId ?? p.match_id);
-          return pid === matchId;
-        })
-        .map(normalizePlayer);
+      const cachedPlayers = lastGoodJson.playerStats.filter((p) => {
+        const pid = Number(p.id ?? p.matchId ?? p.match_id);
+        return pid === matchId;
+      });
+
+      if (cachedPlayers.length > 0) {
+        return cachedPlayers.map(normalizePlayer);
+      }
     }
 
     return [];
