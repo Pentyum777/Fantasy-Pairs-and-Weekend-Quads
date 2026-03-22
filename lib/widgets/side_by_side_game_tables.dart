@@ -10,6 +10,12 @@ class SideBySideGameTables extends StatelessWidget {
   /// ["Player","K","H","M","T","HO","FF","FA","G","B","TOG"]
   final List<String> columns;
 
+  /// NEW: Optional formatter for player name (e.g., "5 Cadman")
+  final String Function(Map<String, dynamic>)? playerFormatter;
+
+  /// NEW: Optional stat column width override
+  final double statColumnWidth;
+
   const SideBySideGameTables({
     super.key,
     required this.leftTitle,
@@ -17,11 +23,12 @@ class SideBySideGameTables extends StatelessWidget {
     required this.leftRows,
     required this.rightRows,
     required this.columns,
+    this.playerFormatter,
+    this.statColumnWidth = 32, // reduced from 40
   });
 
   static const double headerHeight = 32;
   static const double rowHeight = 26;
-  static const double statColWidth = 40;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +58,7 @@ class SideBySideGameTables extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
+          // Team header
           Container(
             height: headerHeight,
             width: double.infinity,
@@ -65,7 +73,10 @@ class SideBySideGameTables extends StatelessWidget {
               ),
             ),
           ),
+
           const Divider(height: 1),
+
+          // Column headers
           Container(
             height: headerHeight,
             padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -85,7 +96,7 @@ class SideBySideGameTables extends StatelessWidget {
                         ),
                       )
                     : SizedBox(
-                        width: statColWidth,
+                        width: statColumnWidth,
                         child: Text(
                           c,
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -99,7 +110,10 @@ class SideBySideGameTables extends StatelessWidget {
               }).toList(),
             ),
           ),
+
           const Divider(height: 1),
+
+          // Data rows
           ...rows.asMap().entries.map((entry) {
             final index = entry.key;
             final row = entry.value;
@@ -109,30 +123,37 @@ class SideBySideGameTables extends StatelessWidget {
               height: rowHeight,
               padding: const EdgeInsets.symmetric(horizontal: 2),
               color: isStriped
-                  ? cs.surfaceVariant.withAlpha(76) // 0.30 opacity
+                  ? cs.surfaceVariant.withAlpha(76)
                   : cs.surface,
               child: Row(
                 children: columns.map((c) {
                   final isPlayer = c == "Player";
-                  return isPlayer
-                      ? Expanded(
-                          child: Text(
-                            "${row[c]}",
-                            style: theme.textTheme.bodySmall,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        )
-                      : SizedBox(
-                          width: statColWidth,
-                          child: Text(
-                            "${row[c]}",
-                            style: theme.textTheme.bodySmall,
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        );
+
+                  if (isPlayer) {
+                    final display = playerFormatter != null
+                        ? playerFormatter!(row)
+                        : "${row[c]}";
+
+                    return Expanded(
+                      child: Text(
+                        display,
+                        style: theme.textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    );
+                  }
+
+                  return SizedBox(
+                    width: statColumnWidth,
+                    child: Text(
+                      "${row[c]}",
+                      style: theme.textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  );
                 }).toList(),
               ),
             );
@@ -142,6 +163,10 @@ class SideBySideGameTables extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // STATIC VERSION USED BY StatsOverlay
+  // ---------------------------------------------------------------------------
+
   static Widget buildSingleTable(
     BuildContext context,
     String title,
@@ -150,6 +175,12 @@ class SideBySideGameTables extends StatelessWidget {
     bool compact = false,
     Color? headerBg,
     Color? headerFg,
+
+    /// NEW
+    String Function(Map<String, dynamic>)? playerFormatter,
+
+    /// NEW
+    double statColumnWidth = 32,
   }) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -174,6 +205,7 @@ class SideBySideGameTables extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
+          // Team header
           Container(
             height: compact ? 28 : headerHeight,
             width: double.infinity,
@@ -182,7 +214,10 @@ class SideBySideGameTables extends StatelessWidget {
             color: headerBg ?? cs.surfaceVariant,
             child: Text(title, style: headerStyle),
           ),
+
           const Divider(height: 1),
+
+          // Column headers
           Container(
             height: compact ? 26 : headerHeight,
             padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 3),
@@ -199,7 +234,7 @@ class SideBySideGameTables extends StatelessWidget {
                         ),
                       )
                     : SizedBox(
-                        width: statColWidth,
+                        width: statColumnWidth,
                         child: Text(
                           c,
                           style: headerStyle,
@@ -210,7 +245,10 @@ class SideBySideGameTables extends StatelessWidget {
               }).toList(),
             ),
           ),
+
           const Divider(height: 1),
+
+          // Data rows
           ...rows.asMap().entries.map((entry) {
             final index = entry.key;
             final row = entry.value;
@@ -220,32 +258,39 @@ class SideBySideGameTables extends StatelessWidget {
               height: compact ? 24 : rowHeight,
               padding: EdgeInsets.symmetric(horizontal: compact ? 1 : 3),
               color: isStriped
-                  ? cs.surfaceVariant.withAlpha(76) // 0.30 opacity
+                  ? cs.surfaceVariant.withAlpha(76)
                   : cs.surface,
               child: Row(
                 children: columns.map((c) {
                   final isPlayer = c == "Player";
-                  return isPlayer
-                      ? Expanded(
-                          child: Text(
-                            "${row[c]}",
-                            style: cellStyle,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            softWrap: false,
-                          ),
-                        )
-                      : SizedBox(
-                          width: statColWidth,
-                          child: Text(
-                            "${row[c]}",
-                            style: cellStyle,
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            softWrap: false,
-                          ),
-                        );
+
+                  if (isPlayer) {
+                    final display = playerFormatter != null
+                        ? playerFormatter(row)
+                        : "${row[c]}";
+
+                    return Expanded(
+                      child: Text(
+                        display,
+                        style: cellStyle,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        softWrap: false,
+                      ),
+                    );
+                  }
+
+                  return SizedBox(
+                    width: statColumnWidth,
+                    child: Text(
+                      "${row[c]}",
+                      style: cellStyle,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      softWrap: false,
+                    ),
+                  );
                 }).toList(),
               ),
             );

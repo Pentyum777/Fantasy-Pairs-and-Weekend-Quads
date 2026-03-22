@@ -145,6 +145,8 @@ class _StatsOverlayState extends State<StatsOverlay>
                 ],
               ),
               const SizedBox(height: 3),
+
+              // Empty state
               if (widget.noStatsMessage != null)
                 Expanded(
                   child: Center(
@@ -176,6 +178,10 @@ class _StatsOverlayState extends State<StatsOverlay>
                                     compact: true,
                                     headerBg: _teamBg(leftCode),
                                     headerFg: _teamFg(leftCode),
+
+                                    /// NEW: pass formatting + column width
+                                    playerFormatter: _formatPlayerName,
+                                    statColumnWidth: 32,
                                   ),
                                 ),
                                 const SizedBox(width: 6),
@@ -188,6 +194,10 @@ class _StatsOverlayState extends State<StatsOverlay>
                                     compact: true,
                                     headerBg: _teamBg(rightCode),
                                     headerFg: _teamFg(rightCode),
+
+                                    /// NEW
+                                    playerFormatter: _formatPlayerName,
+                                    statColumnWidth: 32,
                                   ),
                                 ),
                               ],
@@ -202,6 +212,10 @@ class _StatsOverlayState extends State<StatsOverlay>
                                   compact: true,
                                   headerBg: _teamBg(leftCode),
                                   headerFg: _teamFg(leftCode),
+
+                                  /// NEW
+                                  playerFormatter: _formatPlayerName,
+                                  statColumnWidth: 32,
                                 ),
                                 const SizedBox(height: 6),
                                 SideBySideGameTables.buildSingleTable(
@@ -212,6 +226,10 @@ class _StatsOverlayState extends State<StatsOverlay>
                                   compact: true,
                                   headerBg: _teamBg(rightCode),
                                   headerFg: _teamFg(rightCode),
+
+                                  /// NEW
+                                  playerFormatter: _formatPlayerName,
+                                  statColumnWidth: 32,
                                 ),
                               ],
                             ),
@@ -223,5 +241,16 @@ class _StatsOverlayState extends State<StatsOverlay>
         ),
       ),
     );
+  }
+
+  /// NEW — Format player name as "<guernsey> <surname>"
+  String _formatPlayerName(Map<String, dynamic> row) {
+    final fullName = row["playerName"] ?? "";
+    final guernsey = row["guernseyNumber"] ?? 0;
+
+    final parts = fullName.split(" ");
+    final surname = parts.isNotEmpty ? parts.last : fullName;
+
+    return "$guernsey $surname";
   }
 }
