@@ -145,8 +145,6 @@ class _StatsOverlayState extends State<StatsOverlay>
                 ],
               ),
               const SizedBox(height: 3),
-
-              // Empty state
               if (widget.noStatsMessage != null)
                 Expanded(
                   child: Center(
@@ -178,8 +176,6 @@ class _StatsOverlayState extends State<StatsOverlay>
                                     compact: true,
                                     headerBg: _teamBg(leftCode),
                                     headerFg: _teamFg(leftCode),
-
-                                    /// NEW: pass formatting + column width
                                     playerFormatter: _formatPlayerName,
                                     statColumnWidth: 32,
                                   ),
@@ -194,8 +190,6 @@ class _StatsOverlayState extends State<StatsOverlay>
                                     compact: true,
                                     headerBg: _teamBg(rightCode),
                                     headerFg: _teamFg(rightCode),
-
-                                    /// NEW
                                     playerFormatter: _formatPlayerName,
                                     statColumnWidth: 32,
                                   ),
@@ -212,8 +206,6 @@ class _StatsOverlayState extends State<StatsOverlay>
                                   compact: true,
                                   headerBg: _teamBg(leftCode),
                                   headerFg: _teamFg(leftCode),
-
-                                  /// NEW
                                   playerFormatter: _formatPlayerName,
                                   statColumnWidth: 32,
                                 ),
@@ -226,8 +218,6 @@ class _StatsOverlayState extends State<StatsOverlay>
                                   compact: true,
                                   headerBg: _teamBg(rightCode),
                                   headerFg: _teamFg(rightCode),
-
-                                  /// NEW
                                   playerFormatter: _formatPlayerName,
                                   statColumnWidth: 32,
                                 ),
@@ -243,13 +233,34 @@ class _StatsOverlayState extends State<StatsOverlay>
     );
   }
 
-  /// NEW — Format player name as "<guernsey> <surname>"
+  /// Robust formatter: "<guernsey> <surname>"
+  /// Falls back gracefully if fields are missing.
   String _formatPlayerName(Map<String, dynamic> row) {
-    final fullName = row["playerName"] ?? "";
-    final guernsey = row["guernseyNumber"] ?? 0;
+    // Try multiple possible keys for name
+    final fullName =
+        (row["playerName"] ?? row["Player"] ?? row["name"] ?? "").toString();
 
-    final parts = fullName.split(" ");
-    final surname = parts.isNotEmpty ? parts.last : fullName;
+    // Try multiple possible keys for guernsey
+    final guernseyRaw =
+        row["guernseyNumber"] ?? row["Guernsey"] ?? row["jumper"] ?? "";
+    final guernsey = guernseyRaw.toString();
+
+    // Derive surname
+    String surname;
+    if (fullName.trim().isEmpty) {
+      surname = "";
+    } else {
+      final parts = fullName.trim().split(RegExp(r"\s+"));
+      surname = parts.isNotEmpty ? parts.last : fullName.trim();
+    }
+
+    if (guernsey.isEmpty || guernsey == "0") {
+      return surname.isEmpty ? fullName : surname;
+    }
+
+    if (surname.isEmpty) {
+      return guernsey;
+    }
 
     return "$guernsey $surname";
   }
