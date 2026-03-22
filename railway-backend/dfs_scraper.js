@@ -30,7 +30,7 @@ function recordError(err) {
 }
 
 // ------------------------------------------------------------
-// ⭐ FANTASY POINTS CALCULATION
+// FANTASY POINTS CALCULATION
 // ------------------------------------------------------------
 function calculateFantasyPoints(p) {
   return (
@@ -47,13 +47,14 @@ function calculateFantasyPoints(p) {
 }
 
 // ------------------------------------------------------------
-// ⭐ NORMALIZATION LAYER (shared)
+// NORMALIZATION LAYER (shared)
 // ------------------------------------------------------------
 function normalizePlayer(p) {
   const normalized = {
     id: p.id ?? p.matchId ?? p.match_id ?? 0,
     playerId: p.playerId ?? p.player_id ?? "",
     playerName: p.playerName ?? p.name ?? "",
+    teamAbbr: p.teamAbbr ?? p.team ?? "",
 
     kicks: Number(p.kicks ?? p.k ?? 0),
     handballs: Number(p.handballs ?? p.hb ?? 0),
@@ -75,7 +76,7 @@ function normalizePlayer(p) {
 }
 
 // ------------------------------------------------------------
-// LOW‑LEVEL FETCH (live JSON)
+// LIVE DFS JSON
 // ------------------------------------------------------------
 async function fetchRawDfs() {
   const url =
@@ -98,9 +99,6 @@ async function fetchRawDfs() {
   return await res.text();
 }
 
-// ------------------------------------------------------------
-// PARSE + SHINY QUIRK DETECTION
-// ------------------------------------------------------------
 function parseDfsJson(raw) {
   if (raw.trim().startsWith("<!DOCTYPE") || raw.includes("<html")) {
     throw new Error("DFS returned HTML instead of JSON (Shiny error page)");
@@ -120,9 +118,6 @@ function parseDfsJson(raw) {
   return json;
 }
 
-// ------------------------------------------------------------
-// RETRY WRAPPER (live JSON)
-// ------------------------------------------------------------
 async function fetchDfsWithRetry() {
   const MAX_RETRIES = 4;
   let lastErr;
@@ -137,7 +132,6 @@ async function fetchDfsWithRetry() {
       console.error(
         `DFS attempt ${attempt}/${MAX_RETRIES} failed: ${err.message}`
       );
-
       if (attempt < MAX_RETRIES) {
         await sleep(1000 * attempt);
       }
@@ -148,7 +142,7 @@ async function fetchDfsWithRetry() {
 }
 
 // ------------------------------------------------------------
-// COMPLETED GAME SCRAPER — MySQL endpoint (JSON)
+// COMPLETED GAME SCRAPER — DFS MySQL JSON
 // ------------------------------------------------------------
 export async function scrapeCompletedDFS(dfsId) {
   const url = `https://dfsaustralia.com/wp-admin/admin-ajax.php?action=afl_game_stats_call_mysql&gameId=${dfsId}`;
@@ -168,14 +162,12 @@ export async function scrapeCompletedDFS(dfsId) {
     }
 
     const json = await res.json();
-
     const players = [...(json.home ?? []), ...(json.away ?? [])];
 
     if (players.length === 0) {
       throw new Error("Completed DFS returned no players");
     }
 
-    // If gameId is present, enforce match integrity
     const hasGameId = players.some((p) => p.gameId != null);
     if (hasGameId) {
       const allMatch = players.every(
@@ -204,7 +196,17 @@ export async function scrapeCompletedDFS(dfsId) {
       freesAgainst: Number(p.freesAgainst ?? 0),
       timeOnGroundPercentage: Number(p.timeOnGroundPercentage ?? 0),
 
-      fantasyPoints: Number(p.dreamTeamPoints ?? 0),
+      fantasyPoints: calculateFantasyPoints({
+        kicks: p.kicks,
+        handballs: p.handballs,
+        marks: p.marks,
+        tackles: p.tackles,
+        freesFor: p.freesFor,
+        freesAgainst: p.freesAgainst,
+        hitouts: p.hitouts,
+        goals: p.goals,
+        behinds: p.behinds,
+      }),
     }));
   } catch (err) {
     console.error("❌ scrapeCompletedDFS failed:", err.message);
@@ -213,7 +215,7 @@ export async function scrapeCompletedDFS(dfsId) {
 }
 
 // ------------------------------------------------------------
-// COMPLETED GAME SCRAPER — HTML fallback
+// COMPLETED GAME SCRAPER — DFS HTML FALLBACK
 // ------------------------------------------------------------
 async function scrapeCompletedDFSHtml(dfsId) {
   const url = `https://dfsaustralia.com/afl/game-stats/?gameId=${dfsId}`;
@@ -222,7 +224,8 @@ async function scrapeCompletedDFSHtml(dfsId) {
     const res = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
       timeout: 10000,
     });
@@ -234,12 +237,9 @@ async function scrapeCompletedDFSHtml(dfsId) {
     const html = await res.text();
     const $ = cheerio.load(html);
 
-    // This part depends on DFS HTML structure.
-    // Example: assume rows in a table with data attributes or columns.
-    // You may need to tweak selectors once you inspect the actual HTML.
-
     const players = [];
 
+    // NOTE: You may need to tweak selectors once you inspect the table structure.
     $("table tr").each((_, row) => {
       const cells = $(row).find("td");
       if (cells.length === 0) return;
@@ -292,13 +292,96 @@ async function scrapeCompletedDFSHtml(dfsId) {
 }
 
 // ------------------------------------------------------------
-// PUBLIC API — scrapeDFS(dfsId)
+// AFL MATCHCENTRE FALLBACK (Champion Data)
 // ------------------------------------------------------------
-export async function scrapeDFS(dfsId) {
+export async function scrapeAflMatchCentre(cdMatchId) {
+  const url = `https://www.afl.com.au/api/cfs/afl/matchStats/match/${cdMatchId}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+          "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        Accept: "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        Referer: "https://www.afl.com.au/",
+        Origin: "https://www.afl.com.au",
+      },
+      timeout: 10000,
+    });
+
+    if (!res.ok) {
+      throw new Error(`AFL MatchCentre returned ${res.status}`);
+    }
+
+    const json = await res.json();
+
+    if (!json || !json.match || !json.match.playerStats) {
+      throw new Error("AFL MatchCentre missing playerStats");
+    }
+
+    const players = json.match.playerStats;
+
+    return players.map((p) => {
+      const stats = p.stats ?? {};
+      const kicks = Number(stats.kicks ?? 0);
+      const handballs = Number(stats.handballs ?? 0);
+      const marks = Number(stats.marks ?? 0);
+      const tackles = Number(stats.tackles ?? 0);
+      const freesFor = Number(stats.freesFor ?? 0);
+      const freesAgainst = Number(stats.freesAgainst ?? 0);
+      const hitouts = Number(stats.hitouts ?? 0);
+      const goals = Number(stats.goals ?? 0);
+      const behinds = Number(stats.behinds ?? 0);
+
+      return {
+        id: p.player?.playerId,
+        playerId: p.player?.playerId,
+        playerName: p.player?.name,
+        teamAbbr: p.team?.teamAbbr ?? "",
+
+        kicks,
+        handballs,
+        disposals: Number(stats.disposals ?? kicks + handballs),
+        marks,
+        tackles,
+        goals,
+        behinds,
+        hitouts,
+        freesFor,
+        freesAgainst,
+        timeOnGroundPercentage: Number(
+          stats.timeOnGroundPercentage ?? 0
+        ),
+
+        fantasyPoints: calculateFantasyPoints({
+          kicks,
+          handballs,
+          marks,
+          tackles,
+          freesFor,
+          freesAgainst,
+          hitouts,
+          goals,
+          behinds,
+        }),
+      };
+    });
+  } catch (err) {
+    console.error("❌ scrapeAflMatchCentre failed:", err.message);
+    return [];
+  }
+}
+
+// ------------------------------------------------------------
+// PUBLIC API — scrapeDFS(dfsId, cdMatchId)
+// ------------------------------------------------------------
+export async function scrapeDFS(dfsId, cdMatchId) {
   const matchId = Number(dfsId);
 
   try {
-    // 1) Live JSON
+    // 1) Live DFS JSON
     const json = await fetchDfsWithRetry();
     updateCache(json);
 
@@ -311,16 +394,24 @@ export async function scrapeDFS(dfsId) {
       return playersRaw.map(normalizePlayer);
     }
 
-    // 2) Completed JSON (MySQL)
+    // 2) Completed DFS JSON (MySQL)
     let completedPlayers = await scrapeCompletedDFS(dfsId);
     if (completedPlayers.length > 0) {
       return completedPlayers;
     }
 
-    // 3) Completed HTML fallback
+    // 3) Completed DFS HTML fallback
     completedPlayers = await scrapeCompletedDFSHtml(dfsId);
     if (completedPlayers.length > 0) {
       return completedPlayers;
+    }
+
+    // 4) AFL MatchCentre fallback
+    if (cdMatchId) {
+      completedPlayers = await scrapeAflMatchCentre(cdMatchId);
+      if (completedPlayers.length > 0) {
+        return completedPlayers;
+      }
     }
 
     return [];
@@ -328,10 +419,8 @@ export async function scrapeDFS(dfsId) {
     console.error("❌ DFS scraper failed:", err.message);
     recordError(err);
 
-    // Use cache only if it has players for THIS match
     if (lastGoodJson) {
       console.warn("⚠ Using cached DFS data");
-
       const cachedPlayers = lastGoodJson.playerStats.filter((p) => {
         const pid = Number(p.id ?? p.matchId ?? p.match_id);
         return pid === matchId;
@@ -347,7 +436,7 @@ export async function scrapeDFS(dfsId) {
 }
 
 // ------------------------------------------------------------
-// OPTIONAL: HEALTH CHECK EXPORT
+// HEALTH CHECK
 // ------------------------------------------------------------
 export function dfsHealth() {
   return {
