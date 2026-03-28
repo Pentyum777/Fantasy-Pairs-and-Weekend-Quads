@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 
 // ------------------------------------------------------------
-// INTERNAL CACHE (last known good DFS data)
+// INTERNAL CACHE (last known good DFS live JSON)
 // ------------------------------------------------------------
 let lastGoodJson = null;
 let lastGoodTimestamp = null;
@@ -47,28 +47,38 @@ function calculateFantasyPoints(p) {
 }
 
 // ------------------------------------------------------------
-// NORMALIZATION LAYER (shared)
+// NORMALIZATION LAYER
 // ------------------------------------------------------------
 function normalizePlayer(p) {
+  const kicks = Number(p.kicks ?? p.k ?? 0);
+  const handballs = Number(p.handballs ?? p.hb ?? 0);
+  const marks = Number(p.marks ?? p.m ?? 0);
+  const tackles = Number(p.tackles ?? p.t ?? 0);
+  const freesFor = Number(p.freesFor ?? p.ff ?? 0);
+  const freesAgainst = Number(p.freesAgainst ?? p.fa ?? 0);
+  const hitouts = Number(p.hitouts ?? p.ho ?? 0);
+  const goals = Number(p.goals ?? p.g ?? 0);
+  const behinds = Number(p.behinds ?? p.b ?? 0);
+
   const normalized = {
-    id: p.id ?? p.matchId ?? p.match_id ?? 0,
+    id: p.id ?? p.matchId ?? p.match_id ?? "",
     playerId: p.playerId ?? p.player_id ?? "",
     playerName: p.playerName ?? p.name ?? "",
     teamAbbr: p.teamAbbr ?? p.team ?? "",
 
-    kicks: Number(p.kicks ?? p.k ?? 0),
-    handballs: Number(p.handballs ?? p.hb ?? 0),
+    kicks,
+    handballs,
     disposals:
-      Number(p.disposals ?? p.d ?? ((p.kicks ?? 0) + (p.handballs ?? 0))),
-    marks: Number(p.marks ?? p.m ?? 0),
-    tackles: Number(p.tackles ?? p.t ?? 0),
+      Number(p.disposals ?? p.d ?? kicks + handballs),
+    marks,
+    tackles,
 
-    freesFor: Number(p.freesFor ?? p.ff ?? 0),
-    freesAgainst: Number(p.freesAgainst ?? p.fa ?? 0),
-    hitouts: Number(p.hitouts ?? p.ho ?? 0),
+    freesFor,
+    freesAgainst,
+    hitouts,
 
-    goals: Number(p.goals ?? p.g ?? 0),
-    behinds: Number(p.behinds ?? p.b ?? 0),
+    goals,
+    behinds,
   };
 
   normalized.fantasyPoints = calculateFantasyPoints(normalized);
@@ -76,7 +86,7 @@ function normalizePlayer(p) {
 }
 
 // ------------------------------------------------------------
-// LIVE DFS JSON
+// LIVE DFS JSON (Shiny endpoint)
 // ------------------------------------------------------------
 async function fetchRawDfs() {
   const url =
@@ -93,7 +103,7 @@ async function fetchRawDfs() {
   });
 
   if (!res.ok) {
-    throw new Error(`DFS feed returned error: ${res.status}`);
+    throw new Error(`DFS live feed returned error: ${res.status}`);
   }
 
   return await res.text();
@@ -101,18 +111,18 @@ async function fetchRawDfs() {
 
 function parseDfsJson(raw) {
   if (raw.trim().startsWith("<!DOCTYPE") || raw.includes("<html")) {
-    throw new Error("DFS returned HTML instead of JSON (Shiny error page)");
+    throw new Error("DFS live feed returned HTML instead of JSON");
   }
 
   let json;
   try {
     json = JSON.parse(raw);
   } catch (err) {
-    throw new Error("DFS JSON parse failed: " + err.message);
+    throw new Error("DFS live JSON parse failed: " + err.message);
   }
 
   if (!json.playerStats || !Array.isArray(json.playerStats)) {
-    throw new Error("DFS JSON missing playerStats array");
+    throw new Error("DFS live JSON missing playerStats array");
   }
 
   return json;
@@ -130,7 +140,7 @@ async function fetchDfsWithRetry() {
     } catch (err) {
       lastErr = err;
       console.error(
-        `DFS attempt ${attempt}/${MAX_RETRIES} failed: ${err.message}`
+        `DFS live attempt ${attempt}/${MAX_RETRIES} failed: ${err.message}`
       );
       if (attempt < MAX_RETRIES) {
         await sleep(1000 * attempt);
@@ -143,8 +153,10 @@ async function fetchDfsWithRetry() {
 
 // ------------------------------------------------------------
 // COMPLETED GAME SCRAPER — DFS MySQL JSON
+// NOTE: This endpoint appears to always return the last game.
+// We hard-guard it by validating Champion Data matchId.
 // ------------------------------------------------------------
-export async function scrapeCompletedDFS(dfsId) {
+export async function scrapeCompletedDFS(dfsId, cdMatchId) {
   const url = `https://dfsaustralia.com/wp-admin/admin-ajax.php?action=afl_game_stats_call_mysql&gameId=${dfsId}`;
 
   try {
@@ -158,67 +170,61 @@ export async function scrapeCompletedDFS(dfsId) {
     });
 
     if (!res.ok) {
-      throw new Error(`Completed DFS returned ${res.status}`);
+      throw new Error(`Completed DFS MySQL returned ${res.status}`);
     }
 
     const json = await res.json();
-    const players = [...(json.home ?? []), ...(json.away ?? [])];
 
-    if (players.length === 0) {
-      throw new Error("Completed DFS returned no players");
-    }
+    // Validate against Champion Data matchId if available
+    if (cdMatchId && Array.isArray(json.homeTeam) && json.homeTeam.length > 0) {
+      const mysqlCdMatchId =
+        json.homeTeam[0].matchId ?? json.homeTeam[0].match_id ?? null;
 
-    const hasGameId = players.some((p) => p.gameId != null);
-    if (hasGameId) {
-      const allMatch = players.every(
-        (p) => Number(p.gameId) === Number(dfsId)
-      );
-      if (!allMatch) {
-        throw new Error("Completed DFS returned wrong game data");
+      if (
+        mysqlCdMatchId &&
+        String(mysqlCdMatchId).trim() !== String(cdMatchId).trim()
+      ) {
+        throw new Error(
+          `Completed DFS MySQL mismatch: expected CD matchId ${cdMatchId}, got ${mysqlCdMatchId}`
+        );
       }
     }
 
-    return players.map((p) => ({
-      id: p.playerId,
-      playerId: p.playerId,
-      playerName: p.playerName,
-      teamAbbr: p.teamAbbr ?? "",
+    const homeTeamAbbr =
+      json.homeTeam?.[0]?.teamAbbr ?? json.homeTeam?.[0]?.team ?? "";
+    const awayTeamAbbr =
+      json.awayTeam?.[0]?.teamAbbr ?? json.awayTeam?.[0]?.team ?? "";
 
-      kicks: Number(p.kicks ?? 0),
-      handballs: Number(p.handballs ?? 0),
-      disposals: Number(p.kicks ?? 0) + Number(p.handballs ?? 0),
-      marks: Number(p.marks ?? 0),
-      tackles: Number(p.tackles ?? 0),
-      goals: Number(p.goals ?? 0),
-      behinds: Number(p.behinds ?? 0),
-      hitouts: Number(p.hitouts ?? 0),
-      freesFor: Number(p.freesFor ?? 0),
-      freesAgainst: Number(p.freesAgainst ?? 0),
-      timeOnGroundPercentage: Number(p.timeOnGroundPercentage ?? 0),
-
-      fantasyPoints: calculateFantasyPoints({
-        kicks: p.kicks,
-        handballs: p.handballs,
-        marks: p.marks,
-        tackles: p.tackles,
-        freesFor: p.freesFor,
-        freesAgainst: p.freesAgainst,
-        hitouts: p.hitouts,
-        goals: p.goals,
-        behinds: p.behinds,
-      }),
+    const homePlayers = (json.home ?? []).map((p) => ({
+      ...p,
+      teamAbbr: p.teamAbbr ?? p.team ?? homeTeamAbbr,
     }));
+
+    const awayPlayers = (json.away ?? []).map((p) => ({
+      ...p,
+      teamAbbr: p.teamAbbr ?? p.team ?? awayTeamAbbr,
+    }));
+
+    const players = [...homePlayers, ...awayPlayers];
+
+    if (players.length === 0) {
+      throw new Error("Completed DFS MySQL returned no players");
+    }
+
+    return players.map(normalizePlayer);
   } catch (err) {
-    console.error("❌ scrapeCompletedDFS failed:", err.message);
+    console.error("❌ scrapeCompletedDFS (MySQL) failed:", err.message);
     return [];
   }
 }
 
 // ------------------------------------------------------------
 // COMPLETED GAME SCRAPER — DFS HTML FALLBACK
+// Uses https://dfsaustralia.com/afl-game-stats/?gameId=XXXX
+// Table columns: PLAYER, K, H, M, HO, FF, FA, D, TOG, HMAP, FR, SC
 // ------------------------------------------------------------
 async function scrapeCompletedDFSHtml(dfsId) {
-  const url = `https://dfsaustralia.com/afl/game-stats/?gameId=${dfsId}`;
+  const url = `https://dfsaustralia.com/afl-game-stats/?gameId=${dfsId}`;
 
   try {
     const res = await fetch(url, {
@@ -239,45 +245,48 @@ async function scrapeCompletedDFSHtml(dfsId) {
 
     const players = [];
 
-    // NOTE: You may need to tweak selectors once you inspect the table structure.
-    $("table tr").each((_, row) => {
-      const cells = $(row).find("td");
-      if (cells.length === 0) return;
+    // There are two tables (home/away). We don't reliably know teamAbbr here,
+    // so we leave it blank; upstream mapping can infer by squad if needed.
+    $("table").each((_, table) => {
+      $(table)
+        .find("tr")
+        .each((__, row) => {
+          const cells = $(row).find("td");
+          if (cells.length === 0) return;
 
-      const playerName = $(cells[0]).text().trim();
-      if (!playerName) return;
+          const playerName = $(cells[0]).text().trim();
+          if (!playerName) return;
 
-      const toNumber = (el) => {
-        const v = $(el).text().trim();
-        const n = Number(v);
-        return Number.isNaN(n) ? 0 : n;
-      };
+          const toNumber = (el) => {
+            const v = $(el).text().trim();
+            const n = Number(v);
+            return Number.isNaN(n) ? 0 : n;
+          };
 
-      const kicks = toNumber(cells[1]);
-      const handballs = toNumber(cells[2]);
-      const marks = toNumber(cells[3]);
-      const tackles = toNumber(cells[4]);
-      const hitouts = toNumber(cells[5]);
-      const freesFor = toNumber(cells[6]);
-      const freesAgainst = toNumber(cells[7]);
-      const goals = toNumber(cells[8]);
-      const behinds = toNumber(cells[9]);
+          const kicks = toNumber(cells[1]); // K
+          const handballs = toNumber(cells[2]); // H
+          const marks = toNumber(cells[3]); // M
+          const hitouts = toNumber(cells[4]); // HO
+          const freesFor = toNumber(cells[5]); // FF
+          const freesAgainst = toNumber(cells[6]); // FA
+          // D, TOG, HMAP, FR, SC exist but are not needed for fantasy calc
 
-      players.push({
-        id: `${dfsId}-${playerName}`,
-        playerId: `${dfsId}-${playerName}`,
-        playerName,
-        kicks,
-        handballs,
-        disposals: kicks + handballs,
-        marks,
-        tackles,
-        goals,
-        behinds,
-        hitouts,
-        freesFor,
-        freesAgainst,
-      });
+          players.push({
+            id: `${dfsId}-${playerName}`,
+            playerId: `${dfsId}-${playerName}`,
+            playerName,
+            kicks,
+            handballs,
+            disposals: kicks + handballs,
+            marks,
+            tackles: 0,
+            goals: 0,
+            behinds: 0,
+            hitouts,
+            freesFor,
+            freesAgainst,
+          });
+        });
     });
 
     if (players.length === 0) {
@@ -335,15 +344,14 @@ export async function scrapeAflMatchCentre(cdMatchId) {
       const goals = Number(stats.goals ?? 0);
       const behinds = Number(stats.behinds ?? 0);
 
-      return {
+      return normalizePlayer({
         id: p.player?.playerId,
         playerId: p.player?.playerId,
         playerName: p.player?.name,
         teamAbbr: p.team?.teamAbbr ?? "",
-
         kicks,
         handballs,
-        disposals: Number(stats.disposals ?? kicks + handballs),
+        disposals: kicks + handballs,
         marks,
         tackles,
         goals,
@@ -351,22 +359,7 @@ export async function scrapeAflMatchCentre(cdMatchId) {
         hitouts,
         freesFor,
         freesAgainst,
-        timeOnGroundPercentage: Number(
-          stats.timeOnGroundPercentage ?? 0
-        ),
-
-        fantasyPoints: calculateFantasyPoints({
-          kicks,
-          handballs,
-          marks,
-          tackles,
-          freesFor,
-          freesAgainst,
-          hitouts,
-          goals,
-          behinds,
-        }),
-      };
+      });
     });
   } catch (err) {
     console.error("❌ scrapeAflMatchCentre failed:", err.message);
@@ -376,6 +369,11 @@ export async function scrapeAflMatchCentre(cdMatchId) {
 
 // ------------------------------------------------------------
 // PUBLIC API — scrapeDFS(dfsId, cdMatchId)
+// Order:
+//   1) Live DFS JSON (Shiny)
+//   2) Completed DFS MySQL (guarded by cdMatchId)
+//   3) Completed DFS HTML
+//   4) AFL MatchCentre
 // ------------------------------------------------------------
 export async function scrapeDFS(dfsId, cdMatchId) {
   const matchId = Number(dfsId);
@@ -385,17 +383,16 @@ export async function scrapeDFS(dfsId, cdMatchId) {
     const json = await fetchDfsWithRetry();
     updateCache(json);
 
-    const playersRaw = json.playerStats.filter((p) => {
-      const pid = Number(p.id ?? p.matchId ?? p.match_id);
-      return pid === matchId;
-    });
+    const playersRaw = json.playerStats.filter(
+  p => p.id === Number(dfsId) || p.id === Number(fixtureId)
+);
 
     if (playersRaw.length > 0) {
       return playersRaw.map(normalizePlayer);
     }
 
-    // 2) Completed DFS JSON (MySQL)
-    let completedPlayers = await scrapeCompletedDFS(dfsId);
+    // 2) Completed DFS JSON (MySQL) — only accept if CD matchId matches
+    let completedPlayers = await scrapeCompletedDFS(dfsId, cdMatchId);
     if (completedPlayers.length > 0) {
       return completedPlayers;
     }
@@ -419,8 +416,9 @@ export async function scrapeDFS(dfsId, cdMatchId) {
     console.error("❌ DFS scraper failed:", err.message);
     recordError(err);
 
+    // Try cached live JSON if available
     if (lastGoodJson) {
-      console.warn("⚠ Using cached DFS data");
+      console.warn("⚠ Using cached DFS live data");
       const cachedPlayers = lastGoodJson.playerStats.filter((p) => {
         const pid = Number(p.id ?? p.matchId ?? p.match_id);
         return pid === matchId;

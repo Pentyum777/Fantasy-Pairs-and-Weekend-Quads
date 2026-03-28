@@ -743,25 +743,22 @@ Widget build(BuildContext context) {
         continue;
       }
 
-      
-
-      // No stats yet for this player
+      // No stats yet for this player (future game, network suspended, backend returned empty)
       final s = statsById[id];
-
-if (s == null || s.player == null) {
-  pick.fantasyPoints = 0;
-  pick.stats = {
-    "AF": 0,
-    "K": 0,
-    "HB": 0,
-    "D": 0,
-    "M": 0,
-    "T": 0,
-    "G": 0,
-    "B": 0,
-  };
-  continue;
-}
+      if (s == null) {
+        pick.fantasyPoints = 0;
+        pick.stats = {
+          "AF": 0,
+          "K": 0,
+          "HB": 0,
+          "D": 0,
+          "M": 0,
+          "T": 0,
+          "G": 0,
+          "B": 0,
+        };
+        continue;
+      }
 
       // Normalize all stats BEFORE assigning
       final af = s.fantasyPoints ?? 0;
@@ -800,12 +797,11 @@ if (s == null || s.player == null) {
   // Notify GameViewScreen to save snapshot (admin only)
   widget.onLiveScoreUpdateSave?.call();
 
-  // ⭐ Update timestamp label in GameViewScreen
+  // Update timestamp label in GameViewScreen
   final now = DateTime.now();
   final formatted = "${now.hour.toString().padLeft(2, '0')}:"
                     "${now.minute.toString().padLeft(2, '0')}:"
                     "${now.second.toString().padLeft(2, '0')}";
-
   widget.onTimestampChanged?.call(formatted);
 }
 
