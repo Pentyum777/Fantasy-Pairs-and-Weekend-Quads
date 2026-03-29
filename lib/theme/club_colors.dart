@@ -6,7 +6,7 @@ class ClubColors {
     "Brisbane": Color(0xFF7A003C),
     "Carlton": Color(0xFF031A29),
     "Collingwood": Color(0xFF000000),
-    "Essendon": Color(0xFFCC2031),
+    "Essendon": Color.fromARGB(255, 250, 2, 27),
     "Fremantle": Color(0xFF2A0D54),
     "Geelong": Color(0xFF001C3F),
     "Gold Coast": Color(0xFFFF0000),

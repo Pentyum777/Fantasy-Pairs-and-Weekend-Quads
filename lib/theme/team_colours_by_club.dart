@@ -20,7 +20,7 @@ class TeamColoursByClub {
     },
     "ESS": {
       "bg": Colors.black,
-      "fg": Color(0xFFcc2031),
+      "fg": Color.fromARGB(255, 240, 3, 27),
     },
     "FRE": {
       "bg": Color.fromARGB(255, 103, 84, 150),
@@ -44,7 +44,7 @@ class TeamColoursByClub {
     },
     "MELB": { // FIXED
       "bg": Color(0xFF0f1131),
-      "fg": Color(0xFFcc2031),
+      "fg": Color.fromARGB(255, 247, 2, 26),
     },
     "NTH": {
       "bg": Color(0xFF013b9f),
