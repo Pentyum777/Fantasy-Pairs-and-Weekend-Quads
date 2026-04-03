@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import cors from "cors";
 import { fileURLToPath } from "url";
-import { scrapeDFS, scrapeCompletedDFS } from "./dfs_scraper.js";
+import { scrapeDFS } from "./dfs_scraper.js";
 import pkg from "pg";
 const { Pool } = pkg;
 
@@ -93,7 +93,6 @@ app.post("/saveSelections", async (req, res) => {
     const safeSeason = season ?? 0;
     const safeRound = round ?? 0;
 
-    // ⭐ FIX: Convert JS arrays → JSON text for jsonb columns
     const punterNamesJson = JSON.stringify(
       Array.isArray(punterNames) ? punterNames : []
     );
@@ -136,9 +135,6 @@ app.post("/saveSelections", async (req, res) => {
     res.status(500).json({ error: "Failed to save selections" });
   }
 });
-
-
-
 
 // ------------------------------------------------------
 // Load selections (Postgres)
@@ -204,7 +200,7 @@ app.get("/loadSelections", async (req, res) => {
 });
 
 // ------------------------------------------------------
-// Save round results (filesystem under /data)
+// Save round results (filesystem)
 // ------------------------------------------------------
 app.post("/saveRoundResults", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -263,7 +259,7 @@ app.post("/saveRoundResults", (req, res) => {
 });
 
 // ------------------------------------------------------
-// Load season results (filesystem under /data)
+// Load season results
 // ------------------------------------------------------
 app.get("/seasonResults", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -308,7 +304,7 @@ app.get("/seasonResults", (req, res) => {
 });
 
 // ------------------------------------------------------
-// Fantasy endpoint (NEW — uses DFS event feed)
+// Fantasy endpoint — LIVE DFS ONLY
 // ------------------------------------------------------
 app.get("/fantasy/:matchId", async (req, res) => {
   const cdMatchId = req.params.matchId;
@@ -324,24 +320,10 @@ app.get("/fantasy/:matchId", async (req, res) => {
   }
 
   try {
-    // ------------------------------------------------------------
-    // 1. Try LIVE DFS feed first
-    // ------------------------------------------------------------
+    // 1. Live DFS feed
     let dfsPlayers = await scrapeDFS(dfsId);
 
-    // ------------------------------------------------------------
-    // 2. If no players found → FALL BACK to completed-game scraper
-    // ------------------------------------------------------------
-    if (!dfsPlayers || dfsPlayers.length === 0) {
-      console.log(`⚠️ No live DFS data for ${dfsId}. Trying completed-game stats...`);
-      try {
-        dfsPlayers = await scrapeCompletedDFS(dfsId);
-      } catch (err) {
-        console.error("Completed-game scraper error:", err);
-      }
-    }
-
-    // If still nothing → return empty
+    // 2. Future game → empty stats
     if (!dfsPlayers || dfsPlayers.length === 0) {
       return res.json({
         ok: true,
@@ -355,17 +337,13 @@ app.get("/fantasy/:matchId", async (req, res) => {
       });
     }
 
-    // ------------------------------------------------------------
-    // 3. Apply fantasy scoring (overwrite any existing value)
-    // ------------------------------------------------------------
+    // 3. Apply fantasy scoring
     const players = dfsPlayers.map((p) => ({
-  ...p,
-  af: calculateFantasyPoints(p),
-}));
+      ...p,
+      af: calculateFantasyPoints(p),
+    }));
 
-    // ------------------------------------------------------------
     // 4. Squiggle metadata
-    // ------------------------------------------------------------
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -383,9 +361,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
       }
     }
 
-    // ------------------------------------------------------------
     // 5. Final response
-    // ------------------------------------------------------------
     return res.json({
       ok: true,
       matchId: cdMatchId,
@@ -405,7 +381,6 @@ app.get("/fantasy/:matchId", async (req, res) => {
     });
   }
 });
-
 
 // ------------------------------------------------------
 // Squiggle metadata fetcher
