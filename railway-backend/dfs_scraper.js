@@ -61,15 +61,14 @@ function normalizePlayer(p) {
   const behinds = Number(p.behinds ?? p.b ?? 0);
 
   const normalized = {
-    id: p.id ?? p.matchId ?? p.match_id ?? "",
-    playerId: p.playerId ?? p.player_id ?? "",
+    id: p.id ?? "",
+    playerId: p.playerId ?? "",
     playerName: p.playerName ?? p.name ?? "",
     teamAbbr: p.teamAbbr ?? p.team ?? "",
 
     kicks,
     handballs,
-    disposals:
-      Number(p.disposals ?? p.d ?? kicks + handballs),
+    disposals: Number(p.disposals ?? p.d ?? kicks + handballs),
     marks,
     tackles,
 
@@ -153,8 +152,6 @@ async function fetchDfsWithRetry() {
 
 // ------------------------------------------------------------
 // COMPLETED GAME SCRAPER — DFS MySQL JSON
-// NOTE: This endpoint appears to always return the last game.
-// We hard-guard it by validating Champion Data matchId.
 // ------------------------------------------------------------
 export async function scrapeCompletedDFS(dfsId, cdMatchId) {
   const url = `https://dfsaustralia.com/wp-admin/admin-ajax.php?action=afl_game_stats_call_mysql&gameId=${dfsId}`;
@@ -175,34 +172,14 @@ export async function scrapeCompletedDFS(dfsId, cdMatchId) {
 
     const json = await res.json();
 
-    // Validate against Champion Data matchId if available
-    if (cdMatchId && Array.isArray(json.homeTeam) && json.homeTeam.length > 0) {
-      const mysqlCdMatchId =
-        json.homeTeam[0].matchId ?? json.homeTeam[0].match_id ?? null;
-
-      if (
-        mysqlCdMatchId &&
-        String(mysqlCdMatchId).trim() !== String(cdMatchId).trim()
-      ) {
-        throw new Error(
-          `Completed DFS MySQL mismatch: expected CD matchId ${cdMatchId}, got ${mysqlCdMatchId}`
-        );
-      }
-    }
-
-    const homeTeamAbbr =
-      json.homeTeam?.[0]?.teamAbbr ?? json.homeTeam?.[0]?.team ?? "";
-    const awayTeamAbbr =
-      json.awayTeam?.[0]?.teamAbbr ?? json.awayTeam?.[0]?.team ?? "";
-
     const homePlayers = (json.home ?? []).map((p) => ({
       ...p,
-      teamAbbr: p.teamAbbr ?? p.team ?? homeTeamAbbr,
+      teamAbbr: p.teamAbbr ?? p.team ?? "",
     }));
 
     const awayPlayers = (json.away ?? []).map((p) => ({
       ...p,
-      teamAbbr: p.teamAbbr ?? p.team ?? awayTeamAbbr,
+      teamAbbr: p.teamAbbr ?? p.team ?? "",
     }));
 
     const players = [...homePlayers, ...awayPlayers];
@@ -220,8 +197,6 @@ export async function scrapeCompletedDFS(dfsId, cdMatchId) {
 
 // ------------------------------------------------------------
 // COMPLETED GAME SCRAPER — DFS HTML FALLBACK
-// Uses https://dfsaustralia.com/afl-game-stats/?gameId=XXXX
-// Table columns: PLAYER, K, H, M, HO, FF, FA, D, TOG, HMAP, FR, SC
 // ------------------------------------------------------------
 async function scrapeCompletedDFSHtml(dfsId) {
   const url = `https://dfsaustralia.com/afl-game-stats/?gameId=${dfsId}`;
@@ -245,8 +220,6 @@ async function scrapeCompletedDFSHtml(dfsId) {
 
     const players = [];
 
-    // There are two tables (home/away). We don't reliably know teamAbbr here,
-    // so we leave it blank; upstream mapping can infer by squad if needed.
     $("table").each((_, table) => {
       $(table)
         .find("tr")
@@ -263,13 +236,12 @@ async function scrapeCompletedDFSHtml(dfsId) {
             return Number.isNaN(n) ? 0 : n;
           };
 
-          const kicks = toNumber(cells[1]); // K
-          const handballs = toNumber(cells[2]); // H
-          const marks = toNumber(cells[3]); // M
-          const hitouts = toNumber(cells[4]); // HO
-          const freesFor = toNumber(cells[5]); // FF
-          const freesAgainst = toNumber(cells[6]); // FA
-          // D, TOG, HMAP, FR, SC exist but are not needed for fantasy calc
+          const kicks = toNumber(cells[1]);
+          const handballs = toNumber(cells[2]);
+          const marks = toNumber(cells[3]);
+          const hitouts = toNumber(cells[4]);
+          const freesFor = toNumber(cells[5]);
+          const freesAgainst = toNumber(cells[6]);
 
           players.push({
             id: `${dfsId}-${playerName}`,
@@ -369,11 +341,6 @@ export async function scrapeAflMatchCentre(cdMatchId) {
 
 // ------------------------------------------------------------
 // PUBLIC API — scrapeDFS(dfsId, cdMatchId)
-// Order:
-//   1) Live DFS JSON (Shiny)
-//   2) Completed DFS MySQL (guarded by cdMatchId)
-//   3) Completed DFS HTML
-//   4) AFL MatchCentre
 // ------------------------------------------------------------
 export async function scrapeDFS(dfsId, cdMatchId) {
   const matchId = Number(dfsId);
@@ -383,15 +350,16 @@ export async function scrapeDFS(dfsId, cdMatchId) {
     const json = await fetchDfsWithRetry();
     updateCache(json);
 
+    // ⭐ Correct filter — NO fixtureId
     const playersRaw = json.playerStats.filter(
-  p => p.id === Number(dfsId) || p.id === Number(fixtureId)
-);
+      (p) => Number(p.id) === Number(dfsId)
+    );
 
     if (playersRaw.length > 0) {
       return playersRaw.map(normalizePlayer);
     }
 
-    // 2) Completed DFS JSON (MySQL) — only accept if CD matchId matches
+    // 2) Completed DFS JSON (MySQL)
     let completedPlayers = await scrapeCompletedDFS(dfsId, cdMatchId);
     if (completedPlayers.length > 0) {
       return completedPlayers;
