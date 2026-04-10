@@ -55,6 +55,8 @@ class AflPlayerMatchStats {
     this.q4,
   });
 
+bool isCompletedGame = false;
+
   factory AflPlayerMatchStats.fromJson(Map<String, dynamic> json) {
     int? _asInt(dynamic v) =>
         v is int ? v : int.tryParse(v?.toString() ?? '');

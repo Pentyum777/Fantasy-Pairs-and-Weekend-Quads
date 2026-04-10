@@ -40,6 +40,8 @@ class PlayerPick {
     );
   }
 
+bool isCompleted = false;
+
   // -----------------------------
   // Safe helpers
   // -----------------------------

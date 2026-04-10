@@ -106,6 +106,25 @@ class _GameViewScreenState extends State<GameViewScreen> {
   // ⭐ NEW: prevents table from building before snapshot loads
   bool _snapshotLoaded = false;
 
+bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
+  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+    widget.season,
+    widget.round,
+  );
+
+  final club = s.player?.club;
+  if (club == null || club.isEmpty) return false;
+
+  for (final f in fixtures) {
+    if (f.complete &&
+        (f.homeTeam == club || f.awayTeam == club)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
   @override
 void initState() {
   super.initState();
@@ -199,9 +218,10 @@ void initState() {
 
 void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   _currentStatsByPlayerId = {
-    for (final s in stats)
-      if (s.player != null) s.player!.id: s,
-  };
+  for (final s in stats)
+    if (s.player != null) s.player!.id: s..isCompletedGame =
+        _isPlayerFromCompletedFixture(s),
+};
 }
 
   void _applySnapshotToSelections(Map<String, dynamic> data) {

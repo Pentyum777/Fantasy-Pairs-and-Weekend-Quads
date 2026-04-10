@@ -533,51 +533,59 @@ Widget build(BuildContext context) {
   // ---------------------------------------------------------------------------
 
   Widget _buildPickCell(
-    BuildContext context,
-    PunterSelection row,
-    PlayerPick pick,
-  ) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+  BuildContext context,
+  PunterSelection row,
+  PlayerPick pick,
+) {
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    final visualRowIndex = row.punterNumber - 1;
-    final colIndex = pick.pickNumber - 1;
-    final owner = row;
+  final visualRowIndex = row.punterNumber - 1;
+  final colIndex = pick.pickNumber - 1;
+  final owner = row;
 
-    // Build globalTaken set
-    final globalTaken = <String>{};
-    for (final r in widget.selections) {
-      for (int i = 0; i < r.picks.length; i++) {
-        final p = r.picks[i].player;
-        if (p == null) continue;
-        if (identical(r, owner) && i == colIndex) continue;
-        globalTaken.add(p.id);
-      }
+  // NEW: completed‑game shading
+  final bool isCompleted = pick.isCompleted == true;
+  final Color bgColor =
+      isCompleted ? Colors.grey.withOpacity(0.25) : Colors.transparent;
+  
+
+  // Build globalTaken set
+  final globalTaken = <String>{};
+  for (final r in widget.selections) {
+    for (int i = 0; i < r.picks.length; i++) {
+      final p = r.picks[i].player;
+      if (p == null) continue;
+      if (identical(r, owner) && i == colIndex) continue;
+      globalTaken.add(p.id);
     }
+  }
 
-    final selectedPlayer = owner.picks[colIndex].player;
-    final allPlayers = widget.availablePlayers;
+  final selectedPlayer = owner.picks[colIndex].player;
+  final allPlayers = widget.availablePlayers;
 
-    final filteredPlayers = allPlayers
-        .where((p) {
-          final isTaken = globalTaken.contains(p.id);
-          final isCurrent = p == selectedPlayer;
-          return !isTaken || isCurrent;
-        })
-        .toList()
-      ..sort((a, b) => a.fullName.compareTo(b.fullName));
+  final filteredPlayers = allPlayers
+      .where((p) {
+        final isTaken = globalTaken.contains(p.id);
+        final isCurrent = p == selectedPlayer;
+        return !isTaken || isCurrent;
+      })
+      .toList()
+    ..sort((a, b) => a.fullName.compareTo(b.fullName));
 
-    final globalPickNumber = _globalPickNumberForCell(
-      rowIndex: visualRowIndex,
-      colIndex: colIndex,
-    );
+  final globalPickNumber = _globalPickNumberForCell(
+    rowIndex: visualRowIndex,
+    colIndex: colIndex,
+  );
 
-    final hintText = "P$globalPickNumber";
+  final hintText = "P$globalPickNumber";
 
-    final pickKey = "${row.punterNumber}_${pick.pickNumber}";
-    _pickFocusNodes.putIfAbsent(pickKey, () => FocusNode());
+  final pickKey = "${row.punterNumber}_${pick.pickNumber}";
+  _pickFocusNodes.putIfAbsent(pickKey, () => FocusNode());
 
-    return DropdownSearch<AflPlayer>(
+  return Container(
+    color: bgColor, // ⭐ NEW: shade completed picks
+    child: DropdownSearch<AflPlayer>(
       selectedItem: selectedPlayer,
       items: filteredPlayers,
       itemAsString: (p) => p.fullName,
@@ -633,12 +641,13 @@ Widget build(BuildContext context) {
             children: [
               // Team-colour chip
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: colours == null
                     ? null
                     : BoxDecoration(
-                        color: colours["bg"]!.withOpacity(0.85),
+                        color: colours["bg"]!.withOpacity(
+                          isCompleted ? 0.35 : 0.85, // ⭐ dim chip if completed
+                        ),
                         borderRadius: BorderRadius.circular(4),
                       ),
                 child: IntrinsicWidth(
@@ -650,9 +659,11 @@ Widget build(BuildContext context) {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: colours == null
-                          ? cs.onSurfaceVariant
-                          : colours["fg"],
+                      color: isCompleted
+                          ? Colors.black // ⭐ override to black
+                          : (colours == null
+                              ? cs.onSurfaceVariant
+                              : colours["fg"]),
                     ),
                   ),
                 ),
@@ -716,8 +727,9 @@ Widget build(BuildContext context) {
           FocusScope.of(context).unfocus();
         }
       },
-    );
-  }
+    ),
+  );
+}
   // ---------------------------------------------------------------------------
   // APPLY LIVE STATS TO PICKS (called by GameViewScreen)
   // ---------------------------------------------------------------------------
@@ -745,20 +757,26 @@ Widget build(BuildContext context) {
 
       // No stats yet for this player (future game, network suspended, backend returned empty)
       final s = statsById[id];
-      if (s == null) {
-        pick.fantasyPoints = 0;
-        pick.stats = {
-          "AF": 0,
-          "K": 0,
-          "HB": 0,
-          "D": 0,
-          "M": 0,
-          "T": 0,
-          "G": 0,
-          "B": 0,
-        };
-        continue;
-      }
+
+// No stats → future game
+if (s == null) {
+  pick.isCompleted = false;
+  pick.fantasyPoints = 0;
+  pick.stats = {
+    "AF": 0,
+    "K": 0,
+    "HB": 0,
+    "D": 0,
+    "M": 0,
+    "T": 0,
+    "G": 0,
+    "B": 0,
+  };
+  continue;
+}
+
+// Stats exist → completed or in‑progress game
+pick.isCompleted = s.isCompletedGame;
 
       // Normalize all stats BEFORE assigning
       final af = s.fantasyPoints ?? 0;
@@ -811,23 +829,26 @@ Widget build(BuildContext context) {
   // ---------------------------------------------------------------------------
 
   Widget _pickScoreCell(PlayerPick pick) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
 
-    return Container(
-      alignment: Alignment.center,
-      padding: EdgeInsets.zero,
-      child: Text(
-        "${pick.fantasyPoints ?? 0}",
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: cs.onSurface,
-        ),
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
+  final isCompleted = pick.isCompleted == true;
+
+  return Container(
+    alignment: Alignment.center,
+    padding: EdgeInsets.zero,
+    color: isCompleted ? Colors.grey.withOpacity(0.25) : Colors.transparent,
+    child: Text(
+      "${pick.fantasyPoints ?? 0}",
+      style: theme.textTheme.bodySmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: isCompleted ? Colors.black : cs.onSurface,
       ),
-    );
-  }
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
+    ),
+  );
+}
 
   // ---------------------------------------------------------------------------
   // TOTAL CELL
