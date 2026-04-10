@@ -667,6 +667,7 @@ Widget build(BuildContext context) {
     ),
   ),
 ),
+              ),
 
               // Clear button (admins only, not readOnly)
               if (widget.userRoleService.isAdmin &&
