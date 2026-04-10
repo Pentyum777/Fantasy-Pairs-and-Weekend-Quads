@@ -23,7 +23,7 @@ class TeamColoursByClub {
       "fg": Color.fromARGB(255, 240, 3, 27),
     },
     "FRE": {
-      "bg": Color.fromARGB(255, 103, 84, 150),
+      "bg": Color.fromARGB(255, 85, 61, 145),
       "fg": Colors.white,
     },
     "GEE": {
@@ -43,8 +43,8 @@ class TeamColoursByClub {
       "fg": Color(0xFFfbbf15),
     },
     "MELB": { // FIXED
-      "bg": Color.fromARGB(255, 51, 59, 160),
-      "fg": Color.fromARGB(255, 247, 2, 26),
+      "bg": Color.fromARGB(255, 38, 43, 110),
+      "fg": Color.fromARGB(255, 175, 16, 32),
     },
     "NTH": {
       "bg": Color(0xFF013b9f),
