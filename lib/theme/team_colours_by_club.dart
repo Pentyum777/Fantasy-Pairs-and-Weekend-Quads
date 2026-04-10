@@ -43,8 +43,8 @@ class TeamColoursByClub {
       "fg": Color(0xFFfbbf15),
     },
     "MELB": { // FIXED
-      "bg": Color.fromARGB(255, 38, 43, 110),
-      "fg": Color.fromARGB(255, 175, 16, 32),
+      "bg": Color.fromARGB(255, 29, 41, 199),
+      "fg": Color.fromARGB(255, 255, 0, 25),
     },
     "NTH": {
       "bg": Color(0xFF013b9f),
