@@ -642,32 +642,31 @@ Widget build(BuildContext context) {
               // Team-colour chip
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: colours == null
-                    ? null
-                    : BoxDecoration(
-                        color: colours["bg"]!.withOpacity(
-                          isCompleted ? 0.35 : 0.85, // ⭐ dim chip if completed
-                        ),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                decoration: (colours == null)
+    ? null
+    : BoxDecoration(
+        color: (colours["bg"] ?? Colors.transparent).withOpacity(
+          isCompleted ? 0.35 : 0.85,
+        ),
+        borderRadius: BorderRadius.circular(4),
+      ),
                 child: IntrinsicWidth(
-                  child: Text(
-                    text,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: isCompleted
-                          ? Colors.black // ⭐ override to black
-                          : (colours == null
-                              ? cs.onSurfaceVariant
-                              : colours["fg"]),
-                    ),
-                  ),
-                ),
-              ),
+  child: Text(
+    text,
+    softWrap: false,
+    overflow: TextOverflow.ellipsis,
+    maxLines: 1,
+    textAlign: TextAlign.center,
+    style: theme.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w600,
+
+      // ⭐ Null‑safe + completed‑game shading
+      color: isCompleted
+          ? Colors.black
+          : (colours?["fg"] ?? cs.onSurfaceVariant),
+    ),
+  ),
+),
 
               // Clear button (admins only, not readOnly)
               if (widget.userRoleService.isAdmin &&
