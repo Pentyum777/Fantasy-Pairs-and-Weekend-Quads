@@ -741,6 +741,7 @@ Widget build(BuildContext context) {
 
       // No player selected
       if (id == null || id.isEmpty) {
+        pick.isCompleted = false;
         pick.fantasyPoints = 0;
         pick.stats = {
           "AF": 0,
@@ -755,30 +756,31 @@ Widget build(BuildContext context) {
         continue;
       }
 
-      // No stats yet for this player (future game, network suspended, backend returned empty)
+      // Lookup stats for this player
       final s = statsById[id];
 
-// No stats → future game
-if (s == null) {
-  pick.isCompleted = false;
-  pick.fantasyPoints = 0;
-  pick.stats = {
-    "AF": 0,
-    "K": 0,
-    "HB": 0,
-    "D": 0,
-    "M": 0,
-    "T": 0,
-    "G": 0,
-    "B": 0,
-  };
-  continue;
-}
+      // No stats → future game or not started
+      if (s == null) {
+        pick.isCompleted = false;
+        pick.fantasyPoints = 0;
+        pick.stats = {
+          "AF": 0,
+          "K": 0,
+          "HB": 0,
+          "D": 0,
+          "M": 0,
+          "T": 0,
+          "G": 0,
+          "B": 0,
+        };
+        continue;
+      }
 
-// Stats exist → completed or in‑progress game
-pick.isCompleted = s.isCompletedGame;
+      // Stats exist → completed or in‑progress game
+      // (GameViewScreen sets s.isCompletedGame correctly)
+      pick.isCompleted = s.isCompletedGame;
 
-      // Normalize all stats BEFORE assigning
+      // Normalise stats safely
       final af = s.fantasyPoints ?? 0;
       final k = s.kicks ?? 0;
       final hb = s.handballs ?? 0;
@@ -817,9 +819,11 @@ pick.isCompleted = s.isCompletedGame;
 
   // Update timestamp label in GameViewScreen
   final now = DateTime.now();
-  final formatted = "${now.hour.toString().padLeft(2, '0')}:"
-                    "${now.minute.toString().padLeft(2, '0')}:"
-                    "${now.second.toString().padLeft(2, '0')}";
+  final formatted =
+      "${now.hour.toString().padLeft(2, '0')}:"
+      "${now.minute.toString().padLeft(2, '0')}:"
+      "${now.second.toString().padLeft(2, '0')}";
+
   widget.onTimestampChanged?.call(formatted);
 }
 
