@@ -743,6 +743,7 @@ Widget build(BuildContext context) {
       // No player selected
       if (id == null || id.isEmpty) {
         pick.isCompleted = false;
+        pick.isLive = false; // ⭐ ensure not live
         pick.fantasyPoints = 0;
         pick.stats = {
           "AF": 0,
@@ -764,6 +765,7 @@ Widget build(BuildContext context) {
       // No stats → future game or not started
       if (s == null) {
         pick.isCompleted = false;
+        pick.isLive = false; // ⭐ ensure not live
         pick.fantasyPoints = 0;
         pick.stats = {
           "AF": 0,
@@ -781,6 +783,7 @@ Widget build(BuildContext context) {
 
       // Stats exist → completed or in-progress game
       pick.isCompleted = s.isCompletedGame;
+      pick.isLive = s.isLiveGame; // ⭐ FIXED
 
       if (!pick.isCompleted) {
         allCompleted = false;

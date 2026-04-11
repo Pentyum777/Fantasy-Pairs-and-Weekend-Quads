@@ -145,15 +145,12 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
 }
 
 bool _isFixtureLive(AflFixture f) {
-  if (f.complete == true) return false;
+  final q = f.quarterText.toLowerCase().trim();
 
-  final start = f.startDateTime;
-  if (start == null) return false;
+  if (q.isEmpty) return false;                     // no live data yet
+  if (q.contains("final") || q == "ft") return false;
 
-  final now = DateTime.now();
-  final end = start.add(const Duration(hours: 3)); // AFL match window
-
-  return now.isAfter(start) && now.isBefore(end);
+  return true;                                     // any other quarterText = LIVE
 }
 
 bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
@@ -169,8 +166,8 @@ bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
     final home = f.homeTeam.trim().toUpperCase();
     final away = f.awayTeam.trim().toUpperCase();
 
-    if ((team == home || team == away) && _isFixtureLive(f)) {
-      return true;
+    if (team == home || team == away) {
+      if (_isFixtureLive(f)) return true;
     }
   }
 
