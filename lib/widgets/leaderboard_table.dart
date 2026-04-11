@@ -242,6 +242,22 @@ Widget buildBody(BuildContext context) {
     );
   }
 
+Widget buildBodyRow(BuildContext context, int index) {
+  final p = punters[index];
+
+  return SizedBox(
+    height: rowHeight,
+    child: Row(
+      children: [
+        _rankCell(context, index),
+        _punterNameCell(context, p),
+        _scoreCell(context, p),
+      ],
+    ),
+  );
+}
+
+
   Widget _punterNameCell(BuildContext context, PunterSelection p) {
     return Container(
       width: UIDimensions.punterNameColumnWidth,

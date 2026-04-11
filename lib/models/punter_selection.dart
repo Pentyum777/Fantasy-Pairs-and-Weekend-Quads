@@ -6,9 +6,11 @@ class PunterSelection {
 
   String punterName;
   int liveScore;
-  bool isPrizeWinner;
+ bool isPrizeWinner;
 
-  PunterSelection({
+bool isCompletedPunter = false;
+
+ PunterSelection({
     required this.punterNumber,
     required this.picks,
     this.punterName = "",

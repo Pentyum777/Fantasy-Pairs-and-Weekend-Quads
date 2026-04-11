@@ -401,9 +401,7 @@ Widget build(BuildContext context) {
     final index = row.punterNumber - 1;
     final isStriped = index.isOdd;
 
-    final bg = isStriped
-        ? cs.surfaceVariant.withAlpha(64)
-        : cs.surface;
+    final isRowCompleted = row.isCompletedPunter == true; final bg = isRowCompleted ? Colors.grey.withOpacity(0.35) : (isStriped ? cs.surfaceVariant.withAlpha(64) : cs.surface);
 
     return Container(
       height: UIDimensions.rowHeight,
@@ -736,6 +734,8 @@ Widget build(BuildContext context) {
 
   void applyLiveStatsToTable(Map<String, AflPlayerMatchStats> statsById) {
   for (final selection in widget.selections) {
+    bool allCompleted = true; // Track full-row completion
+
     for (final pick in selection.picks) {
       final id = pick.player?.id;
 
@@ -753,6 +753,7 @@ Widget build(BuildContext context) {
           "G": 0,
           "B": 0,
         };
+        allCompleted = false;
         continue;
       }
 
@@ -773,12 +774,16 @@ Widget build(BuildContext context) {
           "G": 0,
           "B": 0,
         };
+        allCompleted = false;
         continue;
       }
 
-      // Stats exist → completed or in‑progress game
-      // (GameViewScreen sets s.isCompletedGame correctly)
+      // Stats exist → completed or in-progress game
       pick.isCompleted = s.isCompletedGame;
+
+      if (!pick.isCompleted) {
+        allCompleted = false;
+      }
 
       // Normalise stats safely
       final af = s.fantasyPoints ?? 0;
@@ -803,6 +808,9 @@ Widget build(BuildContext context) {
         "B": b,
       };
     }
+
+    // Store full-row completion flag
+    selection.isCompletedPunter = allCompleted;
 
     // Recalculate punter total
     selection.liveScore = widget.fantasyService.calculatePunterScore(

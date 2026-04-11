@@ -54,8 +54,7 @@ class LeaderboardPanel extends StatelessWidget {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
-                  // ⭐ Sticky header (from your existing LeaderboardTable)
+                  // HEADER
                   SizedBox(
                     height: UIDimensions.headerHeight,
                     width: expandedWidth,
@@ -69,14 +68,34 @@ class LeaderboardPanel extends StatelessWidget {
 
                   const Divider(height: 1),
 
-                  // ⭐ Scrollable body
+                  // BODY WITH SHADING
                   Expanded(
-                    child: LeaderboardTable(
-                      punters: punters,
-                      rowHeight: rowHeight,
-                      totalWidth: expandedWidth,
-                      scrollController: scrollController,
-                    ).buildBody(context),
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: punters.length,
+                      itemBuilder: (context, index) {
+                        final p = punters[index];
+
+                        final bool isCompleted = p.isCompletedPunter;
+
+                        final Color bg = isCompleted
+                            ? Colors.grey.withOpacity(0.35)
+                            : (index.isOdd
+                                ? theme.colorScheme.surfaceVariant.withAlpha(64)
+                                : theme.colorScheme.surface);
+
+                        return Container(
+                          height: rowHeight,
+                          color: bg,
+                          child: LeaderboardTable(
+                            punters: punters,
+                            rowHeight: rowHeight,
+                            totalWidth: expandedWidth,
+                            scrollController: scrollController,
+                          ).buildBodyRow(context, index), // ⭐ NEW
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),

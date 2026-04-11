@@ -106,7 +106,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   // ⭐ NEW: prevents table from building before snapshot loads
   bool _snapshotLoaded = false;
 
-String _norm(String s) => s.trim().toUpperCase();
+
 
 bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
   final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
@@ -114,18 +114,14 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
     widget.round,
   );
 
-  final club = _norm(s.player?.club ?? "");
-  if (club.isEmpty) return false;
+  final team = s.team.trim().toUpperCase();
+  if (team.isEmpty) return false;
 
   for (final f in fixtures) {
-    final home = _norm(f.homeTeam);
-    final away = _norm(f.awayTeam);
+    final home = f.homeTeam.trim().toUpperCase();
+    final away = f.awayTeam.trim().toUpperCase();
 
-    // Handle mismatched abbreviations (CAR vs CARL, GEE vs GEEL, etc.)
-    final matchesHome = home.contains(club) || club.contains(home);
-    final matchesAway = away.contains(club) || club.contains(away);
-
-    if (f.complete && (matchesHome || matchesAway)) {
+    if (f.complete && (team == home || team == away)) {
       return true;
     }
   }
