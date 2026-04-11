@@ -578,9 +578,10 @@ Future<void> _refreshLive() async {
 
     // 4. Apply stats to table
     // Always update the map (even if identical)
-_currentStatsByPlayerId = Map<String, AflPlayerMatchStats>.from(roundStats);
+// 4. Apply completion flags + build stats map
+_applyLiveStats(roundStats.values.toList());
 
-// Always reapply stats to the table
+// 5. Push stats into the table
 final tableState = _punterTableKey.currentState;
 if (tableState != null) {
   final dynamic dyn = tableState;
