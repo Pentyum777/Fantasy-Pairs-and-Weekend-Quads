@@ -70,7 +70,7 @@ bool isLiveGame = false;
           ? AflPlayer.fromJson(json['player'] as Map<String, dynamic>)
           : null,
 
-      team: (json['team'] ?? json['teamAbbr'] ?? '').toString(),
+      team: _normaliseTeam(json['team'] ?? json['teamAbbr']),
 
       kicks: kicks,
       handballs: handballs,
@@ -96,6 +96,21 @@ bool isLiveGame = false;
       q4: _asInt(json['q4']),
     );
   }
+
+static String _normaliseTeam(dynamic raw) {
+  final t = raw?.toString().toUpperCase().trim() ?? '';
+
+  const map = {
+    'MEL': 'MELB',
+    'MELBOURNE': 'MELB',
+    'NM': 'NMFC',
+    'NTH': 'NMFC',
+    'NORTH': 'NMFC',
+    // add others as needed
+  };
+
+  return map[t] ?? t;
+}
 
   Map<String, dynamic> toJson() {
     return {

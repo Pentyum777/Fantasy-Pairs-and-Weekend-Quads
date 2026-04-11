@@ -606,7 +606,7 @@ Future<void> _refreshLive() async {
     if (!mounted) return;
 
     // 2. Run completion checks + special logic
-    await _checkRoundCompletion();          // ⭐ now async
+    await _checkRoundCompletion(); // ⭐ async
     _finaliseFridayPairsWinner();
     _checkAndCompleteWeekendQuadsRound();
 
@@ -614,19 +614,20 @@ Future<void> _refreshLive() async {
     final roundStats = await _fetchRoundStats();
     debugPrint("ROUND STATS COUNT = ${roundStats.length}");
 
-    // 4. Apply stats to table
-    // Always update the map (even if identical)
-// 4. Apply completion flags + build stats map
-_applyLiveStats(roundStats.values.toList());
+    // 4. Apply completion flags + build stats map
+    _applyLiveStats(roundStats.values.toList());
 
-// 5. Push stats into the table
-final tableState = _punterTableKey.currentState;
-if (tableState != null) {
-  final dynamic dyn = tableState;
-  dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
-}
+    // 5. Push stats into the punter table
+    final tableState = _punterTableKey.currentState;
+    if (tableState != null) {
+      final dynamic dyn = tableState;
+      dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
+    }
 
-    // 5. Rebuild UI
+    // ⭐ 6. Sort ONLY for leaderboard (punter table stays in original order)
+    _selections.sort((a, b) => b.totalScore.compareTo(a.totalScore));
+
+    // 7. Rebuild UI
     setState(() {});
   } catch (e, st) {
     debugPrint("❌ Live refresh error: $e\n$st");
@@ -670,8 +671,11 @@ void _finaliseFridayPairsWinner() {
 
   // ⭐ Final stats refresh
   final roundStats = await _fetchRoundStats();
-  
+
   _applyLiveStats(roundStats.values.toList());
+
+  // ⭐ Sort ONLY for leaderboard
+  _selections.sort((a, b) => b.totalScore.compareTo(a.totalScore));
 
   // ⭐ Build final punter results for backend
   final punterResults = widget.fantasyService.buildCompletedRoundResults(

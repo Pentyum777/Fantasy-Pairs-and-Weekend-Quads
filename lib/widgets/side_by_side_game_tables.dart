@@ -288,44 +288,60 @@ class SideBySideGameTables extends StatelessWidget {
                   final isPlayer = c == "Player";
 
                   if (isPlayer) {
-                    final raw = playerFormatter != null
-                        ? playerFormatter(row)
-                        : "${row[c]}";
+  final display = playerFormatter != null
+      ? playerFormatter(row)
+      : "${row[c]}";
 
-                    final parts = raw.split(" ");
-                    final hasGuernsey =
-                        parts.isNotEmpty && int.tryParse(parts.first) != null;
+  // Split into guernsey + name
+  final parts = display.split(" ");
+  final hasGuernsey = parts.isNotEmpty && int.tryParse(parts.first) != null;
 
-                    return Expanded(
-                      child: hasGuernsey
-                          ? Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: "${parts.first} ",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: parts.skip(1).join(" "),
-                                  ),
-                                ],
-                              ),
-                              style: cellStyle,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              softWrap: false,
-                            )
-                          : Text(
-                              raw,
-                              style: cellStyle,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              softWrap: false,
-                            ),
-                    );
-                  }
+  if (hasGuernsey) {
+    final guernsey = parts.first;              // no !
+    final name = parts.skip(1).join(" ");      // no !
+
+    return Expanded(
+      child: Row(
+        children: [
+          // ⭐ Fixed-width guernsey box for perfect alignment
+          SizedBox(
+            width: 26,
+            child: Text(
+              guernsey,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+
+          const SizedBox(width: 4),
+
+          Expanded(
+            child: Text(
+              name,
+              style: theme.textTheme.bodySmall,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Fallback: no guernsey
+  return Expanded(
+    child: Text(
+      display,
+      style: theme.textTheme.bodySmall,
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
+    ),
+  );
+}
+
+
 
                   return SizedBox(
                     width: statColumnWidth,
