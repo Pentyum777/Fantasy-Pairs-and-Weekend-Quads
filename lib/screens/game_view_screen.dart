@@ -23,6 +23,7 @@ import '../widgets/stats_overlay.dart';
 import '../widgets/team_logo.dart';
 import '../widgets/leaderboard_panel.dart';
 import '../widgets/background_container.dart';
+import 'package:my_app/utils/afl_club_codes.dart';
 
 import '../parsers/match_stats_parser.dart';
 import '../constants/ui_dimensions.dart';
@@ -115,10 +116,9 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
     widget.round,
   );
 
-  final team = s.team.trim().toUpperCase();
-
+  final team = AflClubCodes.normalize(s.team);
   debugPrint("---- Checking completion for ${s.player?.name} ----");
-  debugPrint("Stats team = '$team'");
+  debugPrint("Stats team (normalised) = '$team'");
 
   if (team.isEmpty) {
     debugPrint("❌ No team found in stats → NOT completed");
@@ -126,8 +126,8 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
   }
 
   for (final f in fixtures) {
-    final home = f.homeTeam.trim().toUpperCase();
-    final away = f.awayTeam.trim().toUpperCase();
+    final home = AflClubCodes.normalize(f.homeTeam);
+    final away = AflClubCodes.normalize(f.awayTeam);
 
     debugPrint(
       "Fixture: ${f.homeTeam} vs ${f.awayTeam} | complete=${f.complete} "
@@ -144,6 +144,27 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
   return false;
 }
 
+bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
+  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+    widget.season,
+    widget.round,
+  );
+
+  final team = AflClubCodes.normalize(s.team);
+  if (team.isEmpty) return false;
+
+  for (final f in fixtures) {
+    final home = AflClubCodes.normalize(f.homeTeam);
+    final away = AflClubCodes.normalize(f.awayTeam);
+
+    if (team == home || team == away) {
+      if (_isFixtureLive(f)) return true;
+    }
+  }
+
+  return false;
+}
+
 bool _isFixtureLive(AflFixture f) {
   final q = f.quarterText.toLowerCase().trim();
 
@@ -154,43 +175,6 @@ bool _isFixtureLive(AflFixture f) {
 }
 
 
-bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
-  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
-    widget.season,
-    widget.round,
-  );
-
-  final team = _norm(s.team);
-  if (team.isEmpty) return false;
-
-  for (final f in fixtures) {
-    final home = _norm(f.homeTeam);
-    final away = _norm(f.awayTeam);
-
-    if (team == home || team == away) {
-      if (_isFixtureLive(f)) return true;
-    }
-  }
-
-  return false;
-}
-
-String _norm(String t) {
-  t = t.trim().toUpperCase();
-
-  const map = {
-    'MEL': 'MELB',
-    'MELBOURNE': 'MELB',
-
-    'NM': 'NMFC',
-    'NTH': 'NMFC',
-    'NORTH': 'NMFC',
-
-    // add others if needed
-  };
-
-  return map[t] ?? t;
-}
 
   @override
 void initState() {
