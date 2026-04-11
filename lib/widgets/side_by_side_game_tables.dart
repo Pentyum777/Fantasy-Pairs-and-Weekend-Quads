@@ -10,10 +10,10 @@ class SideBySideGameTables extends StatelessWidget {
   /// ["Player","K","H","M","T","HO","FF","FA","G","B","TOG"]
   final List<String> columns;
 
-  /// NEW: Optional formatter for player name (e.g., "5 Cadman")
+  /// Optional formatter for player name (returns a STRING)
   final String Function(Map<String, dynamic>)? playerFormatter;
 
-  /// NEW: Optional stat column width override
+  /// Optional stat column width override
   final double statColumnWidth;
 
   const SideBySideGameTables({
@@ -24,7 +24,7 @@ class SideBySideGameTables extends StatelessWidget {
     required this.rightRows,
     required this.columns,
     this.playerFormatter,
-    this.statColumnWidth = 32, // reduced from 40
+    this.statColumnWidth = 32,
   });
 
   static const double headerHeight = 32;
@@ -130,17 +130,40 @@ class SideBySideGameTables extends StatelessWidget {
                   final isPlayer = c == "Player";
 
                   if (isPlayer) {
-                    final display = playerFormatter != null
+                    final raw = playerFormatter != null
                         ? playerFormatter!(row)
                         : "${row[c]}";
 
+                    final parts = raw.split(" ");
+                    final hasGuernsey =
+                        parts.isNotEmpty && int.tryParse(parts.first) != null;
+
                     return Expanded(
-                      child: Text(
-                        display,
-                        style: theme.textTheme.bodySmall,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
+                      child: hasGuernsey
+                          ? Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: "${parts.first} ",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: parts.skip(1).join(" "),
+                                  ),
+                                ],
+                              ),
+                              style: theme.textTheme.bodySmall,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            )
+                          : Text(
+                              raw,
+                              style: theme.textTheme.bodySmall,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                     );
                   }
 
@@ -265,18 +288,42 @@ class SideBySideGameTables extends StatelessWidget {
                   final isPlayer = c == "Player";
 
                   if (isPlayer) {
-                    final display = playerFormatter != null
+                    final raw = playerFormatter != null
                         ? playerFormatter(row)
                         : "${row[c]}";
 
+                    final parts = raw.split(" ");
+                    final hasGuernsey =
+                        parts.isNotEmpty && int.tryParse(parts.first) != null;
+
                     return Expanded(
-                      child: Text(
-                        display,
-                        style: cellStyle,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        softWrap: false,
-                      ),
+                      child: hasGuernsey
+                          ? Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: "${parts.first} ",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: parts.skip(1).join(" "),
+                                  ),
+                                ],
+                              ),
+                              style: cellStyle,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              softWrap: false,
+                            )
+                          : Text(
+                              raw,
+                              style: cellStyle,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
                     );
                   }
 

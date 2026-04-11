@@ -4,9 +4,11 @@ class AflClubCodes {
     "ADE": "ADE",
     "ADELAIDE": "ADE",
     "ADELAIDE CROWS": "ADE",
+    "CROWS": "ADE",
 
     // BRISBANE
     "BRL": "BRL",
+    "BRIS": "BRL",
     "BRISBANE": "BRL",
     "BRISBANE LIONS": "BRL",
     "LIONS": "BRL",
@@ -16,27 +18,33 @@ class AflClubCodes {
     "CARL": "CAR",
     "CARLTON": "CAR",
     "CARLTON BLUES": "CAR",
+    "BLUES": "CAR",
 
     // COLLINGWOOD
     "COL": "COL",
     "COLL": "COL",
     "COLLINGWOOD": "COL",
     "COLLINGWOOD MAGPIES": "COL",
+    "MAGPIES": "COL",
+    "PIES": "COL",
 
     // ESSENDON
     "ESS": "ESS",
     "ESSENDON": "ESS",
     "ESSENDON BOMBERS": "ESS",
+    "BOMBERS": "ESS",
 
     // FREMANTLE
     "FRE": "FRE",
     "FREMANTLE": "FRE",
     "FREMANTLE DOCKERS": "FRE",
+    "DOCKERS": "FRE",
 
     // GEELONG
     "GEE": "GEE",
     "GEELONG": "GEE",
     "GEELONG CATS": "GEE",
+    "CATS": "GEE",
 
     // GOLD COAST
     "GCS": "GCS",
@@ -55,8 +63,9 @@ class AflClubCodes {
     "HAW": "HAW",
     "HAWTHORN": "HAW",
     "HAWTHORN HAWKS": "HAW",
+    "HAWKS": "HAW",
 
-    // MELBOURNE  → MELB
+    // MELBOURNE → MELB
     "MEL": "MELB",
     "MELB": "MELB",
     "MELBOURNE": "MELB",
@@ -64,21 +73,27 @@ class AflClubCodes {
     "DEMONS": "MELB",
 
     // NORTH MELBOURNE
+    "NM": "NTH",
     "NTH": "NTH",
     "NORTH": "NTH",
     "NORTH MELBOURNE": "NTH",
     "NORTH MELBOURNE KANGAROOS": "NTH",
+    "KANGAROOS": "NTH",
+    "ROOS": "NTH",
 
     // PORT ADELAIDE
     "PTA": "PTA",
     "PORT": "PTA",
     "PORT ADELAIDE": "PTA",
     "PORT ADELAIDE POWER": "PTA",
+    "POWER": "PTA",
 
     // RICHMOND
     "RIC": "RIC",
     "RICHMOND": "RIC",
     "RICHMOND TIGERS": "RIC",
+    "TIGERS": "RIC",
+    "TIGS": "RIC",
 
     // ST KILDA
     "STK": "STK",
@@ -102,6 +117,7 @@ class AflClubCodes {
     "WBD": "WBD",
     "WB": "WBD",
     "BULLDOGS": "WBD",
+    "DOGS": "WBD",
     "WESTERN BULLDOGS": "WBD",
   };
 

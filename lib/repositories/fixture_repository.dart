@@ -18,6 +18,7 @@ class FixtureRepository {
     "BRISBANE LIONS": "BRL",
     "MELB": "MELB",
     "MELBOURNE": "MELB",
+    "MEL": "MELB",
     "RICH": "RIC",
     "RICHMOND": "RIC",
     "WB": "WBD",
