@@ -79,7 +79,7 @@ class LeaderboardPanel extends StatelessWidget {
                         final bool isCompleted = p.isCompletedPunter;
 
                         final Color bg = isCompleted
-                            ? Colors.grey.withOpacity(0.80)
+                            ? Color.fromARGB(255, 82, 81, 81).withOpacity(0.80)
                             : (index.isOdd
                                 ? theme.colorScheme.surfaceVariant.withAlpha(64)
                                 : theme.colorScheme.surface);
