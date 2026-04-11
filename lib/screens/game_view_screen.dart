@@ -270,18 +270,23 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   final Map<String, AflPlayerMatchStats> map = {};
 
   for (final s in stats) {
-    if (s.player == null) continue;
+  if (s.player == null) continue;
 
-    // Determine completion status
-    final completed = _isPlayerFromCompletedFixture(s);
-final live = _isPlayerInLiveFixture(s);
-
-s.isCompletedGame = completed;
-s.isLiveGame = live;
-
-    // Store in map
-    map[s.player!.id] = s;
+  // ⭐ ENRICH: ensure player object is fully populated
+  final p = widget.playerRepo.getById(s.player!.id, widget.season);
+  if (p != null) {
+   
   }
+
+  // Live + completed flags
+  final completed = _isPlayerFromCompletedFixture(s);
+  final live = _isPlayerInLiveFixture(s);
+
+  s.isCompletedGame = completed;
+  s.isLiveGame = live;
+
+  map[s.player!.id] = s;
+}
 
   _currentStatsByPlayerId = map;
 }
@@ -823,18 +828,25 @@ void _finaliseFridayPairsWinner() {
   }
 
   Map<String, dynamic> _mapStats(AflPlayerMatchStats s) {
-    return {
-      "Player": s.player?.name ?? "Unknown",
-      "AF": s.fantasyPoints,
-      "K": s.kicks,
-      "HB": s.handballs,
-      "D": s.disposals,
-      "M": s.marks,
-      "T": s.tackles,
-      "G": s.goals,
-      "B": s.behinds,
-    };
-  }
+  return {
+    "playerId": s.player?.id,
+    "playerName": s.player?.name,
+    "team": s.team,
+
+    // DO NOT read guernsey from stats — it does not exist
+    // guernsey is injected later by _enrichStatsWithPlayerData
+
+    "Player": s.player?.name ?? "Unknown",
+    "AF": s.fantasyPoints,
+    "K": s.kicks,
+    "HB": s.handballs,
+    "D": s.disposals,
+    "M": s.marks,
+    "T": s.tackles,
+    "G": s.goals,
+    "B": s.behinds,
+  };
+}
 
 void _enrichStatsWithPlayerData(List<Map<String, dynamic>> rows) {
   for (final row in rows) {
