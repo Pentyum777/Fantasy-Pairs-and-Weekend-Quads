@@ -401,7 +401,7 @@ Widget build(BuildContext context) {
     final index = row.punterNumber - 1;
     final isStriped = index.isOdd;
 
-    final isRowCompleted = row.isCompletedPunter == true; final bg = isRowCompleted ? Colors.grey.withOpacity(0.35) : (isStriped ? cs.surfaceVariant.withAlpha(64) : cs.surface);
+    final isRowCompleted = row.isCompletedPunter == true; final bg = isRowCompleted ? Colors.grey.withOpacity(0.50) : (isStriped ? cs.surfaceVariant.withAlpha(64) : cs.surface);
 
     return Container(
       height: UIDimensions.rowHeight,
@@ -634,7 +634,7 @@ Widget build(BuildContext context) {
 
         // ⭐ INNER CHIP COLOUR FIX
         final Color chipBg = isCompleted
-            ? Colors.grey.withOpacity(0.35) // override team colour
+            ? Colors.grey.withOpacity(0.50) // override team colour
             : (colours?["bg"] ?? Colors.transparent).withOpacity(0.85);
 
         final Color chipFg = isCompleted
@@ -853,7 +853,7 @@ Widget build(BuildContext context) {
   Color fg = Colors.black;
 
   if (isCompleted) {
-    bg = Colors.grey.withOpacity(0.25);
+    bg = Colors.grey.withOpacity(0.50);
   } else if (isLive) {
     bg = Colors.green.withOpacity(0.30);   // ⭐ live highlight
   } else {
