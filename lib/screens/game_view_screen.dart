@@ -641,9 +641,7 @@ Future<void> _refreshLive() async {
       dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
     }
 
-    // ⭐ 6. Sort ONLY for leaderboard (punter table stays in original order)
-    _selections.sort((a, b) => b.totalScore.compareTo(a.totalScore));
-
+ 
     // 7. Rebuild UI
     setState(() {});
   } catch (e, st) {
@@ -692,7 +690,7 @@ void _finaliseFridayPairsWinner() {
   _applyLiveStats(roundStats.values.toList());
 
   // ⭐ Sort ONLY for leaderboard
-  _selections.sort((a, b) => b.totalScore.compareTo(a.totalScore));
+  
 
   // ⭐ Build final punter results for backend
   final punterResults = widget.fantasyService.buildCompletedRoundResults(
@@ -1541,7 +1539,7 @@ Future<void> _forceApplyStats() async {
                 width: leaderboardWidth,
                 child: LeaderboardPanel(
                   // ⭐ CRITICAL: use _selections, not the stale parameter
-                  punters: _sortedSelections(),
+                  punters: _sortedSelections().take(_visiblePunterCount).toList(),
 
                   rowHeight: UIDimensions.rowHeight,
                   collapsed: _leaderboardCollapsed,
