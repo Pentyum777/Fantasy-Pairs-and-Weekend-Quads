@@ -41,7 +41,7 @@ class GameViewScreen extends StatefulWidget {
   final List<String>? selectedFixtureIds;
   final List<AflPlayer>? overridePlayers;
 
-  
+
 
   const GameViewScreen({
     super.key,
@@ -574,6 +574,7 @@ Future<void> _refreshLive() async {
 
     // 3. Always fetch fresh stats
     final roundStats = await _fetchRoundStats();
+    debugPrint("ROUND STATS COUNT = ${roundStats.length}");
 
     // 4. Apply stats to table
     // Always update the map (even if identical)
@@ -630,6 +631,7 @@ void _finaliseFridayPairsWinner() {
 
   // ⭐ Final stats refresh
   final roundStats = await _fetchRoundStats();
+  
   _applyLiveStats(roundStats.values.toList());
 
   // ⭐ Build final punter results for backend
