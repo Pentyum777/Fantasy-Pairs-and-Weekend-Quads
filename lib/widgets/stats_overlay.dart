@@ -236,32 +236,42 @@ class _StatsOverlayState extends State<StatsOverlay>
   /// Robust formatter: "<guernsey> <surname>"
   /// Falls back gracefully if fields are missing.
   String _formatPlayerName(Map<String, dynamic> row) {
-    // Try multiple possible keys for name
-    final fullName =
-        (row["playerName"] ?? row["Player"] ?? row["name"] ?? "").toString();
+  // Extract full name
+  final fullName =
+      (row["playerName"] ?? row["Player"] ?? row["name"] ?? "").toString().trim();
 
-    // Try multiple possible keys for guernsey
-    final guernseyRaw =
-        row["guernseyNumber"] ?? row["Guernsey"] ?? row["jumper"] ?? "";
-    final guernsey = guernseyRaw.toString();
+  // Extract guernsey
+  final guernseyRaw =
+      row["guernseyNumber"] ?? row["Guernsey"] ?? row["jumper"] ?? "";
+  final guernsey = guernseyRaw.toString().trim();
 
-    // Derive surname
-    String surname;
-    if (fullName.trim().isEmpty) {
-      surname = "";
-    } else {
-      final parts = fullName.trim().split(RegExp(r"\s+"));
-      surname = parts.isNotEmpty ? parts.last : fullName.trim();
-    }
-
-    if (guernsey.isEmpty || guernsey == "0") {
-      return surname.isEmpty ? fullName : surname;
-    }
-
-    if (surname.isEmpty) {
-      return guernsey;
-    }
-
-    return "$guernsey $surname";
+  if (fullName.isEmpty) {
+    return guernsey.isEmpty ? "" : guernsey;
   }
+
+  // Split name
+  final parts = fullName.split(RegExp(r"\s+"));
+  final surname = parts.isNotEmpty ? parts.last : fullName;
+  final firstName = parts.length > 1 ? parts.first : "";
+
+  // Initial
+  final initial = firstName.isNotEmpty ? "${firstName[0]}." : "";
+
+  // Detect duplicate surnames across both tables
+  final allRows = [...widget.leftRows, ...widget.rightRows];
+  final surnameCount = allRows.where((r) {
+    final n = (r["playerName"] ?? r["Player"] ?? r["name"] ?? "").toString();
+    return n.trim().endsWith(" $surname");
+  }).length;
+
+  final needsInitial = surnameCount > 1;
+  final displayName = needsInitial ? "$initial $surname" : surname;
+
+  // Return a STRING — formatting happens in the table widget
+  if (guernsey.isNotEmpty && guernsey != "0") {
+    return "$guernsey $displayName";
+  }
+
+  return displayName;
 }
+    }
