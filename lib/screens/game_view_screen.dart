@@ -1356,13 +1356,13 @@ Future<void> _forceApplyStats() async {
   // ------------------------------------------------------------
   Widget _buildPunterAndLeaderboard({
   required List<AflPlayer> players,
-  required List<PunterSelection> selections,
+  required List<PunterSelection> selections, // ← no longer used
 }) {
   return Expanded(
     child: LayoutBuilder(
       builder: (context, constraints) {
         final theme = Theme.of(context);
-        
+
         final picks = widget.gameType == "weekend_quads" ? 4 : 2;
 
         final leaderboardWidth = _leaderboardCollapsed
@@ -1370,8 +1370,6 @@ Future<void> _forceApplyStats() async {
             : UIDimensions.rankColumnWidth +
                 UIDimensions.punterNameColumnWidth +
                 UIDimensions.totalColumnWidth;
-
-        
 
         final int safeRound = widget.round ?? 0;
 
@@ -1415,20 +1413,23 @@ Future<void> _forceApplyStats() async {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ------------------------------------------------------------
-              // ⭐ PUNTER TABLE (no scroll wrapper here)
+              // ⭐ PUNTER TABLE
               // ------------------------------------------------------------
               Expanded(
                 child: PunterSelectionTable(
                   key: _punterTableKey,
-                  
+
                   gameType: widget.gameType,
                   season: widget.season,
                   round: safeRound,
-                  tableWidth: null, // table handles its own scroll
+                  tableWidth: null,
                   visiblePunterCount: _visiblePunterCount,
                   playersPerPunter: picks,
                   availablePlayers: availablePlayers,
+
+                  // ⭐ CRITICAL: use _selections (the live list)
                   selections: _selections,
+
                   isCompleted: _isCompleted,
                   readOnly: readOnly,
                   onChanged: (!readOnly)
@@ -1449,12 +1450,14 @@ Future<void> _forceApplyStats() async {
               ),
 
               // ------------------------------------------------------------
-              // ⭐ LEADERBOARD (scrolls vertically with punter table)
+              // ⭐ LEADERBOARD (must use SAME list)
               // ------------------------------------------------------------
               SizedBox(
                 width: leaderboardWidth,
                 child: LeaderboardPanel(
-                  punters: selections.take(_visiblePunterCount).toList(),
+                  // ⭐ CRITICAL: use _selections, not the stale parameter
+                  punters: _selections.take(_visiblePunterCount).toList(),
+
                   rowHeight: UIDimensions.rowHeight,
                   collapsed: _leaderboardCollapsed,
                   scrollController: _punterScrollController,

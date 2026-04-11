@@ -542,11 +542,12 @@ Widget build(BuildContext context) {
   final colIndex = pick.pickNumber - 1;
   final owner = row;
 
-  // NEW: completed‑game shading
+  // ⭐ Completed shading
   final bool isCompleted = pick.isCompleted == true;
+
+  // ⭐ OUTER background (full cell)
   final Color bgColor =
       isCompleted ? Colors.grey.withOpacity(0.25) : Colors.transparent;
-  
 
   // Build globalTaken set
   final globalTaken = <String>{};
@@ -582,7 +583,7 @@ Widget build(BuildContext context) {
   _pickFocusNodes.putIfAbsent(pickKey, () => FocusNode());
 
   return Container(
-    color: bgColor, // ⭐ NEW: shade completed picks
+    color: bgColor, // ⭐ full-cell shading
     child: DropdownSearch<AflPlayer>(
       selectedItem: selectedPlayer,
       items: filteredPlayers,
@@ -624,12 +625,21 @@ Widget build(BuildContext context) {
 
       clearButtonProps: const ClearButtonProps(isVisible: false),
 
-      // Compact, text-hugging team-colour chip
       dropdownBuilder: (context, player) {
         final safeName = (player?.fullName ?? "").trim();
         final text = safeName.isEmpty ? hintText : safeName;
+
         final colours =
             player == null ? null : _getTeamColoursForPlayer(player);
+
+        // ⭐ INNER CHIP COLOUR FIX
+        final Color chipBg = isCompleted
+            ? Colors.grey.withOpacity(0.35) // override team colour
+            : (colours?["bg"] ?? Colors.transparent).withOpacity(0.85);
+
+        final Color chipFg = isCompleted
+            ? Colors.black // override team fg
+            : (colours?["fg"] ?? cs.onSurfaceVariant);
 
         return Container(
           width: kPickColumnWidth,
@@ -637,37 +647,27 @@ Widget build(BuildContext context) {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Team-colour chip
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: (colours == null)
-    ? null
-    : BoxDecoration(
-        color: (colours["bg"] ?? Colors.transparent).withOpacity(
-          isCompleted ? 0.35 : 0.85,
-        ),
-        borderRadius: BorderRadius.circular(4),
-      ),
+                decoration: BoxDecoration(
+                  color: chipBg,
+                  borderRadius: BorderRadius.circular(4),
+                ),
                 child: IntrinsicWidth(
-  child: Text(
-    text,
-    softWrap: false,
-    overflow: TextOverflow.ellipsis,
-    maxLines: 1,
-    textAlign: TextAlign.center,
-    style: theme.textTheme.bodySmall?.copyWith(
-      fontWeight: FontWeight.w600,
-
-      // ⭐ Null‑safe + completed‑game shading
-      color: isCompleted
-          ? Colors.black
-          : (colours?["fg"] ?? cs.onSurfaceVariant),
-    ),
-  ),
-),
+                  child: Text(
+                    text,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: chipFg,
+                    ),
+                  ),
+                ),
               ),
 
-              // Clear button (admins only, not readOnly)
               if (widget.userRoleService.isAdmin &&
                   !widget.readOnly &&
                   player != null)
@@ -678,7 +678,7 @@ Widget build(BuildContext context) {
                       owner.picks[colIndex].stats = null;
                     });
 
-                    if (widget.onChanged != null) widget.onChanged!();
+                    widget.onChanged?.call();
                   },
                   child: Padding(
                     padding: const EdgeInsets.only(left: 4),
@@ -700,7 +700,7 @@ Widget build(BuildContext context) {
           owner.picks[colIndex].stats = null;
         });
 
-        if (widget.onChanged != null) widget.onChanged!();
+        widget.onChanged?.call();
 
         final picks = row.picks;
         final isLastPickInRow = colIndex == picks.length - 1;
@@ -728,6 +728,7 @@ Widget build(BuildContext context) {
     ),
   );
 }
+
   // ---------------------------------------------------------------------------
   // APPLY LIVE STATS TO PICKS (called by GameViewScreen)
   // ---------------------------------------------------------------------------
