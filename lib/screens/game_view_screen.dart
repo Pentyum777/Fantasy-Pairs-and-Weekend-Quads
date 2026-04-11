@@ -40,6 +40,7 @@ class GameViewScreen extends StatefulWidget {
   final UserRoleService userRoleService;
   final List<String>? selectedFixtureIds;
   final List<AflPlayer>? overridePlayers;
+
   
 
   const GameViewScreen({
@@ -115,17 +116,31 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
   );
 
   final team = s.team.trim().toUpperCase();
-  if (team.isEmpty) return false;
+
+  debugPrint("---- Checking completion for ${s.player?.name} ----");
+  debugPrint("Stats team = '$team'");
+
+  if (team.isEmpty) {
+    debugPrint("❌ No team found in stats → NOT completed");
+    return false;
+  }
 
   for (final f in fixtures) {
     final home = f.homeTeam.trim().toUpperCase();
     final away = f.awayTeam.trim().toUpperCase();
 
+    debugPrint(
+      "Fixture: ${f.homeTeam} vs ${f.awayTeam} | complete=${f.complete} "
+      "| home='$home' away='$away'"
+    );
+
     if (f.complete && (team == home || team == away)) {
+      debugPrint("✔ MATCH: $team belongs to a completed fixture");
       return true;
     }
   }
 
+  debugPrint("✘ NO MATCH: $team did not match any completed fixture");
   return false;
 }
 
@@ -221,11 +236,21 @@ void initState() {
 
 
 void _applyLiveStats(List<AflPlayerMatchStats> stats) {
-  _currentStatsByPlayerId = {
-  for (final s in stats)
-    if (s.player != null) s.player!.id: s..isCompletedGame =
-        _isPlayerFromCompletedFixture(s),
-};
+  final Map<String, AflPlayerMatchStats> map = {};
+
+  for (final s in stats) {
+    if (s.player == null) continue;
+
+    // Determine completion status
+    final completed = _isPlayerFromCompletedFixture(s);
+    debugPrint("Player ${s.player!.name} completed = $completed");
+    s.isCompletedGame = completed;
+
+    // Store in map
+    map[s.player!.id] = s;
+  }
+
+  _currentStatsByPlayerId = map;
 }
 
   void _applySnapshotToSelections(Map<String, dynamic> data) {
