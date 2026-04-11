@@ -147,11 +147,12 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
 bool _isFixtureLive(AflFixture f) {
   final q = f.quarterText.toLowerCase().trim();
 
-  if (q.isEmpty) return false;                     // no live data yet
+  if (q.isEmpty) return false;
   if (q.contains("final") || q == "ft") return false;
 
-  return true;                                     // any other quarterText = LIVE
+  return true; // any other quarterText = LIVE
 }
+
 
 bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
   final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
@@ -835,6 +836,21 @@ void _finaliseFridayPairsWinner() {
     };
   }
 
+void _enrichStatsWithPlayerData(List<Map<String, dynamic>> rows) {
+  for (final row in rows) {
+    final id = row["playerId"] ?? row["id"];
+    if (id == null) continue;
+
+    // ⭐ Correct method for your PlayerRepository
+    final p = widget.playerRepo.getById(id, widget.season);
+    if (p == null) continue;
+
+    row["guernseyNumber"] = p.guernseyNumber;
+    row["team"] = p.club;        // MELB, ESS, etc.
+    row["playerName"] = p.name;  // ensures consistent formatting
+  }
+}
+
   // ------------------------------------------------------------
   // MAIN BUILD
   // ------------------------------------------------------------
@@ -1103,40 +1119,44 @@ Future<void> _forceApplyStats() async {
   // FIXTURE TAP → STATS OVERLAY
   // ------------------------------------------------------------
   Future<void> _onFixtureTap(AflFixture f) async {
-    setState(() => _selectedFixture = f);
+  setState(() => _selectedFixture = f);
 
-    final matchId = f.matchId?.trim();
-    if (matchId == null || matchId.isEmpty) return;
+  final matchId = f.matchId?.trim();
+  if (matchId == null || matchId.isEmpty) return;
 
-    final stats = _currentStatsByPlayerId.values.toList();
+  final stats = _currentStatsByPlayerId.values.toList();
 
-    final homeTeam = f.homeTeam;
-    final awayTeam = f.awayTeam;
+  final homeTeam = f.homeTeam;
+  final awayTeam = f.awayTeam;
 
-    final rowsA =
-        stats.where((s) => s.player?.club == homeTeam).map(_mapStats).toList();
+  final rowsA =
+      stats.where((s) => s.player?.club == homeTeam).map(_mapStats).toList();
 
-    final rowsB =
-        stats.where((s) => s.player?.club == awayTeam).map(_mapStats).toList();
+  final rowsB =
+      stats.where((s) => s.player?.club == awayTeam).map(_mapStats).toList();
 
-    final noStats = rowsA.isEmpty && rowsB.isEmpty;
+  // ⭐ PATCH 2 — ENRICH ROWS WITH PLAYER DATA
+  _enrichStatsWithPlayerData(rowsA);
+  _enrichStatsWithPlayerData(rowsB);
 
-    const columns = [
-      "Player","AF","K","HB","D","M","T","G","B",
-    ];
+  final noStats = rowsA.isEmpty && rowsB.isEmpty;
 
-    showDialog<void>(
-      context: context,
-      builder: (_) => StatsOverlay(
-        leftTitle: homeTeam,
-        rightTitle: awayTeam,
-        leftRows: noStats ? <Map<String, dynamic>>[] : rowsA,
-        rightRows: noStats ? <Map<String, dynamic>>[] : rowsB,
-        columns: noStats ? <String>[] : columns,
-        noStatsMessage: noStats ? "No stats available yet" : null,
-      ),
-    );
-  }
+  const columns = [
+    "Player","AF","K","HB","D","M","T","G","B",
+  ];
+
+  showDialog<void>(
+    context: context,
+    builder: (_) => StatsOverlay(
+      leftTitle: homeTeam,
+      rightTitle: awayTeam,
+      leftRows: noStats ? <Map<String, dynamic>>[] : rowsA,
+      rightRows: noStats ? <Map<String, dynamic>>[] : rowsB,
+      columns: noStats ? <String>[] : columns,
+      noStatsMessage: noStats ? "No stats available yet" : null,
+    ),
+  );
+}
     // ------------------------------------------------------------
   // PUNTER CONTROLS (with Publish button for custom_builder)
   // ------------------------------------------------------------
