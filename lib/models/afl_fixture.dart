@@ -53,6 +53,46 @@ class AflFixture {
     this.status = "",
   });
 
+/// Returns the actual start DateTime of the fixture by combining
+/// the `date` and the `time` string ("7:25pm", "19:25", etc.)
+DateTime? get startDateTime {
+  if (date == null || time.isEmpty) return date;
+
+  try {
+    // Normalise time string
+    final t = time.toLowerCase().replaceAll(" ", "");
+
+    int hour = 0;
+    int minute = 0;
+
+    if (t.contains("am") || t.contains("pm")) {
+      // Example: "7:25pm"
+      final parts = t.replaceAll("am", "").replaceAll("pm", "").split(":");
+      hour = int.parse(parts[0]);
+      minute = int.parse(parts[1]);
+
+      final isPm = t.contains("pm");
+      if (isPm && hour < 12) hour += 12;
+      if (!isPm && hour == 12) hour = 0;
+    } else {
+      // Example: "19:25"
+      final parts = t.split(":");
+      hour = int.parse(parts[0]);
+      minute = int.parse(parts[1]);
+    }
+
+    return DateTime(
+      date!.year,
+      date!.month,
+      date!.day,
+      hour,
+      minute,
+    );
+  } catch (_) {
+    return date; // fallback
+  }
+}
+
   /// Backwards‑compatible flag used by GameViewScreen
   bool get complete {
     final q = quarterText.toLowerCase();

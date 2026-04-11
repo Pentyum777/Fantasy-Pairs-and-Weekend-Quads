@@ -41,6 +41,7 @@ class PlayerPick {
   }
 
 bool isCompleted = false;
+bool isLive = false;
 
   // -----------------------------
   // Safe helpers

@@ -845,17 +845,34 @@ Widget build(BuildContext context) {
   final theme = Theme.of(context);
   final cs = theme.colorScheme;
 
-  final isCompleted = pick.isCompleted == true;
+  final bool isCompleted = pick.isCompleted == true;
+  final bool isLive = pick.isLive == true;
+
+  // ⭐ Determine background colour
+  Color bg;
+  Color fg = Colors.black;
+
+  if (isCompleted) {
+    bg = Colors.grey.withOpacity(0.25);
+  } else if (isLive) {
+    bg = Colors.green.withOpacity(0.30);   // ⭐ live highlight
+  } else {
+    bg = Colors.transparent;
+    fg = cs.onSurface;                     // normal text
+  }
 
   return Container(
     alignment: Alignment.center,
     padding: EdgeInsets.zero,
-    color: isCompleted ? Colors.grey.withOpacity(0.25) : Colors.transparent,
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(4),
+    ),
     child: Text(
       "${pick.fantasyPoints ?? 0}",
       style: theme.textTheme.bodySmall?.copyWith(
         fontWeight: FontWeight.w600,
-        color: isCompleted ? Colors.black : cs.onSurface,
+        color: fg,
       ),
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.center,

@@ -144,6 +144,39 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
   return false;
 }
 
+bool _isFixtureLive(AflFixture f) {
+  if (f.complete == true) return false;
+
+  final start = f.startDateTime;
+  if (start == null) return false;
+
+  final now = DateTime.now();
+  final end = start.add(const Duration(hours: 3)); // AFL match window
+
+  return now.isAfter(start) && now.isBefore(end);
+}
+
+bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
+  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+    widget.season,
+    widget.round,
+  );
+
+  final team = s.team.trim().toUpperCase();
+  if (team.isEmpty) return false;
+
+  for (final f in fixtures) {
+    final home = f.homeTeam.trim().toUpperCase();
+    final away = f.awayTeam.trim().toUpperCase();
+
+    if ((team == home || team == away) && _isFixtureLive(f)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
   @override
 void initState() {
   super.initState();
@@ -243,8 +276,10 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 
     // Determine completion status
     final completed = _isPlayerFromCompletedFixture(s);
-    debugPrint("Player ${s.player!.name} completed = $completed");
-    s.isCompletedGame = completed;
+final live = _isPlayerInLiveFixture(s);
+
+s.isCompletedGame = completed;
+s.isLiveGame = live;
 
     // Store in map
     map[s.player!.id] = s;

@@ -56,6 +56,7 @@ class AflPlayerMatchStats {
   });
 
 bool isCompletedGame = false;
+bool isLiveGame = false;
 
   factory AflPlayerMatchStats.fromJson(Map<String, dynamic> json) {
     int? _asInt(dynamic v) =>
