@@ -160,12 +160,12 @@ bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
     widget.round,
   );
 
-  final team = s.team.trim().toUpperCase();
+  final team = _norm(s.team);
   if (team.isEmpty) return false;
 
   for (final f in fixtures) {
-    final home = f.homeTeam.trim().toUpperCase();
-    final away = f.awayTeam.trim().toUpperCase();
+    final home = _norm(f.homeTeam);
+    final away = _norm(f.awayTeam);
 
     if (team == home || team == away) {
       if (_isFixtureLive(f)) return true;
@@ -173,6 +173,23 @@ bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
   }
 
   return false;
+}
+
+String _norm(String t) {
+  t = t.trim().toUpperCase();
+
+  const map = {
+    'MEL': 'MELB',
+    'MELBOURNE': 'MELB',
+
+    'NM': 'NMFC',
+    'NTH': 'NMFC',
+    'NORTH': 'NMFC',
+
+    // add others if needed
+  };
+
+  return map[t] ?? t;
 }
 
   @override
@@ -1524,7 +1541,7 @@ Future<void> _forceApplyStats() async {
                 width: leaderboardWidth,
                 child: LeaderboardPanel(
                   // ⭐ CRITICAL: use _selections, not the stale parameter
-                  punters: _selections.take(_visiblePunterCount).toList(),
+                  punters: _sortedSelections(),
 
                   rowHeight: UIDimensions.rowHeight,
                   collapsed: _leaderboardCollapsed,
@@ -1542,6 +1559,11 @@ Future<void> _forceApplyStats() async {
   );
 }
 
+List<PunterSelection> _sortedSelections() {
+  final list = List<PunterSelection>.from(_selections);
+  list.sort((a, b) => b.totalScore.compareTo(a.totalScore));
+  return list;
+}
 
   // ------------------------------------------------------------
   // MAIN CONTENT
