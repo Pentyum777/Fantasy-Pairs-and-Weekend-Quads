@@ -852,7 +852,7 @@ Widget build(BuildContext context) {
   final theme = Theme.of(context);
   final cs = theme.colorScheme;
 
-  final bool isCompleted = pick.isCompleted == true;
+  final bool isCompleted = pick.player != null && pick.isCompleted == true;
   final bool isLive = pick.isLive == true;
 
   // ⭐ Determine background colour

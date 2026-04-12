@@ -85,28 +85,19 @@ class LeaderboardPanel extends StatelessWidget {
                                 ? theme.colorScheme.surfaceVariant.withAlpha(64)
                                 : theme.colorScheme.surface);
 
-                        // ✅ Override text colour via Theme so it wins
-                        final rowTheme = theme.copyWith(
-                          textTheme: theme.textTheme.apply(
-                            bodyColor:
-                                isCompleted ? Colors.white : theme.textTheme.bodyMedium?.color,
-                            displayColor:
-                                isCompleted ? Colors.white : theme.textTheme.bodyMedium?.color,
-                          ),
-                        );
-
                         return Container(
                           height: rowHeight,
                           color: bg,
-                          child: Theme(
-                            data: rowTheme,
-                            child: LeaderboardTable(
-                              punters: punters,
-                              rowHeight: rowHeight,
-                              totalWidth: expandedWidth,
-                              scrollController: scrollController,
-                            ).buildBodyRow(context, index),
-                          ),
+
+                          // ⭐ Pass white text override to LeaderboardTable
+                          child: LeaderboardTable(
+                            punters: punters,
+                            rowHeight: rowHeight,
+                            totalWidth: expandedWidth,
+                            scrollController: scrollController,
+                            textColorOverride:
+                                isCompleted ? Colors.white : null,
+                          ).buildBodyRow(context, index),
                         );
                       },
                     ),

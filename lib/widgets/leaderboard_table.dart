@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import '../models/punter_selection.dart';
 import '../constants/ui_dimensions.dart';
-import 'shared_table_row.dart';
 
 class LeaderboardTable extends StatelessWidget {
   final List<PunterSelection> punters;
   final double rowHeight;
   final double totalWidth;
-
-  // ⭐ Shared scroll controller for horizontal sync
   final ScrollController? scrollController;
+
+  // ⭐ NEW — allows LeaderboardPanel to override text color
+  final Color? textColorOverride;
 
   const LeaderboardTable({
     super.key,
@@ -17,199 +17,78 @@ class LeaderboardTable extends StatelessWidget {
     required this.rowHeight,
     required this.totalWidth,
     this.scrollController,
+    this.textColorOverride,
   });
 
-// ---------------------------------------------------------------------------
-// EXTRACTED HEADER (for sticky header use)
-// ---------------------------------------------------------------------------
-Widget buildHeader(BuildContext context) {
-  final theme = Theme.of(context);
-  final cs = theme.colorScheme;
-
-  return SizedBox(
-    width: totalWidth,
-    height: UIDimensions.headerHeight,
-    child: Container(
-      decoration: BoxDecoration(
-        color: cs.surfaceVariant.withAlpha(96),
-        border: Border(
-          bottom: BorderSide(
-            color: cs.primary.withAlpha(31),
-            width: 0.75,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: UIDimensions.rankColumnWidth,
-            child: _headerCell(theme, "P", alignCenter: true),
-          ),
-          SizedBox(
-            width: UIDimensions.punterNameColumnWidth,
-            child: _headerCell(theme, "Punter", alignCenter: true),
-          ),
-          SizedBox(
-            width: UIDimensions.totalColumnWidth,
-            child: _headerCell(theme, "T", alignCenter: true),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-// ---------------------------------------------------------------------------
-// EXTRACTED BODY (scrollable)
-// ---------------------------------------------------------------------------
-Widget buildBody(BuildContext context) {
-  final theme = Theme.of(context);
-  final cs = theme.colorScheme;
-
-  final sorted = [...punters]
-    ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
-
-  return ListView.builder(
-    itemCount: sorted.length,
-    itemExtent: rowHeight,
-    itemBuilder: (context, index) {
-      final p = sorted[index];
-
-      return Container(
-        height: rowHeight,
-        color: cs.surfaceVariant.withAlpha(
-          index.isEven ? 32 : 20,
-        ),
-        child: buildSharedTableRow(
-          context: context,
-          index: index,
-          rowHeight: rowHeight,
-          totalWidth: totalWidth,
-          isInvalid: false,
-          isHighlighted: p.isPrizeWinner,
-          leftCell: _rankCell(context, index),
-          middleCells: [_punterNameCell(context, p)],
-          rightCell: _scoreCell(context, p),
-        ),
-      );
-    },
-  );
-}
-
+  // ⭐ REQUIRED — this is what your file was missing
   @override
   Widget build(BuildContext context) {
+    // This widget does not render anything directly.
+    // LeaderboardPanel calls buildHeader() and buildBodyRow().
+    return const SizedBox.shrink();
+  }
+
+  // ---------------------------------------------------------------------------
+  // HEADER
+  // ---------------------------------------------------------------------------
+  Widget buildHeader(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final sorted = [...punters]
-      ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
-
-    // ⭐ FIX: Give the body a concrete height so it always renders
-    final double bodyHeight = rowHeight * sorted.length;
-
-    return Container(
+    return SizedBox(
       width: totalWidth,
-      decoration: BoxDecoration(
-        color: cs.surfaceVariant.withAlpha(64),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(15),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          controller: scrollController,
-
-          child: SizedBox(
-            width: totalWidth,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-
-                // -------------------------
-                // HEADER
-                // -------------------------
-                SizedBox(
-                  width: totalWidth,
-                  height: UIDimensions.headerHeight,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: cs.surfaceVariant.withAlpha(96),
-                      border: Border(
-                        bottom: BorderSide(
-                          color: cs.primary.withAlpha(31),
-                          width: 0.75,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: UIDimensions.rankColumnWidth,
-                          child: _headerCell(theme, "P", alignCenter: true),
-                        ),
-                        SizedBox(
-                          width: UIDimensions.punterNameColumnWidth,
-                          child: _headerCell(theme, "Punter", alignCenter: true),
-                        ),
-                        SizedBox(
-                          width: UIDimensions.totalColumnWidth,
-                          child: _headerCell(theme, "T", alignCenter: true),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // -------------------------
-                // BODY (fixed height)
-                // -------------------------
-                SizedBox(
-                  height: bodyHeight,
-                  child: ListView.builder(
-                    itemCount: sorted.length,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemBuilder: (context, index) {
-                      final p = sorted[index];
-
-                      return Container(
-                        height: rowHeight,
-                        color: cs.surfaceVariant.withAlpha(
-                          index.isEven ? 32 : 20,
-                        ),
-                        child: buildSharedTableRow(
-                          context: context,
-                          index: index,
-                          rowHeight: rowHeight,
-                          totalWidth: totalWidth,
-                          isInvalid: false,
-                          isHighlighted: p.isPrizeWinner,
-                          leftCell: _rankCell(context, index),
-                          middleCells: [_punterNameCell(context, p)],
-                          rightCell: _scoreCell(context, p),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+      height: UIDimensions.headerHeight,
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surfaceVariant.withAlpha(96),
+          border: Border(
+            bottom: BorderSide(
+              color: cs.primary.withAlpha(31),
+              width: 0.75,
             ),
           ),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: UIDimensions.rankColumnWidth,
+              child: _headerCell(theme, "P", alignCenter: true),
+            ),
+            SizedBox(
+              width: UIDimensions.punterNameColumnWidth,
+              child: _headerCell(theme, "Punter", alignCenter: true),
+            ),
+            SizedBox(
+              width: UIDimensions.totalColumnWidth,
+              child: _headerCell(theme, "T", alignCenter: true),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // -------------------------
+  // ---------------------------------------------------------------------------
+  // BODY ROW (used by LeaderboardPanel)
+  // ---------------------------------------------------------------------------
+  Widget buildBodyRow(BuildContext context, int index) {
+    final p = punters[index];
+
+    return SizedBox(
+      height: rowHeight,
+      child: Row(
+        children: [
+          _rankCell(context, index),
+          _punterNameCell(context, p),
+          _scoreCell(context, p),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // CELL BUILDERS
-  // -------------------------
+  // ---------------------------------------------------------------------------
 
   Widget _headerCell(
     ThemeData theme,
@@ -242,23 +121,10 @@ Widget buildBody(BuildContext context) {
     );
   }
 
-Widget buildBodyRow(BuildContext context, int index) {
-  final p = punters[index];
-
-  return SizedBox(
-    height: rowHeight,
-    child: Row(
-      children: [
-        _rankCell(context, index),
-        _punterNameCell(context, p),
-        _scoreCell(context, p),
-      ],
-    ),
-  );
-}
-
-
   Widget _punterNameCell(BuildContext context, PunterSelection p) {
+    final color = textColorOverride ??
+        Theme.of(context).textTheme.bodyMedium?.color;
+
     return Container(
       width: UIDimensions.punterNameColumnWidth,
       alignment: Alignment.centerLeft,
@@ -266,22 +132,27 @@ Widget buildBodyRow(BuildContext context, int index) {
       child: Text(
         p.punterName,
         overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.bodyMedium,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: color,
+            ),
       ),
     );
   }
 
   Widget _scoreCell(BuildContext context, PunterSelection p) {
+    final color = textColorOverride ??
+        Theme.of(context).textTheme.bodyMedium?.color;
+
     return Container(
       width: UIDimensions.totalColumnWidth,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
         p.totalScore.toString(),
-        style: Theme.of(context)
-            .textTheme
-            .bodyMedium
-            ?.copyWith(fontWeight: FontWeight.bold),
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
       ),
     );
   }
