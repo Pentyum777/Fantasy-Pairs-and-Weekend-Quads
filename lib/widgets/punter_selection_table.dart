@@ -30,6 +30,7 @@ class PunterSelectionTable extends StatefulWidget {
   final bool readOnly;
   final bool collapsed;
   final ScrollController? scrollController;
+  final bool Function(AflPlayerMatchStats stats) isPlayerCompleted;
 
   final String gameType;
   final int season;
@@ -53,6 +54,8 @@ class PunterSelectionTable extends StatefulWidget {
     required this.availablePlayers,
     required this.selections,
     required this.isCompleted,
+    required this.isPlayerCompleted,
+
     required this.readOnly,
     required this.collapsed,
     required this.scrollController,
@@ -542,8 +545,8 @@ Widget build(BuildContext context) {
   final colIndex = pick.pickNumber - 1;
   final owner = row;
 
-  // ⭐ Completed shading
-  final bool isCompleted = pick.isCompleted == true;
+  // ⭐ Correct completion logic
+  final bool isCompleted = _isPickCompleted(pick);
 
   // ⭐ OUTER background (full cell)
   final Color bgColor =
@@ -611,8 +614,8 @@ Widget build(BuildContext context) {
         ),
       ),
 
-      dropdownDecoratorProps: DropDownDecoratorProps(
-        dropdownSearchDecoration: const InputDecoration(
+      dropdownDecoratorProps: const DropDownDecoratorProps(
+        dropdownSearchDecoration: InputDecoration(
           isDense: true,
           border: InputBorder.none,
           contentPadding: EdgeInsets.zero,
@@ -728,6 +731,24 @@ Widget build(BuildContext context) {
     ),
   );
 }
+
+// ⭐ NEW — correct completion logic
+bool _isPickCompleted(PlayerPick pick) {
+  // No player selected → NOT completed
+  if (pick.player == null) return false;
+
+  // No stats → NOT completed
+  if (pick.stats == null) return false;
+
+  // Stats are stored as a Map, so convert them
+  final raw = pick.stats;
+  if (raw is! Map<String, dynamic>) return false;
+
+  final stats = AflPlayerMatchStats.fromJson(raw);
+
+  return widget.isPlayerCompleted(stats);
+}
+
 
   // ---------------------------------------------------------------------------
   // APPLY LIVE STATS TO PICKS (called by GameViewScreen)

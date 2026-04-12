@@ -1493,6 +1493,8 @@ Future<void> _forceApplyStats() async {
                   visiblePunterCount: _visiblePunterCount,
                   playersPerPunter: picks,
                   availablePlayers: availablePlayers,
+                  isPlayerCompleted: _isPlayerFromCompletedFixture,   // ⭐ HERE
+
 
                   // ⭐ CRITICAL: use _selections (the live list)
                   selections: _selections,

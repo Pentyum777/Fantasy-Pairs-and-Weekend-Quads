@@ -79,7 +79,8 @@ class LeaderboardPanel extends StatelessWidget {
                         final bool isCompleted = p.isCompletedPunter;
 
                         final Color bg = isCompleted
-                            ? Color.fromARGB(255, 82, 81, 81).withOpacity(0.80)
+                            ? const Color.fromARGB(255, 82, 81, 81)
+                                .withOpacity(0.80)
                             : (index.isOdd
                                 ? theme.colorScheme.surfaceVariant.withAlpha(64)
                                 : theme.colorScheme.surface);
@@ -87,12 +88,21 @@ class LeaderboardPanel extends StatelessWidget {
                         return Container(
                           height: rowHeight,
                           color: bg,
-                          child: LeaderboardTable(
-                            punters: punters,
-                            rowHeight: rowHeight,
-                            totalWidth: expandedWidth,
-                            scrollController: scrollController,
-                          ).buildBodyRow(context, index), // ⭐ NEW
+
+                          // ⭐ APPLY WHITE TEXT FOR COMPLETED PUNTERS
+                          child: DefaultTextStyle.merge(
+                            style: TextStyle(
+                              color: isCompleted
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                            child: LeaderboardTable(
+                              punters: punters,
+                              rowHeight: rowHeight,
+                              totalWidth: expandedWidth,
+                              scrollController: scrollController,
+                            ).buildBodyRow(context, index),
+                          ),
                         );
                       },
                     ),
