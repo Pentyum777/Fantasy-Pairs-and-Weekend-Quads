@@ -545,8 +545,8 @@ Widget build(BuildContext context) {
   final colIndex = pick.pickNumber - 1;
   final owner = row;
 
-  // ⭐ Correct completion logic
-  final bool isCompleted = _isPickCompleted(pick);
+  // ✅ Only treat as completed if there IS a player
+  final bool isCompleted = pick.player != null && pick.isCompleted == true;
 
   // ⭐ OUTER background (full cell)
   final Color bgColor =
@@ -635,7 +635,7 @@ Widget build(BuildContext context) {
         final colours =
             player == null ? null : _getTeamColoursForPlayer(player);
 
-        // ⭐ INNER CHIP COLOUR FIX
+        // ⭐ INNER CHIP COLOUR (unchanged for selected players)
         final Color chipBg = isCompleted
             ? Colors.grey.withOpacity(0.60) // override team colour
             : (colours?["bg"] ?? Colors.transparent).withOpacity(0.85);
@@ -730,23 +730,6 @@ Widget build(BuildContext context) {
       },
     ),
   );
-}
-
-// ⭐ NEW — correct completion logic
-bool _isPickCompleted(PlayerPick pick) {
-  // No player selected → NOT completed
-  if (pick.player == null) return false;
-
-  // No stats → NOT completed
-  if (pick.stats == null) return false;
-
-  // Stats are stored as a Map, so convert them
-  final raw = pick.stats;
-  if (raw is! Map<String, dynamic>) return false;
-
-  final stats = AflPlayerMatchStats.fromJson(raw);
-
-  return widget.isPlayerCompleted(stats);
 }
 
 
