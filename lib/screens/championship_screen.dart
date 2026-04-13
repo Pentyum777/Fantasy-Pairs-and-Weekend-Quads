@@ -19,14 +19,23 @@ class ChampionshipScreen extends StatefulWidget {
   State<ChampionshipScreen> createState() => _ChampionshipScreenState();
 }
 
-class _ChampionshipScreenState extends State<ChampionshipScreen> {
+class _ChampionshipScreenState extends State<ChampionshipScreen>
+    with SingleTickerProviderStateMixin {
   String? _selectedMonth;
   bool _loading = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -48,6 +57,8 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width >= 600;
     final months = widget.service.months;
 
     return Scaffold(
@@ -59,117 +70,184 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
           if (!_loading)
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: "Reload from server",
+              tooltip: "Reload",
               onPressed: () {
                 setState(() => _loading = true);
                 _loadData();
               },
             ),
         ],
+        // On portrait show tabs to switch between Overall / Monthly
+        bottom: (!_loading && months.isNotEmpty && !isWide)
+            ? TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: "Overall"),
+                  Tab(text: "Monthly"),
+                ],
+              )
+            : null,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : months.isEmpty
               ? Center(
-                  child: Text(
-                    "No completed Weekend Quads rounds yet.",
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                  child: Text("No completed Weekend Quads rounds yet.",
+                      style: theme.textTheme.bodyMedium),
                 )
-              : Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    children: [
-                      // ── SHARED TITLE ROW ────────────────────────────
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Overall title (flex 3)
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              "Overall Championship",
-                              style: theme.textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          // Monthly title + month dropdown (flex 2)
-                          Expanded(
-                            flex: 2,
-                            child: Row(
-                              children: [
-                                Text(
-                                  _selectedMonth == null
-                                      ? "Monthly Championship"
-                                      : "$_selectedMonth Championship",
-                                  style: theme.textTheme.titleSmall
-                                      ?.copyWith(fontWeight: FontWeight.w700),
-                                ),
-                                const Spacer(),
-                                Text("Month:",
-                                    style: theme.textTheme.labelMedium),
-                                const SizedBox(width: 6),
-                                DropdownButton<String>(
-                                  value: _selectedMonth,
-                                  isDense: true,
-                                  items: months
-                                      .map((m) => DropdownMenuItem(
-                                            value: m,
-                                            child: Text(m),
-                                          ))
-                                      .toList(),
-                                  onChanged: (v) {
-                                    if (v != null) {
-                                      setState(() => _selectedMonth = v);
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
+              : Column(
+                  children: [
+                    Expanded(
+                      child: isWide
+                          ? _wideLayout(theme, months)
+                          : _portraitLayout(theme, months),
+                    ),
+                    _PointsLegend(),
+                  ],
+                ),
+    );
+  }
 
-                      // ── TABLES SIDE BY SIDE ──────────────────────────
-                      Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // LEFT: OVERALL
-                            Expanded(
-                              flex: 3,
-                              child: _PointsTable(
-                                service: widget.service,
-                                roundNumbers: null,
-                                title: "",
-                                scrollable: true,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            // RIGHT: MONTHLY
-                            Expanded(
-                              flex: 2,
-                              child: _selectedMonth == null
-                                  ? const SizedBox()
-                                  : _PointsTable(
-                                      service: widget.service,
-                                      roundNumbers: widget.service
-                                          .roundNumbersForMonth(_selectedMonth!),
-                                      title: "",
-                                      scrollable: false,
-                                    ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // ── POINTS LEGEND ────────────────────────────────
-                      _PointsLegend(),
-                    ],
+  // ── WIDE LAYOUT (tablet/desktop) — side by side ────────────
+  Widget _wideLayout(ThemeData theme, List<String> months) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      child: Column(
+        children: [
+          // Title row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                flex: 3,
+                child: Text("Overall Championship",
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 2,
+                child: Row(
+                  children: [
+                    Text(
+                      _selectedMonth == null
+                          ? "Monthly Championship"
+                          : "$_selectedMonth Championship",
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const Spacer(),
+                    Text("Month:", style: theme.textTheme.labelMedium),
+                    const SizedBox(width: 6),
+                    DropdownButton<String>(
+                      value: _selectedMonth,
+                      isDense: true,
+                      items: months
+                          .map((m) => DropdownMenuItem(
+                              value: m, child: Text(m)))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setState(() => _selectedMonth = v);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Tables
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: _PointsTable(
+                    service: widget.service,
+                    roundNumbers: null,
+                    title: "",
+                    scrollable: true,
                   ),
                 ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 2,
+                  child: _selectedMonth == null
+                      ? const SizedBox()
+                      : _PointsTable(
+                          service: widget.service,
+                          roundNumbers: widget.service
+                              .roundNumbersForMonth(_selectedMonth!),
+                          title: "",
+                          scrollable: false,
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── PORTRAIT LAYOUT (phone) — tabbed ──────────────────────
+  Widget _portraitLayout(ThemeData theme, List<String> months) {
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        // Overall tab
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          child: _PointsTable(
+            service: widget.service,
+            roundNumbers: null,
+            title: "Overall Championship",
+            scrollable: true,
+          ),
+        ),
+
+        // Monthly tab
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Month selector
+              Row(
+                children: [
+                  Text("Month:", style: theme.textTheme.labelLarge
+                      ?.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 8),
+                  DropdownButton<String>(
+                    value: _selectedMonth,
+                    isDense: true,
+                    items: months
+                        .map((m) => DropdownMenuItem(
+                            value: m, child: Text(m)))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) setState(() => _selectedMonth = v);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: _selectedMonth == null
+                    ? const SizedBox()
+                    : _PointsTable(
+                        service: widget.service,
+                        roundNumbers: widget.service
+                            .roundNumbersForMonth(_selectedMonth!),
+                        title: "$_selectedMonth Championship",
+                        scrollable: false,
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -181,7 +259,7 @@ class _PointsTable extends StatefulWidget {
   final ChampionshipService service;
   final List<int>? roundNumbers;
   final String title;
-  final bool scrollable; // true = horizontal scroll for many rounds
+  final bool scrollable;
 
   const _PointsTable({
     required this.service,
@@ -201,7 +279,6 @@ class _PointsTableState extends State<_PointsTable> {
   @override
   void initState() {
     super.initState();
-    // Sync header and body horizontal scroll
     _bodyScroll.addListener(() {
       if (_headerScroll.hasClients) {
         _headerScroll.jumpTo(_bodyScroll.offset);
@@ -220,6 +297,8 @@ class _PointsTableState extends State<_PointsTable> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final size = MediaQuery.of(context).size;
+    final isPhone = size.width < 600;
 
     final rows = widget.service.buildPointsTable(
         roundNumbers: widget.roundNumbers);
@@ -230,8 +309,10 @@ class _PointsTableState extends State<_PointsTable> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.title.isNotEmpty) _title(theme),
-          if (widget.title.isNotEmpty) const SizedBox(height: 8),
+          if (widget.title.isNotEmpty) ...[
+            _titleWidget(theme),
+            const SizedBox(height: 8),
+          ],
           Text("No data available",
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: cs.onSurface.withOpacity(0.5))),
@@ -239,12 +320,13 @@ class _PointsTableState extends State<_PointsTable> {
       );
     }
 
-    const double rankW = 32;
-    const double nameW = 100;
-    const double roundW = 42;
-    const double totalW = 48;
+    // Slightly narrower columns on phone
+    final double rankW = isPhone ? 28 : 32;
+    final double nameW = isPhone ? 80 : 100;
+    final double roundW = isPhone ? 36 : 42;
+    final double totalW = isPhone ? 42 : 48;
     const double rowH = 30;
-    const double headerH = 26;
+    const double headerH = 28;
 
     final headerStyle = theme.textTheme.labelSmall?.copyWith(
       fontWeight: FontWeight.w700,
@@ -253,10 +335,9 @@ class _PointsTableState extends State<_PointsTable> {
     final cellStyle = theme.textTheme.bodySmall?.copyWith(
       fontWeight: FontWeight.w500,
     );
-    final boldStyle =
-        theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w800);
+    final boldStyle = theme.textTheme.bodySmall
+        ?.copyWith(fontWeight: FontWeight.w800);
 
-    // ── helpers ──────────────────────────────────────────────
     Widget hCell(String t, double w,
         {Alignment a = Alignment.center}) =>
         Container(
@@ -287,13 +368,12 @@ class _PointsTableState extends State<_PointsTable> {
         i.isEven ? cs.surface : cs.surfaceVariant;
 
     Color ptColor(int pts) {
-      if (pts == 25) return const Color(0xFFFFAA00); // gold
-      if (pts == 18) return const Color(0xFF9E9E9E); // silver
-      if (pts == 15) return const Color(0xFFCD7F32); // bronze
+      if (pts == 25) return const Color(0xFFFFAA00);
+      if (pts == 18) return const Color(0xFF9E9E9E);
+      if (pts == 15) return const Color(0xFFCD7F32);
       return cs.primary;
     }
 
-    // ── fixed columns (rank + name) ───────────────────────────
     Widget fixedHeader() => Row(children: [
           hCell("#", rankW),
           hCell("Punter", nameW, a: Alignment.centerLeft),
@@ -309,9 +389,7 @@ class _PointsTableState extends State<_PointsTable> {
       ]);
     }
 
-    // ── scrollable columns (rounds + total) ──────────────────
-    double scrollWidth =
-        rounds.length * roundW + totalW;
+    final double scrollWidth = rounds.length * roundW + totalW;
 
     Widget scrollHeader() => SizedBox(
           width: scrollWidth,
@@ -344,14 +422,15 @@ class _PointsTableState extends State<_PointsTable> {
       );
     }
 
-    // ── build ─────────────────────────────────────────────────
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _title(theme),
-        const SizedBox(height: 6),
+        if (widget.title.isNotEmpty) ...[
+          _titleWidget(theme),
+          const SizedBox(height: 6),
+        ],
 
-        // Header row
+        // Header
         Container(
           height: headerH,
           decoration: BoxDecoration(
@@ -369,8 +448,7 @@ class _PointsTableState extends State<_PointsTable> {
                     ? SingleChildScrollView(
                         controller: _headerScroll,
                         scrollDirection: Axis.horizontal,
-                        physics:
-                            const NeverScrollableScrollPhysics(),
+                        physics: const NeverScrollableScrollPhysics(),
                         child: scrollHeader(),
                       )
                     : scrollHeader(),
@@ -404,7 +482,7 @@ class _PointsTableState extends State<_PointsTable> {
     );
   }
 
-  Widget _title(ThemeData theme) => Text(
+  Widget _titleWidget(ThemeData theme) => Text(
         widget.title,
         style: theme.textTheme.titleSmall
             ?.copyWith(fontWeight: FontWeight.w700),
@@ -434,18 +512,23 @@ class _PointsLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final size = MediaQuery.of(context).size;
+    final isPhone = size.width < 600;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+          horizontal: 8, vertical: isPhone ? 6 : 8),
       decoration: BoxDecoration(
         color: cs.surfaceVariant,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: cs.outline.withOpacity(0.2)),
+        border: Border(
+            top: BorderSide(color: cs.outline.withOpacity(0.2))),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Wrap(
+        alignment: WrapAlignment.spaceEvenly,
+        spacing: isPhone ? 8 : 16,
+        runSpacing: 4,
         children: _positions.map((e) {
-          final isTop3 = e.value >= 15;
           final color = e.value == 25
               ? const Color(0xFFFFAA00)
               : e.value == 18
@@ -460,14 +543,15 @@ class _PointsLegend extends StatelessWidget {
               Text(
                 e.key,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: cs.onSurface.withOpacity(0.6),
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface.withOpacity(0.7),
                 ),
               ),
               const SizedBox(width: 3),
               Text(
                 "${e.value}",
                 style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: isTop3 ? FontWeight.w800 : FontWeight.w600,
+                  fontWeight: FontWeight.w800,
                   color: color,
                 ),
               ),
