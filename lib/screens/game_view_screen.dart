@@ -311,12 +311,6 @@ bool _isRoundHistorical() {
 
       if (data is Map<String, dynamic>) {
         _applySnapshotToSelections(data);
-
-        // ⭐ For historical rounds, build stats map from snapshot data
-        // so stats overlay works without the live DFS feed
-        if (_isCompleted && _currentStatsByPlayerId.isEmpty) {
-          _buildStatsFromSnapshot();
-        }
       }
     }
   } catch (e) {
@@ -467,60 +461,7 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   // Sync dropdown to real count
   _maxPunterDropdown = _visiblePunterCount;
 
-  // ⭐ For historical rounds, build _currentStatsByPlayerId from snapshot
-  // so the stats overlay has data without needing the live DFS feed
-  if (_isCompleted) {
-    _buildStatsFromSnapshot();
-  }
-
   debugPrint("✅ Snapshot applied: visible=$_visiblePunterCount, maxDrop=$_maxPunterDropdown");
-}
-
-/// Builds _currentStatsByPlayerId from the pick stats already loaded
-/// in _selections. Used for historical rounds where the live DFS feed
-/// no longer has data. Preserves all stats fields for the overlay.
-void _buildStatsFromSnapshot() {
-  final Map<String, AflPlayerMatchStats> statsMap = {};
-
-  for (final selection in _selections) {
-    for (final pick in selection.picks) {
-      final player = pick.player;
-      final stats = pick.stats;
-      if (player == null || stats == null || stats.isEmpty) continue;
-
-      int asInt(String key) {
-        final v = stats[key];
-        if (v is int) return v;
-        if (v is double) return v.round();
-        return int.tryParse(v?.toString() ?? "") ?? 0;
-      }
-
-      final s = AflPlayerMatchStats(
-        player: player,
-        team: player.club,
-        kicks: asInt("K"),
-        handballs: asInt("HB"),
-        disposals: asInt("D"),
-        marks: asInt("M"),
-        tackles: asInt("T"),
-        hitouts: asInt("HO"),
-        freesFor: asInt("FF"),
-        freesAgainst: asInt("FA"),
-        goals: asInt("G"),
-        behinds: asInt("B"),
-        timeOnGroundPercentage: asInt("TOG"),
-        fantasyPoints: asInt("AF"),
-      );
-      s.isCompletedGame = true;
-      s.isLiveGame = false;
-      statsMap[player.id] = s;
-    }
-  }
-
-  if (statsMap.isNotEmpty) {
-    _currentStatsByPlayerId = statsMap;
-    debugPrint("✅ Built stats from snapshot: \${statsMap.length} players");
-  }
 }
 
   void _recomputeVisiblePunterCount() {
@@ -958,9 +899,143 @@ void _finaliseFridayPairsWinner() {
     }
   }
 
-  String _appBarTitle() {
-    final roundLabel = RoundHelper.label(widget.round);
-    return "$roundLabel • ${_gameTypeLabel()}";
+  /// All standard game types available for navigation
+  static const List<Map<String, String>> _navGameTypes = [
+    {"key": "thursday_pairs",  "label": "Thursday Pairs"},
+    {"key": "friday_pairs",    "label": "Friday Pairs"},
+    {"key": "saturday_pairs",  "label": "Saturday Pairs"},
+    {"key": "sunday_pairs",    "label": "Sunday Pairs"},
+    {"key": "monday_pairs",    "label": "Monday Pairs"},
+    {"key": "weekend_quads",   "label": "Weekend Quads"},
+  ];
+
+  /// Builds the AppBar title: [Game Type ▼]  ◀  [Round ▼]  ▶
+  Widget _buildAppBarTitle(bool compact) {
+    final allRounds = widget.fixtureRepo.allRoundsForSeason(widget.season);
+    final currentRound = widget.round ?? 0;
+    final currentIndex = allRounds.indexOf(currentRound);
+    final hasPrev = currentIndex > 0;
+    final hasNext = currentIndex < allRounds.length - 1;
+
+    final labelSize = compact ? 12.0 : 14.0;
+    final iconSize = compact ? 16.0 : 18.0;
+    final btnPad = compact ? 2.0 : 4.0;
+
+    // Only show standard game types in the dropdown (not custom)
+    final isCustom = widget.gameType == "custom_builder" ||
+        widget.gameType == "custom_game";
+
+    return Row(
+      children: [
+        // ── Game type dropdown ──────────────────────────────
+        if (isCustom)
+          Flexible(
+            child: Text(
+              _gameTypeLabel(),
+              style: TextStyle(fontSize: labelSize, fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+            ),
+          )
+        else
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _navGameTypes.any((g) => g["key"] == widget.gameType)
+                  ? widget.gameType
+                  : null,
+              isDense: true,
+              icon: const Icon(Icons.arrow_drop_down, size: 14),
+              style: TextStyle(
+                fontSize: labelSize,
+                fontWeight: FontWeight.w600,
+              ),
+              items: _navGameTypes.map((g) {
+                return DropdownMenuItem<String>(
+                  value: g["key"],
+                  child: Text(g["label"]!,
+                      style: TextStyle(fontSize: labelSize)),
+                );
+              }).toList(),
+              onChanged: (type) {
+                if (type != null && type != widget.gameType) {
+                  _navigateTo(round: currentRound, gameType: type);
+                }
+              },
+            ),
+          ),
+
+        // ── Round navigation ────────────────────────────────
+        IconButton(
+          icon: Icon(Icons.chevron_left, size: iconSize),
+          padding: EdgeInsets.all(btnPad),
+          constraints: const BoxConstraints(),
+          tooltip: hasPrev ? RoundHelper.label(allRounds[currentIndex - 1]) : null,
+          onPressed: hasPrev
+              ? () => _navigateTo(
+                  round: allRounds[currentIndex - 1],
+                  gameType: widget.gameType)
+              : null,
+        ),
+
+        DropdownButtonHideUnderline(
+          child: DropdownButton<int>(
+            value: currentRound,
+            isDense: true,
+            icon: const Icon(Icons.arrow_drop_down, size: 14),
+            style: TextStyle(
+              fontSize: labelSize,
+              fontWeight: FontWeight.w700,
+            ),
+            items: allRounds.map((r) {
+              return DropdownMenuItem<int>(
+                value: r,
+                child: Text(RoundHelper.label(r),
+                    style: TextStyle(fontSize: labelSize)),
+              );
+            }).toList(),
+            onChanged: (r) {
+              if (r != null && r != currentRound) {
+                _navigateTo(round: r, gameType: widget.gameType);
+              }
+            },
+          ),
+        ),
+
+        IconButton(
+          icon: Icon(Icons.chevron_right, size: iconSize),
+          padding: EdgeInsets.all(btnPad),
+          constraints: const BoxConstraints(),
+          tooltip: hasNext ? RoundHelper.label(allRounds[currentIndex + 1]) : null,
+          onPressed: hasNext
+              ? () => _navigateTo(
+                  round: allRounds[currentIndex + 1],
+                  gameType: widget.gameType)
+              : null,
+        ),
+      ],
+    );
+  }
+
+  /// Navigate to any combination of round + game type.
+  void _navigateTo({required int round, required String gameType}) {
+    _liveTimer?.cancel();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GameViewScreen(
+          season: widget.season,
+          round: round,
+          gameType: gameType,
+          selections: const [],
+          fixtureRepo: widget.fixtureRepo,
+          playerRepo: widget.playerRepo,
+          fantasyService: widget.fantasyService,
+          championshipService: widget.championshipService,
+          roundCompletionService: widget.roundCompletionService,
+          userRoleService: widget.userRoleService,
+          gameDataCache: widget.gameDataCache,
+        ),
+      ),
+    );
   }
 
   Map<String, dynamic> _mapStats(AflPlayerMatchStats s) {
@@ -1033,14 +1108,8 @@ Widget build(BuildContext context) {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           toolbarHeight: isLandscapePhone ? 36 : 44,
-          titleSpacing: 0,
-          title: Text(
-            _appBarTitle(),
-            style: TextStyle(
-              fontSize: isLandscapePhone ? 13 : 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          titleSpacing: 4,
+          title: _buildAppBarTitle(isLandscapePhone),
         ),
         body: Column(
           children: [
