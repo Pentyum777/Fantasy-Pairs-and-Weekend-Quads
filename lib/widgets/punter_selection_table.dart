@@ -2,6 +2,7 @@
 
 
 
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 
@@ -630,32 +631,58 @@ Widget build(BuildContext context) {
 
       dropdownBuilder: (context, player) {
         final safeName = (player?.fullName ?? "").trim();
+        final text = safeName.isEmpty ? hintText : safeName;
 
-        // ⭐ If no player selected, show placeholder text with no background
-        if (player == null) {
-          return Container(
-            width: kPickColumnWidth,
-            alignment: Alignment.center,
-            child: Text(
-              hintText,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurface.withOpacity(0.35),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          );
-        }
-
-        final colours = _getTeamColoursForPlayer(player);
+        final colours =
+            player == null ? null : _getTeamColoursForPlayer(player);
 
         // ⭐ INNER CHIP COLOUR (unchanged for selected players)
         final Color chipBg = isCompleted
             ? Colors.grey.withOpacity(0.60) // override team colour
-            : colours["bg"]!.withOpacity(0.85);
+            : (colours?["bg"] ?? Colors.transparent).withOpacity(0.85);
 
         final Color chipFg = isCompleted
             ? Colors.black // override team fg
-            : colours["fg"]!;
+            : (colours?["fg"] ?? cs.onSurfaceVariant);
+
+        // ⭐ Touch devices (phone/tablet): long press chip to clear
+        // Desktop (mouse): show X button as before
+        final bool isTouchDevice = !kIsWeb &&
+            (defaultTargetPlatform == TargetPlatform.iOS ||
+             defaultTargetPlatform == TargetPlatform.android);
+
+        final bool canClear = widget.userRoleService.isAdmin &&
+            !widget.readOnly &&
+            player != null;
+
+        void clearPick() {
+          setState(() {
+            owner.picks[colIndex].player = null;
+            owner.picks[colIndex].stats = null;
+          });
+          widget.onChanged?.call();
+        }
+
+        final chip = Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          decoration: BoxDecoration(
+            color: chipBg,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: IntrinsicWidth(
+            child: Text(
+              text,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: chipFg,
+              ),
+            ),
+          ),
+        );
 
         return Container(
           width: kPickColumnWidth,
@@ -663,38 +690,19 @@ Widget build(BuildContext context) {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: BoxDecoration(
-                  color: chipBg,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: IntrinsicWidth(
-                  child: Text(
-                    safeName,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: chipFg,
-                    ),
-                  ),
-                ),
-              ),
-
-              if (widget.userRoleService.isAdmin &&
-                  !widget.readOnly)
+              // Wrap chip in GestureDetector for long-press clear on touch
+              if (canClear && isTouchDevice)
                 GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      owner.picks[colIndex].player = null;
-                      owner.picks[colIndex].stats = null;
-                    });
+                  onLongPress: clearPick,
+                  child: chip,
+                )
+              else
+                chip,
 
-                    widget.onChanged?.call();
-                  },
+              // X button — desktop only
+              if (canClear && !isTouchDevice)
+                GestureDetector(
+                  onTap: clearPick,
                   child: Padding(
                     padding: const EdgeInsets.only(left: 4),
                     child: Icon(
