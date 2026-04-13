@@ -372,27 +372,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
     // 1. Live DFS feed
     let dfsPlayers = await scrapeDFS(dfsId);
 
-    // 2. Future game → empty stats
-    if (!dfsPlayers || dfsPlayers.length === 0) {
-      return res.json({
-        ok: true,
-        matchId: cdMatchId,
-        homeScore: 0,
-        awayScore: 0,
-        quarter: "",
-        clock: "",
-        status: "No Data",
-        players: [],
-      });
-    }
-
-    // 3. Apply fantasy scoring
-    const players = dfsPlayers.map((p) => ({
-      ...p,
-      af: calculateFantasyPoints(p),
-    }));
-
-    // 4. Squiggle metadata
+    // 2. Always fetch Squiggle metadata (works for live, completed, and future games)
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -409,6 +389,27 @@ app.get("/fantasy/:matchId", async (req, res) => {
         console.error("Squiggle metadata error:", err);
       }
     }
+
+    // 3. No DFS data → return Squiggle scores with empty player list
+    // This handles historical rounds where the live DFS feed has expired
+    if (!dfsPlayers || dfsPlayers.length === 0) {
+      return res.json({
+        ok: true,
+        matchId: cdMatchId,
+        homeScore: meta.homeScore,
+        awayScore: meta.awayScore,
+        quarter: meta.quarter,
+        clock: meta.clock,
+        status: meta.status || "No Data",
+        players: [],
+      });
+    }
+
+    // 4. Apply fantasy scoring to live DFS players
+    const players = dfsPlayers.map((p) => ({
+      ...p,
+      af: calculateFantasyPoints(p),
+    }));
 
     // 5. Final response
     return res.json({
