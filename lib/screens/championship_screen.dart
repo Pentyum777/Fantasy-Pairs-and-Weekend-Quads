@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../repositories/player_repository.dart';
 import '../services/championship_service.dart';
-import '../widgets/background_container.dart';
 
 class ChampionshipScreen extends StatefulWidget {
   final ChampionshipService service;
@@ -61,9 +60,8 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
   Widget build(BuildContext context) {
     final months = widget.service.months;
 
-    return BackgroundContainer(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: AppBar(
           title: const Text("Championship"),
           actions: [
@@ -129,7 +127,6 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
                       ),
                     ],
                   ),
-      ),
     );
   }
 }
