@@ -199,6 +199,9 @@ class ChampionshipService {
       final hasRealPick = picks.any((p) => p.player != null);
       if (!hasRealPick) continue;
 
+      // ⭐ Skip guest punters (name ends with *) and duplicate entries (name ends with " 2")
+      if (name.endsWith("*") || name.endsWith(" 2")) continue;
+
       result.add(PunterSelection(
         punterNumber: i + 1,
         punterName: name,
@@ -376,4 +379,74 @@ class ChampionshipService {
     if (v is double) return v.round();
     return int.tryParse(v?.toString() ?? "") ?? 0;
   }
+
+  // ---------------------------------------------------------------------------
+  // POINTS TABLE — per punter per round
+  // ---------------------------------------------------------------------------
+
+  /// Returns sorted round numbers (ascending) for a given set of round numbers,
+  /// or all rounds if null.
+  List<int> sortedRoundNumbers({List<int>? roundNumbers}) {
+    final nums = roundNumbers ?? _roundsByNumber.keys.toList();
+    return nums..sort();
+  }
+
+  /// Returns the round numbers for a given month.
+  List<int> roundNumbersForMonth(String month) {
+    return List<int>.from(_roundNumbersByMonth[month] ?? [])..sort();
+  }
+
+  /// Builds a points table: punterName -> {roundNumber -> championshipPoints}.
+  /// If [roundNumbers] is provided, only those rounds are included.
+  /// Punters are sorted by total descending.
+  List<PunterRoundPoints> buildPointsTable({List<int>? roundNumbers}) {
+    final rounds = sortedRoundNumbers(roundNumbers: roundNumbers);
+
+    // Build: punter -> {round -> points}
+    final Map<String, Map<int, int>> table = {};
+
+    for (final rnd in rounds) {
+      final selections = _roundsByNumber[rnd];
+      if (selections == null || selections.isEmpty) continue;
+
+      final roundPoints = calculateRoundPoints(selections);
+
+      for (final entry in roundPoints.entries) {
+        table.putIfAbsent(entry.key, () => {})[rnd] = entry.value;
+      }
+    }
+
+    // Build rows sorted by total descending
+    final rows = table.entries.map((e) {
+      final total = e.value.values.fold(0, (sum, v) => sum + v);
+      return PunterRoundPoints(
+        punterName: e.key,
+        pointsByRound: e.value,
+        total: total,
+        rounds: rounds,
+      );
+    }).toList()
+      ..sort((a, b) => b.total.compareTo(a.total));
+
+    return rows;
+  }
+
+}
+// ---------------------------------------------------------------------------
+// DATA CLASS for points table rows
+// ---------------------------------------------------------------------------
+class PunterRoundPoints {
+  final String punterName;
+  final Map<int, int> pointsByRound;
+  final int total;
+  final List<int> rounds;
+
+  const PunterRoundPoints({
+    required this.punterName,
+    required this.pointsByRound,
+    required this.total,
+    required this.rounds,
+  });
+
+  int pointsForRound(int round) => pointsByRound[round] ?? 0;
 }
