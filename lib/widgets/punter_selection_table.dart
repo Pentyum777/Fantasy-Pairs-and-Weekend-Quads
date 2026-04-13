@@ -2,8 +2,8 @@
 
 
 
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:dropdown_search/dropdown_search.dart';
 
 
@@ -647,9 +647,11 @@ Widget build(BuildContext context) {
 
         // ⭐ Touch devices (phone/tablet): long press chip to clear
         // Desktop (mouse): show X button as before
-        final bool isTouchDevice = !kIsWeb &&
-            (defaultTargetPlatform == TargetPlatform.iOS ||
-             defaultTargetPlatform == TargetPlatform.android);
+        // MediaQuery.of(context).size.shortestSide < 600 = phone
+        // shortestSide < 900 = tablet/iPad
+        // Both get long-press; desktop (>= 900) keeps the X button
+        final bool isTouchDevice =
+            MediaQuery.of(context).size.shortestSide < 900;
 
         final bool canClear = widget.userRoleService.isAdmin &&
             !widget.readOnly &&
@@ -693,7 +695,10 @@ Widget build(BuildContext context) {
               // Wrap chip in GestureDetector for long-press clear on touch
               if (canClear && isTouchDevice)
                 GestureDetector(
-                  onLongPress: clearPick,
+                  onLongPress: () {
+                    HapticFeedback.mediumImpact();
+                    clearPick();
+                  },
                   child: chip,
                 )
               else
