@@ -57,10 +57,10 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
 
   List<PunterSelection> _createEmptySelections(int playersPerPunter) {
     return List.generate(
-      25,
+      15,
       (i) => PunterSelection(
         punterNumber: i + 1,
-        punterName: "P${i + 1}",
+        punterName: "",
         picks: List.generate(
           playersPerPunter,
           (j) => PlayerPick(

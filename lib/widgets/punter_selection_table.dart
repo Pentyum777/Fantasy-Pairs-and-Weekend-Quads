@@ -630,19 +630,32 @@ Widget build(BuildContext context) {
 
       dropdownBuilder: (context, player) {
         final safeName = (player?.fullName ?? "").trim();
-        final text = safeName.isEmpty ? hintText : safeName;
 
-        final colours =
-            player == null ? null : _getTeamColoursForPlayer(player);
+        // ⭐ If no player selected, show placeholder text with no background
+        if (player == null) {
+          return Container(
+            width: kPickColumnWidth,
+            alignment: Alignment.center,
+            child: Text(
+              hintText,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurface.withOpacity(0.35),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          );
+        }
+
+        final colours = _getTeamColoursForPlayer(player);
 
         // ⭐ INNER CHIP COLOUR (unchanged for selected players)
         final Color chipBg = isCompleted
             ? Colors.grey.withOpacity(0.60) // override team colour
-            : (colours?["bg"] ?? Colors.transparent).withOpacity(0.85);
+            : colours["bg"]!.withOpacity(0.85);
 
         final Color chipFg = isCompleted
             ? Colors.black // override team fg
-            : (colours?["fg"] ?? cs.onSurfaceVariant);
+            : colours["fg"]!;
 
         return Container(
           width: kPickColumnWidth,
@@ -658,7 +671,7 @@ Widget build(BuildContext context) {
                 ),
                 child: IntrinsicWidth(
                   child: Text(
-                    text,
+                    safeName,
                     softWrap: false,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -672,8 +685,7 @@ Widget build(BuildContext context) {
               ),
 
               if (widget.userRoleService.isAdmin &&
-                  !widget.readOnly &&
-                  player != null)
+                  !widget.readOnly)
                 GestureDetector(
                   onTap: () {
                     setState(() {
