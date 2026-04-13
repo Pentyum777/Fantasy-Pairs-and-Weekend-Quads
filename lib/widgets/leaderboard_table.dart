@@ -148,7 +148,9 @@ class LeaderboardTable extends StatelessWidget {
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
-        p.totalScore.toString(),
+        // ⭐ Use liveScore for championship entries (picks is empty, score stored in liveScore)
+        // Use totalScore for game leaderboard entries (score computed from picks)
+        (p.picks.isEmpty ? p.liveScore : p.totalScore).toString(),
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: color,
