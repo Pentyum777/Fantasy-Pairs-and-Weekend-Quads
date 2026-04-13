@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/punter_selection.dart';
 import '../repositories/player_repository.dart';
 import '../services/championship_service.dart';
-import '../widgets/leaderboard_table.dart';
+import '../widgets/leaderboard_panel.dart';
 import '../constants/ui_dimensions.dart';
 import '../widgets/background_container.dart';
 
@@ -63,10 +63,6 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
     final List<PunterSelection> monthlyLeaderboard = _selectedMonth == null
         ? []
         : widget.service.monthlyLeaderboard(_selectedMonth!);
-
-    final double leaderboardWidth = UIDimensions.rankColumnWidth +
-        UIDimensions.punterNameColumnWidth +
-        UIDimensions.totalColumnWidth;
 
     return BackgroundContainer(
       child: Scaffold(
@@ -146,10 +142,10 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
                                     ),
                                     const SizedBox(height: 8),
                                     Expanded(
-                                      child: LeaderboardTable(
+                                      child: LeaderboardPanel(
                                         punters: overallLeaderboard,
                                         rowHeight: UIDimensions.rowHeight,
-                                        totalWidth: leaderboardWidth,
+                                        collapsed: false,
                                       ),
                                     ),
                                   ],
@@ -174,10 +170,10 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
                                     ),
                                     const SizedBox(height: 8),
                                     Expanded(
-                                      child: LeaderboardTable(
+                                      child: LeaderboardPanel(
                                         punters: monthlyLeaderboard,
                                         rowHeight: UIDimensions.rowHeight,
-                                        totalWidth: leaderboardWidth,
+                                        collapsed: false,
                                       ),
                                     ),
                                   ],
