@@ -164,6 +164,9 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
                           ],
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      // ── POINTS LEGEND ────────────────────────────────
+                      _PointsLegend(),
                     ],
                   ),
                 ),
@@ -406,4 +409,72 @@ class _PointsTableState extends State<_PointsTable> {
         style: theme.textTheme.titleSmall
             ?.copyWith(fontWeight: FontWeight.w700),
       );
+}
+
+// ─────────────────────────────────────────────────────────────
+// POINTS LEGEND
+// ─────────────────────────────────────────────────────────────
+class _PointsLegend extends StatelessWidget {
+  static const List<MapEntry<String, int>> _positions = [
+    MapEntry("1st", 25),
+    MapEntry("2nd", 18),
+    MapEntry("3rd", 15),
+    MapEntry("4th", 12),
+    MapEntry("5th", 10),
+    MapEntry("6th", 8),
+    MapEntry("7th", 6),
+    MapEntry("8th", 4),
+    MapEntry("9th", 2),
+    MapEntry("10th", 1),
+  ];
+
+  const _PointsLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: cs.surfaceVariant,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: cs.outline.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: _positions.map((e) {
+          final isTop3 = e.value >= 15;
+          final color = e.value == 25
+              ? const Color(0xFFFFAA00)
+              : e.value == 18
+                  ? const Color(0xFF9E9E9E)
+                  : e.value == 15
+                      ? const Color(0xFFCD7F32)
+                      : cs.onSurface.withOpacity(0.7);
+
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                e.key,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: cs.onSurface.withOpacity(0.6),
+                ),
+              ),
+              const SizedBox(width: 3),
+              Text(
+                "${e.value}",
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: isTop3 ? FontWeight.w800 : FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
 }
