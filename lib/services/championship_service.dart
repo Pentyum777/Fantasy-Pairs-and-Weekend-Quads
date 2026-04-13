@@ -195,6 +195,10 @@ class ChampionshipService {
         }
       }
 
+      // ⭐ Skip rows with no real player picks (placeholder/empty rows)
+      final hasRealPick = picks.any((p) => p.player != null);
+      if (!hasRealPick) continue;
+
       result.add(PunterSelection(
         punterNumber: i + 1,
         punterName: name,
@@ -213,7 +217,15 @@ class ChampionshipService {
   Map<String, int> calculateRoundPoints(List<PunterSelection> selections) {
     if (selections.isEmpty) return {};
 
-    final sorted = [...selections]
+    // ⭐ Only include punters who actually have at least one player picked
+    final active = selections.where((s) =>
+      s.punterName.trim().isNotEmpty &&
+      s.picks.any((p) => p.player != null)
+    ).toList();
+
+    if (active.isEmpty) return {};
+
+    final sorted = [...active]
       ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
 
     final result = <String, int>{};
