@@ -262,7 +262,7 @@ class _PointsTable extends StatelessWidget {
       final isEven = index.isEven;
       final bg = isEven
           ? cs.surface
-          : cs.surfaceVariant.withAlpha(64);
+          : cs.surfaceVariant;
 
       final fixedPart = Row(children: [
         dataCell("${index + 1}", rankW, bg: bg),
@@ -279,7 +279,7 @@ class _PointsTable extends StatelessWidget {
             style: pts > 0
                 ? boldStyle?.copyWith(
                     color: _pointsColour(pts, cs))
-                : cellStyle?.copyWith(color: cs.onSurface.withOpacity(0.3)),
+                : cellStyle?.copyWith(color: cs.onSurface.withOpacity(0.4)),
             bg: bg,
           );
         }),
@@ -308,58 +308,65 @@ class _PointsTable extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          )),
-          const SizedBox(height: 8),
+      child: Card(
+        elevation: 2,
+        color: cs.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              )),
+              const SizedBox(height: 8),
 
-          // Header
-          Container(
-            height: 28,
-            decoration: BoxDecoration(
-              color: cs.surfaceVariant.withAlpha(128),
-              border: Border(
-                bottom: BorderSide(
-                    color: cs.primary.withAlpha(60), width: 1),
-              ),
-            ),
-            child: Row(
-              children: [
-                fixedHeader,
-                Expanded(
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: (_) => false,
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      scrollDirection: Axis.horizontal,
-                      child: scrollHeader,
-                    ),
+              // Header
+              Container(
+                height: 28,
+                decoration: BoxDecoration(
+                  color: cs.surfaceVariant,
+                  border: Border(
+                    bottom: BorderSide(
+                        color: cs.primary.withAlpha(60), width: 1),
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          // Body
-          Expanded(
-            child: NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
-                if (notification is ScrollUpdateNotification) {
-                  scrollController.jumpTo(
-                      notification.metrics.pixels);
-                }
-                return false;
-              },
-              child: ListView.builder(
-                itemCount: rows.length,
-                itemBuilder: (ctx, i) => buildRow(i),
+                child: Row(
+                  children: [
+                    fixedHeader,
+                    Expanded(
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (_) => false,
+                        child: SingleChildScrollView(
+                          controller: scrollController,
+                          scrollDirection: Axis.horizontal,
+                          child: scrollHeader,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+
+              // Body
+              Expanded(
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollUpdateNotification) {
+                      scrollController.jumpTo(
+                          notification.metrics.pixels);
+                    }
+                    return false;
+                  },
+                  child: ListView.builder(
+                    itemCount: rows.length,
+                    itemBuilder: (ctx, i) => buildRow(i),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
