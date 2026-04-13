@@ -78,34 +78,38 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
                 )
               : Padding(
                   padding: const EdgeInsets.all(12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Column(
                     children: [
-                      // ── LEFT: OVERALL (horizontal scroll) ──────────
-                      Expanded(
-                        flex: 3,
-                        child: _PointsTable(
-                          service: widget.service,
-                          roundNumbers: null,
-                          title: "Overall Championship",
-                          scrollable: true,
-                        ),
-                      ),
-
-                      const SizedBox(width: 16),
-
-                      // ── RIGHT: MONTHLY ──────────────────────────────
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Month selector
-                            Row(
+                      // ── SHARED TITLE ROW ────────────────────────────
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Overall title (flex 3)
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              "Overall Championship",
+                              style: theme.textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Monthly title + month dropdown (flex 2)
+                          Expanded(
+                            flex: 2,
+                            child: Row(
                               children: [
+                                Text(
+                                  _selectedMonth == null
+                                      ? "Monthly Championship"
+                                      : "$_selectedMonth Championship",
+                                  style: theme.textTheme.titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                const Spacer(),
                                 Text("Month:",
                                     style: theme.textTheme.labelMedium),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 DropdownButton<String>(
                                   value: _selectedMonth,
                                   isDense: true,
@@ -123,17 +127,37 @@ class _ChampionshipScreenState extends State<ChampionshipScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // ── TABLES SIDE BY SIDE ──────────────────────────
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // LEFT: OVERALL
                             Expanded(
+                              flex: 3,
+                              child: _PointsTable(
+                                service: widget.service,
+                                roundNumbers: null,
+                                title: "",
+                                scrollable: true,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // RIGHT: MONTHLY
+                            Expanded(
+                              flex: 2,
                               child: _selectedMonth == null
                                   ? const SizedBox()
                                   : _PointsTable(
                                       service: widget.service,
                                       roundNumbers: widget.service
-                                          .roundNumbersForMonth(
-                                              _selectedMonth!),
-                                      title:
-                                          "$_selectedMonth Championship",
+                                          .roundNumbersForMonth(_selectedMonth!),
+                                      title: "",
                                       scrollable: false,
                                     ),
                             ),
@@ -203,8 +227,8 @@ class _PointsTableState extends State<_PointsTable> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _title(theme),
-          const SizedBox(height: 8),
+          if (widget.title.isNotEmpty) _title(theme),
+          if (widget.title.isNotEmpty) const SizedBox(height: 8),
           Text("No data available",
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: cs.onSurface.withOpacity(0.5))),
