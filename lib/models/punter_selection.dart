@@ -27,7 +27,7 @@ bool isCompletedPunter = false;
   }) {
     return PunterSelection(
       punterNumber: punterNumber,
-      punterName: "P$punterNumber",
+      punterName: "",
       picks: List.generate(
         playersPerPunter,
         (i) => PlayerPick(
