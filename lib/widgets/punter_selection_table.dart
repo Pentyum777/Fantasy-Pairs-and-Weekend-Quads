@@ -766,22 +766,30 @@ Widget build(BuildContext context) {
       // Lookup stats for this player
       final s = statsById[id];
 
-      // No stats → future game or not started
+      // No stats → future game, not started, or round already completed
+      // ⭐ If the round is completed, keep existing scores rather than zeroing them
       if (s == null) {
-        pick.isCompleted = false;
-        pick.isLive = false; // ⭐ ensure not live
-        pick.fantasyPoints = 0;
-        pick.stats = {
-          "AF": 0,
-          "K": 0,
-          "HB": 0,
-          "D": 0,
-          "M": 0,
-          "T": 0,
-          "G": 0,
-          "B": 0,
-        };
-        allCompleted = false;
+        if (widget.isCompleted) {
+          // Round is done — don't overwrite scores we already have from the snapshot
+          pick.isCompleted = true;
+          pick.isLive = false;
+          allCompleted = allCompleted && (pick.fantasyPoints ?? 0) > 0;
+        } else {
+          pick.isCompleted = false;
+          pick.isLive = false;
+          pick.fantasyPoints = 0;
+          pick.stats = {
+            "AF": 0,
+            "K": 0,
+            "HB": 0,
+            "D": 0,
+            "M": 0,
+            "T": 0,
+            "G": 0,
+            "B": 0,
+          };
+          allCompleted = false;
+        }
         continue;
       }
 

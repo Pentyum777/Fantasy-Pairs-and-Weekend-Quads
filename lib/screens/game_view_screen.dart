@@ -200,6 +200,13 @@ void initState() {
     );
   }
 
+  // ⭐ Mark as completed immediately if all fixtures for this round are
+  // in the past (more than 24 hours ago). This prevents live polling from
+  // zeroing out scores for historical rounds.
+  if (_isRoundHistorical()) {
+    _isCompleted = true;
+  }
+
   // Restore cached stats immediately (shows last-known data with zero delay)
   if (cache != null && cache.hasStats(cacheKey)) {
     _currentStatsByPlayerId = cache.getStats(cacheKey);
@@ -238,6 +245,24 @@ void initState() {
       _startLivePolling();
     });
   }
+}
+
+/// Returns true if all fixtures for this round finished more than 24 hours ago.
+/// Used to skip live polling for historical rounds and preserve stored scores.
+bool _isRoundHistorical() {
+  if (widget.round == null) return false;
+
+  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+    widget.season,
+    widget.round,
+  );
+
+  if (fixtures.isEmpty) return false;
+
+  final cutoff = DateTime.now().subtract(const Duration(hours: 24));
+
+  // All fixtures must have a date, and all must be before the cutoff
+  return fixtures.every((f) => f.date != null && f.date!.isBefore(cutoff));
 }
 
   @override
