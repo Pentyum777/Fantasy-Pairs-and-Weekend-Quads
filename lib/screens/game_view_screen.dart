@@ -421,6 +421,12 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
       pick.stats = rawStats is Map<String, dynamic>
           ? Map<String, dynamic>.from(rawStats)
           : <String, dynamic>{};
+
+      // ⭐ Restore fantasy points from stats so totalScore works
+      final af = pick.stats?["AF"];
+      if (af != null) {
+        pick.fantasyPoints = af is int ? af : int.tryParse(af.toString()) ?? 0;
+      }
     }
   }
 
