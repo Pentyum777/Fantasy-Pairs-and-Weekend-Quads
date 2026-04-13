@@ -14,49 +14,49 @@
       "guernseyNumber": 33,
       "season": 2026
     },
-{
+    {
       "id": "CD_I993903",
       "name": "Jacob Hopper",
       "club": "RIC",
       "guernseyNumber": 2,
       "season": 2026
     },
-{
+    {
       "id": "CD_I1036104",
       "name": "Will Lewis",
       "club": "WBD",
       "guernseyNumber": 28,
       "season": 2026
     },
-{
+    {
       "id": "CD_I1040573",
       "name": "Christopher Scerri",
       "club": "FRE",
       "guernseyNumber": 45,
       "season": 2026
     },
-{
+    {
       "id": "CD_I1034305",
-      "name": Jacob Farrow",
+      "name": "Jacob Farrow",
       "club": "ESS",
       "guernseyNumber": 2,
       "season": 2026
     },
-{
+    {
       "id": "CD_I1020887",
       "name": "Paddy Cross",
-      "club": "MEL",
+      "club": "MELB",
       "guernseyNumber": 41,
       "season": 2026
     },
-{
+    {
       "id": "CD_I1029603",
       "name": "Mitch Zadow",
       "club": "PTA",
       "guernseyNumber": 39,
       "season": 2026
     },
-{
+    {
       "id": "CD_I1011771",
       "name": "Flynn Perez",
       "club": "HAW",
@@ -98,14 +98,14 @@
       "guernseyNumber": 29,
       "season": 2026
     },
-{
+    {
       "id": "CD_I1015883",
       "name": "Tom Blamires",
       "club": "NTH",
       "guernseyNumber": 39,
       "season": 2026
     },
-{
+    {
       "id": "CD_I1005972",
       "name": "Milan Murdock",
       "club": "WCE",
@@ -5513,14 +5513,14 @@
       "id": "CD_I1013494",
       "name": "Elijah Hollands",
       "club": "CAR",
-      "guernseyNumber":20,
+      "guernseyNumber": 20,
       "season": 2026
     },
     {
       "id": "CD_I1016140",
       "name": "Wade Derksen",
       "club": "CAR",
-      "guernseyNumber":45,
+      "guernseyNumber": 45,
       "season": 2026
     },
     {
