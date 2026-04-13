@@ -6,6 +6,7 @@ import path from "path";
 import cors from "cors";
 import { fileURLToPath } from "url";
 import { scrapeDFS } from "./dfs_scraper.js";
+import { startRoundCompletionScheduler } from "./round_completion_scheduler.js";
 import pkg from "pg";
 const { Pool } = pkg;
 
@@ -499,4 +500,5 @@ async function fetchSquiggleMeta(gameId) {
 // ------------------------------------------------------
 app.listen(port, "0.0.0.0", () => {
   console.log(`🚀 DFS + Squiggle backend running on port ${port}`);
+  startRoundCompletionScheduler(pool);
 });
