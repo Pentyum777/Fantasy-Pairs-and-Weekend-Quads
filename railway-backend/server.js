@@ -304,6 +304,54 @@ app.get("/seasonResults", (req, res) => {
 });
 
 // ------------------------------------------------------
+// Load all completed rounds for a season + gameType (Postgres)
+// Used by Championship screen on startup to restore history
+// ------------------------------------------------------
+app.get("/completedRounds", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+
+  try {
+    const { season, gameType } = req.query;
+
+    if (!season || !gameType) {
+      return res.status(400).json({ error: "season and gameType are required" });
+    }
+
+    const normalizedGameType = normalizeGameType(gameType);
+    if (!normalizedGameType) {
+      return res.status(400).json({ error: "Invalid gameType" });
+    }
+
+    // Load every saved round for this season + gameType, ordered by round number
+    const result = await pool.query(
+      `
+      SELECT round, punter_names, picks, updated_at
+      FROM selections
+      WHERE season = $1 AND game_type = $2
+      ORDER BY round ASC
+      `,
+      [Number(season), normalizedGameType]
+    );
+
+    const rounds = result.rows.map((row) => ({
+      round: row.round,
+      updatedAt: row.updated_at ? new Date(row.updated_at).getTime() : 0,
+      punterNames: Array.isArray(row.punter_names) ? row.punter_names : [],
+      picks: Array.isArray(row.picks) ? row.picks : [],
+    }));
+
+    console.log(
+      `📋 completedRounds → season=${season}, gameType=${normalizedGameType}, count=${rounds.length}`
+    );
+
+    res.json({ ok: true, rounds });
+  } catch (err) {
+    console.error("💥 completedRounds error:", err);
+    res.status(500).json({ error: "Failed to load completed rounds" });
+  }
+});
+
+// ------------------------------------------------------
 // Fantasy endpoint — LIVE DFS ONLY
 // ------------------------------------------------------
 app.get("/fantasy/:matchId", async (req, res) => {

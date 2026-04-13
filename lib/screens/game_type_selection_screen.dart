@@ -11,6 +11,7 @@ import '../services/punter_score_service.dart';
 import '../services/championship_service.dart';
 import '../services/round_completion_service.dart';
 import '../services/user_role_service.dart';
+import '../services/game_data_cache.dart';
 
 import '../screens/game_view_screen.dart';
 import 'championship_screen.dart';
@@ -46,7 +47,7 @@ class GameTypeSelectionScreen extends StatefulWidget {
 }
 
 class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
-  final Map<String, List<PunterSelection>> _selectionCache = {};
+  final GameDataCache _gameDataCache = GameDataCache();
   final ChampionshipService championshipService = ChampionshipService();
 
   bool isPortraitPhone(BuildContext context) {
@@ -75,14 +76,14 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
   List<PunterSelection> _getSelectionsForGameType(String type) {
     final key = "${widget.season}-${widget.round}-$type";
 
-    if (_selectionCache.containsKey(key)) {
-      return _selectionCache[key]!;
+    if (_gameDataCache.hasSelections(key)) {
+      return _gameDataCache.getSelections(key);
     }
 
     final playersPerPunter = type == "weekend_quads" ? 4 : 2;
 
     final newList = _createEmptySelections(playersPerPunter);
-    _selectionCache[key] = newList;
+    _gameDataCache.setSelections(key, newList);
     return newList;
   }
 
@@ -110,6 +111,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
             championshipService: championshipService,
             roundCompletionService: widget.roundCompletionService,
             userRoleService: widget.userRoleService,
+            gameDataCache: _gameDataCache,
           ),
         ),
       );
@@ -136,6 +138,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
             championshipService: championshipService,
             roundCompletionService: widget.roundCompletionService,
             userRoleService: widget.userRoleService,
+            gameDataCache: _gameDataCache,
           ),
         ),
       );
@@ -149,7 +152,11 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => ChampionshipScreen(service: championshipService),
+          builder: (_) => ChampionshipScreen(
+            service: championshipService,
+            playerRepo: widget.playerRepo,
+            season: widget.season,
+          ),
         ),
       );
       return;
@@ -174,6 +181,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
           championshipService: championshipService,
           roundCompletionService: widget.roundCompletionService,
           userRoleService: widget.userRoleService,
+          gameDataCache: _gameDataCache,
         ),
       ),
     );

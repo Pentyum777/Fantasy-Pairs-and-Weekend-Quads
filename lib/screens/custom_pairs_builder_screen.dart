@@ -12,6 +12,7 @@ import '../services/punter_score_service.dart';
 import '../services/championship_service.dart';
 import '../services/round_completion_service.dart';
 import '../services/user_role_service.dart';
+import '../services/game_data_cache.dart';
 
 import '../widgets/team_logo.dart';
 import '../widgets/background_container.dart';
@@ -27,6 +28,7 @@ class CustomPairsBuilderScreen extends StatefulWidget {
   final ChampionshipService championshipService;
   final RoundCompletionService roundCompletionService;
   final UserRoleService userRoleService;
+  final GameDataCache? gameDataCache;
 
   const CustomPairsBuilderScreen({
     super.key,
@@ -38,6 +40,7 @@ class CustomPairsBuilderScreen extends StatefulWidget {
     required this.championshipService,
     required this.roundCompletionService,
     required this.userRoleService,
+    this.gameDataCache,
   });
 
   @override
@@ -249,6 +252,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
           userRoleService: widget.userRoleService,
           selectedFixtureIds: _selectedFixtureIds.toList(),
           overridePlayers: players,
+          gameDataCache: widget.gameDataCache,
         ),
       ),
     );

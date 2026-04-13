@@ -16,7 +16,6 @@ import '../models/afl_fixture.dart';
 import '../models/afl_player.dart';
 import '../models/punter_selection.dart';
 import '../models/afl_player_match_stats.dart';
-import '../models/punter_selection_clone.dart';
 
 import '../widgets/punter_selection_table.dart';
 import '../widgets/stats_overlay.dart';
@@ -27,6 +26,7 @@ import 'package:my_app/utils/afl_club_codes.dart';
 
 import '../parsers/match_stats_parser.dart';
 import '../constants/ui_dimensions.dart';
+import '../services/game_data_cache.dart';
 
 class GameViewScreen extends StatefulWidget {
   final int season;
@@ -41,6 +41,7 @@ class GameViewScreen extends StatefulWidget {
   final UserRoleService userRoleService;
   final List<String>? selectedFixtureIds;
   final List<AflPlayer>? overridePlayers;
+  final GameDataCache? gameDataCache;
 
 
 
@@ -58,6 +59,7 @@ class GameViewScreen extends StatefulWidget {
     required this.userRoleService,
     this.selectedFixtureIds,
     this.overridePlayers,
+    this.gameDataCache,
   });
 
   @override
@@ -180,15 +182,15 @@ bool _isFixtureLive(AflFixture f) {
 void initState() {
   super.initState();
 
-  // Base local model
-  final playersPerPunter = widget.selections.isNotEmpty
-      ? widget.selections.first.picks.length
-      : (widget.gameType == "weekend_quads" ? 4 : 2);
+  final cache = widget.gameDataCache;
+  final cacheKey = "${widget.season}-${widget.round}-${widget.gameType}";
 
-  // Start with either cloned selections or 15 empty rows
+  // Use the shared selection list directly — no clone.
+  // GameTypeSelectionScreen owns the list; we mutate it in place.
   if (widget.selections.isNotEmpty) {
-    _selections = widget.selections.map((p) => p.clone()).toList();
+    _selections = widget.selections;
   } else {
+    final playersPerPunter = widget.gameType == "weekend_quads" ? 4 : 2;
     _selections = List.generate(
       15,
       (i) => PunterSelection.empty(
@@ -198,12 +200,44 @@ void initState() {
     );
   }
 
-  _loadSeasonPlayers().then((_) async {
-    await _loadSelectionsSnapshot();
+  // Restore cached stats immediately (shows last-known data with zero delay)
+  if (cache != null && cache.hasStats(cacheKey)) {
+    _currentStatsByPlayerId = cache.getStats(cacheKey);
+  }
+
+  // Restore cached players immediately (skips the async load)
+  if (cache != null && cache.hasPlayers(widget.season)) {
+    _seasonPlayers = cache.getPlayers(widget.season);
+    _loadingPlayers = false;
+    _recomputeVisiblePunterCount();
     _snapshotLoaded = true;
-    if (mounted) setState(() {});
-    _startLivePolling();
-  });
+
+    // Only fetch fresh snapshot from network if we have no prior data
+    final hasData = _selections.any((p) =>
+        p.punterName.trim().isNotEmpty ||
+        p.picks.any((pick) => pick.player != null));
+
+    if (!hasData) {
+      _loadSelectionsSnapshot().then((_) {
+        _snapshotLoaded = true;
+        if (mounted) setState(() {});
+        _startLivePolling();
+      });
+    } else {
+      _startLivePolling();
+    }
+  } else {
+    // First visit — load everything normally
+    _loadSeasonPlayers().then((_) async {
+      if (cache != null && _seasonPlayers != null) {
+        cache.setPlayers(widget.season, _seasonPlayers!);
+      }
+      await _loadSelectionsSnapshot();
+      _snapshotLoaded = true;
+      if (mounted) setState(() {});
+      _startLivePolling();
+    });
+  }
 }
 
   @override
@@ -290,6 +324,13 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 }
 
   _currentStatsByPlayerId = map;
+
+  // ⭐ Write back to cache so returning to this game shows data instantly
+  final cache = widget.gameDataCache;
+  if (cache != null && map.isNotEmpty) {
+    final key = "${widget.season}-${widget.round}-${widget.gameType}";
+    cache.setStats(key, map);
+  }
 }
 
   void _applySnapshotToSelections(Map<String, dynamic> data) {
@@ -567,6 +608,7 @@ Future<void> _saveSnapshot() async {
           userRoleService: widget.userRoleService,
           selectedFixtureIds: widget.selectedFixtureIds,
           overridePlayers: widget.overridePlayers,
+          gameDataCache: widget.gameDataCache,
         ),
       ),
     );
@@ -727,7 +769,8 @@ void _finaliseFridayPairsWinner() {
         ? "Unknown"
         : _monthName(firstFixture.date!.month);
 
-    widget.championshipService.addRound(month, _selections);
+    widget.championshipService.addRound(month, _selections,
+        roundNumber: widget.round ?? 0);
     _saveSnapshot();
 
     debugPrint("🏆 Weekend Quads completed for $month");
