@@ -99,11 +99,13 @@ class ChampionshipService {
       final json = jsonDecode(res.body);
       final rounds = json["rounds"] as List<dynamic>? ?? [];
 
+      // ⭐ Clear existing data so we always get a fresh load from the DB.
+      // This ensures rounds added in previous sessions are always shown.
+      _roundsByNumber.clear();
+      _roundNumbersByMonth.clear();
+
       for (final roundData in rounds) {
         final roundNumber = roundData["round"] as int? ?? 0;
-
-        // Skip if we already have this round (e.g. added live this session)
-        if (_roundsByNumber.containsKey(roundNumber)) continue;
 
         final punterNames = (roundData["punterNames"] as List<dynamic>? ?? [])
             .map((e) => e?.toString() ?? "")

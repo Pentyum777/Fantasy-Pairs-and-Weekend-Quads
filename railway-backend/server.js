@@ -334,6 +334,18 @@ app.get("/completedRounds", async (req, res) => {
       [Number(season), normalizedGameType]
     );
 
+    // Debug: log what we found
+    console.log(
+      `📋 completedRounds query: season=${season}, gameType=${normalizedGameType}, rows=${result.rows.length}`
+    );
+    for (const row of result.rows) {
+      const names = Array.isArray(row.punter_names) ? row.punter_names.filter(n => n && n.trim()) : [];
+      const picks = Array.isArray(row.picks) ? row.picks : [];
+      console.log(
+        `  Round ${row.round}: ${names.length} named punters, ${picks.length} pick rows`
+      );
+    }
+
     const rounds = result.rows.map((row) => ({
       round: row.round,
       updatedAt: row.updated_at ? new Date(row.updated_at).getTime() : 0,
