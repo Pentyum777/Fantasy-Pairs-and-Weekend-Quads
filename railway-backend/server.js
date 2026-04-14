@@ -463,8 +463,9 @@ app.get("/playerSeasonStats/:season", async (req, res) => {
     const result = await pool.query(`
       SELECT
         player_id,
-        player_name,
-        team,
+        -- Use the most common non-empty name and team per player
+        (array_agg(player_name ORDER BY CASE WHEN player_name <> '' THEN 0 ELSE 1 END, player_name))[1] AS player_name,
+        (array_agg(team        ORDER BY CASE WHEN team        <> '' THEN 0 ELSE 1 END, team       ))[1] AS team,
         COUNT(*)::int                             AS games,
         ROUND(AVG(fantasy_points))::int           AS af_avg,
         MAX(fantasy_points)                        AS af_best,
@@ -478,7 +479,7 @@ app.get("/playerSeasonStats/:season", async (req, res) => {
       FROM match_stats
       WHERE match_id LIKE $1
         AND fantasy_points > 0
-      GROUP BY player_id, player_name, team
+      GROUP BY player_id
       ORDER BY af_avg DESC
     `, [`CD_M${season}%`]);
     res.json({ ok: true, players: result.rows });
@@ -514,10 +515,11 @@ app.get("/namedSquad/:matchId", async (req, res) => {
       if (response.ok) {
         const data = await response.json();
         // Extract player IDs from home and away lineups
+        // AFL squads are now 23 players + emergencies (typically 2-3)
         const extractIds = (team) => {
           const lineup = team?.lineup ?? team?.players ?? [];
           return lineup
-            .filter(p => p.position !== "EMERG" && p.position !== "SUB_22")
+            .filter(p => p.position !== "SUB_22") // keep emergencies, exclude sub-22
             .map(p => p.player?.playerId ?? p.playerId ?? "")
             .filter(Boolean);
         };
@@ -620,6 +622,89 @@ app.delete("/playerFlags/:season/:playerId", async (req, res) => {
   } catch (err) {
     console.error("playerFlags DELETE error:", err);
     res.status(500).json({ error: "Failed" });
+  }
+});
+
+
+// GET /draftedPlayers?season=&round=
+// Returns all player IDs drafted across ALL game types for a round
+app.get("/draftedPlayers", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const season = parseInt(req.query.season ?? 0);
+    const round  = parseInt(req.query.round  ?? 0);
+
+    const result = await pool.query(
+      `SELECT picks FROM selections WHERE season = $1 AND round = $2`,
+      [season, round]
+    );
+
+    const playerIds = new Set();
+    for (const row of result.rows) {
+      const picks = Array.isArray(row.picks) ? row.picks : [];
+      for (const punterPicks of picks) {
+        if (!Array.isArray(punterPicks)) continue;
+        for (const pick of punterPicks) {
+          const pid = pick?.playerId;
+          if (pid && pid.trim()) playerIds.add(pid.trim());
+        }
+      }
+    }
+
+    res.json({ ok: true, playerIds: [...playerIds] });
+  } catch (err) {
+    console.error("draftedPlayers error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// GET /injuryList
+// Scrapes the current AFL injury list article and returns structured player data
+// The AFL publishes a weekly "Medical room" article with consistent formatting
+app.get("/injuryList", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    // Fetch the injury list page which lists all current injuries
+    const pageRes = await fetch(
+      "https://www.afl.com.au/matches/injury-list",
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept": "text/html,application/xhtml+xml",
+        },
+        timeout: 10000,
+      }
+    );
+
+    if (!pageRes.ok) {
+      return res.json({ ok: true, players: [], source: "unavailable" });
+    }
+
+    const html = await pageRes.text();
+
+    // The injury list page contains structured data in script tags
+    // Extract the __NEXT_DATA__ or similar JSON payload
+    const nextDataMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+
+    if (nextDataMatch) {
+      try {
+        const nextData = JSON.parse(nextDataMatch[1]);
+        // Navigate to injury data in the Next.js page props
+        const pageProps = nextData?.props?.pageProps;
+        const injuries = pageProps?.injuryList ?? pageProps?.injuries ?? [];
+
+        if (injuries.length > 0) {
+          return res.json({ ok: true, players: injuries, source: "afl" });
+        }
+      } catch (_) {}
+    }
+
+    // Fallback: return empty — admin can manually flag players
+    res.json({ ok: true, players: [], source: "unavailable" });
+
+  } catch (err) {
+    console.error("injuryList error:", err.message);
+    res.json({ ok: true, players: [], source: "error", message: err.message });
   }
 });
 

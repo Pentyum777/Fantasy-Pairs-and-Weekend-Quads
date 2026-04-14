@@ -72,6 +72,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
   Map<String, PlayerFlagEntry> _flags = {};
   Set<String> _namedSquadIds = {};
   bool _teamsAnnounced = false;
+  Set<String> _fetchedDraftedIds = {};
 
   // Filters
   String? _teamFilter;
@@ -98,11 +99,66 @@ class _ScoutScreenState extends State<ScoutScreen> {
     super.dispose();
   }
 
+
+  /// Shows a dialog with the AFL injury list URL and instructions
+  void _showInjuryListDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('AFL Injury List'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Visit the AFL injury list, then return here to manually flag players.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const SelectableText(
+                'afl.com.au/matches/injury-list',
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Tap any player in the Scout table to flag them as INJ, SUSP, REST or OUT.',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _loadData() async {
     setState(() => _loading = true);
 
     final stats = await widget.scoutService.fetchSeasonStats(widget.season);
     final flags = await widget.scoutService.fetchFlags(widget.season);
+
+    // ⭐ Fetch drafted players from backend for ALL game types in this round
+    // This ensures we get picks even if the local state isn't loaded
+    final drafted = await widget.scoutService.fetchDraftedPlayers(
+      season: widget.season,
+      round: widget.round ?? 0,
+    );
 
     // Fetch named squads for all fixtures in this round/game type
     Set<String> namedIds = {};
@@ -124,6 +180,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
         _flags = flags;
         _namedSquadIds = namedIds;
         _teamsAnnounced = announced;
+        _fetchedDraftedIds = drafted;
         _loading = false;
       });
     }
@@ -183,7 +240,8 @@ class _ScoutScreenState extends State<ScoutScreen> {
       }
 
       // Hide drafted
-      if (_hideDrafted && widget.draftedPlayerIds.contains(s.playerId)) {
+      final allDrafted = {...widget.draftedPlayerIds, ..._fetchedDraftedIds};
+      if (_hideDrafted && allDrafted.contains(s.playerId)) {
         return false;
       }
 
@@ -215,6 +273,12 @@ class _ScoutScreenState extends State<ScoutScreen> {
         backgroundColor: cs.surface,
         title: const Text('Scout'),
         actions: [
+          // Open AFL injury list instructions
+          IconButton(
+            icon: const Icon(Icons.medical_services_outlined),
+            tooltip: 'View AFL injury list',
+            onPressed: () => _showInjuryListDialog(),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadData,
@@ -281,7 +345,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
           // Named only toggle
           if (_teamsAnnounced)
             FilterChip(
-              label: const Text('Named only'),
+              label: const Text('Named squad (23+E)'),
               selected: _namedOnly,
               onSelected: (v) => setState(() => _namedOnly = v),
             ),
@@ -425,7 +489,8 @@ class _ScoutScreenState extends State<ScoutScreen> {
       final s = rows[i];
       final bg = rowBg(i, s);
       final flag = _flags[s.playerId];
-      final isDrafted = widget.draftedPlayerIds.contains(s.playerId);
+      final allDraftedRow = {...widget.draftedPlayerIds, ..._fetchedDraftedIds};
+      final isDrafted = allDraftedRow.contains(s.playerId);
       final isNamed = _teamsAnnounced && _namedSquadIds.contains(s.playerId);
       final nameStyle = cellStyle?.copyWith(
         fontWeight: FontWeight.w600,

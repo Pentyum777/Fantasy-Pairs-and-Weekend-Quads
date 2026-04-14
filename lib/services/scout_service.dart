@@ -146,6 +146,32 @@ class ScoutService {
     }
   }
 
+  // ── Drafted players ──────────────────────────────────────────────────────────
+
+  /// Fetches all player IDs drafted across all game types for a given round.
+  Future<Set<String>> fetchDraftedPlayers({
+    required int season,
+    required int round,
+  }) async {
+    try {
+      final url = Uri.https(
+        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        '/draftedPlayers',
+        {
+          'season': season.toString(),
+          'round': round.toString(),
+        },
+      );
+      final res = await http.get(url);
+      if (res.statusCode != 200) return {};
+      final json = jsonDecode(res.body);
+      final ids = json['playerIds'] as List<dynamic>? ?? [];
+      return ids.map((e) => e.toString()).toSet();
+    } catch (_) {
+      return {};
+    }
+  }
+
   // ── Named squad ───────────────────────────────────────────────────────────
 
   /// Returns the set of named player IDs for a match.
@@ -167,7 +193,30 @@ class ScoutService {
     }
   }
 
-  // ── Player flags ──────────────────────────────────────────────────────────
+  // ── Injury list ──────────────────────────────────────────────────────────────
+
+  /// Fetches the current AFL injury list from the backend.
+  /// Returns a list of {playerName, team, injury} maps.
+  Future<List<Map<String, String>>> fetchInjuryList() async {
+    try {
+      final url = Uri.https(
+        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        '/injuryList',
+      );
+      final res = await http.get(url);
+      if (res.statusCode != 200) return [];
+      final json = jsonDecode(res.body);
+      final players = json['players'] as List<dynamic>? ?? [];
+      return players
+          .map((e) => Map<String, String>.from(
+              (e as Map).map((k, v) => MapEntry(k.toString(), v.toString()))))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // ── Player flags ──────────────────────────────────────────────────────────────
 
   Future<Map<String, PlayerFlagEntry>> fetchFlags(int season) async {
     try {
