@@ -314,6 +314,15 @@ bool _isRoundHistorical() {
 
       if (data is Map<String, dynamic>) {
         _applySnapshotToSelections(data);
+
+        // ⭐ Track timestamp so we can detect remote changes
+        final ts = (json["lastUpdated"] as num?)?.toInt() ?? 0;
+        if (ts > 0) _lastKnownTimestamp = ts;
+
+        // ⭐ For historical rounds, build stats map from snapshot data
+        if (_isCompleted && _currentStatsByPlayerId.isEmpty) {
+          _buildStatsFromSnapshot();
+        }
       }
     }
   } catch (e) {
@@ -328,6 +337,53 @@ bool _isRoundHistorical() {
 
 
 
+
+/// Builds _currentStatsByPlayerId from pick stats already loaded in _selections.
+/// Used for historical rounds where the live DFS feed no longer has data,
+/// so the stats overlay has real data without any network call.
+void _buildStatsFromSnapshot() {
+  final Map<String, AflPlayerMatchStats> statsMap = {};
+
+  for (final selection in _selections) {
+    for (final pick in selection.picks) {
+      final player = pick.player;
+      final stats = pick.stats;
+      if (player == null || stats == null || stats.isEmpty) continue;
+
+      int asInt(String key) {
+        final v = stats[key];
+        if (v is int) return v;
+        if (v is double) return v.round();
+        return int.tryParse(v?.toString() ?? "") ?? 0;
+      }
+
+      final s = AflPlayerMatchStats(
+        player: player,
+        team: player.club,
+        kicks: asInt("K"),
+        handballs: asInt("HB"),
+        disposals: asInt("D"),
+        marks: asInt("M"),
+        tackles: asInt("T"),
+        hitouts: asInt("HO"),
+        freesFor: asInt("FF"),
+        freesAgainst: asInt("FA"),
+        goals: asInt("G"),
+        behinds: asInt("B"),
+        timeOnGroundPercentage: asInt("TOG"),
+        fantasyPoints: asInt("AF"),
+      );
+      s.isCompletedGame = true;
+      s.isLiveGame = false;
+      statsMap[player.id] = s;
+    }
+  }
+
+  if (statsMap.isNotEmpty) {
+    _currentStatsByPlayerId = statsMap;
+    debugPrint("✅ Built stats from snapshot: \${statsMap.length} players");
+  }
+}
 
 void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   final Map<String, AflPlayerMatchStats> map = {};

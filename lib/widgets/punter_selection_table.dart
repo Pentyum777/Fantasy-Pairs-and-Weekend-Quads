@@ -2,6 +2,7 @@
 
 
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:dropdown_search/dropdown_search.dart';
@@ -694,11 +695,8 @@ Widget build(BuildContext context) {
             children: [
               // Wrap chip in GestureDetector for long-press clear on touch
               if (canClear && isTouchDevice)
-                GestureDetector(
-                  onLongPress: () {
-                    HapticFeedback.mediumImpact();
-                    clearPick();
-                  },
+                _LongPressChip(
+                  onClear: clearPick,
                   child: chip,
                 )
               else
@@ -1040,5 +1038,57 @@ Widget build(BuildContext context) {
     } else {
       return round * punters + (punters - rowIndex);
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Custom long-press widget with extended hold duration (900ms)
+// Used on touch devices to clear a player pick
+// ─────────────────────────────────────────────────────────────
+class _LongPressChip extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onClear;
+  final Duration holdDuration;
+
+  const _LongPressChip({
+    required this.child,
+    required this.onClear,
+    this.holdDuration = const Duration(milliseconds: 900),
+  });
+
+  @override
+  State<_LongPressChip> createState() => _LongPressChipState();
+}
+
+class _LongPressChipState extends State<_LongPressChip> {
+  Timer? _timer;
+
+  void _startTimer() {
+    _timer = Timer(widget.holdDuration, () {
+      HapticFeedback.mediumImpact();
+      widget.onClear();
+    });
+  }
+
+  void _cancelTimer() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  @override
+  void dispose() {
+    _cancelTimer();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _startTimer(),
+      onTapUp: (_) => _cancelTimer(),
+      onTapCancel: _cancelTimer,
+      onPanStart: (_) => _cancelTimer(), // cancel if finger moves
+      child: widget.child,
+    );
   }
 }
