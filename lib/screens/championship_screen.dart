@@ -21,7 +21,7 @@ class ChampionshipScreen extends StatefulWidget {
 
 class _ChampionshipScreenState extends State<ChampionshipScreen>
     with SingleTickerProviderStateMixin {
-  String? _selectedMonth;
+  String? _selectedSeries;
   bool _loading = true;
   late TabController _tabController;
 
@@ -48,8 +48,8 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
     final months = widget.service.months;
     setState(() {
       _loading = false;
-      if (months.isNotEmpty && _selectedMonth == null) {
-        _selectedMonth = months.last;
+      if (months.isNotEmpty && _selectedSeries == null) {
+        _selectedSeries = months.first; // default to Series 1
       }
     });
   }
@@ -64,7 +64,7 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text("Championship"),
+        title: const Text("Hexagon Cup"),
         backgroundColor: theme.colorScheme.surface,
         actions: [
           if (!_loading)
@@ -83,7 +83,7 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
                 controller: _tabController,
                 tabs: const [
                   Tab(text: "Overall"),
-                  Tab(text: "Monthly"),
+                  Tab(text: "Hexagon Cup"),
                 ],
               )
             : null,
@@ -130,24 +130,24 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
                 child: Row(
                   children: [
                     Text(
-                      _selectedMonth == null
-                          ? "Monthly Championship"
-                          : "$_selectedMonth Championship",
+                      _selectedSeries == null
+                          ? "Hexagon Cup"
+                          : "$_selectedSeries · Hexagon Cup",
                       style: theme.textTheme.titleSmall
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const Spacer(),
-                    Text("Month:", style: theme.textTheme.labelMedium),
+                    Text("Hex:", style: theme.textTheme.labelMedium),
                     const SizedBox(width: 6),
                     DropdownButton<String>(
-                      value: _selectedMonth,
+                      value: _selectedSeries,
                       isDense: true,
                       items: months
                           .map((m) => DropdownMenuItem(
                               value: m, child: Text(m)))
                           .toList(),
                       onChanged: (v) {
-                        if (v != null) setState(() => _selectedMonth = v);
+                        if (v != null) setState(() => _selectedSeries = v);
                       },
                     ),
                   ],
@@ -173,12 +173,12 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
                 const SizedBox(width: 16),
                 Expanded(
                   flex: 2,
-                  child: _selectedMonth == null
+                  child: _selectedSeries == null
                       ? const SizedBox()
                       : _PointsTable(
                           service: widget.service,
                           roundNumbers: widget.service
-                              .roundNumbersForMonth(_selectedMonth!),
+                              .roundNumbersForSeries(_selectedSeries!),
                           title: "",
                           scrollable: false,
                         ),
@@ -216,31 +216,31 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
               // Month selector
               Row(
                 children: [
-                  Text("Month:", style: theme.textTheme.labelLarge
+                  Text("Hex:", style: theme.textTheme.labelLarge
                       ?.copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(width: 8),
                   DropdownButton<String>(
-                    value: _selectedMonth,
+                    value: _selectedSeries,
                     isDense: true,
                     items: months
                         .map((m) => DropdownMenuItem(
                             value: m, child: Text(m)))
                         .toList(),
                     onChanged: (v) {
-                      if (v != null) setState(() => _selectedMonth = v);
+                      if (v != null) setState(() => _selectedSeries = v);
                     },
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Expanded(
-                child: _selectedMonth == null
+                child: _selectedSeries == null
                     ? const SizedBox()
                     : _PointsTable(
                         service: widget.service,
                         roundNumbers: widget.service
-                            .roundNumbersForMonth(_selectedMonth!),
-                        title: "$_selectedMonth Championship",
+                            .roundNumbersForSeries(_selectedSeries!),
+                        title: "$_selectedSeries · Hexagon Cup",
                         scrollable: false,
                       ),
               ),

@@ -387,15 +387,15 @@ class ChampionshipService {
   // HELPERS
   // ---------------------------------------------------------------------------
 
-  /// Maps AFL round numbers to month names (approximate — adjust if needed).
+  /// Maps AFL round numbers to Hexagon Cup labels (blocks of 4 rounds).
+  /// Hex 1: Rounds 1-4, Hex 2: Rounds 5-8, ..., Hex 6: Rounds 21-24
   String _monthFromRound(int round) {
-    if (round <= 3) return "March";
-    if (round <= 7) return "April";
-    if (round <= 11) return "May";
-    if (round <= 15) return "June";
-    if (round <= 19) return "July";
-    if (round <= 23) return "August";
-    return "September";
+    if (round <= 4) return "Hex 1";
+    if (round <= 8) return "Hex 2";
+    if (round <= 12) return "Hex 3";
+    if (round <= 16) return "Hex 4";
+    if (round <= 20) return "Hex 5";
+    return "Hex 6";
   }
 
   String monthName(int m) {
@@ -424,9 +424,12 @@ class ChampionshipService {
   }
 
   /// Returns the round numbers for a given month.
-  List<int> roundNumbersForMonth(String month) {
-    return List<int>.from(_roundNumbersByMonth[month] ?? [])..sort();
+  List<int> roundNumbersForSeries(String series) {
+    return List<int>.from(_roundNumbersByMonth[series] ?? [])..sort();
   }
+
+  // Alias for backward compatibility
+  List<int> roundNumbersForMonth(String month) => roundNumbersForSeries(month);
 
   /// Builds a points table: punterName -> {roundNumber -> championshipPoints}.
   /// If [roundNumbers] is provided, only those rounds are included.

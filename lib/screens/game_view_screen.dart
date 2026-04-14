@@ -802,11 +802,13 @@ Future<void> _refreshLive() async {
     debugPrint("ROUND STATS COUNT = ${roundStats.length}");
 
     // 4. Apply completion flags + build stats map
-    _applyLiveStats(roundStats.values.toList());
+    if (roundStats.isNotEmpty) {
+      _applyLiveStats(roundStats.values.toList());
+    }
 
     // 5. Push stats into the punter table
     final tableState = _punterTableKey.currentState;
-    if (tableState != null) {
+    if (tableState != null && mounted) {
       final dynamic dyn = tableState;
       dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
     }
@@ -857,7 +859,9 @@ void _finaliseFridayPairsWinner() {
   // ⭐ Final stats refresh
   final roundStats = await _fetchRoundStats();
 
-  _applyLiveStats(roundStats.values.toList());
+  if (roundStats.isNotEmpty) {
+    _applyLiveStats(roundStats.values.toList());
+  }
 
   // ⭐ Sort ONLY for leaderboard
   
@@ -1027,8 +1031,9 @@ void _finaliseFridayPairsWinner() {
     final allRounds = widget.fixtureRepo.allRoundsForSeason(widget.season);
     final currentRound = widget.round ?? 0;
     final currentIndex = allRounds.indexOf(currentRound);
+    // Guard: if current round not in list, disable navigation
     final hasPrev = currentIndex > 0;
-    final hasNext = currentIndex < allRounds.length - 1;
+    final hasNext = currentIndex >= 0 && currentIndex < allRounds.length - 1;
 
     final labelSize = compact ? 12.0 : 14.0;
     final iconSize = compact ? 16.0 : 18.0;
@@ -1082,7 +1087,7 @@ void _finaliseFridayPairsWinner() {
           padding: EdgeInsets.all(btnPad),
           constraints: const BoxConstraints(),
           tooltip: hasPrev ? RoundHelper.label(allRounds[currentIndex - 1]) : null,
-          onPressed: hasPrev
+          onPressed: (hasPrev && currentIndex >= 1)
               ? () => _navigateTo(
                   round: allRounds[currentIndex - 1],
                   gameType: widget.gameType)
@@ -1118,7 +1123,7 @@ void _finaliseFridayPairsWinner() {
           padding: EdgeInsets.all(btnPad),
           constraints: const BoxConstraints(),
           tooltip: hasNext ? RoundHelper.label(allRounds[currentIndex + 1]) : null,
-          onPressed: hasNext
+          onPressed: (hasNext && currentIndex >= 0 && currentIndex + 1 < allRounds.length)
               ? () => _navigateTo(
                   round: allRounds[currentIndex + 1],
                   gameType: widget.gameType)

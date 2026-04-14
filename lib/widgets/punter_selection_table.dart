@@ -658,6 +658,21 @@ Widget build(BuildContext context) {
             !widget.readOnly &&
             player != null;
 
+        // ⭐ No player selected — render plain placeholder text, no background
+        if (player == null) {
+          return Container(
+            width: kPickColumnWidth,
+            alignment: Alignment.center,
+            child: Text(
+              hintText,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurface.withOpacity(0.35),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          );
+        }
+
         void clearPick() {
           setState(() {
             owner.picks[colIndex].player = null;
