@@ -18,6 +18,8 @@ import 'championship_screen.dart';
 import 'custom_pairs_builder_screen.dart';
 
 import '../widgets/background_container.dart';
+import '../services/scout_service.dart';
+import 'scout_screen.dart';
 
 class GameTypeSelectionScreen extends StatefulWidget {
   final int season;
@@ -49,6 +51,21 @@ class GameTypeSelectionScreen extends StatefulWidget {
 class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
   final GameDataCache _gameDataCache = GameDataCache();
   final ChampionshipService championshipService = ChampionshipService();
+  final ScoutService _scoutService = ScoutService();
+  bool _scoutAllowed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkScoutAccess();
+  }
+
+  Future<void> _checkScoutAccess() async {
+    final email = widget.userRoleService.currentUser ?? '';
+    if (email.isEmpty) return;
+    final allowed = await _scoutService.checkAccess(email);
+    if (mounted) setState(() => _scoutAllowed = allowed);
+  }
 
   bool isPortraitPhone(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -57,10 +74,10 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
 
   List<PunterSelection> _createEmptySelections(int playersPerPunter) {
     return List.generate(
-      15,
+      25,
       (i) => PunterSelection(
         punterNumber: i + 1,
-        punterName: "",
+        punterName: "P${i + 1}",
         picks: List.generate(
           playersPerPunter,
           (j) => PlayerPick(
@@ -146,6 +163,36 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     }
 
     // ------------------------------------------------------------
+    // Scout
+    // ------------------------------------------------------------
+    if (type == "scout") {
+      // Collect already-drafted player IDs for the current round/game type
+      final drafted = <String>{};
+      for (final sel in _getAllSelectionsForRound()) {
+        for (final pick in sel.picks) {
+          final pid = pick.player?.id;
+          if (pid != null && pid.isNotEmpty) drafted.add(pid);
+        }
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ScoutScreen(
+            season: widget.season,
+            round: widget.round,
+            gameType: widget.round == null
+                ? 'weekend_quads'
+                : _defaultGameTypeForRound(),
+            fixtureRepo: widget.fixtureRepo,
+            playerRepo: widget.playerRepo,
+            scoutService: _scoutService,
+            draftedPlayerIds: drafted,
+          ),
+        ),
+      );
+      return;
+    }
+
     // Championship
     // ------------------------------------------------------------
     if (type == "championship") {
@@ -185,6 +232,33 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
         ),
       ),
     );
+  }
+
+  /// Returns all selections across all game types for the current round
+  /// Used to collect drafted player IDs for the Scout screen
+  List<dynamic> _getAllSelectionsForRound() {
+    final result = [];
+    for (final type in [
+      'thursday_pairs', 'friday_pairs', 'saturday_pairs',
+      'sunday_pairs', 'monday_pairs', 'weekend_quads',
+    ]) {
+      try {
+        result.addAll(_getSelectionsForGameType(type));
+      } catch (_) {}
+    }
+    return result;
+  }
+
+  /// Returns the most relevant game type for the current round
+  /// (first game type that has fixtures)
+  String _defaultGameTypeForRound() {
+    final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+        widget.season, widget.round);
+    if (fixtures.isEmpty) return 'weekend_quads';
+    final days = fixtures.map((f) => f.date?.weekday).toSet();
+    if (days.contains(DateTime.friday)) return 'friday_pairs';
+    if (days.contains(DateTime.saturday)) return 'saturday_pairs';
+    return 'weekend_quads';
   }
 
   Widget buildProTile({
@@ -250,6 +324,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       "custom_builder",   // ⭐ NEW
       "custom_game",      // ⭐ NEW
       "championship",
+      if (_scoutAllowed) "scout",
     ];
 
     String shortLabel(String type) {
@@ -272,6 +347,8 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
           return "Custom Game";        // ⭐ NEW
         case "championship":
           return "The Championship";
+        case "scout":
+          return "Scout 🔍";
         default:
           return type;
       }

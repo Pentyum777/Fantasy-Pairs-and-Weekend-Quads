@@ -432,6 +432,197 @@ app.get("/matchStats/:matchId", async (req, res) => {
   }
 });
 
+
+// ============================================================
+// SCOUT FEATURE — player stats, access control, flags
+// ============================================================
+
+// Scout access allowlist — backend-controlled so new emails
+// can be added via SCOUT_EMAILS env var without a rebuild.
+// Format: comma-separated emails e.g. "a@b.com,c@d.com"
+function getScoutAllowList() {
+  const envList = process.env.SCOUT_EMAILS ?? "wpenfold@bigpond.net.au";
+  return envList.split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+}
+
+// GET /scoutAccess?email=...
+// Returns {allowed: true/false}
+app.get("/scoutAccess", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  const email = (req.query.email ?? "").trim().toLowerCase();
+  const allowed = getScoutAllowList().includes(email);
+  res.json({ ok: true, allowed });
+});
+
+// GET /playerSeasonStats/:season
+// Returns season averages for all players from match_stats table
+app.get("/playerSeasonStats/:season", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const season = parseInt(req.params.season);
+    const result = await pool.query(`
+      SELECT
+        player_id,
+        player_name,
+        team,
+        COUNT(*)::int                             AS games,
+        ROUND(AVG(fantasy_points))::int           AS af_avg,
+        MAX(fantasy_points)                        AS af_best,
+        ROUND(AVG(kicks))::int                    AS k_avg,
+        ROUND(AVG(handballs))::int                AS hb_avg,
+        ROUND(AVG(disposals))::int                AS d_avg,
+        ROUND(AVG(marks))::int                    AS m_avg,
+        ROUND(AVG(tackles))::int                  AS t_avg,
+        ROUND(AVG(goals)::numeric, 1)::float      AS g_avg,
+        ROUND(AVG(tog))::int                      AS tog_avg
+      FROM match_stats
+      WHERE match_id LIKE $1
+        AND fantasy_points > 0
+      GROUP BY player_id, player_name, team
+      ORDER BY af_avg DESC
+    `, [`CD_M${season}%`]);
+    res.json({ ok: true, players: result.rows });
+  } catch (err) {
+    console.error("playerSeasonStats error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// GET /namedSquad/:matchId
+// Fetches named 22 from AFL.com.au for a given match.
+// Returns {ok, named: [playerId, ...], available: true/false}
+app.get("/namedSquad/:matchId", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  const matchId = req.params.matchId;
+  try {
+    // AFL website match data endpoint (unofficial but stable)
+    const url = `https://www.afl.com.au/matches/${matchId}`;
+    const apiUrl = `https://api.afl.com.au/cfs/afl/matchItem/${matchId}`;
+
+    let named = [];
+    let available = false;
+
+    try {
+      const response = await fetch(apiUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "application/json",
+        },
+        timeout: 8000,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Extract player IDs from home and away lineups
+        const extractIds = (team) => {
+          const lineup = team?.lineup ?? team?.players ?? [];
+          return lineup
+            .filter(p => p.position !== "EMERG" && p.position !== "SUB_22")
+            .map(p => p.player?.playerId ?? p.playerId ?? "")
+            .filter(Boolean);
+        };
+        const homeIds = extractIds(data?.homeTeam ?? data?.home);
+        const awayIds = extractIds(data?.awayTeam ?? data?.away);
+        named = [...homeIds, ...awayIds];
+        available = named.length > 0;
+      }
+    } catch (fetchErr) {
+      console.warn("AFL lineup fetch failed:", fetchErr.message);
+    }
+
+    res.json({ ok: true, matchId, available, named });
+  } catch (err) {
+    console.error("namedSquad error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// GET /playerFlags/:season
+// Returns all admin flags for a season
+app.get("/playerFlags/:season", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const season = parseInt(req.params.season);
+    // Create table if not exists (idempotent)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS player_flags (
+        id SERIAL PRIMARY KEY,
+        season INT NOT NULL,
+        player_id TEXT NOT NULL,
+        player_name TEXT,
+        team TEXT,
+        flag TEXT NOT NULL,  -- INJ, SUSP, REST, OUT
+        note TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        UNIQUE(season, player_id)
+      )
+    `);
+    const result = await pool.query(
+      `SELECT player_id, player_name, team, flag, note FROM player_flags WHERE season = $1`,
+      [season]
+    );
+    res.json({ ok: true, flags: result.rows });
+  } catch (err) {
+    console.error("playerFlags GET error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// POST /playerFlags
+// Set or update a flag for a player
+app.post("/playerFlags", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { season, playerId, playerName, team, flag, note } = req.body;
+    if (!season || !playerId || !flag) {
+      return res.status(400).json({ error: "season, playerId, flag required" });
+    }
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS player_flags (
+        id SERIAL PRIMARY KEY,
+        season INT NOT NULL,
+        player_id TEXT NOT NULL,
+        player_name TEXT,
+        team TEXT,
+        flag TEXT NOT NULL,
+        note TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        UNIQUE(season, player_id)
+      )
+    `);
+    await pool.query(`
+      INSERT INTO player_flags (season, player_id, player_name, team, flag, note)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (season, player_id) DO UPDATE SET
+        flag = EXCLUDED.flag,
+        note = EXCLUDED.note,
+        player_name = EXCLUDED.player_name,
+        team = EXCLUDED.team
+    `, [season, playerId, playerName ?? "", team ?? "", flag, note ?? ""]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("playerFlags POST error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// DELETE /playerFlags/:season/:playerId
+// Remove a flag for a player
+app.delete("/playerFlags/:season/:playerId", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { season, playerId } = req.params;
+    await pool.query(
+      `DELETE FROM player_flags WHERE season = $1 AND player_id = $2`,
+      [parseInt(season), playerId]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("playerFlags DELETE error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
 // Selection timestamp — lightweight poll for live sync
 // Returns just the updated_at timestamp for a game
 // Used by non-editing admins to detect changes
