@@ -88,6 +88,8 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   AflFixture? _selectedFixture;
   Timer? _liveTimer;
+  Timer? _syncTimer;       // polls for remote selection changes
+  int _lastKnownTimestamp = 0; // unix ms of last loaded snapshot
   final ScrollController _punterScrollController = ScrollController();
 
   Map<String, AflPlayerMatchStats> _currentStatsByPlayerId = {};
@@ -268,6 +270,7 @@ bool _isRoundHistorical() {
   @override
   void dispose() {
     _liveTimer?.cancel();
+    _syncTimer?.cancel();
     _punterScrollController.dispose();
     super.dispose();
   }
@@ -529,11 +532,20 @@ Future<void> _saveSnapshot() async {
       "picks": picks,
     });
 
-    await http.post(
+    final saveRes = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
       body: body,
     );
+    // ⭐ Update our timestamp from the save response so we don't
+    // immediately re-reload our own change
+    if (saveRes.statusCode == 200) {
+      try {
+        final saveJson = jsonDecode(saveRes.body);
+        final ts = (saveJson["lastUpdated"] as num?)?.toInt() ?? 0;
+        if (ts > 0) _lastKnownTimestamp = ts;
+      } catch (_) {}
+    }
   } catch (e) {
     debugPrint("❌ saveSnapshot failed: $e");
   }
@@ -658,6 +670,51 @@ Future<void> _saveSnapshot() async {
       await _refreshLive();
     },
   );
+
+  // ⭐ Live sync: poll for remote selection changes every 3 seconds.
+  // If another admin has updated the selections, reload the snapshot.
+  // Only runs when not completed (no need to sync historical rounds).
+  _syncTimer?.cancel();
+  if (!_isCompleted) {
+    _syncTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) async {
+        await _checkForRemoteChanges();
+      },
+    );
+  }
+}
+
+/// Polls the backend for the latest selection timestamp.
+/// If newer than what we last loaded, reloads the full snapshot.
+Future<void> _checkForRemoteChanges() async {
+  if (!mounted) return;
+  try {
+    final safeRound = widget.round ?? 0;
+    final url = Uri.https(
+      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+      "/selectionTimestamp",
+      {
+        "gameType": widget.gameType,
+        "season": widget.season.toString(),
+        "round": safeRound.toString(),
+      },
+    );
+    final res = await http.get(url);
+    if (res.statusCode != 200) return;
+
+    final json = jsonDecode(res.body);
+    final remoteTs = (json["lastUpdated"] as num?)?.toInt() ?? 0;
+
+    // If remote is newer than what we have, reload
+    if (remoteTs > _lastKnownTimestamp && _lastKnownTimestamp > 0) {
+      debugPrint("🔄 Remote changes detected — reloading selections");
+      await _loadSelectionsSnapshot();
+      if (mounted) setState(() {});
+    }
+  } catch (_) {
+    // Silent fail — sync is best-effort
+  }
 }
 
 Future<void> _refreshLive() async {
@@ -1018,6 +1075,7 @@ void _finaliseFridayPairsWinner() {
   /// Navigate to any combination of round + game type.
   void _navigateTo({required int round, required String gameType}) {
     _liveTimer?.cancel();
+    _syncTimer?.cancel();
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(

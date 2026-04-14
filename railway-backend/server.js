@@ -365,6 +365,36 @@ app.get("/completedRounds", async (req, res) => {
 });
 
 // ------------------------------------------------------
+
+// ------------------------------------------------------
+// Selection timestamp — lightweight poll for live sync
+// Returns just the updated_at timestamp for a game
+// Used by non-editing admins to detect changes
+// ------------------------------------------------------
+app.get("/selectionTimestamp", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { gameType, season, round } = req.query;
+    if (!gameType || !season || !round) {
+      return res.status(400).json({ error: "gameType, season, round required" });
+    }
+    const normalizedGameType = normalizeGameType(gameType);
+    const result = await pool.query(
+      `SELECT updated_at FROM selections
+       WHERE season = $1 AND game_type = $2 AND round = $3
+       LIMIT 1`,
+      [Number(season), normalizedGameType, Number(round)]
+    );
+    const ts = result.rows[0]?.updated_at
+      ? new Date(result.rows[0].updated_at).getTime()
+      : 0;
+    res.json({ ok: true, lastUpdated: ts });
+  } catch (err) {
+    console.error("selectionTimestamp error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
 // Fantasy endpoint — LIVE DFS ONLY
 // ------------------------------------------------------
 app.get("/fantasy/:matchId", async (req, res) => {
