@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../repositories/fixture_repository.dart';
@@ -73,6 +74,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
   Set<String> _namedSquadIds = {};
   bool _teamsAnnounced = false;
   Set<String> _fetchedDraftedIds = {};
+  Timer? _draftedPollTimer;
 
   // Filters
   String? _teamFilter;
@@ -96,6 +98,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _draftedPollTimer?.cancel();
     super.dispose();
   }
 
@@ -147,6 +150,25 @@ class _ScoutScreenState extends State<ScoutScreen> {
     );
   }
 
+  /// Polls drafted players every 5 seconds so Scout updates
+  /// automatically when a selection is made in a game view.
+  void _startDraftedPolling() {
+    _draftedPollTimer?.cancel();
+    _draftedPollTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) async {
+        final drafted = await widget.scoutService.fetchDraftedPlayers(
+          season: widget.season,
+          round: widget.round ?? 0,
+        );
+        if (mounted && drafted.length != _fetchedDraftedIds.length ||
+            !drafted.every(_fetchedDraftedIds.contains)) {
+          setState(() => _fetchedDraftedIds = drafted);
+        }
+      },
+    );
+  }
+
   Future<void> _loadData() async {
     setState(() => _loading = true);
 
@@ -182,6 +204,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
         _teamsAnnounced = announced;
         _fetchedDraftedIds = drafted;
         _loading = false;
+        _startDraftedPolling();
       });
     }
   }
