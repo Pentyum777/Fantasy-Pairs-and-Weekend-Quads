@@ -233,7 +233,9 @@ void initState() {
         _startLivePolling();
       });
     } else {
-      _startLivePolling();
+      // ⭐ Even when we skip the full snapshot load (data already cached),
+      // fetch the current timestamp so the sync polling has a baseline.
+      _fetchCurrentTimestamp().then((_) => _startLivePolling());
     }
   } else {
     // First visit — load everything normally
@@ -741,6 +743,32 @@ Future<void> _saveSnapshot() async {
   }
 }
 
+/// Fetches the current selection timestamp from the backend and stores it
+/// as the baseline for future sync polling. Called when we skip the full
+/// snapshot load (data already in cache) so polling has a valid baseline.
+Future<void> _fetchCurrentTimestamp() async {
+  try {
+    final safeRound = widget.round ?? 0;
+    final url = Uri.https(
+      "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+      "/selectionTimestamp",
+      {
+        "gameType": widget.gameType,
+        "season": widget.season.toString(),
+        "round": safeRound.toString(),
+      },
+    );
+    final res = await http.get(url);
+    if (res.statusCode != 200) return;
+    final json = jsonDecode(res.body);
+    final ts = (json["lastUpdated"] as num?)?.toInt() ?? 0;
+    if (ts > 0) _lastKnownTimestamp = ts;
+    debugPrint("📌 Baseline timestamp set: $_lastKnownTimestamp");
+  } catch (_) {
+    // Silent fail
+  }
+}
+
 /// Polls the backend for the latest selection timestamp.
 /// If newer than what we last loaded, reloads the full snapshot.
 Future<void> _checkForRemoteChanges() async {
@@ -762,9 +790,12 @@ Future<void> _checkForRemoteChanges() async {
     final json = jsonDecode(res.body);
     final remoteTs = (json["lastUpdated"] as num?)?.toInt() ?? 0;
 
+    debugPrint("🔍 Sync check: remote=$remoteTs local=$_lastKnownTimestamp");
+
     // If remote is newer than what we have, reload
     if (remoteTs > _lastKnownTimestamp && _lastKnownTimestamp > 0) {
       debugPrint("🔄 Remote changes detected — reloading selections");
+      _lastKnownTimestamp = remoteTs; // update immediately to prevent re-trigger
       await _loadSelectionsSnapshot();
       if (mounted) setState(() {});
     }
