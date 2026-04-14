@@ -20,7 +20,9 @@ class MatchStatsParser {
   ) async {
     http.Response res;
     try {
-      res = await http.get(Uri.parse('$baseUrl/fantasy/$matchId'));
+      // Use /matchStats which returns DB stats for historical rounds
+      // and falls back to live DFS for current rounds
+      res = await http.get(Uri.parse('$baseUrl/matchStats/$matchId'));
     } catch (_) {
       return [];
     }

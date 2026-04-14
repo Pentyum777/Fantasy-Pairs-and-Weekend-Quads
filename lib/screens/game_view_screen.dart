@@ -321,9 +321,13 @@ bool _isRoundHistorical() {
         final ts = (json["lastUpdated"] as num?)?.toInt() ?? 0;
         if (ts > 0) _lastKnownTimestamp = ts;
 
-        // ⭐ For historical rounds, build stats map from snapshot data
-        if (_isCompleted && _currentStatsByPlayerId.isEmpty) {
-          _buildStatsFromSnapshot();
+        // ⭐ For historical rounds, build stats map and refresh fixture scores
+        if (_isCompleted) {
+          if (_currentStatsByPlayerId.isEmpty) {
+            _buildStatsFromSnapshot();
+          }
+          // Fetch real fixture scores from Squiggle (shows final scores on cards)
+          _refreshFixtureScores();
         }
       }
     }
@@ -339,6 +343,24 @@ bool _isRoundHistorical() {
 
 
 
+
+/// Fetches final scores for all fixtures in this round from the backend.
+/// Called once on load for historical rounds so fixture cards show real scores.
+Future<void> _refreshFixtureScores() async {
+  final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
+    widget.season,
+    widget.round,
+  );
+  for (final f in fixtures) {
+    final matchId = f.matchId?.trim();
+    if (matchId != null && matchId.isNotEmpty) {
+      try {
+        await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
+      } catch (_) {}
+    }
+  }
+  if (mounted) setState(() {});
+}
 
 /// Builds _currentStatsByPlayerId from pick stats already loaded in _selections.
 /// Used for historical rounds where the live DFS feed no longer has data,
@@ -797,6 +819,20 @@ Future<void> _checkForRemoteChanges() async {
       debugPrint("🔄 Remote changes detected — reloading selections");
       _lastKnownTimestamp = remoteTs; // update immediately to prevent re-trigger
       await _loadSelectionsSnapshot();
+
+      // ⭐ For historical or non-live rounds, rebuild stats from snapshot
+      // and push directly to table so live polling doesn't zero them out
+      if (_isCompleted || _currentStatsByPlayerId.isEmpty) {
+        _buildStatsFromSnapshot();
+      }
+
+      // ⭐ Push updated selections directly into the table widget
+      final tableState = _punterTableKey.currentState;
+      if (tableState != null && mounted) {
+        final dynamic dyn = tableState;
+        dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
+      }
+
       if (mounted) setState(() {});
     }
   } catch (_) {
@@ -835,13 +871,14 @@ Future<void> _refreshLive() async {
     // 4. Apply completion flags + build stats map
     if (roundStats.isNotEmpty) {
       _applyLiveStats(roundStats.values.toList());
-    }
 
-    // 5. Push stats into the punter table
-    final tableState = _punterTableKey.currentState;
-    if (tableState != null && mounted) {
-      final dynamic dyn = tableState;
-      dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
+      // 5. Push stats into the punter table ONLY when we have live data
+      // If stats are empty, don't overwrite picks — they may be from a sync reload
+      final tableState = _punterTableKey.currentState;
+      if (tableState != null && mounted) {
+        final dynamic dyn = tableState;
+        dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
+      }
     }
 
  
@@ -1491,26 +1528,39 @@ Future<void> _forceApplyStats() async {
   final matchId = f.matchId?.trim();
   if (matchId == null || matchId.isEmpty) return;
 
-  final stats = _currentStatsByPlayerId.values.toList();
-
   final homeTeam = f.homeTeam;
   final awayTeam = f.awayTeam;
 
+  const columns = ["Player","AF","K","HB","D","M","T","G","B"];
+
+  // ⭐ For historical rounds, fetch full match stats from backend
+  // This shows ALL players, not just those picked by punters
+  List<AflPlayerMatchStats> stats;
+  if (_isCompleted) {
+    try {
+      stats = await MatchStatsParser.fetchMatchStats(
+        matchId,
+        widget.playerRepo,
+        widget.fixtureRepo,
+      );
+    } catch (_) {
+      stats = _currentStatsByPlayerId.values.toList();
+    }
+  } else {
+    stats = _currentStatsByPlayerId.values.toList();
+  }
+
   final rowsA =
       stats.where((s) => s.player?.club == homeTeam).map(_mapStats).toList();
-
   final rowsB =
       stats.where((s) => s.player?.club == awayTeam).map(_mapStats).toList();
 
-  // ⭐ PATCH 2 — ENRICH ROWS WITH PLAYER DATA
   _enrichStatsWithPlayerData(rowsA);
   _enrichStatsWithPlayerData(rowsB);
 
   final noStats = rowsA.isEmpty && rowsB.isEmpty;
 
-  const columns = [
-    "Player","AF","K","HB","D","M","T","G","B",
-  ];
+  if (!mounted) return;
 
   showDialog<void>(
     context: context,

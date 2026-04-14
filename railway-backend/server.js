@@ -367,6 +367,77 @@ app.get("/completedRounds", async (req, res) => {
 // ------------------------------------------------------
 
 // ------------------------------------------------------
+
+// ------------------------------------------------------
+// Full match stats for a given matchId
+// Returns all player stats stored in DB selections for that round
+// Used by stats overlay for historical rounds
+// ------------------------------------------------------
+app.get("/matchStats/:matchId", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  const cdMatchId = req.params.matchId;
+  const dfsId = dfsMap[cdMatchId];
+
+  try {
+    // First try live DFS feed
+    if (dfsId) {
+      const dfsPlayers = await scrapeDFS(dfsId);
+      if (dfsPlayers && dfsPlayers.length > 0) {
+        return res.json({ ok: true, players: dfsPlayers.map(p => ({...p, af: calculateFantasyPoints(p)})) });
+      }
+    }
+
+    // Fall back: extract from DB selections for this round
+    // Parse season/round from matchId e.g. CD_M20260140401 -> season=2026, round=4
+    const m = cdMatchId.match(/CD_M(\d{4})\d{3}(\d{2})\d{2}/);
+    if (!m) return res.json({ ok: true, players: [] });
+
+    const season = parseInt(m[1]);
+    const round = parseInt(m[2]);
+
+    const result = await pool.query(
+      `SELECT picks FROM selections WHERE season = $1 AND round = $2`,
+      [season, round]
+    );
+
+    // Collect unique players across all game type selections
+    const playerMap = {};
+    for (const row of result.rows) {
+      const picks = Array.isArray(row.picks) ? row.picks : [];
+      for (const punterPicks of picks) {
+        if (!Array.isArray(punterPicks)) continue;
+        for (const pick of punterPicks) {
+          const pid = pick?.playerId;
+          const stats = pick?.stats;
+          if (!pid || !stats || !stats.AF) continue;
+          if (!playerMap[pid]) {
+            playerMap[pid] = {
+              playerId: pid,
+              kicks: stats.K ?? 0,
+              handballs: stats.HB ?? 0,
+              disposals: stats.D ?? 0,
+              marks: stats.M ?? 0,
+              tackles: stats.T ?? 0,
+              hitouts: stats.HO ?? 0,
+              freesFor: stats.FF ?? 0,
+              freesAgainst: stats.FA ?? 0,
+              goals: stats.G ?? 0,
+              behinds: stats.B ?? 0,
+              timeOnGroundPercentage: stats.TOG ?? 0,
+              fantasyPoints: stats.AF ?? 0,
+            };
+          }
+        }
+      }
+    }
+
+    res.json({ ok: true, players: Object.values(playerMap) });
+  } catch (err) {
+    console.error("matchStats error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
 // Selection timestamp — lightweight poll for live sync
 // Returns just the updated_at timestamp for a game
 // Used by non-editing admins to detect changes
