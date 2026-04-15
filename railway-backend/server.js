@@ -812,14 +812,38 @@ app.get("/playerGameLog/:season/:playerName", async (req, res) => {
       ORDER BY match_id ASC
     `, [`CD_M${season}%`, playerName]);
 
-    // Map match_id to round number: CD_M20260140501 -> round 5
+    // Map match_id to round number and opponent using FIXTURES_2026
     const rows = result.rows.map(r => {
       const m = r.match_id.match(/CD_M\d{4}014(\d{2})\d{2}/);
       const round = m ? parseInt(m[1]) : 0;
-      return { ...r, round };
+      // Find opponent from fixture map
+      const fixture = FIXTURES_2026[r.match_id];
+      // We need the player's team to know which side is the opponent
+      // Use match_stats team column — query it separately or look up fixture
+      const opponent = fixture
+        ? null  // will resolve below with team info
+        : null;
+      return { ...r, round, fixture: fixture ?? null };
     });
 
-    res.json({ ok: true, games: rows });
+    // Get player team from match_stats for opponent lookup
+    const teamResult = await pool.query(
+      `SELECT DISTINCT team FROM match_stats WHERE player_name = $1 AND team != '' LIMIT 1`,
+      [playerName]
+    );
+    const playerTeam = teamResult.rows[0]?.team ?? '';
+
+    const rowsWithOpponent = rows.map(r => {
+      const fixture = r.fixture;
+      let opponent = '';
+      if (fixture && playerTeam) {
+        opponent = fixture.home === playerTeam ? fixture.away : fixture.home;
+      }
+      const { fixture: _f, ...rest } = r;
+      return { ...rest, opponent };
+    });
+
+    res.json({ ok: true, games: rowsWithOpponent });
   } catch (err) {
     console.error("playerGameLog error:", err);
     res.status(500).json({ error: "Failed" });

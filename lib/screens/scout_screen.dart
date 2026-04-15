@@ -925,7 +925,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Header row
-                    _gameLogRow('Rd', 'AF', 'K', 'HB', 'D', 'M', 'T', 'TOG', isHeader: true),
+                    _gameLogRow('Rd', 'Opp', 'AF', 'K', 'HB', 'D', 'M', 'T', 'TOG', isHeader: true),
                     const Divider(height: 1),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxHeight: 360),
@@ -933,6 +933,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
                         child: Column(
                           children: games.map((g) => _gameLogRow(
                             'R${g.round}',
+                            g.opponent.isNotEmpty ? g.opponent : '?',
                             '${g.score}',
                             '${g.kicks}',
                             '${g.handballs}',
@@ -950,6 +951,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
                     // Summary row
                     _gameLogRow(
                       'Avg',
+                      '',
                       '${s.afAvg}',
                       '${s.kAvg}',
                       '${s.hbAvg}',
@@ -974,7 +976,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
   }
 
   Widget _gameLogRow(
-    String rd, String af, String k, String hb,
+    String rd, String opp, String af, String k, String hb,
     String d, String m, String t, String tog, {
     bool isHeader = false,
     int highlight = 0,
@@ -1004,6 +1006,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(children: [
         cell(rd,  w: 28),
+        cell(opp, w: 36, color: isHeader ? null : Colors.grey[600]),
         cell(af,  w: 38, color: afColor),
         cell(k,   w: 30),
         cell(hb,  w: 30),

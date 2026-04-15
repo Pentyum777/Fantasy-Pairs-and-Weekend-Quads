@@ -74,6 +74,7 @@ class PlayerGameLogEntry {
   final int tackles;
   final double goals;
   final int tog;
+  final String opponent;
 
   const PlayerGameLogEntry({
     required this.round,
@@ -85,6 +86,7 @@ class PlayerGameLogEntry {
     required this.tackles,
     required this.goals,
     required this.tog,
+    this.opponent = '',
   });
 
   factory PlayerGameLogEntry.fromJson(Map<String, dynamic> j) => PlayerGameLogEntry(
@@ -97,6 +99,7 @@ class PlayerGameLogEntry {
     tackles:   (j['tackles']   as num?)?.toInt()    ?? 0,
     goals:     (j['goals']     as num?)?.toDouble() ?? 0.0,
     tog:       (j['tog']       as num?)?.toInt()    ?? 0,
+    opponent:   j['opponent']   as String?          ?? '',
   );
 }
 
