@@ -21,6 +21,8 @@ class PlayerSeasonStats {
   final int tAvg;
   final double gAvg;
   final int togAvg;
+  final int lastGame;
+  final int last3Avg;
 
   const PlayerSeasonStats({
     required this.playerId,
@@ -36,6 +38,8 @@ class PlayerSeasonStats {
     required this.tAvg,
     required this.gAvg,
     required this.togAvg,
+    this.lastGame = 0,
+    this.last3Avg = 0,
   });
 
   factory PlayerSeasonStats.fromJson(Map<String, dynamic> j) {
@@ -53,8 +57,47 @@ class PlayerSeasonStats {
       tAvg:       (j['t_avg']   as num?)?.toInt() ?? 0,
       gAvg:       (j['g_avg']   as num?)?.toDouble() ?? 0.0,
       togAvg:     (j['tog_avg'] as num?)?.toInt() ?? 0,
+      lastGame:   (j['last_game'] as num?)?.toInt() ?? 0,
+      last3Avg:   (j['last3_avg'] as num?)?.toInt() ?? 0,
     );
   }
+}
+
+// ── Game log entry ────────────────────────────────────────────────────────────
+class PlayerGameLogEntry {
+  final int round;
+  final int score;
+  final int kicks;
+  final int handballs;
+  final int disposals;
+  final int marks;
+  final int tackles;
+  final double goals;
+  final int tog;
+
+  const PlayerGameLogEntry({
+    required this.round,
+    required this.score,
+    required this.kicks,
+    required this.handballs,
+    required this.disposals,
+    required this.marks,
+    required this.tackles,
+    required this.goals,
+    required this.tog,
+  });
+
+  factory PlayerGameLogEntry.fromJson(Map<String, dynamic> j) => PlayerGameLogEntry(
+    round:     (j['round']     as num?)?.toInt()    ?? 0,
+    score:     (j['score']     as num?)?.toInt()    ?? 0,
+    kicks:     (j['kicks']     as num?)?.toInt()    ?? 0,
+    handballs: (j['handballs'] as num?)?.toInt()    ?? 0,
+    disposals: (j['disposals'] as num?)?.toInt()    ?? 0,
+    marks:     (j['marks']     as num?)?.toInt()    ?? 0,
+    tackles:   (j['tackles']   as num?)?.toInt()    ?? 0,
+    goals:     (j['goals']     as num?)?.toDouble() ?? 0.0,
+    tog:       (j['tog']       as num?)?.toInt()    ?? 0,
+  );
 }
 
 enum PlayerFlag { inj, susp, rest, out }
@@ -190,6 +233,27 @@ class ScoutService {
       return named.map((e) => e.toString()).toSet();
     } catch (_) {
       return {};
+    }
+  }
+
+  // ── Player game log ──────────────────────────────────────────────────────────
+
+  Future<List<PlayerGameLogEntry>> fetchPlayerGameLog({
+    required int season,
+    required String playerName,
+  }) async {
+    try {
+      final url = Uri.https(
+        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        '/playerGameLog/$season/${Uri.encodeComponent(playerName)}',
+      );
+      final res = await http.get(url);
+      if (res.statusCode != 200) return [];
+      final json = jsonDecode(res.body);
+      final games = json['games'] as List<dynamic>? ?? [];
+      return games.map((g) => PlayerGameLogEntry.fromJson(g as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
     }
   }
 

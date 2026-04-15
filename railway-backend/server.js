@@ -465,25 +465,42 @@ app.get("/playerSeasonStats/:season", async (req, res) => {
   try {
     const season = parseInt(req.params.season);
     const result = await pool.query(`
-      SELECT
-        player_id,
-        -- Use the most common non-empty name and team per player
-        (array_agg(player_name ORDER BY CASE WHEN player_name <> '' THEN 0 ELSE 1 END, player_name))[1] AS player_name,
-        (array_agg(team        ORDER BY CASE WHEN team        <> '' THEN 0 ELSE 1 END, team       ))[1] AS team,
-        COUNT(*)::int                             AS games,
-        ROUND(AVG(fantasy_points))::int           AS af_avg,
-        MAX(fantasy_points)                        AS af_best,
-        ROUND(AVG(kicks))::int                    AS k_avg,
-        ROUND(AVG(handballs))::int                AS hb_avg,
-        ROUND(AVG(disposals))::int                AS d_avg,
-        ROUND(AVG(marks))::int                    AS m_avg,
-        ROUND(AVG(tackles))::int                  AS t_avg,
-        ROUND(AVG(goals)::numeric, 1)::float      AS g_avg,
-        ROUND(AVG(tog))::int                      AS tog_avg
-      FROM match_stats
-      WHERE match_id LIKE $1
-        AND fantasy_points > 0
-      GROUP BY player_id
+      WITH season_stats AS (
+        SELECT
+          player_id,
+          (array_agg(player_name ORDER BY CASE WHEN player_name <> '' THEN 0 ELSE 1 END, player_name))[1] AS player_name,
+          (array_agg(team        ORDER BY CASE WHEN team        <> '' THEN 0 ELSE 1 END, team       ))[1] AS team,
+          COUNT(*)::int                             AS games,
+          ROUND(AVG(fantasy_points))::int           AS af_avg,
+          MAX(fantasy_points)                       AS af_best,
+          ROUND(AVG(kicks))::int                    AS k_avg,
+          ROUND(AVG(handballs))::int                AS hb_avg,
+          ROUND(AVG(disposals))::int                AS d_avg,
+          ROUND(AVG(marks))::int                    AS m_avg,
+          ROUND(AVG(tackles))::int                  AS t_avg,
+          ROUND(AVG(goals)::numeric, 1)::float      AS g_avg,
+          ROUND(AVG(tog))::int                      AS tog_avg,
+          -- Last game score (highest match_id = most recent)
+          (array_agg(fantasy_points ORDER BY match_id DESC))[1] AS last_game,
+          -- Last 3 games average
+          ROUND(
+            AVG(fantasy_points) FILTER (
+              WHERE match_id IN (
+                SELECT match_id FROM match_stats ms2
+                WHERE ms2.player_id = match_stats.player_id
+                  AND ms2.match_id LIKE $1
+                  AND ms2.fantasy_points > 0
+                ORDER BY match_id DESC
+                LIMIT 3
+              )
+            )
+          )::int AS last3_avg
+        FROM match_stats
+        WHERE match_id LIKE $1
+          AND fantasy_points > 0
+        GROUP BY player_id
+      )
+      SELECT * FROM season_stats
       ORDER BY af_avg DESC
     `, [`CD_M${season}%`]);
     res.json({ ok: true, players: result.rows });
@@ -770,6 +787,41 @@ app.get("/vsOpponentStats", async (req, res) => {
     res.json({ ok: true, stats: result.rows });
   } catch (err) {
     console.error("vsOpponentStats error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+
+// GET /playerGameLog/:season/:playerName
+// Returns all game scores for a player in a given season
+app.get("/playerGameLog/:season/:playerName", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const season     = parseInt(req.params.season);
+    const playerName = decodeURIComponent(req.params.playerName);
+
+    const result = await pool.query(`
+      SELECT
+        match_id,
+        fantasy_points AS score,
+        kicks, handballs, disposals, marks, tackles, goals, behinds, tog
+      FROM match_stats
+      WHERE match_id LIKE $1
+        AND player_name = $2
+        AND fantasy_points > 0
+      ORDER BY match_id ASC
+    `, [`CD_M${season}%`, playerName]);
+
+    // Map match_id to round number: CD_M20260140501 -> round 5
+    const rows = result.rows.map(r => {
+      const m = r.match_id.match(/CD_M\d{4}014(\d{2})\d{2}/);
+      const round = m ? parseInt(m[1]) : 0;
+      return { ...r, round };
+    });
+
+    res.json({ ok: true, games: rows });
+  } catch (err) {
+    console.error("playerGameLog error:", err);
     res.status(500).json({ error: "Failed" });
   }
 });

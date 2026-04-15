@@ -105,6 +105,109 @@ class _ScoutScreenState extends State<ScoutScreen> {
   }
 
 
+  /// Parses abbreviated player names from AFL team lineup paste
+  /// Handles format: "L. Cowan", "J. Weitering", "N. Haynes" etc
+  Set<String> _parseSquadFromText(String text) {
+    final lines = text.split(RegExp(r'[\n\r]+')).map((l) => l.trim());
+    final abbrs = <String>[]; // e.g. ["L. Cowan", "P. Cripps"]
+
+    for (final line in lines) {
+      // Match "X. Lastname" or "X. X. Lastname" pattern
+      if (RegExp(r'^[A-Z]\. [A-Z]').hasMatch(line)) {
+        abbrs.add(line);
+      }
+    }
+
+    // Match against full player names in _allStats
+    final matched = <String>{};
+    for (final abbr in abbrs) {
+      final parts = abbr.split('. ');
+      if (parts.length < 2) continue;
+      final initial = parts[0].toUpperCase();
+      final lastName = parts.sublist(1).join(' ').trim().toLowerCase();
+
+      // Find best match in _allStats
+      for (final s in _allStats) {
+        final nameParts = s.playerName.trim().split(' ');
+        if (nameParts.length < 2) continue;
+        final playerLast = nameParts.last.toLowerCase();
+        final playerFirst = nameParts.first[0].toUpperCase();
+
+        if (playerLast == lastName && playerFirst == initial) {
+          matched.add(s.playerId);
+          break;
+        }
+      }
+    }
+
+    return matched;
+  }
+
+  /// Shows dialog to paste AFL team lineup text
+  void _showPasteSquadDialog() {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Paste Named Squad'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Copy the lineup from afl.com.au/matches/team-lineups and paste it below. Repeat for each team.',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tip: paste one team at a time.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              maxLines: 8,
+              decoration: const InputDecoration(
+                hintText: 'L. Cowan\n23\nJ. Weitering\n...',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final matched = _parseSquadFromText(ctrl.text);
+              if (matched.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No players matched — check the format')),
+                );
+                return;
+              }
+              setState(() {
+                _namedSquadIds = {..._namedSquadIds, ...matched};
+                _teamsAnnounced = true;
+              });
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Added ${matched.length} players to named squad'),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const Text('Add to Squad'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Shows a dialog with the AFL injury list URL and instructions
   void _showInjuryListDialog() {
     showDialog(
@@ -316,6 +419,12 @@ class _ScoutScreenState extends State<ScoutScreen> {
         backgroundColor: cs.surface,
         title: const Text('Scout'),
         actions: [
+          // Paste named squad
+          IconButton(
+            icon: const Icon(Icons.group_add_outlined),
+            tooltip: 'Paste named squad',
+            onPressed: () => _showPasteSquadDialog(),
+          ),
           // Open AFL injury list instructions
           IconButton(
             icon: const Icon(Icons.medical_services_outlined),
@@ -349,16 +458,13 @@ class _ScoutScreenState extends State<ScoutScreen> {
       color: cs.surfaceVariant.withOpacity(0.3),
       child: Row(
         children: [
-          Text('vs Opp: ', style: theme.textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w600)),
-          _legendDot(Colors.green[700]!, 'Above avg'),
+          _legendDot(Colors.green[700]!, '>10% above avg'),
           const SizedBox(width: 12),
-          _legendDot(Colors.red[700]!, 'Below avg'),
+          _legendDot(Colors.red[700]!, '>10% below avg'),
           const SizedBox(width: 12),
-          _legendDot(cs.onSurface.withOpacity(0.5), 'Neutral'),
-          const SizedBox(width: 12),
-          Text('– = no data', style: theme.textTheme.labelSmall?.copyWith(
-            color: cs.onSurface.withOpacity(0.5))),
+          Text('(applies to vs Opp, Last & L3)',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: cs.onSurface.withOpacity(0.5))),
         ],
       ),
     );
@@ -441,12 +547,21 @@ class _ScoutScreenState extends State<ScoutScreen> {
           ),
 
           // Named only toggle
-          if (_teamsAnnounced)
+          if (_teamsAnnounced) ...[
             FilterChip(
-              label: const Text('Named squad (23+E)'),
+              label: Text('Named squad (${_namedSquadIds.length})'),
               selected: _namedOnly,
               onSelected: (v) => setState(() => _namedOnly = v),
             ),
+            ActionChip(
+              label: const Text('Clear'),
+              onPressed: () => setState(() {
+                _namedSquadIds = {};
+                _teamsAnnounced = false;
+                _namedOnly = false;
+              }),
+            ),
+          ],
 
           // Hide drafted
           FilterChip(
@@ -578,6 +693,10 @@ class _ScoutScreenState extends State<ScoutScreen> {
       hCell('M', statW, col: ScoutSort.m),
       hCell('T', statW, col: ScoutSort.t),
       hCell('TOG%', statW, col: ScoutSort.tog),
+      hCell('Last', statW),
+      hCell('L3', statW),
+      
+      
       if (_upcomingOpponent.isNotEmpty)
         hCell('vs Opp', isPhone ? statW : statW + 10),
       hCell('Status', flagW),
@@ -629,16 +748,72 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 dCell('${s.mAvg}', statW, bg: bg),
                 dCell('${s.tAvg}', statW, bg: bg),
                 dCell('${s.togAvg}%', statW, bg: bg),
+                // Last game
+                dCell(
+                  s.lastGame > 0 ? '${s.lastGame}' : '–',
+                  statW,
+                  style: s.lastGame > 0
+                      ? cellStyle?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: s.lastGame >= (s.afAvg * 1.1).round()
+                              ? Colors.green[700]
+                              : s.lastGame <= (s.afAvg * 0.9).round()
+                                  ? Colors.red[700]
+                                  : null,
+                        )
+                      : cellStyle?.copyWith(color: cs.onSurface.withOpacity(0.3)),
+                  bg: bg,
+                ),
+                // Last 3 avg
+                dCell(
+                  s.last3Avg > 0 ? '${s.last3Avg}' : '–',
+                  statW,
+                  style: s.last3Avg > 0
+                      ? cellStyle?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: s.last3Avg >= (s.afAvg * 1.1).round()
+                              ? Colors.green[700]
+                              : s.last3Avg <= (s.afAvg * 0.9).round()
+                                  ? Colors.red[700]
+                                  : null,
+                        )
+                      : cellStyle?.copyWith(color: cs.onSurface.withOpacity(0.3)),
+                  bg: bg,
+                ),
+
                 // Vs Opponent
                 if (_upcomingOpponent.isNotEmpty) _buildVsCell(s, isPhone ? statW : statW + 10, bg, cellStyle, cs),
-                // Status cell
-                GestureDetector(
-                  onTap: () => _showFlagDialog(s),
-                  child: Container(
-                    width: flagW, height: 30,
-                    alignment: Alignment.center,
-                    color: bg,
-                    child: _buildStatusChip(s, isNamed, isDrafted, flag),
+                // Game log icon + Status cell
+                SizedBox(
+                  width: flagW + 28,
+                  height: 30,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Game log button
+                      SizedBox(
+                        width: 24, height: 24,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          iconSize: 16,
+                          icon: Icon(Icons.bar_chart_rounded,
+                            color: cs.onSurface.withOpacity(0.4)),
+                          tooltip: 'Game log',
+                          onPressed: () => _showGameLog(s),
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      // Flag/status chip
+                      GestureDetector(
+                        onTap: () => _showFlagDialog(s),
+                        child: Container(
+                          width: flagW, height: 30,
+                          alignment: Alignment.center,
+                          color: bg,
+                          child: _buildStatusChip(s, isNamed, isDrafted, flag),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ]),
@@ -700,6 +875,143 @@ class _ScoutScreenState extends State<ScoutScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // ── Game log popup ───────────────────────────────────────────────────────────
+  Future<void> _showGameLog(PlayerSeasonStats s) async {
+    // Show loading dialog immediately
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: SizedBox(
+          height: 60,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+    );
+
+    final games = await widget.scoutService.fetchPlayerGameLog(
+      season: widget.season,
+      playerName: s.playerName,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context); // close loading
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Expanded(child: Text(s.playerName,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+            Text(s.team,
+              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+          ],
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        content: SizedBox(
+          width: 340,
+          child: games.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text('No game data available yet.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey)),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header row
+                    _gameLogRow('Rd', 'AF', 'K', 'HB', 'D', 'M', 'T', 'TOG', isHeader: true),
+                    const Divider(height: 1),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 360),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: games.map((g) => _gameLogRow(
+                            'R${g.round}',
+                            '${g.score}',
+                            '${g.kicks}',
+                            '${g.handballs}',
+                            '${g.disposals}',
+                            '${g.marks}',
+                            '${g.tackles}',
+                            '${g.tog}%',
+                            highlight: g.score,
+                            avgScore: s.afAvg,
+                          )).toList(),
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    // Summary row
+                    _gameLogRow(
+                      'Avg',
+                      '${s.afAvg}',
+                      '${s.kAvg}',
+                      '${s.hbAvg}',
+                      '${s.dAvg}',
+                      '${s.mAvg}',
+                      '${s.tAvg}',
+                      '${s.togAvg}%',
+                      isHeader: true,
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _gameLogRow(
+    String rd, String af, String k, String hb,
+    String d, String m, String t, String tog, {
+    bool isHeader = false,
+    int highlight = 0,
+    int avgScore = 0,
+  }) {
+    Color? afColor;
+    if (!isHeader && highlight > 0 && avgScore > 0) {
+      if (highlight >= (avgScore * 1.1).round()) afColor = Colors.green[700];
+      else if (highlight <= (avgScore * 0.9).round()) afColor = Colors.red[700];
+    }
+
+    final style = TextStyle(
+      fontSize: isHeader ? 11 : 12,
+      fontWeight: isHeader ? FontWeight.w700 : FontWeight.w500,
+    );
+
+    Widget cell(String text, {double w = 36, Color? color}) => SizedBox(
+      width: w,
+      child: Text(text,
+        textAlign: TextAlign.center,
+        style: style.copyWith(color: color),
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(children: [
+        cell(rd,  w: 28),
+        cell(af,  w: 38, color: afColor),
+        cell(k,   w: 30),
+        cell(hb,  w: 30),
+        cell(d,   w: 30),
+        cell(m,   w: 30),
+        cell(t,   w: 30),
+        cell(tog, w: 38),
+      ]),
     );
   }
 
