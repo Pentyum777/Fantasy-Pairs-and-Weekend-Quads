@@ -380,7 +380,10 @@ class _ScoutScreenState extends State<ScoutScreen> {
 
   Widget _buildFilters(ThemeData theme, ColorScheme cs, List<String> gameTeams) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.shortestSide < 600 ? 8 : 12,
+        vertical:   MediaQuery.of(context).size.shortestSide < 600 ? 4 : 8,
+      ),
       color: cs.surfaceVariant.withOpacity(0.5),
       child: Wrap(
         spacing: 8,
@@ -461,8 +464,8 @@ class _ScoutScreenState extends State<ScoutScreen> {
 
           // Search box
           SizedBox(
-            width: 160,
-            height: 32,
+            width: MediaQuery.of(context).size.shortestSide < 600 ? 110 : 160,
+            height: MediaQuery.of(context).size.shortestSide < 600 ? 28 : 32,
             child: TextField(
               controller: _searchCtrl,
               onChanged: (v) => setState(() => _search = v),
@@ -515,11 +518,16 @@ class _ScoutScreenState extends State<ScoutScreen> {
     }
 
     // Column widths
-    const double numW   = 36;
-    const double nameW  = 150;
-    const double teamW  = 50;
-    const double statW  = 46;
-    const double flagW  = 56;
+    // Responsive column widths — narrower on phone
+    final double shortestSide = MediaQuery.of(context).size.shortestSide;
+    final bool isPhone = shortestSide < 600;
+    final bool isTablet = shortestSide < 900;
+
+    final double numW  = isPhone ? 26.0 : 36.0;
+    final double nameW = isPhone ? 100.0 : (isTablet ? 120.0 : 150.0);
+    final double teamW = isPhone ? 36.0  : 50.0;
+    final double statW = isPhone ? 34.0  : (isTablet ? 40.0 : 46.0);
+    final double flagW = isPhone ? 44.0  : 56.0;
 
     final headerStyle = theme.textTheme.labelSmall?.copyWith(
       fontWeight: FontWeight.w700, letterSpacing: 0.2);
@@ -571,7 +579,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
       hCell('T', statW, col: ScoutSort.t),
       hCell('TOG%', statW, col: ScoutSort.tog),
       if (_upcomingOpponent.isNotEmpty)
-        hCell('vs Opp', statW + 10),
+        hCell('vs Opp', isPhone ? statW : statW + 10),
       hCell('Status', flagW),
     ]);
 
@@ -622,7 +630,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 dCell('${s.tAvg}', statW, bg: bg),
                 dCell('${s.togAvg}%', statW, bg: bg),
                 // Vs Opponent
-                if (_upcomingOpponent.isNotEmpty) _buildVsCell(s, statW + 10, bg, cellStyle, cs),
+                if (_upcomingOpponent.isNotEmpty) _buildVsCell(s, isPhone ? statW : statW + 10, bg, cellStyle, cs),
                 // Status cell
                 GestureDetector(
                   onTap: () => _showFlagDialog(s),
