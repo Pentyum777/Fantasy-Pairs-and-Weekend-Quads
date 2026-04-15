@@ -205,6 +205,16 @@ class _ScoutScreenState extends State<ScoutScreen> {
     }
 
     if (mounted) {
+      // Find the opponent for the current game type from fixture data
+      String opponent = '';
+      if (vsStats.isNotEmpty) {
+        // Find first non-empty opponent from stats
+        for (final v in vsStats.values) {
+          final opp = v['opponent'] as String? ?? '';
+          if (opp.isNotEmpty) { opponent = opp; break; }
+        }
+      }
+
       setState(() {
         _allStats = stats;
         _flags = flags;
@@ -212,9 +222,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
         _teamsAnnounced = announced;
         _fetchedDraftedIds = drafted;
         _vsOpponentStats = vsStats;
-        if (vsStats.isNotEmpty) {
-          _upcomingOpponent = vsStats.values.first['opponent'] as String? ?? '';
-        }
+        _upcomingOpponent = opponent;
         _loading = false;
         _startDraftedPolling();
       });
@@ -527,7 +535,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
       hCell('T', statW, col: ScoutSort.t),
       hCell('TOG%', statW, col: ScoutSort.tog),
       if (_upcomingOpponent.isNotEmpty)
-        hCell('vs $_upcomingOpponent', statW + 10),
+        hCell('vs Opp', statW + 10),
       hCell('Status', flagW),
     ]);
 
@@ -677,6 +685,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
       textColor = Colors.red[700];
     }
 
+    final opponent = vsData?['opponent'] as String? ?? '';
     return Container(
       width: w, height: 30,
       alignment: Alignment.center,
@@ -685,13 +694,13 @@ class _ScoutScreenState extends State<ScoutScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('$vsAvg',
+          Text('$vsAvg${opponent.isNotEmpty ? " v$opponent" : ""}',
             style: cellStyle?.copyWith(
               fontWeight: FontWeight.w800,
               color: textColor,
-              fontSize: 11,
+              fontSize: 10,
             )),
-          Text('($vsGames)',
+          Text('($vsGames g)',
             style: cellStyle?.copyWith(
               fontSize: 9,
               color: cs.onSurface.withOpacity(0.5),

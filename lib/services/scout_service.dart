@@ -220,9 +220,15 @@ class ScoutService {
       for (final s in stats) {
         final name = s['player_name'] as String? ?? '';
         if (name.isEmpty) continue;
+        // games_vs comes as a string from PostgreSQL COUNT(*)
+        final gamesVsRaw = s['games_vs'];
+        final gamesVs = gamesVsRaw is num
+            ? gamesVsRaw.toInt()
+            : int.tryParse(gamesVsRaw?.toString() ?? '') ?? 0;
+
         map[name] = {
           'avgVsOpponent': (s['avg_vs_opponent'] as num?)?.toInt() ?? 0,
-          'gamesVs':       (s['games_vs']       as num?)?.toInt() ?? 0,
+          'gamesVs':       gamesVs,
           'opponent':       s['upcoming_opponent'] as String? ?? '',
         };
       }
