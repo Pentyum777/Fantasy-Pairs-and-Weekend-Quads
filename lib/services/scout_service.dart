@@ -193,6 +193,45 @@ class ScoutService {
     }
   }
 
+  // ── Vs opponent stats ────────────────────────────────────────────────────────
+
+  /// Returns each player's historical average score vs their upcoming opponent.
+  /// Key: playerName, value: {avgVsOpponent, gamesVs, upcomingOpponent}
+  Future<Map<String, Map<String, dynamic>>> fetchVsOpponentStats({
+    required int season,
+    required int round,
+    String gameType = 'weekend_quads',
+  }) async {
+    try {
+      final url = Uri.https(
+        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        '/vsOpponentStats',
+        {
+          'season':   season.toString(),
+          'round':    round.toString(),
+          'gameType': gameType,
+        },
+      );
+      final res = await http.get(url);
+      if (res.statusCode != 200) return {};
+      final json = jsonDecode(res.body);
+      final stats = json['stats'] as List<dynamic>? ?? [];
+      final map = <String, Map<String, dynamic>>{};
+      for (final s in stats) {
+        final name = s['player_name'] as String? ?? '';
+        if (name.isEmpty) continue;
+        map[name] = {
+          'avgVsOpponent': (s['avg_vs_opponent'] as num?)?.toInt() ?? 0,
+          'gamesVs':       (s['games_vs']       as num?)?.toInt() ?? 0,
+          'opponent':       s['upcoming_opponent'] as String? ?? '',
+        };
+      }
+      return map;
+    } catch (_) {
+      return {};
+    }
+  }
+
   // ── Injury list ──────────────────────────────────────────────────────────────
 
   /// Fetches the current AFL injury list from the backend.

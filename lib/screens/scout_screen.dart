@@ -75,6 +75,8 @@ class _ScoutScreenState extends State<ScoutScreen> {
   bool _teamsAnnounced = false;
   Set<String> _fetchedDraftedIds = {};
   Timer? _draftedPollTimer;
+  Map<String, Map<String, dynamic>> _vsOpponentStats = {};
+  String _upcomingOpponent = '';
 
   // Filters
   String? _teamFilter;
@@ -177,6 +179,12 @@ class _ScoutScreenState extends State<ScoutScreen> {
 
     // ⭐ Fetch drafted players from backend for ALL game types in this round
     // This ensures we get picks even if the local state isn't loaded
+    final vsStats = await widget.scoutService.fetchVsOpponentStats(
+      season: widget.season,
+      round: widget.round ?? 0,
+      gameType: _gameTypeFilter.isEmpty ? widget.gameType : _gameTypeFilter,
+    );
+
     final drafted = await widget.scoutService.fetchDraftedPlayers(
       season: widget.season,
       round: widget.round ?? 0,
@@ -203,6 +211,10 @@ class _ScoutScreenState extends State<ScoutScreen> {
         _namedSquadIds = namedIds;
         _teamsAnnounced = announced;
         _fetchedDraftedIds = drafted;
+        _vsOpponentStats = vsStats;
+        if (vsStats.isNotEmpty) {
+          _upcomingOpponent = vsStats.values.first['opponent'] as String? ?? '';
+        }
         _loading = false;
         _startDraftedPolling();
       });
@@ -341,10 +353,26 @@ class _ScoutScreenState extends State<ScoutScreen> {
             ],
             itemLabel: _gameTypeLabel,
             value: _gameTypeFilter,
-            onChanged: (v) => setState(() {
-              _gameTypeFilter = v ?? '';
-              _teamFilter = null;
-            }),
+            onChanged: (v) {
+              setState(() {
+                _gameTypeFilter = v ?? '';
+                _teamFilter = null;
+                _vsOpponentStats = {};
+                _upcomingOpponent = '';
+              });
+              widget.scoutService.fetchVsOpponentStats(
+                season: widget.season,
+                round: widget.round ?? 0,
+                gameType: v ?? widget.gameType,
+              ).then((vsStats) {
+                if (mounted) setState(() {
+                  _vsOpponentStats = vsStats;
+                  if (vsStats.isNotEmpty) {
+                    _upcomingOpponent = vsStats.values.first['opponent'] as String? ?? '';
+                  }
+                });
+              });
+            },
           ),
 
           // Team dropdown
@@ -498,6 +526,8 @@ class _ScoutScreenState extends State<ScoutScreen> {
       hCell('M', statW, col: ScoutSort.m),
       hCell('T', statW, col: ScoutSort.t),
       hCell('TOG%', statW, col: ScoutSort.tog),
+      if (_upcomingOpponent.isNotEmpty)
+        hCell('vs $_upcomingOpponent', statW + 10),
       hCell('Status', flagW),
     ]);
 
@@ -547,6 +577,8 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 dCell('${s.mAvg}', statW, bg: bg),
                 dCell('${s.tAvg}', statW, bg: bg),
                 dCell('${s.togAvg}%', statW, bg: bg),
+                // Vs Opponent
+                if (_upcomingOpponent.isNotEmpty) _buildVsCell(s, statW + 10, bg, cellStyle, cs),
                 // Status cell
                 GestureDetector(
                   onTap: () => _showFlagDialog(s),
@@ -616,6 +648,56 @@ class _ScoutScreenState extends State<ScoutScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // ── Vs opponent cell ──────────────────────────────────────────────────────────
+  Widget _buildVsCell(PlayerSeasonStats s, double w, Color bg,
+      TextStyle? cellStyle, ColorScheme cs) {
+    final vsData  = _vsOpponentStats[s.playerName];
+    final vsAvg   = vsData?['avgVsOpponent'] as int? ?? 0;
+    final vsGames = vsData?['gamesVs']       as int? ?? 0;
+
+    if (vsGames == 0) {
+      return Container(
+        width: w, height: 30,
+        alignment: Alignment.center,
+        color: bg,
+        child: Text('–',
+          style: cellStyle?.copyWith(
+            color: cs.onSurface.withOpacity(0.3))),
+      );
+    }
+
+    // Colour: green if above season avg, red if below
+    Color? textColor;
+    if (vsAvg >= (s.afAvg * 1.1).round()) {
+      textColor = Colors.green[700];
+    } else if (vsAvg <= (s.afAvg * 0.9).round()) {
+      textColor = Colors.red[700];
+    }
+
+    return Container(
+      width: w, height: 30,
+      alignment: Alignment.center,
+      color: bg,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text('$vsAvg',
+            style: cellStyle?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: textColor,
+              fontSize: 11,
+            )),
+          Text('($vsGames)',
+            style: cellStyle?.copyWith(
+              fontSize: 9,
+              color: cs.onSurface.withOpacity(0.5),
+            )),
+        ],
+      ),
     );
   }
 
