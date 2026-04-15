@@ -445,7 +445,7 @@ const FIXTURES_2026 = {"CD_M20260140101": {"home": "CAR", "away": "RIC", "round"
 // can be added via SCOUT_EMAILS env var without a rebuild.
 // Format: comma-separated emails e.g. "a@b.com,c@d.com"
 function getScoutAllowList() {
-  const envList = process.env.SCOUT_EMAILS ?? "wpenfold@bigpond.net.au";
+  const envList = process.env.SCOUT_EMAILS ?? "wpenfold@bigpond.net.au,wayneliz7@outlook.com";
   return envList.split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
 }
 

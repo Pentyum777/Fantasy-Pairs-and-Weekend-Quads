@@ -335,6 +335,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
               children: [
                 _buildFilters(theme, cs, gameTeams),
                 const Divider(height: 1),
+                _buildVsLegend(theme, cs),
                 Expanded(child: _buildTable(theme, cs)),
               ],
             ),
@@ -342,6 +343,41 @@ class _ScoutScreenState extends State<ScoutScreen> {
   }
 
   // ── Filter bar ─────────────────────────────────────────────────────────────
+  Widget _buildVsLegend(ThemeData theme, ColorScheme cs) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      color: cs.surfaceVariant.withOpacity(0.3),
+      child: Row(
+        children: [
+          Text('vs Opp: ', style: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w600)),
+          _legendDot(Colors.green[700]!, 'Above avg'),
+          const SizedBox(width: 12),
+          _legendDot(Colors.red[700]!, 'Below avg'),
+          const SizedBox(width: 12),
+          _legendDot(cs.onSurface.withOpacity(0.5), 'Neutral'),
+          const SizedBox(width: 12),
+          Text('– = no data', style: theme.textTheme.labelSmall?.copyWith(
+            color: cs.onSurface.withOpacity(0.5))),
+        ],
+      ),
+    );
+  }
+
+  Widget _legendDot(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8, height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
   Widget _buildFilters(ThemeData theme, ColorScheme cs, List<String> gameTeams) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
