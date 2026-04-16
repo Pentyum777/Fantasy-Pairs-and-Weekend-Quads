@@ -340,6 +340,7 @@ bool _isRoundHistorical() {
 
       if (data is Map<String, dynamic>) {
         _applySnapshotToSelections(data);
+        if (mounted) setState(() {}); // Refresh table immediately after applying
 
         // ⭐ Track timestamp so we can detect remote changes
         final ts = (json["lastUpdated"] as num?)?.toInt() ?? 0;
@@ -470,9 +471,15 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   // SAFETY: Do not restore snapshot until players are loaded
   if (_seasonPlayers == null || _seasonPlayers!.isEmpty) {
     debugPrint("⚠️ Players not loaded yet — retrying in 500ms");
-    // Retry once after a short delay instead of silently failing
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) _applySnapshotToSelections(data);
+      if (mounted) {
+        _applySnapshotToSelections(data);
+        // Update cache with now-populated selections
+        final cache = widget.gameDataCache;
+        final cacheKey = "${widget.season}-${widget.round}-${widget.gameType}";
+        if (cache != null) cache.setSelections(cacheKey, _selections);
+        setState(() {});
+      }
     });
     return;
   }
