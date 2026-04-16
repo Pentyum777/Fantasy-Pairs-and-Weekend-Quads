@@ -1,6 +1,6 @@
 class AflPlayer {
   final String id;          // Stable identity (CD_Ixxxxx)
-  final String name;        // Full or short name
+  final String? name;        // Full or short name
   final String club;        // Normalized club code
   final int guernseyNumber;
   final int season;
@@ -19,16 +19,18 @@ class AflPlayer {
         name = (name ?? "").trim(),
         club = (club ?? "").trim();
 
-  String get fullName => name;
+  String get fullName => name ?? '';
 
   String get shortName {
-    if (name.isEmpty) return "Unknown";
-    final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final n = name ?? "";
+    if (n.isEmpty) return "Unknown";
+    final parts = n.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return "Unknown";
     if (parts.length <= 1) return parts.first;
     return "${parts.first} ${parts.last}";
   }
 
-  bool get isUnknown => id == "UNKNOWN" || name == "Unknown";
+  bool get isUnknown => id == "UNKNOWN" || (name ?? "") == "Unknown";
 
   static AflPlayer empty() => AflPlayer(
         id: "UNKNOWN",

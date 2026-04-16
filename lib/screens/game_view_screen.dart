@@ -878,46 +878,50 @@ Future<void> _refreshLive() async {
   if (!mounted) return;
 
   try {
-    // 1. Refresh live scores for each fixture
     final fixtures = widget.fixtureRepo.fixturesForSeasonRound(
       widget.season,
       widget.round,
     );
 
-    for (final f in fixtures) {
-      final matchId = f.matchId?.trim();
-      if (matchId != null && matchId.isNotEmpty) {
-        await widget.fixtureRepo.refreshLiveScores(matchId: matchId);
-      }
-    }
+    // 1. Fetch stats AND refresh fixture cards in parallel — don't wait
+    //    for fixture scores before showing player stats
+    final fixtureRefreshFuture = Future.wait(
+      fixtures
+          .where((f) => (f.matchId?.trim() ?? '').isNotEmpty)
+          .map((f) => widget.fixtureRepo
+              .refreshLiveScores(matchId: f.matchId!.trim())
+              .catchError((_) {})),
+    );
+
+    // 2. Fetch player stats immediately (don't wait for fixture cards)
+    final roundStats = await _fetchRoundStats();
 
     if (!mounted) return;
 
-    // 2. Run completion checks + special logic
-    await _checkRoundCompletion(); // ⭐ async
-    _finaliseFridayPairsWinner();
-    _checkAndCompleteWeekendQuadsRound();
-
-    // 3. Always fetch fresh stats
-    final roundStats = await _fetchRoundStats();
-    debugPrint("ROUND STATS COUNT = ${roundStats.length}");
-
-    // 4. Apply completion flags + build stats map
+    // 3. Apply stats right away — fixture cards update separately
     if (roundStats.isNotEmpty) {
       _applyLiveStats(roundStats.values.toList());
-
-      // 5. Push stats into the punter table ONLY when we have live data
-      // If stats are empty, don't overwrite picks — they may be from a sync reload
       final tableState = _punterTableKey.currentState;
       if (tableState != null && mounted) {
         final dynamic dyn = tableState;
         dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
       }
+      if (mounted) setState(() {});
     }
 
- 
-    // 7. Rebuild UI
-    setState(() {});
+    // 4. Wait for fixture scores to finish, then run completion checks
+    await fixtureRefreshFuture;
+    if (!mounted) return;
+
+    await _checkRoundCompletion(); // ⭐ async
+    _finaliseFridayPairsWinner();
+    _checkAndCompleteWeekendQuadsRound();
+
+    // 5. Final setState to update fixture cards
+    if (mounted) setState(() {});
+
+    debugPrint("ROUND STATS COUNT = ${roundStats.length}");
+
   } catch (e, st) {
     debugPrint("❌ Live refresh error: $e\n$st");
   }
@@ -1092,7 +1096,7 @@ void _finaliseFridayPairsWinner() {
   String _timeLabel(AflFixture f) {
     if (f.complete) return "FT";
     if (f.timeText.isNotEmpty) return f.timeText;
-    if (f.time.isNotEmpty) return f.time;
+    if ((f.time ?? '').isNotEmpty) return f.time!;
     return "--:--";
   }
 

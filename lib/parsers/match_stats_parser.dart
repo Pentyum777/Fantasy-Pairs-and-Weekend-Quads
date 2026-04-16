@@ -61,7 +61,7 @@ class MatchStatsParser {
 
       final normalized = name.toLowerCase().trim();
       for (final p in seasonPlayers) {
-        if (p.name.toLowerCase().trim() == normalized) {
+        if ((p.name ?? '').toLowerCase().trim() == normalized) {
           return p;
         }
       }
@@ -87,7 +87,7 @@ class MatchStatsParser {
 
       final player = AflPlayer(
         id: repoPlayer.id,
-        name: repoPlayer.name,
+        name: repoPlayer.name ?? '',
         club: repoPlayer.club,
         guernseyNumber: repoPlayer.guernseyNumber,
         season: repoPlayer.season,

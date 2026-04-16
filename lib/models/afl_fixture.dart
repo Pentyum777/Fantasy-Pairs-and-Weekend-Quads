@@ -7,7 +7,7 @@ class AflFixture {
   final String awayTeam;
 
   final String venue;
-  final String time;
+  final String? time;
   final String source;
 
   /// AFL MatchCentre ID (CD_M…)
@@ -36,7 +36,7 @@ class AflFixture {
     required this.homeTeam,
     required this.awayTeam,
     required this.venue,
-    required this.time,
+    this.time,
     required this.source,
     required this.matchId,
     required this.isPreseason,
@@ -56,11 +56,11 @@ class AflFixture {
 /// Returns the actual start DateTime of the fixture by combining
 /// the `date` and the `time` string ("7:25pm", "19:25", etc.)
 DateTime? get startDateTime {
-  if (date == null || time.isEmpty) return date;
+  if (date == null || (time ?? '').isEmpty) return date;
 
   try {
     // Normalise time string
-    final t = time.toLowerCase().replaceAll(" ", "");
+    final t = (time ?? '').toLowerCase().replaceAll(" ", "");
 
     int hour = 0;
     int minute = 0;
