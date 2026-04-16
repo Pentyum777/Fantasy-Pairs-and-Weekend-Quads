@@ -27845,7 +27845,8 @@ _.r=e
 _.x=f
 _.as=g
 _.ax=_.at=0
-_.ch=_.ay=""},
+_.ay=null
+_.ch=""},
 JF(a,b,c,d,e,f){var s,r=B.c.b_(d)
 if(r.length===0)r="UNKNOWN"
 s=B.c.b_(e)
@@ -92936,7 +92937,9 @@ r===$&&A.a()
 return new A.q2(this.b,this.c,p,s,r,q.x,q.y,null)},
 $S:517}
 A.fj.prototype={
-gn7(a){var s=this.ay.toLowerCase()
+gn7(a){var s,r=this.ay
+if(r==null)r=""
+s=r.toLowerCase()
 return B.c.p(s,"final")||s==="ft"},
 gw7(){return this.d},
 gv8(){return this.e},
@@ -93795,11 +93798,15 @@ q=r.d
 p=A.kb(q)
 o=r.e
 n=A.kb(o)
-m=r.ay.toLowerCase()
-l=A.tf(m,"final",0)||m==="ft"
-A.d0().$1("Fixture: "+q+" vs "+o+" | complete="+l+" | home='"+p+"' away='"+n+"'")
-m=r.ay.toLowerCase()
-if(A.tf(m,"final",0)||m==="ft")q=h===p||h===n
+m=r.ay
+if(m==null)m=""
+l=m.toLowerCase()
+m=A.tf(l,"final",0)||l==="ft"
+A.d0().$1("Fixture: "+q+" vs "+o+" | complete="+m+" | home='"+p+"' away='"+n+"'")
+q=r.ay
+if(q==null)q=""
+q=q.toLowerCase()
+if(A.tf(q,"final",0))q=h===p||h===n
 else q=!1
 if(q){A.d0().$1("\u2714 MATCH: "+h+" belongs to a completed fixture")
 return!0}}A.d0().$1("\u2718 NO MATCH: "+h+" did not match any completed fixture")
@@ -93810,7 +93817,9 @@ for(o=n.length,s=0;s<n.length;n.length===o||(0,A.K)(n),++s){r=n[s]
 q=A.kb(r.d)
 p=A.kb(r.e)
 if(m===q||m===p)if(this.adV(r))return!0}return!1},
-adV(a){var s=B.c.b_(a.ay.toLowerCase())
+adV(a){var s,r=a.ay
+if(r==null)r=""
+s=B.c.b_(r.toLowerCase())
 if(s.length===0)return!1
 if(B.c.p(s,"final")||s==="ft")return!1
 return!0},
@@ -94359,8 +94368,8 @@ default:return s}},
 RH(a){var s
 if(a.gn7(a))return"FT"
 s=a.ay
-if(s.length!==0)return s
-return""},
+if((s==null?"":s).length!==0){s.toString
+return s}return""},
 ajH(a){var s
 if(a.gn7(a))return"FT"
 s=a.ch
@@ -94479,7 +94488,8 @@ return A.ne(A.cK(n,B.r,B.p,B.u),B.P,l,B.Q,s,l,l,l)},
 abv(a){var s,r,q,p,o=this
 if(o.a.e!=="friday_pairs")return
 if(o.cx)return
-if(!(a.ay.length!==0&&!a.gn7(a)))return
+s=a.ay
+if(!((s==null?"":s).length!==0&&!a.gn7(a)))return
 s=o.z
 s===$&&A.a()
 r=s.length

@@ -25,7 +25,7 @@ class AflFixture {
   // Live / result data
   int homeScore;
   int awayScore;
-  String quarterText;
+  String? quarterText;
   String timeText;
   String status;
 
@@ -48,7 +48,7 @@ class AflFixture {
 
     this.homeScore = 0,
     this.awayScore = 0,
-    this.quarterText = "",
+    this.quarterText,
     this.timeText = "",
     this.status = "",
   });
@@ -95,7 +95,7 @@ DateTime? get startDateTime {
 
   /// Backwards‑compatible flag used by GameViewScreen
   bool get complete {
-    final q = quarterText.toLowerCase();
+    final q = (quarterText ?? "").toLowerCase();
     return q.contains("final") || q == "ft";
   }
 }

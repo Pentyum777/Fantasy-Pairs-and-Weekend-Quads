@@ -138,7 +138,7 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
       "| home='$home' away='$away'"
     );
 
-    if (f.complete && (team == home || team == away)) {
+    if ((f.quarterText ?? "").toLowerCase().contains("final") && (team == home || team == away)) {
       debugPrint("✔ MATCH: $team belongs to a completed fixture");
       return true;
     }
@@ -170,7 +170,7 @@ bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
 }
 
 bool _isFixtureLive(AflFixture f) {
-  final q = f.quarterText.toLowerCase().trim();
+  final q = (f.quarterText ?? "").toLowerCase().trim();
 
   if (q.isEmpty) return false;
   if (q.contains("final") || q == "ft") return false;
@@ -1085,7 +1085,7 @@ void _finaliseFridayPairsWinner() {
 
   String _quarterLabel(AflFixture f) {
     if (f.complete) return "FT";
-    if (f.quarterText.isNotEmpty) return f.quarterText;
+    if ((f.quarterText ?? '').isNotEmpty) return f.quarterText!;
     return "";
   }
 
@@ -1418,7 +1418,7 @@ Widget build(BuildContext context) {
     if (widget.gameType != "friday_pairs") return;
     if (_fridayWinnerSelected) return;
 
-    final isLive = f.quarterText.isNotEmpty && !f.complete;
+    final isLive = (f.quarterText ?? '').isNotEmpty && !f.complete;
     if (!isLive) return;
 
     final punterCount = _selections.length;
