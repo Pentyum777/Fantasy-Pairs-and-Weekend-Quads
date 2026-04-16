@@ -437,23 +437,23 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   final Map<String, AflPlayerMatchStats> map = {};
 
   for (final s in stats) {
-  if (s.player == null) continue;
+    try {
+      if (s.player == null) continue;
+      if (s.player!.id.isEmpty) continue;
 
-  // ⭐ ENRICH: ensure player object is fully populated
-  final p = widget.playerRepo.getById(s.player!.id, widget.season);
-  if (p != null) {
-   
+      // Live + completed flags
+      final completed = _isPlayerFromCompletedFixture(s);
+      final live = _isPlayerInLiveFixture(s);
+
+      s.isCompletedGame = completed;
+      s.isLiveGame = live;
+
+      map[s.player!.id] = s;
+    } catch (e) {
+      debugPrint("⚠️ _applyLiveStats skip player: $e");
+      continue;
+    }
   }
-
-  // Live + completed flags
-  final completed = _isPlayerFromCompletedFixture(s);
-  final live = _isPlayerInLiveFixture(s);
-
-  s.isCompletedGame = completed;
-  s.isLiveGame = live;
-
-  map[s.player!.id] = s;
-}
 
   _currentStatsByPlayerId = map;
 
@@ -469,7 +469,11 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   debugPrint("🔄 _applySnapshotToSelections: gameType=${widget.gameType} round=${widget.round} players=${_seasonPlayers?.length ?? 0} mounted=$mounted");
   // SAFETY: Do not restore snapshot until players are loaded
   if (_seasonPlayers == null || _seasonPlayers!.isEmpty) {
-    debugPrint("⚠️ Players not loaded yet — delaying snapshot restore");
+    debugPrint("⚠️ Players not loaded yet — retrying in 500ms");
+    // Retry once after a short delay instead of silently failing
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _applySnapshotToSelections(data);
+    });
     return;
   }
 
@@ -871,6 +875,7 @@ Future<void> _checkForRemoteChanges() async {
 
 Future<void> _refreshLive() async {
   if (_isCompleted) return; // ⭐ do not overwrite final results
+  if (!mounted) return;
 
   try {
     // 1. Refresh live scores for each fixture
