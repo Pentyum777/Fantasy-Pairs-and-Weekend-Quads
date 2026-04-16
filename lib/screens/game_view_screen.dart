@@ -253,19 +253,20 @@ void initState() {
         }
       });
     } else {
-      // ⭐ Have cached data — show immediately, then refresh live quickly
+      // ⭐ Have cached data — show immediately then refresh live
       _snapshotLoaded = true;
-      // ⭐ Schedule setState for next frame so build() sees _snapshotLoaded=true
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() {});
+        if (mounted) {
+          setState(() {});
+          // Refresh live scores immediately after showing cached data
+          if (!_isCompleted) {
+            Future.delayed(const Duration(seconds: 3), () {
+              if (mounted && !_isCompleted) _refreshLive();
+            });
+          }
+          _fetchCurrentTimestamp().then((_) => _startLivePolling());
+        }
       });
-      _fetchCurrentTimestamp().then((_) => _startLivePolling());
-      if (!_isCompleted) {
-        // Refresh live after 2s when returning to cached game (faster than 5s)
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted && !_isCompleted) _refreshLive();
-        });
-      }
     }
   } else {
     // First visit — load everything normally
@@ -470,6 +471,8 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   if (cache != null && map.isNotEmpty) {
     final key = "${widget.season}-${widget.round}-${widget.gameType}";
     cache.setStats(key, map);
+    // Also save selections so cached scores are up to date on return
+    cache.setSelections(key, _selections);
   }
 }
 
