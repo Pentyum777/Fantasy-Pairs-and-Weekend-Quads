@@ -224,7 +224,6 @@ void initState() {
     _seasonPlayers = cache.getPlayers(widget.season);
     _loadingPlayers = false;
     _recomputeVisiblePunterCount();
-    _snapshotLoaded = true;
 
     // Only fetch fresh snapshot from network if we have no prior data
     final hasData = _selections.any((p) =>
@@ -232,6 +231,7 @@ void initState() {
         p.picks.any((pick) => pick.player != null));
 
     if (!hasData) {
+      // No cached data — load from network, don't mark snapshot loaded yet
       _loadSelectionsSnapshot().then((_) {
         _snapshotLoaded = true;
         // ⭐ Save selections to cache so returning to this game is instant
@@ -240,11 +240,23 @@ void initState() {
         }
         if (mounted) setState(() {});
         _startLivePolling();
+        // ⭐ Trigger a live stats refresh 5 seconds after load
+        // so scores appear quickly without waiting for the next poll cycle
+        if (!_isCompleted) {
+          Future.delayed(const Duration(seconds: 5), () {
+            if (mounted && !_isCompleted) _refreshLive();
+          });
+        }
       });
     } else {
-      // ⭐ Even when we skip the full snapshot load (data already cached),
-      // fetch the current timestamp so the sync polling has a baseline.
+      // ⭐ Have cached data — show immediately, then refresh live in 5s
+      _snapshotLoaded = true;
       _fetchCurrentTimestamp().then((_) => _startLivePolling());
+      if (!_isCompleted) {
+        Future.delayed(const Duration(seconds: 5), () {
+          if (mounted && !_isCompleted) _refreshLive();
+        });
+      }
     }
   } else {
     // First visit — load everything normally
