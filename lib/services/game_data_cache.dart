@@ -6,9 +6,11 @@ import '../models/afl_player.dart';
 /// navigating away from a game and back does not trigger a fresh network load.
 ///
 /// Lives in GameTypeSelectionScreen and is passed into every GameViewScreen.
+/// All selections are stored as deep copies (via JSON) to prevent cross-game
+/// mutation when the same list objects are reused.
 class GameDataCache {
-  // selections keyed by "season-round-gameType"
-  final Map<String, List<PunterSelection>> _selections = {};
+  // selections keyed by "season-round-gameType" — stored as JSON for deep copy
+  final Map<String, List<Map<String, dynamic>>> _selectionsJson = {};
 
   // live stats keyed by the same key
   final Map<String, Map<String, AflPlayerMatchStats>> _stats = {};
@@ -17,22 +19,36 @@ class GameDataCache {
   final Map<int, List<AflPlayer>> _players = {};
 
   // ---------------------------------------------------------------
-  // Selections
+  // Selections — always deep-copied via JSON
   // ---------------------------------------------------------------
 
   bool hasSelections(String key) {
-    if (!_selections.containsKey(key)) return false;
-    final list = _selections[key]!;
+    if (!_selectionsJson.containsKey(key)) return false;
+    final list = _selectionsJson[key]!;
     // Only consider it cached if it has real data
-    return list.any((p) =>
-        p.punterName.trim().isNotEmpty ||
-        p.picks.any((pick) => pick.player != null));
+    return list.any((p) {
+      final name = (p['punterName'] as String? ?? '').trim();
+      if (name.isNotEmpty && name != 'P${p['punterNumber']}') return true;
+      final picks = p['picks'] as List<dynamic>? ?? [];
+      return picks.any((pick) => (pick as Map<String, dynamic>)['player'] != null);
+    });
   }
 
-  List<PunterSelection> getSelections(String key) => _selections[key]!;
+  List<PunterSelection> getSelections(String key) {
+    final jsonList = _selectionsJson[key] ?? [];
+    return jsonList.map((j) => PunterSelection.fromJson(j)).toList();
+  }
 
   void setSelections(String key, List<PunterSelection> value) {
-    _selections[key] = value;
+    // Only cache if we have real data
+    final hasReal = value.any((p) {
+      final name = p.punterName.trim();
+      if (name.isNotEmpty && name != 'P${p.punterNumber}') return true;
+      return p.picks.any((pick) => pick.player != null);
+    });
+    if (!hasReal) return;
+    // Deep copy via JSON serialization
+    _selectionsJson[key] = value.map((p) => p.toJson()).toList();
   }
 
   // ---------------------------------------------------------------

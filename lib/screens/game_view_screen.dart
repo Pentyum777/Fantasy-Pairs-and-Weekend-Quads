@@ -121,8 +121,6 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
   );
 
   final team = AflClubCodes.normalize(s.team);
-  debugPrint("---- Checking completion for ${s.player?.name} ----");
-  debugPrint("Stats team (normalised) = '$team'");
 
   if (team.isEmpty) {
     debugPrint("❌ No team found in stats → NOT completed");
@@ -132,19 +130,11 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
   for (final f in fixtures) {
     final home = AflClubCodes.normalize(f.homeTeam);
     final away = AflClubCodes.normalize(f.awayTeam);
-
-    debugPrint(
-      "Fixture: ${f.homeTeam} vs ${f.awayTeam} | complete=${f.complete} "
-      "| home='$home' away='$away'"
-    );
-
     if ((f.quarterText ?? "").toLowerCase().contains("final") && (team == home || team == away)) {
-      debugPrint("✔ MATCH: $team belongs to a completed fixture");
       return true;
     }
   }
 
-  debugPrint("✘ NO MATCH: $team did not match any completed fixture");
   return false;
 }
 
@@ -220,8 +210,7 @@ void initState() {
       _selections = cached;
       debugPrint("✅ Restored selections from cache: $cacheKey count=${_selections.length}");
     } else {
-      debugPrint("⚠️ Cache exists but empty data for: $cacheKey — will reload");
-      cache.setSelections(cacheKey, []); // Clear bad cache entry
+      debugPrint("⚠️ Cache exists but empty — will reload from network");
     }
   } else {
     debugPrint("❌ No cached selections for: $cacheKey");
@@ -248,12 +237,7 @@ void initState() {
       _loadSelectionsSnapshot().then((_) {
         _snapshotLoaded = true;
         // ⭐ Save selections to cache so returning to this game is instant
-        final hasReal = _selections.any((p) =>
-            p.punterName.trim().isNotEmpty ||
-            p.picks.any((pick) => pick.player != null));
-        if (hasReal) {
-          cache.setSelections(cacheKey, _selections);
-        }
+        cache.setSelections(cacheKey, _selections);
         if (mounted) setState(() {});
         _startLivePolling();
         // ⭐ Trigger a live stats refresh 5 seconds after load
@@ -267,6 +251,10 @@ void initState() {
     } else {
       // ⭐ Have cached data — show immediately, then refresh live quickly
       _snapshotLoaded = true;
+      // ⭐ Schedule setState for next frame so build() sees _snapshotLoaded=true
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
       _fetchCurrentTimestamp().then((_) => _startLivePolling());
       if (!_isCompleted) {
         // Refresh live after 2s when returning to cached game (faster than 5s)
@@ -492,12 +480,7 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
         // Update cache with now-populated selections
         final cache = widget.gameDataCache;
         final cacheKey = "${widget.season}-${widget.round}-${widget.gameType}";
-        if (cache != null) {
-          final hasReal = _selections.any((p) =>
-              p.punterName.trim().isNotEmpty ||
-              p.picks.any((pick) => pick.player != null));
-          if (hasReal) cache.setSelections(cacheKey, _selections);
-        }
+        if (cache != null) cache.setSelections(cacheKey, _selections);
         setState(() {});
       }
     });
@@ -684,12 +667,7 @@ Future<void> _saveSnapshot() async {
       // ⭐ Update cache so switching games and back is instant
       final cache = widget.gameDataCache;
       final cacheKey = "${widget.season}-${widget.round}-${widget.gameType}";
-      if (cache != null) {
-        final hasReal = _selections.any((p) =>
-            p.punterName.trim().isNotEmpty ||
-            p.picks.any((pick) => pick.player != null));
-        if (hasReal) cache.setSelections(cacheKey, _selections);
-      }
+      if (cache != null) cache.setSelections(cacheKey, _selections);
     }
   } catch (e) {
     debugPrint("❌ saveSnapshot failed: $e");
@@ -952,7 +930,6 @@ Future<void> _refreshLive() async {
     // 5. Final setState to update fixture cards
     if (mounted) setState(() {});
 
-    debugPrint("ROUND STATS COUNT = ${roundStats.length}");
 
   } catch (e, st) {
     debugPrint("❌ Live refresh error: $e\n$st");
@@ -1280,12 +1257,7 @@ void _finaliseFridayPairsWinner() {
     // Only cache if we have real data (punter names or picks)
     final cache = widget.gameDataCache;
     final cacheKey = "${widget.season}-${widget.round}-${widget.gameType}";
-    final hasRealData = _selections.any((p) =>
-        p.punterName.trim().isNotEmpty ||
-        p.picks.any((pick) => pick.player != null));
-    if (cache != null && hasRealData) {
-      cache.setSelections(cacheKey, _selections);
-    }
+    if (cache != null) cache.setSelections(cacheKey, _selections);
 
     Navigator.pushReplacement(
       context,
@@ -2058,7 +2030,6 @@ List<PunterSelection> _sortedSelections() {
   }
 
   // ------------------------------------------------------------
-  // AFL DATA VALIDATION (unchanged)
   // ------------------------------------------------------------
   void validateAflData(
     List<AflFixture> fixtures,
@@ -2080,7 +2051,6 @@ List<PunterSelection> _sortedSelections() {
     final missingInPlayers = fixtureClubs.difference(playerClubs);
     final missingInFixtures = playerClubs.difference(fixtureClubs);
 
-    debugPrint("=== AFL DATA VALIDATION ===");
 
     if (missingInPlayers.isNotEmpty) {
       debugPrint("❌ Clubs in FIXTURES but NOT in PLAYERS:");
