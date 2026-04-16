@@ -175,9 +175,10 @@ class ScoutService {
 
   Future<List<PlayerSeasonStats>> fetchSeasonStats(int season) async {
     try {
-      final url = Uri.https(
-        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
-        '/playerSeasonStats/$season',
+      final url = Uri(
+        scheme: 'https',
+        host: 'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        pathSegments: ['playerSeasonStats', season.toString()],
       );
       final res = await http.get(url);
       if (res.statusCode != 200) return [];
@@ -224,9 +225,10 @@ class ScoutService {
   /// Empty set means teams haven't been announced yet.
   Future<Set<String>> fetchNamedSquad(String matchId) async {
     try {
-      final url = Uri.https(
-        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
-        '/namedSquad/$matchId',
+      final url = Uri(
+        scheme: 'https',
+        host: 'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        pathSegments: ['namedSquad', matchId],
       );
       final res = await http.get(url);
       if (res.statusCode != 200) return {};
@@ -246,9 +248,10 @@ class ScoutService {
     required String playerName,
   }) async {
     try {
-      final url = Uri.https(
-        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
-        '/playerGameLog/$season/${Uri.encodeComponent(playerName)}',
+      final url = Uri(
+        scheme: 'https',
+        host: 'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        pathSegments: ['playerGameLog', season.toString(), playerName],
       );
       final res = await http.get(url);
       if (res.statusCode != 200) return [];
@@ -332,9 +335,10 @@ class ScoutService {
 
   Future<Map<String, PlayerFlagEntry>> fetchFlags(int season) async {
     try {
-      final url = Uri.https(
-        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
-        '/playerFlags/$season',
+      final url = Uri(
+        scheme: 'https',
+        host: 'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        pathSegments: ['playerFlags', season.toString()],
       );
       final res = await http.get(url);
       if (res.statusCode != 200) return {};
@@ -391,9 +395,10 @@ class ScoutService {
     required String playerId,
   }) async {
     try {
-      final url = Uri.https(
-        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
-        '/playerFlags/$season/$playerId',
+      final url = Uri(
+        scheme: 'https',
+        host: 'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        pathSegments: ['playerFlags', season.toString(), playerId],
       );
       await http.delete(url);
     } catch (_) {}
