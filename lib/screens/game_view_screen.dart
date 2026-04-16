@@ -212,6 +212,9 @@ void initState() {
   // Restore cached selections immediately (shows picks with zero delay)
   if (cache != null && cache.hasSelections(cacheKey)) {
     _selections = cache.getSelections(cacheKey);
+    debugPrint("✅ Restored selections from cache: $cacheKey count=${_selections.length}");
+  } else {
+    debugPrint("❌ No cached selections for: $cacheKey");
   }
 
   // Restore cached stats immediately (shows last-known data with zero delay)
@@ -463,6 +466,7 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 }
 
   void _applySnapshotToSelections(Map<String, dynamic> data) {
+  debugPrint("🔄 _applySnapshotToSelections: gameType=${widget.gameType} round=${widget.round} players=${_seasonPlayers?.length ?? 0} mounted=$mounted");
   // SAFETY: Do not restore snapshot until players are loaded
   if (_seasonPlayers == null || _seasonPlayers!.isEmpty) {
     debugPrint("⚠️ Players not loaded yet — delaying snapshot restore");
