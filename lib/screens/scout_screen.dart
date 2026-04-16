@@ -147,19 +147,30 @@ class _ScoutScreenState extends State<ScoutScreen> {
           }
         }
       } else {
-        // Full name: "Jake Kolodjashnij"
-        final parts    = name.trim().toLowerCase().split(' ');
+        // Full name: "Jake Kolodjashnij" or "Bailey Williams"
+        final parts     = name.trim().toLowerCase().split(' ');
         if (parts.length < 2) continue;
-        final lastName = parts.last;
-        final firstInit = parts.first[0];
+        final lastName  = parts.last;
+        final firstName = parts.first;
+
+        // Try exact first name match first, then fall back to initial only
+        PlayerSeasonStats? exactMatch;
+        PlayerSeasonStats? initialMatch;
+
         for (final s in _allStats) {
           final sp = s.playerName.trim().toLowerCase().split(' ');
           if (sp.length < 2) continue;
-          if (sp.last == lastName && sp.first[0] == firstInit) {
-            matched.add(s.playerId);
-            break;
+          if (sp.last != lastName) continue;
+          if (sp.first == firstName) {
+            exactMatch = s;
+            break; // exact match wins immediately
+          } else if (sp.first[0] == firstName[0] && initialMatch == null) {
+            initialMatch = s;
           }
         }
+
+        final best = exactMatch ?? initialMatch;
+        if (best != null) matched.add(best.playerId);
       }
     }
 

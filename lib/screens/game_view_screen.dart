@@ -209,6 +209,11 @@ void initState() {
     _isCompleted = true;
   }
 
+  // Restore cached selections immediately (shows picks with zero delay)
+  if (cache != null && cache.hasSelections(cacheKey)) {
+    _selections = cache.getSelections(cacheKey);
+  }
+
   // Restore cached stats immediately (shows last-known data with zero delay)
   if (cache != null && cache.hasStats(cacheKey)) {
     _currentStatsByPlayerId = cache.getStats(cacheKey);
@@ -229,6 +234,10 @@ void initState() {
     if (!hasData) {
       _loadSelectionsSnapshot().then((_) {
         _snapshotLoaded = true;
+        // ⭐ Save selections to cache so returning to this game is instant
+        if (_selections.isNotEmpty) {
+          cache.setSelections(cacheKey, _selections);
+        }
         if (mounted) setState(() {});
         _startLivePolling();
       });
@@ -625,6 +634,10 @@ Future<void> _saveSnapshot() async {
         final ts = (saveJson["lastUpdated"] as num?)?.toInt() ?? 0;
         if (ts > 0) _lastKnownTimestamp = ts;
       } catch (_) {}
+      // ⭐ Update cache so switching games and back is instant
+      final cache = widget.gameDataCache;
+      final cacheKey = "${widget.season}-${widget.round}-${widget.gameType}";
+      if (cache != null) cache.setSelections(cacheKey, _selections);
     }
   } catch (e) {
     debugPrint("❌ saveSnapshot failed: $e");
@@ -1205,6 +1218,14 @@ void _finaliseFridayPairsWinner() {
   void _navigateTo({required int round, required String gameType}) {
     _liveTimer?.cancel();
     _syncTimer?.cancel();
+
+    // ⭐ Save current selections to cache before leaving
+    final cache = widget.gameDataCache;
+    final cacheKey = "${widget.season}-${widget.round}-${widget.gameType}";
+    if (cache != null && _selections.isNotEmpty) {
+      cache.setSelections(cacheKey, _selections);
+    }
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(

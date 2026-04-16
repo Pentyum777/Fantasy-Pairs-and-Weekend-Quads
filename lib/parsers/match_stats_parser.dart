@@ -10,6 +10,12 @@ class MatchStatsParser {
   static const String baseUrl =
       "https://fantasy-pairs-and-weekend-quads-production.up.railway.app";
 
+  /// Known player ID mismatches between DFS feed and our roster.
+  /// DFS feed ID -> correct roster ID
+  static const Map<String, String> _playerIdAliases = {
+    "CD_I1012862": "CD_I1013494", // Elijah Hollands (CAR) - DFS uses wrong ID
+  };
+
   // ❌ REMOVE this:
   // static final Map<String, List<AflPlayerMatchStats>> _cache = {};
 
@@ -73,7 +79,8 @@ class MatchStatsParser {
     for (final raw in playersRaw) {
       if (raw is! Map) continue;
 
-      final id = raw['playerId']?.toString().trim() ?? "";
+      final rawId = raw['playerId']?.toString().trim() ?? "";
+      final id = _playerIdAliases[rawId] ?? rawId;
       final name = raw['playerName']?.toString().trim() ?? "";
 
       final repoPlayer = _matchPlayer(id, name);
