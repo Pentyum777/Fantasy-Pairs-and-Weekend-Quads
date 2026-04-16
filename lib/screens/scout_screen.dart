@@ -105,37 +105,60 @@ class _ScoutScreenState extends State<ScoutScreen> {
   }
 
 
-  /// Parses abbreviated player names from AFL team lineup paste
-  /// Handles format: "L. Cowan", "J. Weitering", "N. Haynes" etc
+  /// Parses player names from AFL team lineup paste.
+  /// Handles both "L. Cowan" abbreviated and "Jake Kolodjashnij" full name formats.
   Set<String> _parseSquadFromText(String text) {
-    final lines = text.split(RegExp(r'[\n\r]+')).map((l) => l.trim());
-    final abbrs = <String>[]; // e.g. ["L. Cowan", "P. Cripps"]
+    final lines = text.split(RegExp(r'[\n\r]+')).map((l) => l.trim()).toList();
 
+    final sectionLabels = {
+      'full backs', 'half backs', 'centres', 'half forwards',
+      'full forwards', 'followers', 'interchanges', 'emergencies',
+      'interchange', 'emergency', 'ruck',
+    };
+
+    final candidateNames = <String>[];
     for (final line in lines) {
-      // Match "X. Lastname" or "X. X. Lastname" pattern
-      if (RegExp(r'^[A-Z]\. [A-Z]').hasMatch(line)) {
-        abbrs.add(line);
+      if (line.isEmpty) continue;
+      if (RegExp(r'^\d+$').hasMatch(line)) continue;
+      if (sectionLabels.contains(line.toLowerCase())) continue;
+      if (RegExp(r'^[A-Z][a-z]').hasMatch(line) ||
+          RegExp(r'^[A-Z]\. [A-Z]').hasMatch(line)) {
+        candidateNames.add(line);
       }
     }
 
-    // Match against full player names in _allStats
     final matched = <String>{};
-    for (final abbr in abbrs) {
-      final parts = abbr.split('. ');
-      if (parts.length < 2) continue;
-      final initial = parts[0].toUpperCase();
-      final lastName = parts.sublist(1).join(' ').trim().toLowerCase();
 
-      // Find best match in _allStats
-      for (final s in _allStats) {
-        final nameParts = s.playerName.trim().split(' ');
-        if (nameParts.length < 2) continue;
-        final playerLast = nameParts.last.toLowerCase();
-        final playerFirst = nameParts.first[0].toUpperCase();
-
-        if (playerLast == lastName && playerFirst == initial) {
-          matched.add(s.playerId);
-          break;
+    for (final name in candidateNames) {
+      if (RegExp(r'^[A-Z]\. ').hasMatch(name)) {
+        // Abbreviated: "L. Cowan"
+        final parts = name.split('. ');
+        if (parts.length >= 2) {
+          final initial  = parts[0].toUpperCase();
+          final lastName = parts.sublist(1).join(' ').trim().toLowerCase();
+          for (final s in _allStats) {
+            final np = s.playerName.trim().split(' ');
+            if (np.length < 2) continue;
+            if (np.last.toLowerCase() == lastName &&
+                np.first[0].toUpperCase() == initial) {
+              matched.add(s.playerId);
+              break;
+            }
+          }
+        }
+      } else {
+        // Full name: "Jake Kolodjashnij"
+        final parts    = name.trim().toLowerCase().split(' ');
+        if (parts.length < 2) continue;
+        final lastName = parts.last;
+        final firstInit = parts.first[0];
+        for (final s in _allStats) {
+          final sp = s.playerName.trim().toLowerCase().split(' ');
+          if (sp.length < 2) continue;
+          if (sp.last == lastName && sp.first[0] == firstInit) {
+            matched.add(s.playerId);
+            break;
+          }
         }
       }
     }
