@@ -228,9 +228,13 @@ void initState() {
     _recomputeVisiblePunterCount();
 
     // Only fetch fresh snapshot from network if we have no prior data
-    final hasData = _selections.any((p) =>
-        p.punterName.trim().isNotEmpty ||
-        p.picks.any((pick) => pick.player != null));
+    // Exclude placeholder names like P1, P2... from hasData check
+    final hasData = _selections.any((p) {
+      final name = p.punterName.trim();
+      final isPlaceholder = RegExp(r'^P\d+$').hasMatch(name);
+      return (!isPlaceholder && name.isNotEmpty) ||
+          p.picks.any((pick) => pick.player != null);
+    });
 
     if (!hasData) {
       // No cached data — load from network, don't mark snapshot loaded yet

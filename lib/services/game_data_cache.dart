@@ -28,7 +28,9 @@ class GameDataCache {
     // Only consider it cached if it has real data
     return list.any((p) {
       final name = (p['punterName'] as String? ?? '').trim();
-      if (name.isNotEmpty && name != 'P${p['punterNumber']}') return true;
+      final num = p['punterNumber']?.toString() ?? '';
+      final isPlaceholder = name == 'P$num' || RegExp(r'^P\d+$').hasMatch(name);
+      if (!isPlaceholder && name.isNotEmpty) return true;
       final picks = p['picks'] as List<dynamic>? ?? [];
       return picks.any((pick) => (pick as Map<String, dynamic>)['player'] != null);
     });
@@ -43,7 +45,8 @@ class GameDataCache {
     // Only cache if we have real data
     final hasReal = value.any((p) {
       final name = p.punterName.trim();
-      if (name.isNotEmpty && name != 'P${p.punterNumber}') return true;
+      final isPlaceholder = RegExp(r'^P\d+$').hasMatch(name);
+      if (!isPlaceholder && name.isNotEmpty) return true;
       return p.picks.any((pick) => pick.player != null);
     });
     if (!hasReal) return;
