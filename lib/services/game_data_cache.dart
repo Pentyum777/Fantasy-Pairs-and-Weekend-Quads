@@ -2,16 +2,15 @@ import '../models/punter_selection.dart';
 import '../models/afl_player_match_stats.dart';
 import '../models/afl_player.dart';
 
-/// Holds loaded game state so that navigating away and back does not
-/// trigger a fresh network load.
+/// Holds loaded game state for each (season, round, gameType) key so that
+/// navigating away from a game and back does not trigger a fresh network load.
 ///
 /// Lives in GameTypeSelectionScreen and is passed into every GameViewScreen.
 class GameDataCache {
   // selections keyed by "season-round-gameType"
   final Map<String, List<PunterSelection>> _selections = {};
 
-  // ⭐ Live stats keyed by "season-round" (shared across all game types).
-  // All game types in the same round use the same player stats pool.
+  // live stats keyed by the same key
   final Map<String, Map<String, AflPlayerMatchStats>> _stats = {};
 
   // season players keyed by season
@@ -21,7 +20,14 @@ class GameDataCache {
   // Selections
   // ---------------------------------------------------------------
 
-  bool hasSelections(String key) => _selections.containsKey(key);
+  bool hasSelections(String key) {
+    if (!_selections.containsKey(key)) return false;
+    final list = _selections[key]!;
+    // Only consider it cached if it has real data
+    return list.any((p) =>
+        p.punterName.trim().isNotEmpty ||
+        p.picks.any((pick) => pick.player != null));
+  }
 
   List<PunterSelection> getSelections(String key) => _selections[key]!;
 
@@ -30,28 +36,17 @@ class GameDataCache {
   }
 
   // ---------------------------------------------------------------
-  // Live stats — keyed by "season-round" not "season-round-gameType"
-  // so all game types in a round share the same cached stats.
+  // Live stats
   // ---------------------------------------------------------------
 
-  /// Strips the gameType suffix to get the round-level key.
-  /// "2026-5-sunday_pairs" -> "2026-5"
-  static String _roundKey(String key) {
-    final parts = key.split('-');
-    if (parts.length >= 2) return '${parts[0]}-${parts[1]}';
-    return key;
-  }
-
-  bool hasStats(String key) {
-    final rk = _roundKey(key);
-    return _stats.containsKey(rk) && _stats[rk]!.isNotEmpty;
-  }
+  bool hasStats(String key) =>
+      _stats.containsKey(key) && _stats[key]!.isNotEmpty;
 
   Map<String, AflPlayerMatchStats> getStats(String key) =>
-      _stats[_roundKey(key)] ?? {};
+      _stats[key] ?? {};
 
   void setStats(String key, Map<String, AflPlayerMatchStats> value) {
-    _stats[_roundKey(key)] = value;
+    _stats[key] = value;
   }
 
   // ---------------------------------------------------------------

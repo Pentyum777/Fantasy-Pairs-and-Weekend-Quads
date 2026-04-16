@@ -210,9 +210,19 @@ void initState() {
   }
 
   // Restore cached selections immediately (shows picks with zero delay)
+  // Only restore if cache has real data (not just empty placeholder rows)
   if (cache != null && cache.hasSelections(cacheKey)) {
-    _selections = cache.getSelections(cacheKey);
-    debugPrint("✅ Restored selections from cache: $cacheKey count=${_selections.length}");
+    final cached = cache.getSelections(cacheKey);
+    final cachedHasData = cached.any((p) =>
+        p.punterName.trim().isNotEmpty ||
+        p.picks.any((pick) => pick.player != null));
+    if (cachedHasData) {
+      _selections = cached;
+      debugPrint("✅ Restored selections from cache: $cacheKey count=${_selections.length}");
+    } else {
+      debugPrint("⚠️ Cache exists but empty data for: $cacheKey — will reload");
+      cache.setSelections(cacheKey, []); // Clear bad cache entry
+    }
   } else {
     debugPrint("❌ No cached selections for: $cacheKey");
   }
@@ -238,7 +248,10 @@ void initState() {
       _loadSelectionsSnapshot().then((_) {
         _snapshotLoaded = true;
         // ⭐ Save selections to cache so returning to this game is instant
-        if (_selections.isNotEmpty) {
+        final hasReal = _selections.any((p) =>
+            p.punterName.trim().isNotEmpty ||
+            p.picks.any((pick) => pick.player != null));
+        if (hasReal) {
           cache.setSelections(cacheKey, _selections);
         }
         if (mounted) setState(() {});
@@ -479,7 +492,12 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
         // Update cache with now-populated selections
         final cache = widget.gameDataCache;
         final cacheKey = "${widget.season}-${widget.round}-${widget.gameType}";
-        if (cache != null) cache.setSelections(cacheKey, _selections);
+        if (cache != null) {
+          final hasReal = _selections.any((p) =>
+              p.punterName.trim().isNotEmpty ||
+              p.picks.any((pick) => pick.player != null));
+          if (hasReal) cache.setSelections(cacheKey, _selections);
+        }
         setState(() {});
       }
     });
@@ -666,7 +684,12 @@ Future<void> _saveSnapshot() async {
       // ⭐ Update cache so switching games and back is instant
       final cache = widget.gameDataCache;
       final cacheKey = "${widget.season}-${widget.round}-${widget.gameType}";
-      if (cache != null) cache.setSelections(cacheKey, _selections);
+      if (cache != null) {
+        final hasReal = _selections.any((p) =>
+            p.punterName.trim().isNotEmpty ||
+            p.picks.any((pick) => pick.player != null));
+        if (hasReal) cache.setSelections(cacheKey, _selections);
+      }
     }
   } catch (e) {
     debugPrint("❌ saveSnapshot failed: $e");
@@ -1254,9 +1277,13 @@ void _finaliseFridayPairsWinner() {
     _syncTimer?.cancel();
 
     // ⭐ Save current selections to cache before leaving
+    // Only cache if we have real data (punter names or picks)
     final cache = widget.gameDataCache;
     final cacheKey = "${widget.season}-${widget.round}-${widget.gameType}";
-    if (cache != null && _selections.isNotEmpty) {
+    final hasRealData = _selections.any((p) =>
+        p.punterName.trim().isNotEmpty ||
+        p.picks.any((pick) => pick.player != null));
+    if (cache != null && hasRealData) {
       cache.setSelections(cacheKey, _selections);
     }
 
