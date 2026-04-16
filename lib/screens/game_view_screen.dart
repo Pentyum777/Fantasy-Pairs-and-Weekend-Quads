@@ -252,11 +252,12 @@ void initState() {
         }
       });
     } else {
-      // ⭐ Have cached data — show immediately, then refresh live in 5s
+      // ⭐ Have cached data — show immediately, then refresh live quickly
       _snapshotLoaded = true;
       _fetchCurrentTimestamp().then((_) => _startLivePolling());
       if (!_isCompleted) {
-        Future.delayed(const Duration(seconds: 5), () {
+        // Refresh live after 2s when returning to cached game (faster than 5s)
+        Future.delayed(const Duration(seconds: 2), () {
           if (mounted && !_isCompleted) _refreshLive();
         });
       }
@@ -340,6 +341,7 @@ bool _isRoundHistorical() {
 
       if (data is Map<String, dynamic>) {
         _applySnapshotToSelections(data);
+        debugPrint("📋 After apply: ${_selections.where((p) => p.punterName.trim().isNotEmpty).length} named punters, ${_selections.where((p) => p.picks.any((pick) => pick.player != null)).length} with picks");
         if (mounted) setState(() {}); // Refresh table immediately after applying
 
         // ⭐ Track timestamp so we can detect remote changes
