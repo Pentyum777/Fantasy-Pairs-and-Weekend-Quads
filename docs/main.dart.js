@@ -94153,8 +94153,7 @@ f=A.dh(J.aB(j,"lastUpdated"))
 d=f==null?null:B.d.a4(f)
 i=d==null?0:d
 A.dI().$1("\ud83d\udd0d Sync check: remote="+A.j(i)+" local="+n.ax)
-f=n.ax
-s=i>f&&f>0?8:9
+s=i>0&&i>n.ax?8:9
 break
 case 8:A.dI().$1("\ud83d\udd04 Remote changes detected \u2014 reloading selections")
 n.ax=i

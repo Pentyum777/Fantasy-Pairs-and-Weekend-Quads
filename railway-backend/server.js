@@ -871,7 +871,7 @@ app.get("/selectionTimestamp", async (req, res) => {
     const ts = result.rows[0]?.updated_at
       ? new Date(result.rows[0].updated_at).getTime()
       : 0;
-    res.json({ ok: true, lastUpdated: ts });
+    res.json({ ok: true, lastUpdated: ts, exists: result.rows.length > 0 });
   } catch (err) {
     console.error("selectionTimestamp error:", err);
     res.status(500).json({ error: "Failed" });

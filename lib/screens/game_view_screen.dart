@@ -815,7 +815,7 @@ Future<void> _checkForRemoteChanges() async {
     debugPrint("🔍 Sync check: remote=$remoteTs local=$_lastKnownTimestamp");
 
     // If remote is newer than what we have, reload
-    if (remoteTs > _lastKnownTimestamp && _lastKnownTimestamp > 0) {
+    if (remoteTs > 0 && remoteTs > _lastKnownTimestamp) {
       debugPrint("🔄 Remote changes detected — reloading selections");
       _lastKnownTimestamp = remoteTs; // update immediately to prevent re-trigger
       await _loadSelectionsSnapshot();
