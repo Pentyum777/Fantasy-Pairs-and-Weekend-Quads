@@ -644,45 +644,64 @@ Widget build(BuildContext context) {
             ? Colors.black // override team fg
             : (colours?["fg"] ?? cs.onSurfaceVariant);
 
+        // ⭐ Touch devices (phone/tablet): long press chip to clear
+        // Desktop (mouse): show X button as before
+        // shortestSide < 900 covers phones and iPads
+        final bool isTouchDevice =
+            MediaQuery.of(context).size.shortestSide < 900;
+
+        final bool canClear = widget.userRoleService.isAdmin &&
+            !widget.readOnly &&
+            player != null;
+
+        void clearPick() {
+          setState(() {
+            owner.picks[colIndex].player = null;
+            owner.picks[colIndex].stats = null;
+          });
+          widget.onChanged?.call();
+        }
+
+        final chip = Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          decoration: BoxDecoration(
+            color: chipBg,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: IntrinsicWidth(
+            child: Text(
+              text,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: chipFg,
+              ),
+            ),
+          ),
+        );
+
         return Container(
           width: kPickColumnWidth,
           alignment: Alignment.center,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: BoxDecoration(
-                  color: chipBg,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: IntrinsicWidth(
-                  child: Text(
-                    text,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: chipFg,
-                    ),
-                  ),
-                ),
-              ),
-
-              if (widget.userRoleService.isAdmin &&
-                  !widget.readOnly &&
-                  player != null)
+              // Long press to clear on touch devices
+              if (canClear && isTouchDevice)
                 GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      owner.picks[colIndex].player = null;
-                      owner.picks[colIndex].stats = null;
-                    });
+                  onLongPress: clearPick,
+                  child: chip,
+                )
+              else
+                chip,
 
-                    widget.onChanged?.call();
-                  },
+              // X button — desktop only
+              if (canClear && !isTouchDevice)
+                GestureDetector(
+                  onTap: clearPick,
                   child: Padding(
                     padding: const EdgeInsets.only(left: 4),
                     child: Icon(
