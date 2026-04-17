@@ -8,30 +8,38 @@ import '../services/scout_service.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // Sort column enum
 // ─────────────────────────────────────────────────────────────────────────────
-enum ScoutSort { af, k, hb, d, m, t, tog }
+enum ScoutSort { af, best, k, hb, d, m, t, tog, last, l3, vsOpp }
 
 extension ScoutSortExt on ScoutSort {
   String get label {
     switch (this) {
-      case ScoutSort.af:  return 'AF';
-      case ScoutSort.k:   return 'K';
-      case ScoutSort.hb:  return 'HB';
-      case ScoutSort.d:   return 'D';
-      case ScoutSort.m:   return 'M';
-      case ScoutSort.t:   return 'T';
-      case ScoutSort.tog: return 'TOG%';
+      case ScoutSort.af:   return 'AF';
+      case ScoutSort.best: return 'Best';
+      case ScoutSort.k:    return 'K';
+      case ScoutSort.hb:   return 'HB';
+      case ScoutSort.d:    return 'D';
+      case ScoutSort.m:    return 'M';
+      case ScoutSort.t:    return 'T';
+      case ScoutSort.tog:  return 'TOG%';
+      case ScoutSort.last: return 'Last';
+      case ScoutSort.l3:   return 'L3';
+      case ScoutSort.vsOpp: return 'vs Opp';
     }
   }
 
   int value(PlayerSeasonStats s) {
     switch (this) {
-      case ScoutSort.af:  return s.afAvg;
-      case ScoutSort.k:   return s.kAvg;
-      case ScoutSort.hb:  return s.hbAvg;
-      case ScoutSort.d:   return s.dAvg;
-      case ScoutSort.m:   return s.mAvg;
-      case ScoutSort.t:   return s.tAvg;
-      case ScoutSort.tog: return s.togAvg;
+      case ScoutSort.af:   return s.afAvg;
+      case ScoutSort.best: return s.afBest;
+      case ScoutSort.k:    return s.kAvg;
+      case ScoutSort.hb:   return s.hbAvg;
+      case ScoutSort.d:    return s.dAvg;
+      case ScoutSort.m:    return s.mAvg;
+      case ScoutSort.t:    return s.tAvg;
+      case ScoutSort.tog:  return s.togAvg;
+      case ScoutSort.last: return s.lastGame;
+      case ScoutSort.l3:   return s.last3Avg;
+      case ScoutSort.vsOpp: return 0; // handled separately
     }
   }
 }
@@ -725,19 +733,19 @@ class _ScoutScreenState extends State<ScoutScreen> {
     Widget scrollHeader() => Row(children: [
       hCell('G', statW),
       hCell('AF', statW, col: ScoutSort.af),
-      hCell('Best', statW),
+      hCell('Best', statW, col: ScoutSort.best),
       hCell('K', statW, col: ScoutSort.k),
       hCell('HB', statW, col: ScoutSort.hb),
       hCell('D', statW, col: ScoutSort.d),
       hCell('M', statW, col: ScoutSort.m),
       hCell('T', statW, col: ScoutSort.t),
       hCell('TOG%', statW, col: ScoutSort.tog),
-      hCell('Last', statW),
-      hCell('L3', statW),
+      hCell('Last', statW, col: ScoutSort.last),
+      hCell('L3', statW, col: ScoutSort.l3),
       
       
       if (_upcomingOpponent.isNotEmpty)
-        hCell('vs Opp', isPhone ? statW : statW + 10),
+        hCell('vs Opp', isPhone ? statW : statW + 10, col: ScoutSort.vsOpp),
       hCell('Status', flagW),
     ]);
 
