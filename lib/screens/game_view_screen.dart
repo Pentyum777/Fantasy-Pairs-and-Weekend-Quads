@@ -226,6 +226,10 @@ void initState() {
     _seasonPlayers = cache.getPlayers(widget.season);
     _loadingPlayers = false;
     _recomputeVisiblePunterCount();
+    // Enrich with averages if not yet done (fantasyScore still 0)
+    if (_seasonPlayers!.every((p) => p.fantasyScore == 0)) {
+      _enrichPlayerFantasyScores(_seasonPlayers!);
+    }
 
     // Only fetch fresh snapshot from network if we have no prior data
     // Exclude placeholder names like P1, P2... from hasData check
@@ -316,6 +320,8 @@ bool _isRoundHistorical() {
         _seasonPlayers = players;
         _loadingPlayers = false;
       });
+      // ⭐ Enrich players with season averages for dropdown sorting
+      _enrichPlayerFantasyScores(players);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -323,6 +329,33 @@ bool _isRoundHistorical() {
         _loadingPlayers = false;
       });
     }
+  }
+
+  /// Fetches season average scores and sets fantasyScore on each AflPlayer
+  /// so the player dropdown can be sorted by average.
+  Future<void> _enrichPlayerFantasyScores(List<AflPlayer> players) async {
+    try {
+      final url = Uri.https(
+        "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+        "/playerSeasonStats/${widget.season}",
+      );
+      final res = await http.get(url);
+      if (res.statusCode != 200) return;
+      final json = jsonDecode(res.body);
+      final statsJson = json["players"] as List<dynamic>? ?? [];
+      // Build a map of playerId -> afAvg
+      final avgMap = <String, int>{};
+      for (final s in statsJson) {
+        final pid = s["player_id"] as String? ?? "";
+        final avg = (s["af_avg"] as num?)?.toInt() ?? 0;
+        if (pid.isNotEmpty) avgMap[pid] = avg;
+      }
+      // Apply to player objects
+      for (final p in players) {
+        final avg = avgMap[p.id];
+        if (avg != null && avg > 0) p.fantasyScore = avg;
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadSelectionsSnapshot() async {

@@ -647,18 +647,28 @@ app.delete("/playerFlags/:season/:playerId", async (req, res) => {
 });
 
 
-// GET /draftedPlayers?season=&round=
-// Returns all player IDs drafted across ALL game types for a round
+// GET /draftedPlayers?season=&round=&gameType=
+// Returns player IDs drafted in a specific game type for a round
+// If no gameType provided, returns across all game types
 app.get("/draftedPlayers", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   try {
-    const season = parseInt(req.query.season ?? 0);
-    const round  = parseInt(req.query.round  ?? 0);
+    const season   = parseInt(req.query.season ?? 0);
+    const round    = parseInt(req.query.round  ?? 0);
+    const gameType = req.query.gameType ? normalizeGameType(req.query.gameType) : null;
 
-    const result = await pool.query(
-      `SELECT picks FROM selections WHERE season = $1 AND round = $2`,
-      [season, round]
-    );
+    let result;
+    if (gameType) {
+      result = await pool.query(
+        `SELECT picks FROM selections WHERE season = $1 AND round = $2 AND game_type = $3`,
+        [season, round, gameType]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT picks FROM selections WHERE season = $1 AND round = $2`,
+        [season, round]
+      );
+    }
 
     const playerIds = new Set();
     for (const row of result.rows) {

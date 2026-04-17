@@ -299,6 +299,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
         final drafted = await widget.scoutService.fetchDraftedPlayers(
           season: widget.season,
           round: widget.round ?? 0,
+          gameType: _gameTypeFilter.isNotEmpty ? _gameTypeFilter : widget.gameType,
         );
         if (mounted && drafted.length != _fetchedDraftedIds.length ||
             !drafted.every(_fetchedDraftedIds.contains)) {
@@ -325,6 +326,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
     final drafted = await widget.scoutService.fetchDraftedPlayers(
       season: widget.season,
       round: widget.round ?? 0,
+      gameType: _gameTypeFilter.isNotEmpty ? _gameTypeFilter : widget.gameType,
     );
 
     // Fetch named squads for all fixtures in this round/game type
@@ -546,7 +548,10 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 _teamFilter = null;
                 _vsOpponentStats = {};
                 _upcomingOpponent = '';
+                _fetchedDraftedIds = {}; // Reset so new game type fetches fresh
               });
+              // Restart polling for new game type
+              _startDraftedPolling();
               widget.scoutService.fetchVsOpponentStats(
                 season: widget.season,
                 round: widget.round ?? 0,
@@ -580,23 +585,6 @@ class _ScoutScreenState extends State<ScoutScreen> {
             onChanged: (v) => setState(() => _sort = v ?? ScoutSort.af),
           ),
 
-          // Named only toggle
-          if (_teamsAnnounced) ...[
-            FilterChip(
-              label: Text('Named squad (${_namedSquadIds.length})'),
-              selected: _namedOnly,
-              onSelected: (v) => setState(() => _namedOnly = v),
-            ),
-            ActionChip(
-              label: const Text('Clear'),
-              onPressed: () => setState(() {
-                _namedSquadIds = {};
-                _teamsAnnounced = false;
-                _namedOnly = false;
-              }),
-            ),
-          ],
-
           // Hide drafted
           FilterChip(
             label: const Text('Hide drafted'),
@@ -610,6 +598,23 @@ class _ScoutScreenState extends State<ScoutScreen> {
             selected: _hideFlagged,
             onSelected: (v) => setState(() => _hideFlagged = v),
           ),
+
+          // Named squad filter — only shown when squad has been pasted
+          if (_teamsAnnounced) ...[
+            FilterChip(
+              label: Text('Named only (${_namedSquadIds.length})'),
+              selected: _namedOnly,
+              onSelected: (v) => setState(() => _namedOnly = v),
+            ),
+            ActionChip(
+              label: const Text('Clear squad'),
+              onPressed: () => setState(() {
+                _namedSquadIds = {};
+                _teamsAnnounced = false;
+                _namedOnly = false;
+              }),
+            ),
+          ],
 
           // Search box
           SizedBox(

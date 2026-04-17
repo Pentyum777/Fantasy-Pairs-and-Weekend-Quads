@@ -2,9 +2,7 @@
 
 
 
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:dropdown_search/dropdown_search.dart';
 
 
@@ -575,7 +573,7 @@ Widget build(BuildContext context) {
         return !isTaken || isCurrent;
       })
       .toList()
-    ..sort((a, b) => a.fullName.compareTo(b.fullName));
+    ..sort((a, b) => b.fantasyScore.compareTo(a.fantasyScore));
 
   final globalPickNumber = _globalPickNumberForCell(
     rowIndex: visualRowIndex,
@@ -646,71 +644,45 @@ Widget build(BuildContext context) {
             ? Colors.black // override team fg
             : (colours?["fg"] ?? cs.onSurfaceVariant);
 
-        // ⭐ Touch devices (phone/tablet): long press chip to clear
-        // Desktop (mouse): show X button as before
-        // MediaQuery.of(context).size.shortestSide < 600 = phone
-        // shortestSide < 900 = tablet/iPad
-        // Both get long-press; desktop (>= 900) keeps the X button
-        final bool isTouchDevice =
-            MediaQuery.of(context).size.shortestSide < 900;
-
-        final bool canClear = widget.userRoleService.isAdmin &&
-            !widget.readOnly &&
-            player != null;
-
-        // ⭐ No player selected — render empty container, no text, no background
-        if (player == null) {
-          return SizedBox(width: kPickColumnWidth);
-        }
-
-        void clearPick() {
-          setState(() {
-            owner.picks[colIndex].player = null;
-            owner.picks[colIndex].stats = null;
-          });
-          widget.onChanged?.call();
-        }
-
-        final chip = Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-          decoration: BoxDecoration(
-            color: chipBg,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: IntrinsicWidth(
-            child: Text(
-              text,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: chipFg,
-              ),
-            ),
-          ),
-        );
-
         return Container(
           width: kPickColumnWidth,
           alignment: Alignment.center,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Wrap chip in GestureDetector for long-press clear on touch
-              if (canClear && isTouchDevice)
-                _LongPressChip(
-                  onClear: clearPick,
-                  child: chip,
-                )
-              else
-                chip,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: chipBg,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: IntrinsicWidth(
+                  child: Text(
+                    text,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: chipFg,
+                    ),
+                  ),
+                ),
+              ),
 
-              // X button — desktop only
-              if (canClear && !isTouchDevice)
+              if (widget.userRoleService.isAdmin &&
+                  !widget.readOnly &&
+                  player != null)
                 GestureDetector(
-                  onTap: clearPick,
+                  onTap: () {
+                    setState(() {
+                      owner.picks[colIndex].player = null;
+                      owner.picks[colIndex].stats = null;
+                    });
+
+                    widget.onChanged?.call();
+                  },
                   child: Padding(
                     padding: const EdgeInsets.only(left: 4),
                     child: Icon(
@@ -1043,57 +1015,5 @@ Widget build(BuildContext context) {
     } else {
       return round * punters + (punters - rowIndex);
     }
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Custom long-press widget with extended hold duration (900ms)
-// Used on touch devices to clear a player pick
-// ─────────────────────────────────────────────────────────────
-class _LongPressChip extends StatefulWidget {
-  final Widget child;
-  final VoidCallback onClear;
-  final Duration holdDuration;
-
-  const _LongPressChip({
-    required this.child,
-    required this.onClear,
-    this.holdDuration = const Duration(milliseconds: 900),
-  });
-
-  @override
-  State<_LongPressChip> createState() => _LongPressChipState();
-}
-
-class _LongPressChipState extends State<_LongPressChip> {
-  Timer? _timer;
-
-  void _startTimer() {
-    _timer = Timer(widget.holdDuration, () {
-      HapticFeedback.mediumImpact();
-      widget.onClear();
-    });
-  }
-
-  void _cancelTimer() {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  @override
-  void dispose() {
-    _cancelTimer();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _startTimer(),
-      onTapUp: (_) => _cancelTimer(),
-      onTapCancel: _cancelTimer,
-      onPanStart: (_) => _cancelTimer(), // cancel if finger moves
-      child: widget.child,
-    );
   }
 }

@@ -199,15 +199,20 @@ class ScoutService {
   Future<Set<String>> fetchDraftedPlayers({
     required int season,
     required int round,
+    String? gameType,
   }) async {
     try {
+      final params = <String, String>{
+        'season': season.toString(),
+        'round':  round.toString(),
+      };
+      if (gameType != null && gameType.isNotEmpty) {
+        params['gameType'] = gameType;
+      }
       final url = Uri.https(
         'fantasy-pairs-and-weekend-quads-production.up.railway.app',
         '/draftedPlayers',
-        {
-          'season': season.toString(),
-          'round': round.toString(),
-        },
+        params,
       );
       final res = await http.get(url);
       if (res.statusCode != 200) return {};
