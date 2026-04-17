@@ -933,8 +933,7 @@ Future<void> _refreshLive() async {
       widget.round,
     );
 
-    // 1. Fetch stats AND refresh fixture cards in parallel — don't wait
-    //    for fixture scores before showing player stats
+    // 1. Fetch player stats and fixture scores in parallel
     final fixtureRefreshFuture = Future.wait(
       fixtures
           .where((f) => (f.matchId?.trim() ?? '').isNotEmpty)
@@ -942,13 +941,16 @@ Future<void> _refreshLive() async {
               .refreshLiveScores(matchId: f.matchId!.trim())
               .catchError((_) {})),
     );
+    final roundStatsFuture = _fetchRoundStats();
 
-    // 2. Fetch player stats immediately (don't wait for fixture cards)
-    final roundStats = await _fetchRoundStats();
+    // 2. Wait for BOTH — fixture scores must be updated before we
+    //    determine isLive (which checks quarterText on fixtures)
+    await fixtureRefreshFuture;
+    final roundStats = await roundStatsFuture;
 
     if (!mounted) return;
 
-    // 3. Apply stats right away — fixture cards update separately
+    // 3. Apply stats — fixture quarterText is now current so isLive is correct
     if (roundStats.isNotEmpty) {
       _applyLiveStats(roundStats.values.toList());
       final tableState = _punterTableKey.currentState;
@@ -959,10 +961,8 @@ Future<void> _refreshLive() async {
       if (mounted) setState(() {});
     }
 
-    // 4. Wait for fixture scores to finish, then run completion checks
-    await fixtureRefreshFuture;
+    // 4. Run completion checks now that fixture scores are updated
     if (!mounted) return;
-
     await _checkRoundCompletion(); // ⭐ async
     _finaliseFridayPairsWinner();
     _checkAndCompleteWeekendQuadsRound();
