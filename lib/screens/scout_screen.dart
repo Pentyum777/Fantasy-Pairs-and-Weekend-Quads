@@ -231,10 +231,18 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 );
                 return;
               }
+              final newIds = {..._namedSquadIds, ...matched};
               setState(() {
-                _namedSquadIds = {..._namedSquadIds, ...matched};
+                _namedSquadIds = newIds;
                 _teamsAnnounced = true;
               });
+              // Persist to backend so all devices see the squad
+              widget.scoutService.saveNamedSquadIds(
+                season: widget.season,
+                round: widget.round ?? 0,
+                gameType: widget.gameType,
+                playerIds: newIds,
+              );
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -331,6 +339,13 @@ class _ScoutScreenState extends State<ScoutScreen> {
       gameType: _gameTypeFilter.isEmpty ? widget.gameType : _gameTypeFilter,
     );
 
+    // Load persisted named squad from backend
+    final savedSquadIds = await widget.scoutService.fetchNamedSquadIds(
+      season: widget.season,
+      round: widget.round ?? 0,
+      gameType: widget.gameType,
+    );
+
     final drafted = await widget.scoutService.fetchDraftedPlayers(
       season: widget.season,
       round: widget.round ?? 0,
@@ -362,11 +377,15 @@ class _ScoutScreenState extends State<ScoutScreen> {
         }
       }
 
+      // Merge persisted backend squad with any AFL lineup squad
+      final mergedIds = {...namedIds, ...savedSquadIds};
+      final mergedAnnounced = announced || savedSquadIds.isNotEmpty;
+
       setState(() {
         _allStats = stats;
         _flags = flags;
-        _namedSquadIds = namedIds;
-        _teamsAnnounced = announced;
+        _namedSquadIds = mergedIds;
+        _teamsAnnounced = mergedAnnounced;
         _fetchedDraftedIds = drafted;
         _vsOpponentStats = vsStats;
         _upcomingOpponent = opponent;
@@ -447,7 +466,14 @@ class _ScoutScreenState extends State<ScoutScreen> {
 
       return true;
     }).toList()
-      ..sort((a, b) => _sort.value(b).compareTo(_sort.value(a)));
+      ..sort((a, b) {
+        if (_sort == ScoutSort.vsOpp) {
+          final aVs = (_vsOpponentStats[a.playerName]?['avgVsOpponent'] as int?) ?? 0;
+          final bVs = (_vsOpponentStats[b.playerName]?['avgVsOpponent'] as int?) ?? 0;
+          return bVs.compareTo(aVs);
+        }
+        return _sort.value(b).compareTo(_sort.value(a));
+      });
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -614,14 +640,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
               selected: _namedOnly,
               onSelected: (v) => setState(() => _namedOnly = v),
             ),
-            ActionChip(
-              label: const Text('Clear squad'),
-              onPressed: () => setState(() {
-                _namedSquadIds = {};
-                _teamsAnnounced = false;
-                _namedOnly = false;
-              }),
-            ),
+
           ],
 
           // Search box
@@ -830,38 +849,80 @@ class _ScoutScreenState extends State<ScoutScreen> {
 
                 // Vs Opponent
                 if (_upcomingOpponent.isNotEmpty) _buildVsCell(s, isPhone ? statW : statW + 10, bg, cellStyle, cs),
-                // Game log icon + Status cell
-                SizedBox(
-                  width: flagW + 28,
-                  height: 30,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Game log button
-                      SizedBox(
-                        width: 24, height: 24,
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          iconSize: 16,
-                          icon: Icon(Icons.bar_chart_rounded,
-                            color: cs.onSurface.withOpacity(0.4)),
-                          tooltip: 'Game log',
-                          onPressed: () => _showGameLog(s),
+                // Game log icon + Status cell + Note
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: flagW + 28,
+                      height: 30,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Game log button
+                          SizedBox(
+                            width: 24, height: 24,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              iconSize: 16,
+                              icon: Icon(Icons.bar_chart_rounded,
+                                color: cs.onSurface.withOpacity(0.4)),
+                              tooltip: 'Game log',
+                              onPressed: () => _showGameLog(s),
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          // Flag/status chip — long press star to remove from squad
+                          GestureDetector(
+                            onTap: () => _showFlagDialog(s),
+                            onLongPress: isNamed ? () async {
+                              final newIds = Set<String>.from(_namedSquadIds)
+                                ..remove(s.playerId);
+                              setState(() => _namedSquadIds = newIds);
+                              await widget.scoutService.saveNamedSquadIds(
+                                season: widget.season,
+                                round: widget.round ?? 0,
+                                gameType: widget.gameType,
+                                playerIds: newIds,
+                              );
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('${s.playerName} removed from squad'),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            } : null,
+                            child: Container(
+                              width: flagW, height: 30,
+                              alignment: Alignment.center,
+                              color: bg,
+                              child: _buildStatusChip(s, isNamed, isDrafted, flag),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Note display — shown to right of status
+                    if (flag?.note != null && flag!.note.trim().isNotEmpty)
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 120),
+                        height: 30,
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Text(
+                          flag.note.trim(),
+                          style: cellStyle?.copyWith(
+                            fontSize: 10,
+                            color: flag.flag.colour.withOpacity(0.9),
+                            fontStyle: FontStyle.italic,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                       ),
-                      const SizedBox(width: 2),
-                      // Flag/status chip
-                      GestureDetector(
-                        onTap: () => _showFlagDialog(s),
-                        child: Container(
-                          width: flagW, height: 30,
-                          alignment: Alignment.center,
-                          color: bg,
-                          child: _buildStatusChip(s, isNamed, isDrafted, flag),
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               ]),
             ),

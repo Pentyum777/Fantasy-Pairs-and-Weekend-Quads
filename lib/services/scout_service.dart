@@ -313,6 +313,64 @@ class ScoutService {
     }
   }
 
+  // ── Named squad persistence ──────────────────────────────────────────────────
+
+  Future<Set<String>> fetchNamedSquadIds({
+    required int season,
+    required int round,
+    required String gameType,
+  }) async {
+    try {
+      final url = Uri(
+        scheme: 'https',
+        host: 'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        pathSegments: ['namedSquadIds', season.toString(), round.toString(), gameType],
+      );
+      final res = await http.get(url);
+      if (res.statusCode != 200) return {};
+      final json = jsonDecode(res.body);
+      final ids = json['playerIds'] as List<dynamic>? ?? [];
+      return ids.map((e) => e.toString()).toSet();
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> saveNamedSquadIds({
+    required int season,
+    required int round,
+    required String gameType,
+    required Set<String> playerIds,
+  }) async {
+    try {
+      final url = Uri(
+        scheme: 'https',
+        host: 'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        pathSegments: ['namedSquadIds', season.toString(), round.toString(), gameType],
+      );
+      await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'playerIds': playerIds.toList()}),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> clearNamedSquadIds({
+    required int season,
+    required int round,
+    required String gameType,
+  }) async {
+    try {
+      final url = Uri(
+        scheme: 'https',
+        host: 'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        pathSegments: ['namedSquadIds', season.toString(), round.toString(), gameType],
+      );
+      await http.delete(url);
+    } catch (_) {}
+  }
+
   // ── Injury list ──────────────────────────────────────────────────────────────
 
   /// Fetches the current AFL injury list from the backend.

@@ -860,6 +860,107 @@ app.get("/playerGameLog/:season/:playerName", async (req, res) => {
   }
 });
 
+
+// ── Named squad persistence ──────────────────────────────────────────────────
+
+// GET /namedSquadIds/:season/:round/:gameType
+// Returns persisted named squad player IDs
+app.get("/namedSquadIds/:season/:round/:gameType", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { season, round, gameType } = req.params;
+    const normalizedGameType = normalizeGameType(gameType);
+
+    // Create table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS named_squads (
+        id SERIAL PRIMARY KEY,
+        season INT NOT NULL,
+        round INT NOT NULL,
+        game_type TEXT NOT NULL,
+        player_ids TEXT[] NOT NULL DEFAULT '{}',
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(season, round, game_type)
+      )
+    `);
+
+    const result = await pool.query(
+      `SELECT player_ids FROM named_squads
+       WHERE season = $1 AND round = $2 AND game_type = $3`,
+      [parseInt(season), parseInt(round), normalizedGameType]
+    );
+
+    const ids = result.rows[0]?.player_ids ?? [];
+    res.json({ ok: true, playerIds: ids });
+  } catch (err) {
+    console.error("namedSquadIds GET error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// POST /namedSquadIds/:season/:round/:gameType
+// Saves named squad player IDs (merges with existing)
+app.post("/namedSquadIds/:season/:round/:gameType", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { season, round, gameType } = req.params;
+    const normalizedGameType = normalizeGameType(gameType);
+    const { playerIds } = req.body;
+
+    if (!Array.isArray(playerIds)) {
+      return res.status(400).json({ error: "playerIds must be an array" });
+    }
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS named_squads (
+        id SERIAL PRIMARY KEY,
+        season INT NOT NULL,
+        round INT NOT NULL,
+        game_type TEXT NOT NULL,
+        player_ids TEXT[] NOT NULL DEFAULT '{}',
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(season, round, game_type)
+      )
+    `);
+
+    // Merge new IDs with existing
+    await pool.query(`
+      INSERT INTO named_squads (season, round, game_type, player_ids, updated_at)
+      VALUES ($1, $2, $3, $4, NOW())
+      ON CONFLICT (season, round, game_type) DO UPDATE SET
+        player_ids = (
+          SELECT ARRAY(
+            SELECT DISTINCT unnest(named_squads.player_ids || EXCLUDED.player_ids)
+          )
+        ),
+        updated_at = NOW()
+    `, [parseInt(season), parseInt(round), normalizedGameType, playerIds]);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("namedSquadIds POST error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// DELETE /namedSquadIds/:season/:round/:gameType
+// Clears the named squad
+app.delete("/namedSquadIds/:season/:round/:gameType", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { season, round, gameType } = req.params;
+    const normalizedGameType = normalizeGameType(gameType);
+    await pool.query(
+      `DELETE FROM named_squads WHERE season = $1 AND round = $2 AND game_type = $3`,
+      [parseInt(season), parseInt(round), normalizedGameType]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("namedSquadIds DELETE error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
 // Selection timestamp — lightweight poll for live sync
 // Returns just the updated_at timestamp for a game
 // Used by non-editing admins to detect changes
