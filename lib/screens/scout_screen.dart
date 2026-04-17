@@ -602,7 +602,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
           // Named squad filter — only shown when squad has been pasted
           if (_teamsAnnounced) ...[
             FilterChip(
-              label: Text('Named only (${_namedSquadIds.length})'),
+              label: Text('Hide unnamed (${_namedSquadIds.length})'),
               selected: _namedOnly,
               onSelected: (v) => setState(() => _namedOnly = v),
             ),

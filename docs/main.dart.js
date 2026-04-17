@@ -95405,7 +95405,7 @@ k=h.as
 j=h.cx
 i=t.p
 j=A.b([new A.mQ(p,o,h.gaic(),n,new A.awa(h),g,t.MW),new A.mQ(m,l,new A.awb(),k,new A.awc(h),g,t.Yd),new A.mQ("Sort: "+A.aJd(j),B.K6,new A.awd(),j,new A.awe(h),g,t.W7),A.aCt(B.WG,new A.awf(h),h.ay),A.aCt(B.WR,new A.awg(h),h.ch)],i)
-if(h.w)B.b.L(j,A.b([A.aCt(A.aM("Named only ("+h.r.a+")",g,g,g,g,g,g,g),new A.awh(h),h.ax),A.aFU(B.WJ,new A.awi(h))],i))
+if(h.w)B.b.L(j,A.b([A.aCt(A.aM("Hide unnamed ("+h.r.a+")",g,g,g,g,g,g,g),new A.awh(h),h.ax),A.aFU(B.WJ,new A.awi(h))],i))
 p=h.c
 p.toString
 p=A.ba(p,g,s).w.a.geb()<600?110:160
