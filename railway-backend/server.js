@@ -32,7 +32,7 @@ console.log("🚀 DFS + Squiggle backend starting...");
 const port = process.env.PORT || 8080;
 const app = express();
 
-app.use(cors({ origin: "*", methods: ["GET", "POST", "OPTIONS"] }));
+app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"] }));
 app.options("*", cors());
 app.use(express.json());
 
