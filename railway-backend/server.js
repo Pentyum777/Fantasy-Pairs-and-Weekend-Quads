@@ -560,6 +560,59 @@ app.get("/namedSquad/:matchId", async (req, res) => {
   }
 });
 
+
+
+// ── Seed fixture scores from Squiggle for a given round ─────────────────────
+// POST /seedFixtureScores/:season/:round
+// Fetches all game scores from Squiggle and caches them in DB
+app.post("/seedFixtureScores/:season/:round", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { season, round } = req.params;
+
+    // Get all matches for this round from FIXTURES_2026
+    const matchIds = Object.entries(FIXTURES_2026)
+      .filter(([, v]) => v.round === parseInt(round))
+      .map(([k]) => k);
+
+    const results = [];
+    for (const matchId of matchIds) {
+      const squiggleId = squiggleMap[matchId];
+      if (!squiggleId) { results.push({ matchId, status: "no squiggle id" }); continue; }
+      const meta = await fetchSquiggleMeta(squiggleId, matchId);
+      results.push({ matchId, ...meta });
+    }
+
+    res.json({ ok: true, seeded: results.length, results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Debug: check squiggle map ────────────────────────────────────────────────
+app.get("/debug/squigglemap/:matchId", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  const { matchId } = req.params;
+  const squiggleId = squiggleMap[matchId];
+  res.json({ matchId, squiggleId: squiggleId ?? null, found: !!squiggleId });
+});
+
+// ── Refresh fixture scores directly from Squiggle by round ───────────────────
+// GET /squiggleScores/:season/:round
+// Returns live/final scores for all games in a round directly from Squiggle
+app.get("/squiggleScores/:season/:round", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { season, round } = req.params;
+    const url = `https://api.squiggle.com.au/?q=games;year=${season};round=${round}`;
+    const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+    const json = await response.json();
+    res.json({ ok: true, games: json.games ?? [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /playerFlags/:season
 // Returns all admin flags for a season
 app.get("/playerFlags/:season", async (req, res) => {
@@ -1018,17 +1071,44 @@ app.get("/fantasy/:matchId", async (req, res) => {
     };
 
     if (squiggleGameId) {
-      try {
-        const squiggleMeta = await fetchSquiggleMeta(squiggleGameId);
-        meta = { ...meta, ...squiggleMeta };
-      } catch (err) {
-        console.error("Squiggle metadata error:", err);
-      }
+      const squiggleMeta = await fetchSquiggleMeta(squiggleGameId, cdMatchId);
+      meta = { ...meta, ...squiggleMeta };
+    } else {
+      // No squiggle ID but try DB cache anyway
+      const cached = await _cachedScore(cdMatchId);
+      if (cached) meta = { ...meta, ...cached };
     }
 
-    // 3. No DFS data → return Squiggle scores with empty player list
-    // This handles historical rounds where the live DFS feed has expired
+    // 3. No DFS data → try match_stats DB for completed rounds
     if (!dfsPlayers || dfsPlayers.length === 0) {
+      // If Squiggle didn't give us scores, calculate from match_stats goals/behinds
+      if (meta.homeScore === 0 && meta.awayScore === 0) {
+        try {
+          const fixture = FIXTURES_2026[cdMatchId];
+          if (fixture) {
+            const scoreRes = await pool.query(
+              `SELECT team,
+                      SUM(goals) AS goals,
+                      SUM(behinds) AS behinds
+               FROM match_stats
+               WHERE match_id = $1
+               GROUP BY team`,
+              [cdMatchId]
+            );
+            for (const row of scoreRes.rows) {
+              const score = (row.goals * 6) + parseInt(row.behinds);
+              if (row.team === fixture.home) meta.homeScore = score;
+              else if (row.team === fixture.away) meta.awayScore = score;
+            }
+            if (meta.homeScore > 0 || meta.awayScore > 0) {
+              meta.quarter = "Final";
+              meta.clock = "FT";
+              meta.status = "Full Time";
+            }
+          }
+        } catch (_) {}
+      }
+
       return res.json({
         ok: true,
         matchId: cdMatchId,
@@ -1046,6 +1126,22 @@ app.get("/fantasy/:matchId", async (req, res) => {
       ...p,
       af: calculateFantasyPoints(p),
     }));
+
+    // 4b. If Squiggle gave no scores, calculate from DFS player goals/behinds
+    if (meta.homeScore === 0 && meta.awayScore === 0 && players.length > 0) {
+      const fixture = FIXTURES_2026[cdMatchId];
+      if (fixture) {
+        const homePlayers = players.filter(p => p.teamAbbr === fixture.home);
+        const awayPlayers = players.filter(p => p.teamAbbr === fixture.away);
+        const sum = (arr) => arr.reduce((t, p) => t + (p.goals * 6) + (p.behinds ?? 0), 0);
+        const homeScore = sum(homePlayers);
+        const awayScore = sum(awayPlayers);
+        if (homeScore > 0 || awayScore > 0) {
+          meta.homeScore = homeScore;
+          meta.awayScore = awayScore;
+        }
+      }
+    }
 
     // 5. Final response
     return res.json({
@@ -1071,7 +1167,20 @@ app.get("/fantasy/:matchId", async (req, res) => {
 // ------------------------------------------------------
 // Squiggle metadata fetcher
 // ------------------------------------------------------
-async function fetchSquiggleMeta(gameId) {
+async function fetchSquiggleMeta(gameId, matchId = null) {
+  // Ensure cache table exists
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS fixture_scores (
+      match_id TEXT PRIMARY KEY,
+      home_score INT DEFAULT 0,
+      away_score INT DEFAULT 0,
+      quarter TEXT DEFAULT '',
+      clock TEXT DEFAULT '',
+      status TEXT DEFAULT '',
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `).catch(() => {});
+
   const url = `https://api.squiggle.com.au/?q=games&game=${gameId}`;
 
   try {
@@ -1079,57 +1188,61 @@ async function fetchSquiggleMeta(gameId) {
       headers: { "User-Agent": "Mozilla/5.0" },
     });
 
+    if (!response.ok) throw new Error(`Squiggle HTTP ${response.status}`);
+
     const json = await response.json();
     const games = json.games || [];
 
     if (!games.length) {
-      return {
-        homeScore: 0,
-        awayScore: 0,
-        quarter: "",
-        clock: "",
-        status: "",
-      };
+      return await _cachedScore(matchId) ?? { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "" };
     }
 
     const g = games[0];
+    let meta;
 
     if (g.complete === 100) {
-      return {
-        homeScore: g.hscore ?? 0,
-        awayScore: g.ascore ?? 0,
-        quarter: "Final",
-        clock: "FT",
-        status: "Full Time",
-      };
+      meta = { homeScore: g.hscore ?? 0, awayScore: g.ascore ?? 0, quarter: "Final", clock: "FT", status: "Full Time" };
+    } else if (g.complete > 0) {
+      meta = { homeScore: g.hscore ?? 0, awayScore: g.ascore ?? 0, quarter: g.timestr || "", clock: "", status: "In Progress" };
+    } else {
+      meta = { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "Upcoming" };
     }
 
-    if (g.complete > 0) {
-      return {
-        homeScore: g.hscore ?? 0,
-        awayScore: g.ascore ?? 0,
-        quarter: g.timestr || "",
-        clock: "",
-        status: "In Progress",
-      };
+    // Cache in DB whenever we get real data
+    if (matchId && (meta.homeScore > 0 || meta.quarter)) {
+      await pool.query(`
+        INSERT INTO fixture_scores (match_id, home_score, away_score, quarter, clock, status, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        ON CONFLICT (match_id) DO UPDATE SET
+          home_score = EXCLUDED.home_score,
+          away_score = EXCLUDED.away_score,
+          quarter = EXCLUDED.quarter,
+          clock = EXCLUDED.clock,
+          status = EXCLUDED.status,
+          updated_at = NOW()
+      `, [matchId, meta.homeScore, meta.awayScore, meta.quarter, meta.clock, meta.status]).catch(() => {});
     }
 
-    return {
-      homeScore: 0,
-      awayScore: 0,
-      quarter: "",
-      clock: "",
-      status: "Upcoming",
-    };
-  } catch {
-    return {
-      homeScore: 0,
-      awayScore: 0,
-      quarter: "",
-      clock: "",
-      status: "",
-    };
+    return meta;
+
+  } catch (err) {
+    console.error(`Squiggle fetch failed for game ${gameId}:`, err.message);
+    // Fall back to cached score from DB
+    return await _cachedScore(matchId) ?? { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "" };
   }
+}
+
+async function _cachedScore(matchId) {
+  if (!matchId) return null;
+  try {
+    const r = await pool.query(
+      `SELECT home_score, away_score, quarter, clock, status FROM fixture_scores WHERE match_id = $1`,
+      [matchId]
+    );
+    if (!r.rows.length) return null;
+    const row = r.rows[0];
+    return { homeScore: row.home_score, awayScore: row.away_score, quarter: row.quarter, clock: row.clock, status: row.status };
+  } catch { return null; }
 }
 
 // ------------------------------------------------------
