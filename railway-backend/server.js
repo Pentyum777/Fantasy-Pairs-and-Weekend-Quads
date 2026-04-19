@@ -562,28 +562,67 @@ app.get("/namedSquad/:matchId", async (req, res) => {
 
 
 
-// ── Seed fixture scores from Squiggle for a given round ─────────────────────
+// ── Seed fixture scores from match_stats goals/behinds ──────────────────────
 // POST /seedFixtureScores/:season/:round
-// Fetches all game scores from Squiggle and caches them in DB
-app.post("/seedFixtureScores/:season/:round", async (req, res) => {
+// Calculates final scores from match_stats and caches in fixture_scores table
+app.all("/seedFixtureScores/:season/:round", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   try {
     const { season, round } = req.params;
 
-    // Get all matches for this round from FIXTURES_2026
+    // Ensure table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS fixture_scores (
+        match_id TEXT PRIMARY KEY,
+        home_score INT DEFAULT 0,
+        away_score INT DEFAULT 0,
+        quarter TEXT DEFAULT '',
+        clock TEXT DEFAULT '',
+        status TEXT DEFAULT '',
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    // Get all matches for this round
     const matchIds = Object.entries(FIXTURES_2026)
       .filter(([, v]) => v.round === parseInt(round))
       .map(([k]) => k);
 
     const results = [];
     for (const matchId of matchIds) {
-      const squiggleId = squiggleMap[matchId];
-      if (!squiggleId) { results.push({ matchId, status: "no squiggle id" }); continue; }
-      const meta = await fetchSquiggleMeta(squiggleId, matchId);
-      results.push({ matchId, ...meta });
+      const fixture = FIXTURES_2026[matchId];
+
+      // Calculate score from goals/behinds in match_stats
+      const scoreRes = await pool.query(
+        `SELECT team, SUM(goals) AS goals, SUM(behinds) AS behinds
+         FROM match_stats WHERE match_id = $1 GROUP BY team`,
+        [matchId]
+      );
+
+      let homeScore = 0, awayScore = 0;
+      for (const row of scoreRes.rows) {
+        const score = (parseInt(row.goals) * 6) + parseInt(row.behinds);
+        if (row.team === fixture.home) homeScore = score;
+        else if (row.team === fixture.away) awayScore = score;
+      }
+
+      const hasData = homeScore > 0 || awayScore > 0;
+      if (hasData) {
+        await pool.query(`
+          INSERT INTO fixture_scores (match_id, home_score, away_score, quarter, clock, status, updated_at)
+          VALUES ($1, $2, $3, 'Final', 'FT', 'Full Time', NOW())
+          ON CONFLICT (match_id) DO UPDATE SET
+            home_score = EXCLUDED.home_score,
+            away_score = EXCLUDED.away_score,
+            quarter = 'Final', clock = 'FT', status = 'Full Time',
+            updated_at = NOW()
+        `, [matchId, homeScore, awayScore]);
+      }
+
+      results.push({ matchId, homeScore, awayScore, quarter: hasData ? 'Final' : '', seeded: hasData });
     }
 
-    res.json({ ok: true, seeded: results.length, results });
+    res.json({ ok: true, seeded: results.filter(r => r.seeded).length, results });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

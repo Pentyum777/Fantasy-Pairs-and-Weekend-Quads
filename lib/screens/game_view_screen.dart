@@ -260,14 +260,22 @@ void initState() {
       // ⭐ Have cached data — show immediately then refresh live
       _snapshotLoaded = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {});
-          // Refresh live scores immediately after showing cached data
-          if (!_isCompleted) {
-            Future.delayed(const Duration(seconds: 3), () {
-              if (mounted && !_isCompleted) _refreshLive();
-            });
+        if (!mounted) return;
+        // For completed rounds, build stats from snapshot so grey shading works
+        if (_isCompleted) {
+          _buildStatsFromSnapshot();
+          final tableState = _punterTableKey.currentState;
+          if (tableState != null) {
+            final dynamic dyn = tableState;
+            dyn.applyLiveStatsToTable(_currentStatsByPlayerId);
           }
+          _refreshFixtureScores();
+        }
+        setState(() {});
+        if (!_isCompleted) {
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted && !_isCompleted) _refreshLive();
+          });
           _fetchCurrentTimestamp().then((_) => _startLivePolling());
         }
       });
