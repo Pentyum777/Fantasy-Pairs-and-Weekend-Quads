@@ -643,7 +643,14 @@ app.get("/testSquiggle", async (req, res) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
     const response = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-AU,en;q=0.9",
+        "Origin": "https://squiggle.com.au",
+        "Referer": "https://squiggle.com.au/",
+        "Cache-Control": "no-cache",
+      },
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -675,7 +682,14 @@ app.get("/squiggleScores/:season/:round", async (req, res) => {
   try {
     const { season, round } = req.params;
     const url = `https://api.squiggle.com.au/?q=games;year=${season};round=${round}`;
-    const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+    const response = await fetch(url, { headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-AU,en;q=0.9",
+        "Origin": "https://squiggle.com.au",
+        "Referer": "https://squiggle.com.au/",
+        "Cache-Control": "no-cache",
+      } });
     const json = await response.json();
     res.json({ ok: true, games: json.games ?? [] });
   } catch (err) {
@@ -1259,7 +1273,15 @@ async function fetchSquiggleMeta(gameId, matchId = null) {
 
   try {
     const response = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-AU,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Origin": "https://squiggle.com.au",
+        "Referer": "https://squiggle.com.au/",
+        "Cache-Control": "no-cache",
+      },
     });
 
     if (!response.ok) throw new Error(`Squiggle HTTP ${response.status}`);
