@@ -122,15 +122,12 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
 
   final team = AflClubCodes.normalize(s.team);
 
-  if (team.isEmpty) {
-    debugPrint("❌ No team found in stats → NOT completed");
-    return false;
-  }
+  if (team.isEmpty) return false;
 
   for (final f in fixtures) {
     final home = AflClubCodes.normalize(f.homeTeam);
     final away = AflClubCodes.normalize(f.awayTeam);
-    if ((f.quarterText ?? "").toLowerCase().contains("final") && (team == home || team == away)) {
+    if (f.complete && (team == home || team == away)) {
       return true;
     }
   }
@@ -161,11 +158,9 @@ bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
 
 bool _isFixtureLive(AflFixture f) {
   final q = (f.quarterText ?? "").toLowerCase().trim();
-
   if (q.isEmpty) return false;
-  if (q.contains("final") || q == "ft") return false;
-
-  return true; // any other quarterText = LIVE
+  if (f.complete) return false;
+  return true; // any non-empty, non-final quarterText = LIVE
 }
 
 
