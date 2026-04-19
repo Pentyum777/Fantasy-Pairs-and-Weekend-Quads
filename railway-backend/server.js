@@ -594,7 +594,9 @@ app.all("/seedFixtureScores/:season/:round", async (req, res) => {
 
       // Calculate score from goals/behinds in match_stats
       const scoreRes = await pool.query(
-        `SELECT team, SUM(goals) AS goals, SUM(behinds) AS behinds
+        `SELECT team,
+                SUM(goals) AS goals,
+                SUM(behinds) AS behinds
          FROM match_stats WHERE match_id = $1 GROUP BY team`,
         [matchId]
       );
@@ -605,6 +607,9 @@ app.all("/seedFixtureScores/:season/:round", async (req, res) => {
         if (row.team === fixture.home) homeScore = score;
         else if (row.team === fixture.away) awayScore = score;
       }
+      
+      // Debug: log what we found
+      console.log(`${matchId}: teams found=${scoreRes.rows.map(r=>r.team).join(',')}, home=${fixture.home}(${homeScore}), away=${fixture.away}(${awayScore})`);
 
       const hasData = homeScore > 0 || awayScore > 0;
       if (hasData) {
