@@ -1155,12 +1155,12 @@ app.get("/fantasy/:matchId", async (req, res) => {
     };
 
     if (squiggleGameId) {
-      const squiggleMeta = await fetchSquiggleMeta(squiggleGameId, cdMatchId);
-      meta = { ...meta, ...squiggleMeta };
-    } else {
-      // No squiggle ID but try DB cache anyway
-      const cached = await _cachedScore(cdMatchId);
-      if (cached) meta = { ...meta, ...cached };
+      try {
+        const squiggleMeta = await fetchSquiggleMeta(squiggleGameId);
+        meta = { ...meta, ...squiggleMeta };
+      } catch (err) {
+        console.error("Squiggle metadata error:", err);
+      }
     }
 
     // 3. No DFS data → try match_stats DB for completed rounds
@@ -1255,90 +1255,37 @@ app.get("/fantasy/:matchId", async (req, res) => {
 // ------------------------------------------------------
 // Squiggle metadata fetcher
 // ------------------------------------------------------
-async function fetchSquiggleMeta(gameId, matchId = null) {
-  // Ensure cache table exists
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS fixture_scores (
-      match_id TEXT PRIMARY KEY,
-      home_score INT DEFAULT 0,
-      away_score INT DEFAULT 0,
-      quarter TEXT DEFAULT '',
-      clock TEXT DEFAULT '',
-      status TEXT DEFAULT '',
-      updated_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `).catch(() => {});
-
+async function fetchSquiggleMeta(gameId) {
   const url = `https://api.squiggle.com.au/?q=games&game=${gameId}`;
 
   try {
     const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "en-AU,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Origin": "https://squiggle.com.au",
-        "Referer": "https://squiggle.com.au/",
-        "Cache-Control": "no-cache",
-      },
+      headers: { "User-Agent": "Mozilla/5.0" },
     });
-
-    if (!response.ok) throw new Error(`Squiggle HTTP ${response.status}`);
 
     const json = await response.json();
     const games = json.games || [];
 
     if (!games.length) {
-      return await _cachedScore(matchId) ?? { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "" };
+      return { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "" };
     }
 
     const g = games[0];
-    let meta;
 
     if (g.complete === 100) {
-      meta = { homeScore: g.hscore ?? 0, awayScore: g.ascore ?? 0, quarter: "Final", clock: "FT", status: "Full Time" };
-    } else if (g.complete > 0) {
-      meta = { homeScore: g.hscore ?? 0, awayScore: g.ascore ?? 0, quarter: g.timestr || "", clock: "", status: "In Progress" };
-    } else {
-      meta = { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "Upcoming" };
+      return { homeScore: g.hscore ?? 0, awayScore: g.ascore ?? 0, quarter: "Final", clock: "FT", status: "Full Time" };
     }
 
-    // Cache in DB whenever we get real data
-    if (matchId && (meta.homeScore > 0 || meta.quarter)) {
-      await pool.query(`
-        INSERT INTO fixture_scores (match_id, home_score, away_score, quarter, clock, status, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW())
-        ON CONFLICT (match_id) DO UPDATE SET
-          home_score = EXCLUDED.home_score,
-          away_score = EXCLUDED.away_score,
-          quarter = EXCLUDED.quarter,
-          clock = EXCLUDED.clock,
-          status = EXCLUDED.status,
-          updated_at = NOW()
-      `, [matchId, meta.homeScore, meta.awayScore, meta.quarter, meta.clock, meta.status]).catch(() => {});
+    if (g.complete > 0) {
+      return { homeScore: g.hscore ?? 0, awayScore: g.ascore ?? 0, quarter: g.timestr || "", clock: "", status: "In Progress" };
     }
 
-    return meta;
+    return { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "Upcoming" };
 
   } catch (err) {
     console.error(`Squiggle fetch failed for game ${gameId}:`, err.message);
-    // Fall back to cached score from DB
-    return await _cachedScore(matchId) ?? { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "" };
+    return { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "" };
   }
-}
-
-async function _cachedScore(matchId) {
-  if (!matchId) return null;
-  try {
-    const r = await pool.query(
-      `SELECT home_score, away_score, quarter, clock, status FROM fixture_scores WHERE match_id = $1`,
-      [matchId]
-    );
-    if (!r.rows.length) return null;
-    const row = r.rows[0];
-    return { homeScore: row.home_score, awayScore: row.away_score, quarter: row.quarter, clock: row.clock, status: row.status };
-  } catch { return null; }
 }
 
 // ------------------------------------------------------
