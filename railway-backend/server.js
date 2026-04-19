@@ -633,6 +633,32 @@ app.all("/seedFixtureScores/:season/:round", async (req, res) => {
   }
 });
 
+
+// ── Squiggle connectivity test ───────────────────────────────────────────────
+app.get("/testSquiggle", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  const gameId = req.query.game || 38539;
+  const url = `https://api.squiggle.com.au/?q=games&game=${gameId}`;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const json = await response.json();
+    const g = json.games?.[0];
+    res.json({
+      ok: true,
+      status: response.status,
+      game: g ? { complete: g.complete, hscore: g.hscore, ascore: g.ascore, timestr: g.timestr } : null,
+    });
+  } catch (err) {
+    res.json({ ok: false, error: err.message, type: err.name });
+  }
+});
+
 // ── Debug: check squiggle map ────────────────────────────────────────────────
 app.get("/debug/squigglemap/:matchId", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -1183,6 +1209,10 @@ app.get("/fantasy/:matchId", async (req, res) => {
         if (homeScore > 0 || awayScore > 0) {
           meta.homeScore = homeScore;
           meta.awayScore = awayScore;
+          // DFS data only exists for completed games — mark as Final
+          meta.quarter = "Final";
+          meta.clock = "FT";
+          meta.status = "Full Time";
         }
       }
     }
