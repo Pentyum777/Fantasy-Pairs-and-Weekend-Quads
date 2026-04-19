@@ -387,15 +387,15 @@ class ChampionshipService {
   // HELPERS
   // ---------------------------------------------------------------------------
 
-  /// Maps AFL round numbers to Hexagon Cup labels (blocks of 4 rounds).
-  /// Hex 1: Rounds 1-4, Hex 2: Rounds 5-8, ..., Hex 6: Rounds 21-24
+  /// Maps AFL round numbers to Monthly Medal labels (blocks of 4 rounds).
+  /// Medal 1: Rounds 1-4, Medal 2: Rounds 5-8, ..., Medal 6: Rounds 21-24
   String _monthFromRound(int round) {
-    if (round <= 4) return "Hex 1";
-    if (round <= 8) return "Hex 2";
-    if (round <= 12) return "Hex 3";
-    if (round <= 16) return "Hex 4";
-    if (round <= 20) return "Hex 5";
-    return "Hex 6";
+    if (round <= 4) return "Medal 1";
+    if (round <= 8) return "Medal 2";
+    if (round <= 12) return "Medal 3";
+    if (round <= 16) return "Medal 4";
+    if (round <= 20) return "Medal 5";
+    return "Medal 6";
   }
 
   String monthName(int m) {

@@ -64,7 +64,7 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text("Hexagon Cup"),
+        title: const Text("Monthly Medal"),
         backgroundColor: theme.colorScheme.surface,
         actions: [
           if (!_loading)
@@ -83,7 +83,7 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
                 controller: _tabController,
                 tabs: const [
                   Tab(text: "Overall"),
-                  Tab(text: "Hexagon Cup"),
+                  Tab(text: "Monthly Medal"),
                 ],
               )
             : null,
@@ -131,13 +131,13 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
                   children: [
                     Text(
                       _selectedSeries == null
-                          ? "Hexagon Cup"
-                          : "$_selectedSeries · Hexagon Cup",
+                          ? "Monthly Medal"
+                          : "$_selectedSeries · Monthly Medal",
                       style: theme.textTheme.titleSmall
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const Spacer(),
-                    Text("Hex:", style: theme.textTheme.labelMedium),
+                    Text("Medal:", style: theme.textTheme.labelMedium),
                     const SizedBox(width: 6),
                     DropdownButton<String>(
                       value: _selectedSeries,
@@ -216,7 +216,7 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
               // Month selector
               Row(
                 children: [
-                  Text("Hex:", style: theme.textTheme.labelLarge
+                  Text("Medal:", style: theme.textTheme.labelLarge
                       ?.copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(width: 8),
                   DropdownButton<String>(
@@ -240,7 +240,7 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
                         service: widget.service,
                         roundNumbers: widget.service
                             .roundNumbersForSeries(_selectedSeries!),
-                        title: "$_selectedSeries · Hexagon Cup",
+                        title: "$_selectedSeries · Monthly Medal",
                         scrollable: false,
                       ),
               ),

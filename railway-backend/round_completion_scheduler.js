@@ -227,6 +227,76 @@ async function patchSelectionsForRound(pool, season, round, statsByPlayerId) {
 }
 
 // ---------------------------------------------------------------------------
+// Upsert match_stats from DFS data — keeps scout page averages current
+// ---------------------------------------------------------------------------
+async function upsertMatchStats(pool, season, round, matchIds) {
+  console.log(`📥 RoundCompletion: Upserting match_stats for season=${season} round=${round}...`);
+  let totalInserted = 0;
+
+  for (const cdMatchId of matchIds) {
+    const dfsId = dfsMap[cdMatchId];
+    if (!dfsId) continue;
+
+    try {
+      const players = await scrapeDFS(String(dfsId));
+      if (!players || players.length === 0) continue;
+
+      for (const p of players) {
+        if (!p.playerId || !p.playerName) continue;
+
+        const af = p.fantasyPoints ?? calculateFantasyPoints(p);
+        const kicks = p.kicks ?? 0;
+        const handballs = p.handballs ?? 0;
+
+        await pool.query(`
+          INSERT INTO match_stats
+            (match_id, player_id, player_name, team, kicks, handballs, disposals,
+             marks, tackles, hitouts, frees_for, frees_against, goals, behinds, tog, fantasy_points)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+          ON CONFLICT (match_id, player_id) DO UPDATE SET
+            player_name    = EXCLUDED.player_name,
+            team           = EXCLUDED.team,
+            kicks          = EXCLUDED.kicks,
+            handballs      = EXCLUDED.handballs,
+            disposals      = EXCLUDED.disposals,
+            marks          = EXCLUDED.marks,
+            tackles        = EXCLUDED.tackles,
+            hitouts        = EXCLUDED.hitouts,
+            frees_for      = EXCLUDED.frees_for,
+            frees_against  = EXCLUDED.frees_against,
+            goals          = EXCLUDED.goals,
+            behinds        = EXCLUDED.behinds,
+            tog            = EXCLUDED.tog,
+            fantasy_points = EXCLUDED.fantasy_points
+        `, [
+          cdMatchId,
+          p.playerId,
+          p.playerName,
+          p.teamAbbr ?? '',
+          kicks,
+          handballs,
+          kicks + handballs,
+          p.marks ?? 0,
+          p.tackles ?? 0,
+          p.hitouts ?? 0,
+          p.freesFor ?? 0,
+          p.freesAgainst ?? 0,
+          p.goals ?? 0,
+          p.behinds ?? 0,
+          p.timeOnGroundPercentage ?? 0,
+          af,
+        ]);
+        totalInserted++;
+      }
+    } catch (err) {
+      console.error(`❌ RoundCompletion: match_stats upsert failed for ${cdMatchId}:`, err.message);
+    }
+  }
+
+  console.log(`✅ RoundCompletion: match_stats upserted ${totalInserted} rows for round=${round}`);
+}
+
+// ---------------------------------------------------------------------------
 // Main check — runs every 2 minutes
 // ---------------------------------------------------------------------------
 async function checkForCompletedRounds(pool) {
@@ -254,6 +324,9 @@ async function checkForCompletedRounds(pool) {
     );
 
     await patchSelectionsForRound(pool, CURRENT_SEASON, round, statsByPlayerId);
+
+    // ⭐ Also upsert match_stats so scout page averages are up to date
+    await upsertMatchStats(pool, CURRENT_SEASON, round, matchIds);
 
     // Mark as saved so we don't re-run until server restarts
     // (On next restart it will re-check, but the UPDATE is idempotent)
