@@ -85,6 +85,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
   Timer? _draftedPollTimer;
   Map<String, Map<String, dynamic>> _vsOpponentStats = {};
   String _upcomingOpponent = '';
+  List<Map<String, String>> _injuryList = [];
 
   // Filters
   String? _teamFilter;
@@ -258,47 +259,112 @@ class _ScoutScreenState extends State<ScoutScreen> {
     );
   }
 
-  /// Shows a dialog with the AFL injury list URL and instructions
+  /// Shows a dialog with the live AFL injury list data.
   void _showInjuryListDialog() {
+    // Group by team for display
+    final Map<String, List<Map<String, String>>> byTeam = {};
+    for (final entry in _injuryList) {
+      final team = entry['team'] ?? 'Unknown';
+      byTeam.putIfAbsent(team, () => []).add(entry);
+    }
+    final teams = byTeam.keys.toList()..sort();
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('AFL Injury List'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            const Text(
-              'Visit the AFL injury list, then return here to manually flag players.',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const SelectableText(
-                'afl.com.au/matches/injury-list',
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Tap any player in the Scout table to flag them as INJ, SUSP, REST or OUT.',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
+            const Icon(Icons.medical_services_outlined, size: 20),
+            const SizedBox(width: 8),
+            const Text('AFL Injury List'),
+            const Spacer(),
+            Text(
+              '${_injuryList.length} players',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 480,
+          child: _injuryList.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No injury data available.\nTap Reload to try again.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: teams.length,
+                  itemBuilder: (ctx, i) {
+                    final team = teams[i];
+                    final entries = byTeam[team]!;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Text(
+                            team,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        ...entries.map((e) => Padding(
+                          padding: const EdgeInsets.only(left: 8, bottom: 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 5,
+                                child: Text(
+                                  e['playerName'] ?? '',
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 4,
+                                child: Text(
+                                  e['injury'] ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  e['estimatedReturn'] ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                        const Divider(height: 8),
+                      ],
+                    );
+                  },
+                ),
+        ),
         actions: [
           TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _loadData();
+            },
+            child: const Text('Reload'),
+          ),
+          TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -330,6 +396,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
 
     final stats = await widget.scoutService.fetchSeasonStats(widget.season);
     final flags = await widget.scoutService.fetchFlags(widget.season);
+    final injuryList = await widget.scoutService.fetchInjuryList();
 
     // ⭐ Fetch drafted players from backend for ALL game types in this round
     // This ensures we get picks even if the local state isn't loaded
@@ -381,9 +448,31 @@ class _ScoutScreenState extends State<ScoutScreen> {
       final mergedIds = {...namedIds, ...savedSquadIds};
       final mergedAnnounced = announced || savedSquadIds.isNotEmpty;
 
+      // Auto-flag players found on the AFL injury list.
+      // Only add INJ flags that aren't already manually set.
+      final updatedFlags = Map<String, PlayerFlagEntry>.from(flags);
+      for (final entry in injuryList) {
+        final injuredName = entry['playerName'] ?? '';
+        if (injuredName.isEmpty) continue;
+        // Find matching player by name (case-insensitive)
+        final match = stats.where((s) =>
+          s.playerName.trim().toLowerCase() == injuredName.trim().toLowerCase()
+        ).firstOrNull;
+        if (match != null && !updatedFlags.containsKey(match.playerId)) {
+          final returnStr = entry['estimatedReturn'] ?? '';
+          updatedFlags[match.playerId] = PlayerFlagEntry(
+            playerId: match.playerId,
+            flag: PlayerFlag.inj,
+            note: '${entry['injury'] ?? ''}'
+                '${returnStr.isNotEmpty ? ' · $returnStr' : ''}',
+          );
+        }
+      }
+
       setState(() {
         _allStats = stats;
-        _flags = flags;
+        _flags = updatedFlags;
+        _injuryList = injuryList;
         _namedSquadIds = mergedIds;
         _teamsAnnounced = mergedAnnounced;
         _fetchedDraftedIds = drafted;

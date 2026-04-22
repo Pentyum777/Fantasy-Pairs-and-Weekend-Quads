@@ -827,12 +827,20 @@ app.get("/draftedPlayers", async (req, res) => {
 });
 
 // GET /injuryList
-// Scrapes the current AFL injury list article and returns structured player data
-// The AFL publishes a weekly "Medical room" article with consistent formatting
+// Scrapes the current AFL injury list page and returns structured player data.
+// The page renders injury tables as plain HTML (not in __NEXT_DATA__), so we
+// parse the article text directly.
+//
+// Team order on the page (alphabetical by club name):
+const INJURY_LIST_TEAM_ORDER = [
+  "ADE", "BRL", "CAR", "COL", "ESS", "FRE",
+  "GEE", "GCS", "GWS", "HAW", "MELB", "NTH",
+  "PTA", "RIC", "STK", "SYD", "WCE", "WBD",
+];
+
 app.get("/injuryList", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   try {
-    // Fetch the injury list page which lists all current injuries
     const pageRes = await fetch(
       "https://www.afl.com.au/matches/injury-list",
       {
@@ -840,7 +848,6 @@ app.get("/injuryList", async (req, res) => {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
           "Accept": "text/html,application/xhtml+xml",
         },
-        timeout: 10000,
       }
     );
 
@@ -850,25 +857,75 @@ app.get("/injuryList", async (req, res) => {
 
     const html = await pageRes.text();
 
-    // The injury list page contains structured data in script tags
-    // Extract the __NEXT_DATA__ or similar JSON payload
-    const nextDataMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    // ── Extract the article text ─────────────────────────────────────────────
+    // The page has one <article> element containing all 18 club injury tables.
+    // Strip all HTML tags to get plain text, then parse the repeating pattern:
+    //   PLAYER   INJURY   ESTIMATED RETURN
+    //   <name>   <injury> <timeline>
+    //   ...
+    // Each club block ends with "Updated: <date>" followed by "In the mix" prose.
 
-    if (nextDataMatch) {
-      try {
-        const nextData = JSON.parse(nextDataMatch[1]);
-        // Navigate to injury data in the Next.js page props
-        const pageProps = nextData?.props?.pageProps;
-        const injuries = pageProps?.injuryList ?? pageProps?.injuries ?? [];
+    // Pull text between <article> tags (or fall back to full body)
+    const articleMatch = html.match(/<article[\s\S]*?>([\s\S]*?)<\/article>/i);
+    const rawText = articleMatch
+      ? articleMatch[1].replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ")
+      : html.replace(/<[^>]+>/g, " ");
 
-        if (injuries.length > 0) {
-          return res.json({ ok: true, players: injuries, source: "afl" });
-        }
-      } catch (_) {}
+    // Normalise whitespace
+    const text = rawText.replace(/\s+/g, " ").trim();
+
+    // ── Parse player rows ────────────────────────────────────────────────────
+    // Strategy: split on "Updated:" to isolate each club's block, then within
+    // each block extract the rows that appear before "Updated:".
+    // Each row has the form:  <PlayerName>  <InjuryType>  <Timeline>
+    // where Timeline is one of:  "X-Y weeks", "Test", "TBC", "Season",
+    //   "X weeks", "X-Y months", "X months", "Concussion protocols", etc.
+
+    // Regex to match a player row:
+    //   - Player name: "Firstname Lastname" (may include jnr, snr, hyphen)
+    //   - Injury:      one or more capitalised words (e.g. "Hamstring", "ACL", "Corked calf")
+    //   - Timeline:    flexible — digits, dashes, spaces, +, "weeks", "months",
+    //                  "Test", "TBC", "Season", "Indefinite", "protocols", "program"
+    const rowRegex =
+      /([A-Z][a-z]+(?:\s+[A-Za-z'-]+){1,4})\s+((?:[A-Z][a-z]*(?:\/[A-Z][a-z]*)?\s*){1,4})\s+((?:\d+[-–+]?\d*\s*(?:weeks?|months?)|Test|TBC|Season|Indefinite|Round\s*\d+|Concussion\s*protocols?|Individualised\s*program|\d+\s*(?:weeks?|months?)))/gi;
+
+    const players = [];
+    let teamIndex = 0;
+
+    // Split on "Updated:" boundaries — each segment belongs to one team
+    const segments = text.split(/Updated\s*:/i);
+
+    for (let i = 0; i < segments.length - 1 && teamIndex < INJURY_LIST_TEAM_ORDER.length; i++) {
+      const segment = segments[i];
+      const team = INJURY_LIST_TEAM_ORDER[teamIndex];
+      teamIndex++;
+
+      // Find the header sentinel "PLAYER INJURY ESTIMATED RETURN" and work from there
+      const headerIdx = segment.search(/PLAYER\s+INJURY\s+ESTIMATED\s+RETURN/i);
+      const block = headerIdx >= 0 ? segment.slice(headerIdx) : segment;
+
+      // Reset lastIndex before each exec loop
+      rowRegex.lastIndex = 0;
+      let match;
+      while ((match = rowRegex.exec(block)) !== null) {
+        const playerName = match[1].trim();
+        const injury     = match[2].trim();
+        const timeline   = match[3].trim();
+
+        // Skip the header row itself
+        if (playerName.toUpperCase() === "PLAYER") continue;
+
+        players.push({
+          playerName,
+          team,
+          injury,
+          estimatedReturn: timeline,
+        });
+      }
     }
 
-    // Fallback: return empty — admin can manually flag players
-    res.json({ ok: true, players: [], source: "unavailable" });
+    console.log(`injuryList: parsed ${players.length} players from AFL page`);
+    res.json({ ok: true, players, source: "afl", updatedAt: new Date().toISOString() });
 
   } catch (err) {
     console.error("injuryList error:", err.message);
