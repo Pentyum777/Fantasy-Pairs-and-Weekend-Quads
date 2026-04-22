@@ -20,7 +20,6 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { scrapeDFS } from "./dfs_scraper.js";
-import { getSquiggleStatusForMatch } from "./squiggle_service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -81,25 +80,62 @@ function getMatchesByRound() {
 }
 
 // ---------------------------------------------------------------------------
-// Check if all matches in a round are complete via Squiggle
+// Check if all matches in a round are complete via a SINGLE Squiggle
+// round-level query (avoids per-match calls that trigger rate limiting).
 // Returns: "all_complete" | "some_live" | "none_started"
 // ---------------------------------------------------------------------------
-async function getRoundStatus(matchIds) {
-  let completedCount = 0;
-  let liveCount = 0;
-  let upcomingCount = 0;
-
+async function getRoundStatus(matchIds, round) {
+  const roundSquiggleIds = [];
   for (const matchId of matchIds) {
-    const status = await getSquiggleStatusForMatch(matchId);
-    if (status === "Final") completedCount++;
-    else if (status === "In Progress") liveCount++;
-    else upcomingCount++;
+    const sid = squiggleMap[matchId];
+    if (sid) roundSquiggleIds.push(String(sid));
   }
 
-  if (liveCount > 0) return "some_live";
-  if (completedCount === matchIds.length) return "all_complete";
-  if (completedCount > 0 && upcomingCount > 0) return "some_live"; // mid-round
-  return "none_started";
+  if (roundSquiggleIds.length === 0) return "none_started";
+
+  try {
+    // Single query for all games in the round — much less likely to be blocked
+    const url = `https://api.squiggle.com.au/?q=games;year=${CURRENT_SEASON};round=${round}`;
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Origin": "https://squiggle.com.au",
+        "Referer": "https://squiggle.com.au/",
+        "Cache-Control": "no-cache",
+      },
+    });
+
+    // Guard against HTML error pages (403 / rate-limit)
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      console.warn(`⚠ Squiggle round ${round} query blocked (status ${res.status}) — will retry later`);
+      return "none_started";
+    }
+
+    const json = await res.json();
+    const games = json?.games ?? [];
+    if (games.length === 0) return "none_started";
+
+    // Only consider games whose Squiggle IDs match this round's matches
+    const relevant = games.filter(g => roundSquiggleIds.includes(String(g.id)));
+    if (relevant.length === 0) return "none_started";
+
+    const completedCount = relevant.filter(g => g.complete === 100).length;
+    const liveCount = relevant.filter(g => g.complete > 0 && g.complete < 100).length;
+
+    console.log(`Squiggle round ${round}: ${relevant.length} games, ${completedCount} complete, ${liveCount} live`);
+
+    if (liveCount > 0) return "some_live";
+    if (completedCount === relevant.length) return "all_complete";
+    if (completedCount > 0) return "some_live"; // mid-round
+    return "none_started";
+
+  } catch (err) {
+    console.error(`Squiggle round ${round} fetch failed:`, err.message);
+    return "none_started";
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -227,76 +263,6 @@ async function patchSelectionsForRound(pool, season, round, statsByPlayerId) {
 }
 
 // ---------------------------------------------------------------------------
-// Upsert match_stats from DFS data — keeps scout page averages current
-// ---------------------------------------------------------------------------
-async function upsertMatchStats(pool, season, round, matchIds) {
-  console.log(`📥 RoundCompletion: Upserting match_stats for season=${season} round=${round}...`);
-  let totalInserted = 0;
-
-  for (const cdMatchId of matchIds) {
-    const dfsId = dfsMap[cdMatchId];
-    if (!dfsId) continue;
-
-    try {
-      const players = await scrapeDFS(String(dfsId));
-      if (!players || players.length === 0) continue;
-
-      for (const p of players) {
-        if (!p.playerId || !p.playerName) continue;
-
-        const af = p.fantasyPoints ?? calculateFantasyPoints(p);
-        const kicks = p.kicks ?? 0;
-        const handballs = p.handballs ?? 0;
-
-        await pool.query(`
-          INSERT INTO match_stats
-            (match_id, player_id, player_name, team, kicks, handballs, disposals,
-             marks, tackles, hitouts, frees_for, frees_against, goals, behinds, tog, fantasy_points)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-          ON CONFLICT (match_id, player_id) DO UPDATE SET
-            player_name    = EXCLUDED.player_name,
-            team           = EXCLUDED.team,
-            kicks          = EXCLUDED.kicks,
-            handballs      = EXCLUDED.handballs,
-            disposals      = EXCLUDED.disposals,
-            marks          = EXCLUDED.marks,
-            tackles        = EXCLUDED.tackles,
-            hitouts        = EXCLUDED.hitouts,
-            frees_for      = EXCLUDED.frees_for,
-            frees_against  = EXCLUDED.frees_against,
-            goals          = EXCLUDED.goals,
-            behinds        = EXCLUDED.behinds,
-            tog            = EXCLUDED.tog,
-            fantasy_points = EXCLUDED.fantasy_points
-        `, [
-          cdMatchId,
-          p.playerId,
-          p.playerName,
-          p.teamAbbr ?? '',
-          kicks,
-          handballs,
-          kicks + handballs,
-          p.marks ?? 0,
-          p.tackles ?? 0,
-          p.hitouts ?? 0,
-          p.freesFor ?? 0,
-          p.freesAgainst ?? 0,
-          p.goals ?? 0,
-          p.behinds ?? 0,
-          p.timeOnGroundPercentage ?? 0,
-          af,
-        ]);
-        totalInserted++;
-      }
-    } catch (err) {
-      console.error(`❌ RoundCompletion: match_stats upsert failed for ${cdMatchId}:`, err.message);
-    }
-  }
-
-  console.log(`✅ RoundCompletion: match_stats upserted ${totalInserted} rows for round=${round}`);
-}
-
-// ---------------------------------------------------------------------------
 // Main check — runs every 2 minutes
 // ---------------------------------------------------------------------------
 async function checkForCompletedRounds(pool) {
@@ -309,7 +275,7 @@ async function checkForCompletedRounds(pool) {
     // Skip rounds we've already saved this server session
     if (savedRounds.has(key)) continue;
 
-    const status = await getRoundStatus(matchIds);
+    const status = await getRoundStatus(matchIds, round);
 
     if (status !== "all_complete") continue;
 
@@ -324,9 +290,6 @@ async function checkForCompletedRounds(pool) {
     );
 
     await patchSelectionsForRound(pool, CURRENT_SEASON, round, statsByPlayerId);
-
-    // ⭐ Also upsert match_stats so scout page averages are up to date
-    await upsertMatchStats(pool, CURRENT_SEASON, round, matchIds);
 
     // Mark as saved so we don't re-run until server restarts
     // (On next restart it will re-check, but the UPDATE is idempotent)
