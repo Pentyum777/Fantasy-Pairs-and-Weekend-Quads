@@ -228,7 +228,7 @@ class _CustomPairsBuilderScreenState extends State<CustomPairsBuilderScreen> {
       25,
       (i) => PunterSelection(
         punterNumber: i + 1,
-        punterName: "P${i + 1}",
+        punterName: "",
         picks: [
           PlayerPick(pickNumber: 1, player: null, stats: null),
           PlayerPick(pickNumber: 2, player: null, stats: null),

@@ -122,12 +122,15 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
 
   final team = AflClubCodes.normalize(s.team);
 
-  if (team.isEmpty) return false;
+  if (team.isEmpty) {
+    debugPrint("❌ No team found in stats → NOT completed");
+    return false;
+  }
 
   for (final f in fixtures) {
     final home = AflClubCodes.normalize(f.homeTeam);
     final away = AflClubCodes.normalize(f.awayTeam);
-    if (f.complete && (team == home || team == away)) {
+    if ((f.quarterText ?? "").toLowerCase().contains("final") && (team == home || team == away)) {
       return true;
     }
   }
@@ -158,9 +161,11 @@ bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
 
 bool _isFixtureLive(AflFixture f) {
   final q = (f.quarterText ?? "").toLowerCase().trim();
+
   if (q.isEmpty) return false;
-  if (f.complete) return false;
-  return true; // any non-empty, non-final quarterText = LIVE
+  if (q.contains("final") || q == "ft") return false;
+
+  return true; // any other quarterText = LIVE
 }
 
 
@@ -637,11 +642,8 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
     return hasRealName || hasPick;
   }).length;
 
-  if (usedCount > 0) {
-    _visiblePunterCount = usedCount;
-  } else {
-    _visiblePunterCount = 15;
-  }
+  // Always show at least 15 rows; grow beyond 15 when more punters are named
+  _visiblePunterCount = usedCount > 15 ? usedCount : 15;
 
   // Always sync dropdown to real count
   _maxPunterDropdown = _visiblePunterCount;
@@ -2002,6 +2004,7 @@ Future<void> _forceApplyStats() async {
                   readOnly: readOnly,
                   onChanged: (!readOnly)
                       ? () {
+                          _recomputeVisiblePunterCount();
                           _saveSnapshot();
                           setState(() {});
                         }

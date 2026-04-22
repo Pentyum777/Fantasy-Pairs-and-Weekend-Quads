@@ -548,9 +548,8 @@ Widget build(BuildContext context) {
   // ✅ Only treat as completed if there IS a player
   final bool isCompleted = pick.player != null && pick.isCompleted == true;
 
-  // ⭐ OUTER background (full cell)
-  final Color bgColor =
-      isCompleted ? Colors.grey.withOpacity(0.25) : Colors.transparent;
+  // ⭐ OUTER background (full cell) - no shading
+  const Color bgColor = Colors.transparent;
 
   // Build globalTaken set
   final globalTaken = <String>{};
