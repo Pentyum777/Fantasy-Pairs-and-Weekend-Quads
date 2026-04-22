@@ -875,19 +875,43 @@ app.get("/injuryList", async (req, res) => {
     const text = rawText.replace(/\s+/g, " ").trim();
 
     // ── Parse player rows ────────────────────────────────────────────────────
-    // Strategy: split on "Updated:" to isolate each club's block, then within
-    // each block extract the rows that appear before "Updated:".
-    // Each row has the form:  <PlayerName>  <InjuryType>  <Timeline>
-    // where Timeline is one of:  "X-Y weeks", "Test", "TBC", "Season",
-    //   "X weeks", "X-Y months", "X months", "Concussion protocols", etc.
+    // Strategy: split on "Updated:" to isolate each club's block (18 clubs),
+    // then within each block extract rows between the header sentinel and the
+    // start of the "In the mix" prose.
+    //
+    // Each row has the form:  <PlayerName>  <Status/Injury>  <Timeline>
+    //
+    // Status/Injury examples from the AFL page:
+    //   Hamstring, ACL, Corked calf, Concussion, Knee, Shoulder, Foot, Back,
+    //   Suspension, Personal reasons, Conditioning, Appendix, Face, Hip, Quad,
+    //   Head/neck, Foot/Knee  (slash-separated dual injuries)
+    //
+    // Timeline examples:
+    //   1-2 weeks, 4-5 months, Test, TBC, Season, Indefinite,
+    //   Round 8, Round 13, Concussion protocols, Individualised program
 
-    // Regex to match a player row:
-    //   - Player name: "Firstname Lastname" (may include jnr, snr, hyphen)
-    //   - Injury:      one or more capitalised words (e.g. "Hamstring", "ACL", "Corked calf")
-    //   - Timeline:    flexible — digits, dashes, spaces, +, "weeks", "months",
-    //                  "Test", "TBC", "Season", "Indefinite", "protocols", "program"
+    // Regex for a single player row.
+    // Group 1 — player name:  Firstname [Middle] Lastname [jnr/snr]
+    // Group 2 — status:       1-4 words, capitalised, optional slash pair
+    // Group 3 — timeline:     any of the known return formats
     const rowRegex =
-      /([A-Z][a-z]+(?:\s+[A-Za-z'-]+){1,4})\s+((?:[A-Z][a-z]*(?:\/[A-Z][a-z]*)?\s*){1,4})\s+((?:\d+[-–+]?\d*\s*(?:weeks?|months?)|Test|TBC|Season|Indefinite|Round\s*\d+|Concussion\s*protocols?|Individualised\s*program|\d+\s*(?:weeks?|months?)))/gi;
+      /([A-Z][a-z]+(?:\s+[A-Za-z'][a-zA-Z'-]*){1,4})\s+((?:[A-Z][a-zA-Z]*(?:\/[A-Z][a-zA-Z]*)?\s*){1,4})\s+((?:\d+[-–+]?\d*\s*(?:weeks?|months?)|Test|TBC|Season|Indefinite|Round\s*\d+|Concussion\s*protocols?|Individualised\s*program|\d+\s*(?:weeks?|months?)))/gi;
+
+    // Derive the flag type from the injury/status field.
+    // Returns one of: "INJ" | "SUSP" | "REST" | "OUT"
+    function deriveFlagType(injury, timeline) {
+      const inj = injury.toUpperCase();
+      const tl  = (timeline || "").toUpperCase();
+      if (inj === "SUSPENSION") return "SUSP";
+      if (inj === "PERSONAL REASONS") return "OUT";
+      if (inj === "CONDITIONING") return "REST";
+      // "Managed" doesn't appear in the injury field but guard anyway
+      if (inj === "MANAGED") return "REST";
+      // Test = fitness test, player is close to return — treat as REST
+      // (keeps them visible but signals they're not confirmed out)
+      if (tl === "TEST") return "REST";
+      return "INJ";
+    }
 
     const players = [];
     let teamIndex = 0;
@@ -900,11 +924,10 @@ app.get("/injuryList", async (req, res) => {
       const team = INJURY_LIST_TEAM_ORDER[teamIndex];
       teamIndex++;
 
-      // Find the header sentinel "PLAYER INJURY ESTIMATED RETURN" and work from there
+      // Find the header sentinel "PLAYER INJURY ESTIMATED RETURN"
       const headerIdx = segment.search(/PLAYER\s+INJURY\s+ESTIMATED\s+RETURN/i);
       const block = headerIdx >= 0 ? segment.slice(headerIdx) : segment;
 
-      // Reset lastIndex before each exec loop
       rowRegex.lastIndex = 0;
       let match;
       while ((match = rowRegex.exec(block)) !== null) {
@@ -912,7 +935,6 @@ app.get("/injuryList", async (req, res) => {
         const injury     = match[2].trim();
         const timeline   = match[3].trim();
 
-        // Skip the header row itself
         if (playerName.toUpperCase() === "PLAYER") continue;
 
         players.push({
@@ -920,6 +942,7 @@ app.get("/injuryList", async (req, res) => {
           team,
           injury,
           estimatedReturn: timeline,
+          flagType: deriveFlagType(injury, timeline),
         });
       }
     }

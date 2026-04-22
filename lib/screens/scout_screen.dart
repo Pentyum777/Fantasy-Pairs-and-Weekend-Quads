@@ -313,41 +313,66 @@ class _ScoutScreenState extends State<ScoutScreen> {
                             ),
                           ),
                         ),
-                        ...entries.map((e) => Padding(
-                          padding: const EdgeInsets.only(left: 8, bottom: 4),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 5,
-                                child: Text(
-                                  e['playerName'] ?? '',
-                                  style: const TextStyle(fontSize: 13),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 4,
-                                child: Text(
-                                  e['injury'] ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.red,
+                        ...entries.map((e) {
+                          final rawFlag = e['flagType'] ?? 'INJ';
+                          final flag = PlayerFlagExt.fromString(rawFlag) ?? PlayerFlag.inj;
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 8, bottom: 4),
+                            child: Row(
+                              children: [
+                                // Flag chip
+                                Container(
+                                  margin: const EdgeInsets.only(right: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: flag.colour.withOpacity(0.15),
+                                    border: Border.all(color: flag.colour, width: 0.8),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    flag.label,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: flag.colour,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  e['estimatedReturn'] ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey,
+                                // Player name
+                                Expanded(
+                                  flex: 5,
+                                  child: Text(
+                                    e['playerName'] ?? '',
+                                    style: const TextStyle(fontSize: 13),
                                   ),
-                                  textAlign: TextAlign.right,
                                 ),
-                              ),
-                            ],
-                          ),
-                        )),
+                                // Injury / status
+                                Expanded(
+                                  flex: 4,
+                                  child: Text(
+                                    e['injury'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: flag.colour,
+                                    ),
+                                  ),
+                                ),
+                                // Timeline
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
+                                    e['estimatedReturn'] ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                    textAlign: TextAlign.right,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
                         const Divider(height: 8),
                       ],
                     );
@@ -449,7 +474,12 @@ class _ScoutScreenState extends State<ScoutScreen> {
       final mergedAnnounced = announced || savedSquadIds.isNotEmpty;
 
       // Auto-flag players found on the AFL injury list.
-      // Only add INJ flags that aren't already manually set.
+      // Respects any existing manually-set flags — never overwrites them.
+      // Uses the flagType field from the backend to pick the correct flag:
+      //   "SUSP" → PlayerFlag.susp   (Suspension)
+      //   "REST" → PlayerFlag.rest   (Conditioning, Managed, Test — close to return)
+      //   "OUT"  → PlayerFlag.out    (Personal reasons, indefinite)
+      //   "INJ"  → PlayerFlag.inj    (everything else)
       final updatedFlags = Map<String, PlayerFlagEntry>.from(flags);
       for (final entry in injuryList) {
         final injuredName = entry['playerName'] ?? '';
@@ -460,9 +490,11 @@ class _ScoutScreenState extends State<ScoutScreen> {
         ).firstOrNull;
         if (match != null && !updatedFlags.containsKey(match.playerId)) {
           final returnStr = entry['estimatedReturn'] ?? '';
+          final rawFlag   = entry['flagType'] ?? 'INJ';
+          final flag = PlayerFlagExt.fromString(rawFlag) ?? PlayerFlag.inj;
           updatedFlags[match.playerId] = PlayerFlagEntry(
             playerId: match.playerId,
-            flag: PlayerFlag.inj,
+            flag: flag,
             note: '${entry['injury'] ?? ''}'
                 '${returnStr.isNotEmpty ? ' · $returnStr' : ''}',
           );
