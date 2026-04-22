@@ -27,9 +27,6 @@ const __dirname = path.dirname(__filename);
 const dfsMap = JSON.parse(
   fs.readFileSync(path.join(__dirname, "dfs_map.json"), "utf8")
 );
-const squiggleMap = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "squiggle_map.json"), "utf8")
-);
 
 // Track which rounds we've already saved so we don't double-save
 const savedRounds = new Set(); // "season-round" keys
@@ -80,62 +77,37 @@ function getMatchesByRound() {
 }
 
 // ---------------------------------------------------------------------------
-// Check if all matches in a round are complete via a SINGLE Squiggle
-// round-level query (avoids per-match calls that trigger rate limiting).
+// Check if all matches in a round are complete by querying DFS directly.
+// DFS returns player stats only when a game is finished — if all games in
+// a round have stats, the round is complete. No Squiggle needed.
 // Returns: "all_complete" | "some_live" | "none_started"
 // ---------------------------------------------------------------------------
 async function getRoundStatus(matchIds, round) {
-  const roundSquiggleIds = [];
+  let gamesWithStats = 0;
+  let gamesChecked = 0;
+
   for (const matchId of matchIds) {
-    const sid = squiggleMap[matchId];
-    if (sid) roundSquiggleIds.push(String(sid));
-  }
+    const dfsId = dfsMap[matchId];
+    if (!dfsId) continue;
+    gamesChecked++;
 
-  if (roundSquiggleIds.length === 0) return "none_started";
-
-  try {
-    // Single query for all games in the round — much less likely to be blocked
-    const url = `https://api.squiggle.com.au/?q=games;year=${CURRENT_SEASON};round=${round}`;
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Origin": "https://squiggle.com.au",
-        "Referer": "https://squiggle.com.au/",
-        "Cache-Control": "no-cache",
-      },
-    });
-
-    // Guard against HTML error pages (403 / rate-limit)
-    const contentType = res.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      console.warn(`⚠ Squiggle round ${round} query blocked (status ${res.status}) — will retry later`);
-      return "none_started";
+    try {
+      const players = await scrapeDFS(String(dfsId));
+      // A game has stats if DFS returns players with non-zero fantasy points
+      const hasStats = players && players.some(p => (p.fantasyPoints ?? 0) > 0);
+      if (hasStats) gamesWithStats++;
+    } catch (err) {
+      // DFS fetch failed — treat as not yet complete
     }
-
-    const json = await res.json();
-    const games = json?.games ?? [];
-    if (games.length === 0) return "none_started";
-
-    // Only consider games whose Squiggle IDs match this round's matches
-    const relevant = games.filter(g => roundSquiggleIds.includes(String(g.id)));
-    if (relevant.length === 0) return "none_started";
-
-    const completedCount = relevant.filter(g => g.complete === 100).length;
-    const liveCount = relevant.filter(g => g.complete > 0 && g.complete < 100).length;
-
-    console.log(`Squiggle round ${round}: ${relevant.length} games, ${completedCount} complete, ${liveCount} live`);
-
-    if (liveCount > 0) return "some_live";
-    if (completedCount === relevant.length) return "all_complete";
-    if (completedCount > 0) return "some_live"; // mid-round
-    return "none_started";
-
-  } catch (err) {
-    console.error(`Squiggle round ${round} fetch failed:`, err.message);
-    return "none_started";
   }
+
+  if (gamesChecked === 0) return "none_started";
+
+  console.log(`Round ${round} DFS check: ${gamesWithStats}/${gamesChecked} games have stats`);
+
+  if (gamesWithStats === gamesChecked) return "all_complete";
+  if (gamesWithStats > 0) return "some_live"; // mid-round
+  return "none_started";
 }
 
 // ---------------------------------------------------------------------------
