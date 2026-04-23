@@ -585,36 +585,36 @@ class _ScoutScreenState extends State<ScoutScreen> {
         }
       }
 
-      // Merge persisted backend squad + AFL lineup squad + AFL API squad
-      final mergedIds = {...namedIds, ...savedSquadIds, ...lineupNamedIds};
-      final mergedAnnounced = announced || savedSquadIds.isNotEmpty || lineupNamedIds.isNotEmpty;
-
       // ── Auto-populate named squad from team lineups page ─────────────────
       // Match each announced match to the fixtures for this game type.
       // Players listed as IN on the AFL lineups page are added to namedSquad.
       final lineupNamedIds = <String>{};
-      for (final match in teamLineups) {
-        if (match['available'] != true) continue;
-        final homeTeam = match['home'] as String? ?? '';
-        final awayTeam = match['away'] as String? ?? '';
-        final homeNames = (match['homePlayers'] as List?)?.cast<String>() ?? [];
-        final awayNames = (match['awayPlayers'] as List?)?.cast<String>() ?? [];
+      for (final lineupMatch in teamLineups) {
+        if (lineupMatch['available'] != true) continue;
+        final homeTeam = lineupMatch['home'] as String? ?? '';
+        final awayTeam = lineupMatch['away'] as String? ?? '';
+        final homeNames = (lineupMatch['homePlayers'] as List?)?.cast<String>() ?? [];
+        final awayNames = (lineupMatch['awayPlayers'] as List?)?.cast<String>() ?? [];
         // Find matching player IDs by name+team
         for (final name in homeNames) {
-          final match = stats.where((s) =>
+          final p = stats.where((s) =>
             s.playerName.trim().toLowerCase() == name.trim().toLowerCase() &&
             s.team == homeTeam
           ).firstOrNull;
-          if (match != null) lineupNamedIds.add(match.playerId);
+          if (p != null) lineupNamedIds.add(p.playerId);
         }
         for (final name in awayNames) {
-          final match = stats.where((s) =>
+          final p = stats.where((s) =>
             s.playerName.trim().toLowerCase() == name.trim().toLowerCase() &&
             s.team == awayTeam
           ).firstOrNull;
-          if (match != null) lineupNamedIds.add(match.playerId);
+          if (p != null) lineupNamedIds.add(p.playerId);
         }
       }
+
+      // Merge persisted backend squad + AFL lineup squad + AFL API squad
+      final mergedIds = <String>{...namedIds, ...savedSquadIds, ...lineupNamedIds};
+      final mergedAnnounced = announced || savedSquadIds.isNotEmpty || lineupNamedIds.isNotEmpty;
 
       // Auto-flag players found on the AFL injury list.
 
