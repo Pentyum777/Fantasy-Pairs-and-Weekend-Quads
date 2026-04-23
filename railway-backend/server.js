@@ -1058,8 +1058,14 @@ app.get("/teamLineups", async (req, res) => {
         const teamList = [...namedTeams];
         const placeholders = teamList.map((_, i) => `$${i + 1}`).join(",");
         const result = await pool.query(
-          `SELECT player_name, team FROM player_season_stats
-           WHERE season = 2026 AND team = ANY($1::text[])
+          `SELECT DISTINCT
+             (array_agg(player_name ORDER BY CASE WHEN player_name <> '' THEN 0 ELSE 1 END, player_name))[1] AS player_name,
+             (array_agg(team        ORDER BY CASE WHEN team        <> '' THEN 0 ELSE 1 END, team       ))[1] AS team
+           FROM match_stats
+           WHERE match_id LIKE 'CD_M2026%'
+             AND team = ANY($1::text[])
+             AND player_name <> ''
+           GROUP BY player_id
            ORDER BY team, player_name`,
           [teamList]
         );
