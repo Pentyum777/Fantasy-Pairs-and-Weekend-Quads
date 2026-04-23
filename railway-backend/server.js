@@ -958,111 +958,152 @@ app.get("/injuryList", async (req, res) => {
 
 
 // GET /teamLineups
-// Scrapes afl.com.au/matches/team-lineups and returns named players per team.
-// Returns:
-//   { ok, matches: [{ aflMatchId, home, away, homePlayers, awayPlayers, available }] }
+// Uses the open aflapi.afl.com.au/v2 API to find the current round's matches,
+// then fetches player rosters from the CFS matchRosters endpoint (spoofing the
+// Referer/Origin so the request looks like it came from afl.com.au).
 //
-// CSS abbreviation → our team code map (mirrors AflClubCodes.dart)
-const LINEUP_CSS_TO_TEAM = {
-  "wb":   "WBD", "syd":  "SYD", "rich": "RIC",  "melb": "MELB",
-  "haw":  "HAW", "gcfc": "GCS", "ess":  "ESS",  "coll": "COL",
-  "port": "PTA", "geel": "GEE", "fre":  "FRE",  "carl": "CAR",
-  "stk":  "STK", "wce":  "WCE", "bl":   "BRL",  "adel": "ADE",
-  "gws":  "GWS", "nmfc": "NTH",
+// AFL abbreviation → our team code (matches AflClubCodes.dart)
+const AFL_ABBR_TO_TEAM = {
+  "WB":   "WBD", "SYD":  "SYD", "RICH": "RIC",  "MELB": "MELB",
+  "HAW":  "HAW", "GCFC": "GCS", "ESS":  "ESS",  "COLL": "COL",
+  "PORT": "PTA", "GEEL": "GEE", "FRE":  "FRE",  "CARL": "CAR",
+  "STK":  "STK", "WCE":  "WCE", "BL":   "BRL",  "ADEL": "ADE",
+  "GWS":  "GWS", "NMFC": "NTH", "MEL":  "MELB",
 };
 
 app.get("/teamLineups", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   try {
-    const pageRes = await fetch("https://www.afl.com.au/matches/team-lineups", {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "text/html,application/xhtml+xml",
-      },
-    });
+    // ── Step 1: find current season/round via the open v2 API ────────────────
+    // compSeasonId 85 = 2026 AFL Premiership season (hardcoded for speed)
+    const COMP_SEASON_ID = 85;
 
-    if (!pageRes.ok) {
-      return res.json({ ok: true, matches: [], source: "unavailable" });
+    // Get current round number from the compseasons rounds endpoint
+    const roundsRes = await fetch(
+      `https://aflapi.afl.com.au/afl/v2/compseasons/${COMP_SEASON_ID}/rounds?pageSize=50`,
+      { headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" } }
+    );
+    if (!roundsRes.ok) {
+      return res.json({ ok: true, matches: [], source: "rounds_unavailable" });
+    }
+    const roundsData = await roundsRes.json();
+    const rounds = roundsData.rounds || [];
+
+    // Find the current round: the first round where utcEndTime is in the future
+    const now = Date.now();
+    let currentRound = rounds.find(r => new Date(r.utcEndTime).getTime() > now);
+    if (!currentRound) currentRound = rounds[rounds.length - 1];
+    if (!currentRound) {
+      return res.json({ ok: true, matches: [], source: "no_current_round" });
     }
 
-    const html = await pageRes.text();
-    const matches = [];
+    const roundNumber = currentRound.roundNumber;
+    const roundProviderId = currentRound.providerId; // e.g. "CD_R202601407"
+    console.log(`teamLineups: current round = ${roundNumber}, providerId = ${roundProviderId}`);
 
-    // ── Each match block starts with <div class="team-lineups__item"> ────────
-    // We split on this sentinel to isolate each match.
-    const itemBlocks = html.split('<div class="team-lineups__item">').slice(1);
+    // ── Step 2: get all matches for this round ────────────────────────────────
+    const matchesRes = await fetch(
+      `https://aflapi.afl.com.au/afl/v2/matches?competitionId=1&compSeasonId=${COMP_SEASON_ID}&roundNumber=${roundNumber}&pageSize=20`,
+      { headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" } }
+    );
+    if (!matchesRes.ok) {
+      return res.json({ ok: true, matches: [], source: "matches_unavailable" });
+    }
+    const matchesData = await matchesRes.json();
+    const roundMatches = matchesData.matches || [];
 
-    for (const block of itemBlocks) {
-      // ── Match ID from the header href  e.g. href="/afl/matches/8093" ────────
-      const matchIdMatch = block.match(/href="\/afl\/matches\/(\d+)"/);
-      if (!matchIdMatch) continue;
-      const aflMatchId = matchIdMatch[1];
+    // Find which matches have lineups announced
+    // status "UNCONFIRMED_TEAMS" = lineups named but not locked
+    // status "CONFIRMED_TEAMS" or "IN_PROGRESS" = locked/playing
+    const namedStatuses = new Set(["UNCONFIRMED_TEAMS", "CONFIRMED_TEAMS", "IN_PROGRESS", "CONCLUDED"]);
+    const namedMatches = roundMatches.filter(m => namedStatuses.has(m.status));
 
-      // ── Team codes from watermark CSS classes ─────────────────────────────
-      // e.g. stats-team-watermark-background--wb ... --left  (home)
-      //      stats-team-watermark-background--syd ... --right (away)
-      const homeTeamMatch = block.match(/stats-team-watermark-background--([a-z]+)[^>]*--left/);
-      const awayTeamMatch = block.match(/stats-team-watermark-background--([a-z]+)[^>]*--right/);
-      const home = homeTeamMatch ? (LINEUP_CSS_TO_TEAM[homeTeamMatch[1]] || homeTeamMatch[1].toUpperCase()) : "";
-      const away = awayTeamMatch ? (LINEUP_CSS_TO_TEAM[awayTeamMatch[1]] || awayTeamMatch[1].toUpperCase()) : "";
+    // Build basic match list (all matches, mark which have lineups)
+    const allMatchInfo = roundMatches.map(m => ({
+      aflMatchId: String(m.id),
+      providerId: m.providerId,
+      home: AFL_ABBR_TO_TEAM[m.home?.team?.abbreviation] || m.home?.team?.abbreviation || "",
+      away: AFL_ABBR_TO_TEAM[m.away?.team?.abbreviation] || m.away?.team?.abbreviation || "",
+      status: m.status,
+      available: namedStatuses.has(m.status),
+      homePlayers: [],
+      awayPlayers: [],
+    }));
 
-      // ── Check if lineups are available ────────────────────────────────────
-      if (block.includes("Team lineups are not available")) {
-        matches.push({ aflMatchId, home, away, homePlayers: [], awayPlayers: [], available: false });
-        continue;
-      }
+    if (namedMatches.length === 0) {
+      console.log(`teamLineups: round ${roundNumber} — no lineups named yet`);
+      return res.json({ ok: true, matches: allMatchInfo, source: "afl", updatedAt: new Date().toISOString() });
+    }
 
-      // ── Extract IN players only (not OUT) ─────────────────────────────────
-      // Structure: the IN section comes first, then OUT, then NEW.
-      // We find the IN section by looking for title--in, then grab all player
-      // names from the home and away grids within that section.
-      //
-      // Strategy: find the IN block (between title--in and the next title--out),
-      // then split home/away by grid--home / grid--away within it.
-
-      const inSectionMatch = block.match(
-        /team-lineups-ins-and-outs__title--in[\s\S]*?(?=team-lineups-ins-and-outs__title--out|team-lineups-ins-and-outs__title--new|$)/
+    // ── Step 3: fetch rosters for the round from CFS API ─────────────────────
+    // Spoof browser headers so the AFL CDN lets us through
+    let rostersByProviderId = {};
+    try {
+      const rostersRes = await fetch(
+        `https://api.afl.com.au/cfs/afl/matchRosters/round/${roundProviderId}?minimal=true`,
+        {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-AU,en;q=0.9",
+            "Origin": "https://www.afl.com.au",
+            "Referer": "https://www.afl.com.au/matches/team-lineups",
+            "Sec-Fetch-Site": "same-site",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Dest": "empty",
+          },
+        }
       );
 
-      if (!inSectionMatch) {
-        matches.push({ aflMatchId, home, away, homePlayers: [], awayPlayers: [], available: false });
-        continue;
-      }
-
-      const inSection = inSectionMatch[0];
-
-      // Extract player names from a grid section
-      const extractNames = (gridHtml) => {
-        const names = [];
-        const nameRegex = /class="team-lineups-ins-and-outs__player-name">([^<]+)<\/p>/g;
-        let m;
-        while ((m = nameRegex.exec(gridHtml)) !== null) {
-          const name = m[1].trim();
-          if (name) names.push(name);
+      if (rostersRes.ok) {
+        const rostersData = await rostersRes.json();
+        // rostersData is typically an array of match roster objects
+        const rosterList = Array.isArray(rostersData) ? rostersData : (rostersData.matchRosters || []);
+        for (const roster of rosterList) {
+          const pid = roster.match?.providerId || roster.providerId;
+          if (pid) rostersByProviderId[pid] = roster;
         }
-        return names;
-      };
-
-      // Home grid appears before the title divider, away after
-      const homeGridMatch = inSection.match(/grid--home([\s\S]*?)grid--away/);
-      const awayGridMatch = inSection.match(/grid--away([\s\S]*?)(?=team-lineups-ins-and-outs__title|$)/);
-
-      const homePlayers = homeGridMatch ? extractNames(homeGridMatch[1]) : [];
-      const awayPlayers = awayGridMatch ? extractNames(awayGridMatch[1]) : [];
-
-      matches.push({
-        aflMatchId,
-        home,
-        away,
-        homePlayers,
-        awayPlayers,
-        available: homePlayers.length > 0 || awayPlayers.length > 0,
-      });
+        console.log(`teamLineups: rosters fetched for ${Object.keys(rostersByProviderId).length} matches`);
+      } else {
+        console.warn(`teamLineups: CFS rosters returned ${rostersRes.status}`);
+      }
+    } catch (rosterErr) {
+      console.warn("teamLineups: roster fetch failed:", rosterErr.message);
     }
 
-    const available = matches.filter(m => m.available).length;
-    console.log(`teamLineups: scraped ${matches.length} matches, ${available} with lineups`);
-    res.json({ ok: true, matches, source: "afl", updatedAt: new Date().toISOString() });
+    // ── Step 4: extract player names from rosters ─────────────────────────────
+    const extractPlayerNames = (teamRoster) => {
+      if (!teamRoster) return [];
+      const players = teamRoster.lineup || teamRoster.players || teamRoster.squad || [];
+      return players
+        .filter(p => {
+          // Only include players who are IN (not emergencies or subs in some formats)
+          const pos = (p.position || p.status || "").toUpperCase();
+          return pos !== "EMERGENCY" && pos !== "SUB_22" && pos !== "OMITTED";
+        })
+        .map(p => {
+          const player = p.player || p;
+          const fn = player.givenName || player.firstName || player.first_name || "";
+          const ln = player.surname || player.lastName || player.last_name || player.familyName || "";
+          return fn && ln ? `${fn} ${ln}`.trim() : (player.displayName || player.name || "");
+        })
+        .filter(Boolean);
+    };
+
+    // Merge roster data into match info
+    for (const matchInfo of allMatchInfo) {
+      if (!matchInfo.available) continue;
+      const roster = rostersByProviderId[matchInfo.providerId];
+      if (roster) {
+        matchInfo.homePlayers = extractPlayerNames(roster.homeTeam || roster.home);
+        matchInfo.awayPlayers = extractPlayerNames(roster.awayTeam || roster.away);
+        matchInfo.available = matchInfo.homePlayers.length > 0 || matchInfo.awayPlayers.length > 0;
+      }
+    }
+
+    const withPlayers = allMatchInfo.filter(m => m.available && m.homePlayers.length > 0).length;
+    console.log(`teamLineups: ${allMatchInfo.length} matches, ${withPlayers} with player names`);
+    res.json({ ok: true, matches: allMatchInfo, source: "afl", updatedAt: new Date().toISOString() });
 
   } catch (err) {
     console.error("teamLineups error:", err.message);
