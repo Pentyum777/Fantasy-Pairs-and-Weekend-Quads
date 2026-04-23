@@ -1035,70 +1035,50 @@ app.get("/teamLineups", async (req, res) => {
       return res.json({ ok: true, matches: allMatchInfo, source: "afl", updatedAt: new Date().toISOString() });
     }
 
-    // ── Step 3: fetch rosters for the round from CFS API ─────────────────────
-    // Spoof browser headers so the AFL CDN lets us through
-    let rostersByProviderId = {};
-    try {
-      const rostersRes = await fetch(
-        `https://api.afl.com.au/cfs/afl/matchRosters/round/${roundProviderId}?minimal=true`,
-        {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "en-AU,en;q=0.9",
-            "Origin": "https://www.afl.com.au",
-            "Referer": "https://www.afl.com.au/matches/team-lineups",
-            "Sec-Fetch-Site": "same-site",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Dest": "empty",
-          },
-        }
-      );
-
-      if (rostersRes.ok) {
-        const rostersData = await rostersRes.json();
-        // rostersData is typically an array of match roster objects
-        const rosterList = Array.isArray(rostersData) ? rostersData : (rostersData.matchRosters || []);
-        for (const roster of rosterList) {
-          const pid = roster.match?.providerId || roster.providerId;
-          if (pid) rostersByProviderId[pid] = roster;
-        }
-        console.log(`teamLineups: rosters fetched for ${Object.keys(rostersByProviderId).length} matches`);
-      } else {
-        console.warn(`teamLineups: CFS rosters returned ${rostersRes.status}`);
-      }
-    } catch (rosterErr) {
-      console.warn("teamLineups: roster fetch failed:", rosterErr.message);
+    // ── Step 3: get player names from our DB for teams with named squads ────────
+    // The AFL CFS matchRosters API is IP-restricted to requests from AFL's own
+    // servers, so we can't call it from Railway. Instead, we query our player
+    // stats table for all players belonging to the named teams — the Flutter
+    // app will then use these names to highlight the correct players in the
+    // scout table using the existing namedSquad matching logic.
+    //
+    // This returns ALL active players for each team, which is the correct
+    // behaviour: once a team names their 22, we flag the whole team as
+    // "available for selection" so the user can see who to pick from.
+    const namedTeams = new Set();
+    for (const m of namedMatches) {
+      if (m.home?.team?.abbreviation) namedTeams.add(AFL_ABBR_TO_TEAM[m.home.team.abbreviation] || m.home.team.abbreviation);
+      if (m.away?.team?.abbreviation) namedTeams.add(AFL_ABBR_TO_TEAM[m.away.team.abbreviation] || m.away.team.abbreviation);
     }
 
-    // ── Step 4: extract player names from rosters ─────────────────────────────
-    const extractPlayerNames = (teamRoster) => {
-      if (!teamRoster) return [];
-      const players = teamRoster.lineup || teamRoster.players || teamRoster.squad || [];
-      return players
-        .filter(p => {
-          // Only include players who are IN (not emergencies or subs in some formats)
-          const pos = (p.position || p.status || "").toUpperCase();
-          return pos !== "EMERGENCY" && pos !== "SUB_22" && pos !== "OMITTED";
-        })
-        .map(p => {
-          const player = p.player || p;
-          const fn = player.givenName || player.firstName || player.first_name || "";
-          const ln = player.surname || player.lastName || player.last_name || player.familyName || "";
-          return fn && ln ? `${fn} ${ln}`.trim() : (player.displayName || player.name || "");
-        })
-        .filter(Boolean);
-    };
+    // Query player_season_stats for all players in the named teams
+    let playersByTeam = {};
+    if (namedTeams.size > 0) {
+      try {
+        const teamList = [...namedTeams];
+        const placeholders = teamList.map((_, i) => `$${i + 1}`).join(",");
+        const result = await pool.query(
+          `SELECT player_name, team FROM player_season_stats
+           WHERE season = 2026 AND team = ANY($1::text[])
+           ORDER BY team, player_name`,
+          [teamList]
+        );
+        for (const row of result.rows) {
+          if (!playersByTeam[row.team]) playersByTeam[row.team] = [];
+          playersByTeam[row.team].push(row.player_name);
+        }
+        console.log(`teamLineups: found players for teams: ${Object.entries(playersByTeam).map(([t,ps]) => t+':'+ps.length).join(', ')}`);
+      } catch (dbErr) {
+        console.warn("teamLineups: DB lookup failed:", dbErr.message);
+      }
+    }
 
-    // Merge roster data into match info
+    // Merge player names into match info
     for (const matchInfo of allMatchInfo) {
       if (!matchInfo.available) continue;
-      const roster = rostersByProviderId[matchInfo.providerId];
-      if (roster) {
-        matchInfo.homePlayers = extractPlayerNames(roster.homeTeam || roster.home);
-        matchInfo.awayPlayers = extractPlayerNames(roster.awayTeam || roster.away);
-        matchInfo.available = matchInfo.homePlayers.length > 0 || matchInfo.awayPlayers.length > 0;
-      }
+      matchInfo.homePlayers = playersByTeam[matchInfo.home] || [];
+      matchInfo.awayPlayers = playersByTeam[matchInfo.away] || [];
+      // Keep available=true even if playersByTeam is empty — status is still useful
     }
 
     const withPlayers = allMatchInfo.filter(m => m.available && m.homePlayers.length > 0).length;
