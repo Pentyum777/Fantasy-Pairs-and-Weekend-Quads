@@ -86,6 +86,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
   Map<String, Map<String, dynamic>> _vsOpponentStats = {};
   String _upcomingOpponent = '';
   List<Map<String, String>> _injuryList = [];
+  List<Map<String, dynamic>> _teamLineups = [];
 
   // Filters
   String? _teamFilter;
@@ -259,6 +260,120 @@ class _ScoutScreenState extends State<ScoutScreen> {
     );
   }
 
+  /// Shows a dialog summarising which teams have named their squad.
+  void _showTeamLineupsDialog() {
+    final available = _teamLineups.where((m) => m['available'] == true).toList();
+    final pending   = _teamLineups.where((m) => m['available'] != true).toList();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.format_list_numbered_outlined, size: 20),
+            const SizedBox(width: 8),
+            const Text('Team Lineups'),
+            const Spacer(),
+            Text(
+              '${available.length}/${_teamLineups.length} named',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: _teamLineups.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No lineup data available.\nTap Reload to try again.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                )
+              : ListView(
+                  children: [
+                    if (available.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 6),
+                        child: Text(
+                          'Named ✓',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                      ...available.map((m) {
+                        final home = m['home'] as String? ?? '';
+                        final away = m['away'] as String? ?? '';
+                        final hc   = (m['homePlayers'] as List?)?.length ?? 0;
+                        final ac   = (m['awayPlayers'] as List?)?.length ?? 0;
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 8, bottom: 6),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '$home vs $away',
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                              Text(
+                                '$hc + $ac players',
+                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      const Divider(),
+                    ],
+                    if (pending.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 6),
+                        child: Text(
+                          'Not yet named',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                      ...pending.map((m) {
+                        final home = m['home'] as String? ?? '';
+                        final away = m['away'] as String? ?? '';
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 8, bottom: 4),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.schedule, size: 14, color: Colors.grey),
+                              const SizedBox(width: 6),
+                              Text(
+                                '$home vs $away',
+                                style: const TextStyle(fontSize: 13, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ],
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _loadData();
+            },
+            child: const Text('Reload'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Shows a dialog with the live AFL injury list data.
   void _showInjuryListDialog() {
     // Group by team for display
@@ -422,6 +537,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
     final stats = await widget.scoutService.fetchSeasonStats(widget.season);
     final flags = await widget.scoutService.fetchFlags(widget.season);
     final injuryList = await widget.scoutService.fetchInjuryList();
+    final teamLineups = await widget.scoutService.fetchTeamLineups();
 
     // ⭐ Fetch drafted players from backend for ALL game types in this round
     // This ensures we get picks even if the local state isn't loaded
@@ -469,11 +585,39 @@ class _ScoutScreenState extends State<ScoutScreen> {
         }
       }
 
-      // Merge persisted backend squad with any AFL lineup squad
-      final mergedIds = {...namedIds, ...savedSquadIds};
-      final mergedAnnounced = announced || savedSquadIds.isNotEmpty;
+      // Merge persisted backend squad + AFL lineup squad + AFL API squad
+      final mergedIds = {...namedIds, ...savedSquadIds, ...lineupNamedIds};
+      final mergedAnnounced = announced || savedSquadIds.isNotEmpty || lineupNamedIds.isNotEmpty;
+
+      // ── Auto-populate named squad from team lineups page ─────────────────
+      // Match each announced match to the fixtures for this game type.
+      // Players listed as IN on the AFL lineups page are added to namedSquad.
+      final lineupNamedIds = <String>{};
+      for (final match in teamLineups) {
+        if (match['available'] != true) continue;
+        final homeTeam = match['home'] as String? ?? '';
+        final awayTeam = match['away'] as String? ?? '';
+        final homeNames = (match['homePlayers'] as List?)?.cast<String>() ?? [];
+        final awayNames = (match['awayPlayers'] as List?)?.cast<String>() ?? [];
+        // Find matching player IDs by name+team
+        for (final name in homeNames) {
+          final match = stats.where((s) =>
+            s.playerName.trim().toLowerCase() == name.trim().toLowerCase() &&
+            s.team == homeTeam
+          ).firstOrNull;
+          if (match != null) lineupNamedIds.add(match.playerId);
+        }
+        for (final name in awayNames) {
+          final match = stats.where((s) =>
+            s.playerName.trim().toLowerCase() == name.trim().toLowerCase() &&
+            s.team == awayTeam
+          ).firstOrNull;
+          if (match != null) lineupNamedIds.add(match.playerId);
+        }
+      }
 
       // Auto-flag players found on the AFL injury list.
+
       // Respects any existing manually-set flags — never overwrites them.
       // Uses the flagType field from the backend to pick the correct flag:
       //   "SUSP" → PlayerFlag.susp   (Suspension)
@@ -505,6 +649,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
         _allStats = stats;
         _flags = updatedFlags;
         _injuryList = injuryList;
+        _teamLineups = teamLineups;
         _namedSquadIds = mergedIds;
         _teamsAnnounced = mergedAnnounced;
         _fetchedDraftedIds = drafted;
@@ -616,11 +761,17 @@ class _ScoutScreenState extends State<ScoutScreen> {
             tooltip: 'Paste named squad',
             onPressed: () => _showPasteSquadDialog(),
           ),
-          // Open AFL injury list instructions
+          // Open AFL injury list
           IconButton(
             icon: const Icon(Icons.medical_services_outlined),
             tooltip: 'View AFL injury list',
             onPressed: () => _showInjuryListDialog(),
+          ),
+          // Show team lineups summary
+          IconButton(
+            icon: const Icon(Icons.format_list_numbered_outlined),
+            tooltip: 'Team lineups',
+            onPressed: () => _showTeamLineupsDialog(),
           ),
           IconButton(
             icon: const Icon(Icons.refresh),

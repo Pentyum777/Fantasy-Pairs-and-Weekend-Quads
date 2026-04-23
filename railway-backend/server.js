@@ -957,6 +957,120 @@ app.get("/injuryList", async (req, res) => {
 });
 
 
+// GET /teamLineups
+// Scrapes afl.com.au/matches/team-lineups and returns named players per team.
+// Returns:
+//   { ok, matches: [{ aflMatchId, home, away, homePlayers, awayPlayers, available }] }
+//
+// CSS abbreviation → our team code map (mirrors AflClubCodes.dart)
+const LINEUP_CSS_TO_TEAM = {
+  "wb":   "WBD", "syd":  "SYD", "rich": "RIC",  "melb": "MELB",
+  "haw":  "HAW", "gcfc": "GCS", "ess":  "ESS",  "coll": "COL",
+  "port": "PTA", "geel": "GEE", "fre":  "FRE",  "carl": "CAR",
+  "stk":  "STK", "wce":  "WCE", "bl":   "BRL",  "adel": "ADE",
+  "gws":  "GWS", "nmfc": "NTH",
+};
+
+app.get("/teamLineups", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const pageRes = await fetch("https://www.afl.com.au/matches/team-lineups", {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+      },
+    });
+
+    if (!pageRes.ok) {
+      return res.json({ ok: true, matches: [], source: "unavailable" });
+    }
+
+    const html = await pageRes.text();
+    const matches = [];
+
+    // ── Each match block starts with <div class="team-lineups__item"> ────────
+    // We split on this sentinel to isolate each match.
+    const itemBlocks = html.split('<div class="team-lineups__item">').slice(1);
+
+    for (const block of itemBlocks) {
+      // ── Match ID from the header href  e.g. href="/afl/matches/8093" ────────
+      const matchIdMatch = block.match(/href="\/afl\/matches\/(\d+)"/);
+      if (!matchIdMatch) continue;
+      const aflMatchId = matchIdMatch[1];
+
+      // ── Team codes from watermark CSS classes ─────────────────────────────
+      // e.g. stats-team-watermark-background--wb ... --left  (home)
+      //      stats-team-watermark-background--syd ... --right (away)
+      const homeTeamMatch = block.match(/stats-team-watermark-background--([a-z]+)[^>]*--left/);
+      const awayTeamMatch = block.match(/stats-team-watermark-background--([a-z]+)[^>]*--right/);
+      const home = homeTeamMatch ? (LINEUP_CSS_TO_TEAM[homeTeamMatch[1]] || homeTeamMatch[1].toUpperCase()) : "";
+      const away = awayTeamMatch ? (LINEUP_CSS_TO_TEAM[awayTeamMatch[1]] || awayTeamMatch[1].toUpperCase()) : "";
+
+      // ── Check if lineups are available ────────────────────────────────────
+      if (block.includes("Team lineups are not available")) {
+        matches.push({ aflMatchId, home, away, homePlayers: [], awayPlayers: [], available: false });
+        continue;
+      }
+
+      // ── Extract IN players only (not OUT) ─────────────────────────────────
+      // Structure: the IN section comes first, then OUT, then NEW.
+      // We find the IN section by looking for title--in, then grab all player
+      // names from the home and away grids within that section.
+      //
+      // Strategy: find the IN block (between title--in and the next title--out),
+      // then split home/away by grid--home / grid--away within it.
+
+      const inSectionMatch = block.match(
+        /team-lineups-ins-and-outs__title--in[\s\S]*?(?=team-lineups-ins-and-outs__title--out|team-lineups-ins-and-outs__title--new|$)/
+      );
+
+      if (!inSectionMatch) {
+        matches.push({ aflMatchId, home, away, homePlayers: [], awayPlayers: [], available: false });
+        continue;
+      }
+
+      const inSection = inSectionMatch[0];
+
+      // Extract player names from a grid section
+      const extractNames = (gridHtml) => {
+        const names = [];
+        const nameRegex = /class="team-lineups-ins-and-outs__player-name">([^<]+)<\/p>/g;
+        let m;
+        while ((m = nameRegex.exec(gridHtml)) !== null) {
+          const name = m[1].trim();
+          if (name) names.push(name);
+        }
+        return names;
+      };
+
+      // Home grid appears before the title divider, away after
+      const homeGridMatch = inSection.match(/grid--home([\s\S]*?)grid--away/);
+      const awayGridMatch = inSection.match(/grid--away([\s\S]*?)(?=team-lineups-ins-and-outs__title|$)/);
+
+      const homePlayers = homeGridMatch ? extractNames(homeGridMatch[1]) : [];
+      const awayPlayers = awayGridMatch ? extractNames(awayGridMatch[1]) : [];
+
+      matches.push({
+        aflMatchId,
+        home,
+        away,
+        homePlayers,
+        awayPlayers,
+        available: homePlayers.length > 0 || awayPlayers.length > 0,
+      });
+    }
+
+    const available = matches.filter(m => m.available).length;
+    console.log(`teamLineups: scraped ${matches.length} matches, ${available} with lineups`);
+    res.json({ ok: true, matches, source: "afl", updatedAt: new Date().toISOString() });
+
+  } catch (err) {
+    console.error("teamLineups error:", err.message);
+    res.json({ ok: true, matches: [], source: "error", message: err.message });
+  }
+});
+
+
 // GET /vsOpponentStats?season=&round=&gameType=
 // Returns each player's average score vs their upcoming opponent
 // Uses selections table to find matchups for this round/gameType

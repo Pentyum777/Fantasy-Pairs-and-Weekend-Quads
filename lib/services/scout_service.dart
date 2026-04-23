@@ -371,6 +371,29 @@ class ScoutService {
     } catch (_) {}
   }
 
+  // ── Team lineups ─────────────────────────────────────────────────────────────
+
+  /// Fetches the current AFL team lineups from the backend scraper.
+  /// Returns a list of match objects, each with:
+  ///   aflMatchId, home, away, homePlayers (names), awayPlayers (names), available
+  Future<List<Map<String, dynamic>>> fetchTeamLineups() async {
+    try {
+      final url = Uri.https(
+        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        '/teamLineups',
+      );
+      final res = await http.get(url);
+      if (res.statusCode != 200) return [];
+      final json = jsonDecode(res.body);
+      final matches = json['matches'] as List<dynamic>? ?? [];
+      return matches
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   // ── Injury list ──────────────────────────────────────────────────────────────
 
   /// Fetches the current AFL injury list from the backend.
