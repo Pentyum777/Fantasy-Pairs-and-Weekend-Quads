@@ -1677,6 +1677,32 @@ function extractFootyInfoMatch(roundData, homeTeam, awayTeam) {
   return { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "Upcoming" };
 }
 
+
+// ── DEBUG: Test FootyInfo fetch directly ─────────────────────────────────────
+app.get("/debugFootyInfo/:roundId", async (req, res) => {
+  const roundId = req.params.roundId;
+  try {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(
+      `https://api.footyinfo.com/api/round_summary?round_id=${roundId}`,
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept": "application/json",
+          "Referer": "https://www.footyinfo.com/",
+          "Origin": "https://www.footyinfo.com",
+        },
+        signal: controller.signal,
+      }
+    );
+    const text = await response.text();
+    res.json({ ok: response.ok, status: response.status, bodyPreview: text.slice(0, 500) });
+  } catch (err) {
+    res.json({ ok: false, error: err.message, type: err.constructor.name });
+  }
+});
+
 // ------------------------------------------------------
 // Start server
 // ------------------------------------------------------
