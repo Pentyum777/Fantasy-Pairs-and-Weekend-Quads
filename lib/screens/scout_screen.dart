@@ -58,6 +58,10 @@ class ScoutScreen extends StatefulWidget {
   /// Player IDs already drafted in the current game
   final Set<String> draftedPlayerIds;
 
+  /// For custom_builder / custom_game: the specific match IDs selected.
+  /// When provided, only players from these fixtures are shown.
+  final List<String>? selectedFixtureIds;
+
   const ScoutScreen({
     super.key,
     required this.season,
@@ -67,6 +71,7 @@ class ScoutScreen extends StatefulWidget {
     required this.playerRepo,
     required this.scoutService,
     required this.draftedPlayerIds,
+    this.selectedFixtureIds,
   });
 
   @override
@@ -683,6 +688,13 @@ class _ScoutScreenState extends State<ScoutScreen> {
       case 'weekend_quads':
         return all.where((f) =>
           !isDay(f, DateTime.thursday)).toList();
+      case 'custom_builder':
+      case 'custom_game':
+        // Filter to only the matches selected when the custom game was created
+        final ids = widget.selectedFixtureIds;
+        if (ids == null || ids.isEmpty) return all;
+        return all.where((f) =>
+          f.matchId != null && ids.contains(f.matchId)).toList();
       default:
         return all;
     }
@@ -845,6 +857,8 @@ class _ScoutScreenState extends State<ScoutScreen> {
             items: [
               'thursday_pairs', 'friday_pairs', 'saturday_pairs',
               'sunday_pairs', 'monday_pairs', 'weekend_quads',
+              if (widget.gameType == 'custom_builder') 'custom_builder',
+              if (widget.gameType == 'custom_game') 'custom_game',
             ],
             itemLabel: _gameTypeLabel,
             value: _gameTypeFilter,
@@ -1571,6 +1585,8 @@ class _ScoutScreenState extends State<ScoutScreen> {
       case 'sunday_pairs':    return 'Sunday Pairs';
       case 'monday_pairs':    return 'Monday Pairs';
       case 'weekend_quads':   return 'Weekend Quads';
+      case 'custom_builder':  return 'Custom Game';
+      case 'custom_game':     return 'Custom Game';
       default: return type;
     }
   }

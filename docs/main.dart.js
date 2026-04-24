@@ -95233,6 +95233,8 @@ case"monday_pairs":s=A.M(q).i("a7<1>")
 return A.V(new A.a7(q,new A.awH(r),s),!0,s.i("m.E"))
 case"weekend_quads":s=A.M(q).i("a7<1>")
 return A.V(new A.a7(q,new A.awI(r),s),!0,s.i("m.E"))
+case"custom_builder":case"custom_game":this.a.toString
+return q
 default:return q}},
 T1(a){var s,r,q,p=this.Sb(a),o=A.ap(t.N)
 for(s=p.length,r=0;r<p.length;p.length===s||(0,A.L)(p),++r){q=p[r]
@@ -95275,6 +95277,8 @@ q=q.a
 q=A.D(B.d.aO(127.5),q>>>16&255,q>>>8&255,q&255)
 p=h.Sc(h.ay)
 o=A.b(["thursday_pairs","friday_pairs","saturday_pairs","sunday_pairs","monday_pairs","weekend_quads"],t.s)
+if(h.a.e==="custom_builder")o.push("custom_builder")
+if(h.a.e==="custom_game")o.push("custom_game")
 n=h.ay
 m=h.ax
 if(m==null)m="All Teams"
@@ -95431,12 +95435,15 @@ return A.N(l.xD(h,o.a.a,j,a.b,m,a.c),$async$qr)
 case 10:p.N(new A.ax_(k,p,a,o))
 case 9:case 5:case 1:return A.R(q,r)}})
 return A.S($async$qr,r)},
-Sc(a){switch(a){case"thursday_pairs":return"Thursday Pairs"
+Sc(a){var s="Custom Game"
+switch(a){case"thursday_pairs":return"Thursday Pairs"
 case"friday_pairs":return"Friday Pairs"
 case"saturday_pairs":return"Saturday Pairs"
 case"sunday_pairs":return"Sunday Pairs"
 case"monday_pairs":return"Monday Pairs"
 case"weekend_quads":return"Weekend Quads"
+case"custom_builder":return s
+case"custom_game":return s
 default:return a}}}
 A.awQ.prototype={
 $1(a){return B.c.aF(a)},
