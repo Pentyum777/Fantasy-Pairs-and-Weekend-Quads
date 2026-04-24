@@ -183,17 +183,18 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
           if (pid != null && pid.isNotEmpty) drafted.add(pid);
         }
       }
-      // If we came from a custom game, pass the fixture IDs to the scout
-      // so it filters to only the custom game's selected fixtures.
-      final currentGameType = _defaultGameTypeForRound();
-      final scoutGameType = widget.round == null ? 'weekend_quads' : currentGameType;
-      List<String>? scoutFixtureIds;
-      if (scoutGameType == 'custom_game') {
-        final cacheKey = "${widget.season}-${widget.round ?? 0}-custom_game";
-        if (_gameDataCache.hasFixtureIds(cacheKey)) {
-          scoutFixtureIds = _gameDataCache.getFixtureIds(cacheKey);
-        }
-      }
+      // Determine the default game type for the scout filter.
+      final scoutGameType = widget.round == null
+          ? 'weekend_quads'
+          : _defaultGameTypeForRound();
+
+      // Always check whether a custom game exists for this round —
+      // if it does, pass its fixture IDs so the scout shows a
+      // "Custom Game" filter option and defaults to it.
+      final customCacheKey = "${widget.season}-${widget.round ?? 0}-custom_game";
+      final scoutFixtureIds = _gameDataCache.hasFixtureIds(customCacheKey)
+          ? _gameDataCache.getFixtureIds(customCacheKey)
+          : null;
 
       Navigator.push(
         context,

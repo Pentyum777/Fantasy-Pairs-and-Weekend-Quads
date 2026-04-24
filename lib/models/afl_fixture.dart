@@ -96,6 +96,23 @@ DateTime? get startDateTime {
   /// Backwards‑compatible flag used by GameViewScreen
   bool get complete {
     final q = (quarterText ?? "").toLowerCase();
+    final s = status.toLowerCase();
+    // Only complete if quarter/timeText explicitly says Final/FT
+    // "In Progress" status means the game is live even if quarter looks odd
+    if (s == "in progress") return false;
     return q.contains("final") || q == "ft";
+  }
+
+  /// True when the game is currently in progress (live)
+  bool get isLive {
+    final s = status.toLowerCase();
+    final q = (quarterText ?? "").toLowerCase();
+    if (s == "in progress") return true;
+    // Quarter text like "Q1", "Q2", "Q3", "Q4", "1/2 Time", "3/4 Time"
+    // but NOT "Final" or "Full Time"
+    if (q.isNotEmpty && !q.contains("final") && q != "ft" && q != "full time") {
+      return true;
+    }
+    return false;
   }
 }

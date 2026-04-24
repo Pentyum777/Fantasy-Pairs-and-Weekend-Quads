@@ -128,7 +128,7 @@ class FixtureRepository {
         matchId: matchId,
         homeScore: homeScore,
         awayScore: awayScore,
-        quarter: quarter ?? 'Final',
+        quarter: (quarter != null && quarter.isNotEmpty) ? quarter : '',
         clock: clock ?? 'FT',
         status: status ?? '',
       );

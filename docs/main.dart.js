@@ -27760,7 +27760,7 @@ _.x=f
 _.as=g
 _.ax=_.at=0
 _.ay=null
-_.ch=""},
+_.CW=_.ch=""},
 y6(a,b,c,d,e,f){var s,r=B.c.aF(d)
 if(r.length===0)r="UNKNOWN"
 s=B.c.aF(e)
@@ -92759,6 +92759,7 @@ A.eX.prototype={
 gn5(a){var s,r=this.ay
 if(r==null)r=""
 s=r.toLowerCase()
+if(this.CW.toLowerCase()==="in progress")return!1
 return B.c.p(s,"final")||s==="ft"},
 gw5(){return this.d},
 gv6(){return this.e},
@@ -93050,7 +93051,7 @@ k=A.bz(h.h(i,"status"))
 if(o!=null)if(n!=null)h=m!=null||l!=null
 else h=!1
 else h=!1
-if(h){h=m==null?"Final":m
+if(h){h=m!=null&&m.length!==0?m:""
 j=l==null?"FT":l
 p.auk(n,j,o,a,h,k==null?"":k)}case 1:return A.S(q,r)}})
 return A.T($async$wU,r)},
@@ -93062,6 +93063,7 @@ if(n.x===d){n.at=c
 n.ax=a
 n.ay=e
 n.ch=b
+n.CW=f
 return}}}}}
 A.a86.prototype={
 $1(a){return a.as},
@@ -93532,51 +93534,49 @@ if(r.X6(q))return r.LD(q)
 s=this.a7Z(a==="weekend_quads"?4:2)
 r.pG(q,s)
 return s},
-afL(a){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e=this,d=null,c={}
-if(a==="custom_builder"){if(e.a.x.b!==B.bM){s=e.c.ak(t.Pu)
+afL(a){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d=this,c=null
+if(a==="custom_builder"){if(d.a.x.b!==B.bM){s=d.c.ak(t.Pu)
 s.toString
 s.f.xK(B.RI)
-return}s=e.c
+return}s=d.c
 s.toString
-r=A.kH(new A.aqe(e),d,t.z)
+r=A.kH(new A.aqe(d),c,t.z)
 A.cb(s,!1).ek(r)
-return}if(a==="custom_game"){q=e.FH("custom_game")
-s=e.a
+return}if(a==="custom_game"){q=d.FH("custom_game")
+s=d.a
 r=s.c
 s=s.d
 if(s==null)s=0
 p=""+r+"-"+s+"-custom_game"
-s=e.d
-o=s.X3(p)?s.Lr(p):d
-s=e.c
+s=d.d
+o=s.X3(p)?s.Lr(p):c
+s=d.c
 s.toString
-r=A.kH(new A.aqf(e,q,o),d,t.z)
+r=A.kH(new A.aqf(d,q,o),c,t.z)
 A.cb(s,!1).ek(r)
 return}if(a==="scout"){n=A.ap(t.N)
-for(s=e.aa_(),r=s.length,m=0;m<s.length;s.length===r||(0,A.L)(s),++m)for(l=s[m].gCt(),k=l.length,j=0;j<l.length;l.length===k||(0,A.L)(l),++j){i=l[j].gwL()
-h=i==null?d:i.a
-if(h!=null&&h.length!==0)n.C(0,h)}g=e.a8d()
-s=e.a
-r=s.d
-l=r==null
-f=l?"weekend_quads":g
-c.a=null
-if(f==="custom_game"){s=s.c
-if(l)r=0
-p=""+s+"-"+r+"-custom_game"
-s=e.d
-if(s.X3(p))c.a=s.Lr(p)}s=e.c
+for(s=d.aa_(),r=s.length,m=0;m<s.length;s.length===r||(0,A.L)(s),++m)for(l=s[m].gCt(),k=l.length,j=0;j<l.length;l.length===k||(0,A.L)(l),++j){i=l[j].gwL()
+h=i==null?c:i.a
+if(h!=null&&h.length!==0)n.C(0,h)}g=d.a.d==null?"weekend_quads":d.a8d()
+s=d.a
+r=s.c
+s=s.d
+if(s==null)s=0
+f=""+r+"-"+s+"-custom_game"
+s=d.d
+e=s.X3(f)?s.Lr(f):c
+s=d.c
 s.toString
-r=A.kH(new A.aqg(c,e,f,n),d,t.z)
+r=A.kH(new A.aqg(d,g,n,e),c,t.z)
 A.cb(s,!1).ek(r)
-return}if(a==="championship"){s=e.c
+return}if(a==="championship"){s=d.c
 s.toString
-r=A.kH(new A.aqh(e),d,t.z)
+r=A.kH(new A.aqh(d),c,t.z)
 A.cb(s,!1).ek(r)
-return}q=e.FH(a)
-s=e.c
+return}q=d.FH(a)
+s=d.c
 s.toString
-r=A.kH(new A.aqi(e,a,q),d,t.z)
+r=A.kH(new A.aqi(d,a,q),c,t.z)
 A.cb(s,!1).ek(r)},
 aa_(){var s,r,q,p,o=[]
 for(r=["thursday_pairs","friday_pairs","saturday_pairs","sunday_pairs","monday_pairs","weekend_quads"],q=0;q<6;++q){s=r[q]
@@ -93609,8 +93609,8 @@ $1(a){var s=this.a,r=s.a,q=r.c,p=r.d,o=r.e,n=r.f
 return A.Mp(s.e,r.r,o,s.d,"custom_game",null,n,p,r.w,q,this.c,this.b,r.x)},
 $S:77}
 A.aqg.prototype={
-$1(a){var s=this,r=s.b,q=r.a
-return new A.rg(q.c,q.d,s.c,q.e,r.f,s.d,s.a.a,null)},
+$1(a){var s=this,r=s.a,q=r.a
+return new A.rg(q.c,q.d,s.b,q.e,r.f,s.c,s.d,null)},
 $S:533}
 A.aqh.prototype={
 $1(a){var s=this.a,r=s.a

@@ -1432,12 +1432,23 @@ app.get("/fantasy/:matchId", async (req, res) => {
       af: calculateFantasyPoints(p),
     }));
 
-    // 4b. If Squiggle gave no scores, calculate from DFS player goals/behinds
+    // 4b. If Squiggle gave no scores, calculate from DFS player goals/behinds.
+    // Only do this when Squiggle truly returned nothing — if Squiggle gave us
+    // live scores we must keep them and not let DFS override the status.
     if (meta.homeScore === 0 && meta.awayScore === 0 && players.length > 0) {
       const fixture = FIXTURES_2026[cdMatchId];
       if (fixture) {
-        const homePlayers = players.filter(p => p.teamAbbr === fixture.home);
-        const awayPlayers = players.filter(p => p.teamAbbr === fixture.away);
+        // Normalise DFS teamAbbr to our internal codes before comparing
+        // (DFS returns "MEL" for Melbourne, we use "MELB")
+        const normAbbr = (abbr) => {
+          const map = { "MEL": "MELB", "WB": "WBD", "BRI": "BRL",
+                        "RICH": "RIC", "CARL": "CAR", "COLL": "COL",
+                        "GWS": "GWS", "GCFC": "GCS", "NMFC": "NTH",
+                        "PORT": "PTA", "STK": "STK" };
+          return map[abbr] || abbr;
+        };
+        const homePlayers = players.filter(p => normAbbr(p.teamAbbr) === fixture.home);
+        const awayPlayers = players.filter(p => normAbbr(p.teamAbbr) === fixture.away);
         const sum = (arr) => arr.reduce((t, p) => t + (p.goals * 6) + (p.behinds ?? 0), 0);
         const homeScore = sum(homePlayers);
         const awayScore = sum(awayPlayers);
@@ -1445,9 +1456,47 @@ app.get("/fantasy/:matchId", async (req, res) => {
           meta.homeScore = homeScore;
           meta.awayScore = awayScore;
           // DFS data only exists for completed games — mark as Final
-          meta.quarter = "Final";
-          meta.clock = "FT";
-          meta.status = "Full Time";
+          // Only mark as Final if we're reasonably sure the game is done.
+          // If the DFS scraper returned data but Squiggle timed out, we can't
+          // be sure — check if the Squiggle status was already set to something.
+          // If meta.status is still empty, DFS data could be from a live game
+          // (DFS serves live stats too). Don't assume FT.
+          if (meta.status === "Full Time" || meta.status === "") {
+            // Re-try Squiggle once more for a definitive answer
+            if (squiggleGameId) {
+              try {
+                const squiggleRetry = await fetchSquiggleMeta(squiggleGameId);
+                if (squiggleRetry.homeScore > 0 || squiggleRetry.awayScore > 0) {
+                  // Squiggle came back — use its authoritative data
+                  meta.homeScore = squiggleRetry.homeScore;
+                  meta.awayScore = squiggleRetry.awayScore;
+                  meta.quarter = squiggleRetry.quarter;
+                  meta.clock = squiggleRetry.clock;
+                  meta.status = squiggleRetry.status;
+                } else {
+                  // Squiggle still empty — use DFS-calculated score but
+                  // check completion: if Squiggle says complete<100, it's live
+                  meta.homeScore = homeScore;
+                  meta.awayScore = awayScore;
+                  meta.quarter = "Final";
+                  meta.clock = "FT";
+                  meta.status = "Full Time";
+                }
+              } catch (_) {
+                meta.homeScore = homeScore;
+                meta.awayScore = awayScore;
+                meta.quarter = "Final";
+                meta.clock = "FT";
+                meta.status = "Full Time";
+              }
+            } else {
+              meta.homeScore = homeScore;
+              meta.awayScore = awayScore;
+              meta.quarter = "Final";
+              meta.clock = "FT";
+              meta.status = "Full Time";
+            }
+          }
         }
       }
     }
@@ -1480,9 +1529,13 @@ async function fetchSquiggleMeta(gameId) {
   const url = `https://api.squiggle.com.au/?q=games&game=${gameId}`;
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
     const response = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
+      headers: { "User-Agent": "DFS-Pairs-App/1.0" },
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     const json = await response.json();
     const games = json.games || [];
@@ -1498,7 +1551,14 @@ async function fetchSquiggleMeta(gameId) {
     }
 
     if (g.complete > 0) {
-      return { homeScore: g.hscore ?? 0, awayScore: g.ascore ?? 0, quarter: g.timestr || "", clock: "", status: "In Progress" };
+      // Use Squiggle's pre-calculated scores (already in goals*6+behinds format)
+      return {
+        homeScore: g.hscore ?? 0,
+        awayScore: g.ascore ?? 0,
+        quarter: g.timestr || "",
+        clock: g.timestr || "",  // show e.g. "1/2 Time" in the clock field too
+        status: "In Progress"
+      };
     }
 
     return { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "Upcoming" };
