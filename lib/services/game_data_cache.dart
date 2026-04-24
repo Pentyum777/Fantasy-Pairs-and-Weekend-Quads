@@ -69,6 +69,23 @@ class GameDataCache {
   }
 
   // ---------------------------------------------------------------
+  // Custom game fixture IDs
+  // ---------------------------------------------------------------
+
+  // selectedFixtureIds keyed by "season-round-custom_game"
+  final Map<String, List<String>> _fixtureIds = {};
+
+  bool hasFixtureIds(String key) =>
+      _fixtureIds.containsKey(key) && _fixtureIds[key]!.isNotEmpty;
+
+  List<String> getFixtureIds(String key) => _fixtureIds[key] ?? [];
+
+  void setFixtureIds(String key, List<String> ids) {
+    if (ids.isEmpty) return;
+    _fixtureIds[key] = List<String>.from(ids);
+  }
+
+  // ---------------------------------------------------------------
   // Season players
   // ---------------------------------------------------------------
 

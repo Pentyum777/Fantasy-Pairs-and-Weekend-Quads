@@ -141,6 +141,14 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     if (type == "custom_game") {
       final selections = _getSelectionsForGameType("custom_game");
 
+      // Restore the fixture IDs that were saved to the cache when the custom
+      // game was published — this ensures the fixture filter persists even
+      // when the user navigates away and returns to the custom game.
+      final cacheKey = "${widget.season}-${widget.round ?? 0}-custom_game";
+      final fixtureIds = _gameDataCache.hasFixtureIds(cacheKey)
+          ? _gameDataCache.getFixtureIds(cacheKey)
+          : null;
+
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -156,6 +164,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
             roundCompletionService: widget.roundCompletionService,
             userRoleService: widget.userRoleService,
             gameDataCache: _gameDataCache,
+            selectedFixtureIds: fixtureIds,
           ),
         ),
       );
@@ -174,19 +183,30 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
           if (pid != null && pid.isNotEmpty) drafted.add(pid);
         }
       }
+      // If we came from a custom game, pass the fixture IDs to the scout
+      // so it filters to only the custom game's selected fixtures.
+      final currentGameType = _defaultGameTypeForRound();
+      final scoutGameType = widget.round == null ? 'weekend_quads' : currentGameType;
+      List<String>? scoutFixtureIds;
+      if (scoutGameType == 'custom_game') {
+        final cacheKey = "${widget.season}-${widget.round ?? 0}-custom_game";
+        if (_gameDataCache.hasFixtureIds(cacheKey)) {
+          scoutFixtureIds = _gameDataCache.getFixtureIds(cacheKey);
+        }
+      }
+
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => ScoutScreen(
             season: widget.season,
             round: widget.round,
-            gameType: widget.round == null
-                ? 'weekend_quads'
-                : _defaultGameTypeForRound(),
+            gameType: scoutGameType,
             fixtureRepo: widget.fixtureRepo,
             playerRepo: widget.playerRepo,
             scoutService: _scoutService,
             draftedPlayerIds: drafted,
+            selectedFixtureIds: scoutFixtureIds,
           ),
         ),
       );

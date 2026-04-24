@@ -803,6 +803,16 @@ Future<void> _saveSnapshot() async {
 
     if (!mounted) return;
 
+    // Persist the selected fixture IDs in the cache so they survive
+    // navigation away from this screen and back.
+    final safeRound2 = widget.round ?? 0;
+    final cacheKey = "${widget.season}-$safeRound2-custom_game";
+    if (widget.gameDataCache != null &&
+        widget.selectedFixtureIds != null &&
+        widget.selectedFixtureIds!.isNotEmpty) {
+      widget.gameDataCache!.setFixtureIds(cacheKey, widget.selectedFixtureIds!);
+    }
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -1304,6 +1314,10 @@ void _finaliseFridayPairsWinner() {
     final cacheKey = "${widget.season}-${widget.round}-${widget.gameType}";
     if (cache != null) cache.setSelections(cacheKey, _selections);
 
+    // For custom games, pass selectedFixtureIds through so they persist
+    // when navigating between rounds or back to the same game type.
+    final fixtureIds = widget.selectedFixtureIds;
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -1319,6 +1333,7 @@ void _finaliseFridayPairsWinner() {
           roundCompletionService: widget.roundCompletionService,
           userRoleService: widget.userRoleService,
           gameDataCache: widget.gameDataCache,
+          selectedFixtureIds: fixtureIds,
         ),
       ),
     );

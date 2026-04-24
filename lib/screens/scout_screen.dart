@@ -108,7 +108,11 @@ class _ScoutScreenState extends State<ScoutScreen> {
   @override
   void initState() {
     super.initState();
-    _gameTypeFilter = widget.gameType;
+    // If opened from a custom game, default filter to 'custom_game'
+    // so the scout is immediately scoped to the selected fixtures.
+    _gameTypeFilter = (widget.selectedFixtureIds?.isNotEmpty == true)
+        ? 'custom_game'
+        : widget.gameType;
     _loadData();
   }
 
@@ -688,7 +692,6 @@ class _ScoutScreenState extends State<ScoutScreen> {
       case 'weekend_quads':
         return all.where((f) =>
           !isDay(f, DateTime.thursday)).toList();
-      case 'custom_builder':
       case 'custom_game':
         // Filter to only the matches selected when the custom game was created
         final ids = widget.selectedFixtureIds;
@@ -857,8 +860,9 @@ class _ScoutScreenState extends State<ScoutScreen> {
             items: [
               'thursday_pairs', 'friday_pairs', 'saturday_pairs',
               'sunday_pairs', 'monday_pairs', 'weekend_quads',
-              if (widget.gameType == 'custom_builder') 'custom_builder',
-              if (widget.gameType == 'custom_game') 'custom_game',
+              // Show Custom Game whenever fixture IDs are available,
+              // regardless of the gameType this screen was opened with.
+              if (widget.selectedFixtureIds?.isNotEmpty == true) 'custom_game',
             ],
             itemLabel: _gameTypeLabel,
             value: _gameTypeFilter,
