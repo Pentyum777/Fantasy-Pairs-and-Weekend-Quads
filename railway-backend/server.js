@@ -27,6 +27,10 @@ const squiggleMap = JSON.parse(
   fs.readFileSync(path.join(__dirname, "squiggle_map.json"), "utf8")
 );
 
+const footyInfoRoundMap = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "footyinfo_round_map.json"), "utf8")
+);
+
 console.log("🚀 DFS + Squiggle backend starting...");
 
 const port = process.env.PORT || 8080;
@@ -681,17 +685,38 @@ app.get("/squiggleScores/:season/:round", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   try {
     const { season, round } = req.params;
-    const url = `https://api.squiggle.com.au/?q=games;year=${season};round=${round}`;
-    const response = await fetch(url, { headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "en-AU,en;q=0.9",
-        "Origin": "https://squiggle.com.au",
-        "Referer": "https://squiggle.com.au/",
-        "Cache-Control": "no-cache",
-      } });
+    // Use AFL v2 API — Squiggle blocks Railway's datacenter IP
+    const url = `https://aflapi.afl.com.au/afl/v2/matches?competitionId=1&compSeasonId=85&roundNumber=${round}&pageSize=20`;
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "application/json",
+      },
+    });
     const json = await response.json();
-    res.json({ ok: true, games: json.games ?? [] });
+    // Convert AFL v2 format to Squiggle-compatible shape so existing clients keep working
+    const matches = json.matches || [];
+    const games = matches.map(m => {
+      const meta = afl2MetaFromMatch(m);
+      return {
+        id: m.id,
+        hteam: m.home?.team?.name || "",
+        ateam: m.away?.team?.name || "",
+        hteamid: m.home?.team?.id,
+        ateamid: m.away?.team?.id,
+        hscore: meta.homeScore,
+        ascore: meta.awayScore,
+        complete: m.status === "CONCLUDED" ? 100 : (m.status === "IN_PROGRESS" ? 50 : 0),
+        timestr: meta.clock,
+        winner: m.status === "CONCLUDED"
+          ? (meta.homeScore > meta.awayScore ? m.home?.team?.name
+             : meta.awayScore > meta.homeScore ? m.away?.team?.name : null)
+          : null,
+        year: parseInt(season),
+        round: parseInt(round),
+      };
+    });
+    res.json({ ok: true, games });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1352,7 +1377,6 @@ app.get("/selectionTimestamp", async (req, res) => {
 app.get("/fantasy/:matchId", async (req, res) => {
   const cdMatchId = req.params.matchId;
   const dfsId = dfsMap[cdMatchId];
-  const squiggleGameId = squiggleMap[cdMatchId];
 
   if (!dfsId) {
     return res.status(404).json({
@@ -1366,7 +1390,9 @@ app.get("/fantasy/:matchId", async (req, res) => {
     // 1. Live DFS feed
     let dfsPlayers = await scrapeDFS(dfsId);
 
-    // 2. Always fetch Squiggle metadata (works for live, completed, and future games)
+    // 2. Fetch live scores from FootyInfo round_summary API.
+    // Derive the FootyInfo round_id from the CD match ID:
+    //   CD_M20260140702 → round part = CD_R202601407 → footyInfoRoundMap lookup
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -1375,13 +1401,16 @@ app.get("/fantasy/:matchId", async (req, res) => {
       status: "",
     };
 
-    if (squiggleGameId) {
-      try {
-        const squiggleMeta = await fetchSquiggleMeta(squiggleGameId);
-        meta = { ...meta, ...squiggleMeta };
-      } catch (err) {
-        console.error("Squiggle metadata error:", err);
+    try {
+      const roundProviderId = cdMatchId.replace(/CD_M(\d{4})(\d{3})(\d{2})$/, "CD_R$1$2");
+      const fiRoundId = footyInfoRoundMap[roundProviderId];
+      const fixture = FIXTURES_2026[cdMatchId];
+      if (fiRoundId && fixture) {
+        const fiMeta = await fetchFootyInfoMeta(fiRoundId, fixture.home, fixture.away);
+        meta = { ...meta, ...fiMeta };
       }
+    } catch (err) {
+      console.error("FootyInfo metadata error:", err.message);
     }
 
     // 3. No DFS data → try match_stats DB for completed rounds
@@ -1463,33 +1492,33 @@ app.get("/fantasy/:matchId", async (req, res) => {
           // (DFS serves live stats too). Don't assume FT.
           if (meta.status === "Full Time" || meta.status === "") {
             // Re-try Squiggle once more for a definitive answer
-            if (squiggleGameId) {
-              try {
-                const squiggleRetry = await fetchSquiggleMeta(squiggleGameId);
-                if (squiggleRetry.homeScore > 0 || squiggleRetry.awayScore > 0) {
-                  // Squiggle came back — use its authoritative data
-                  meta.homeScore = squiggleRetry.homeScore;
-                  meta.awayScore = squiggleRetry.awayScore;
-                  meta.quarter = squiggleRetry.quarter;
-                  meta.clock = squiggleRetry.clock;
-                  meta.status = squiggleRetry.status;
+            // Retry FootyInfo for authoritative status
+            try {
+              const roundProviderId2 = cdMatchId.replace(/CD_M(\d{4})(\d{3})(\d{2})$/, "CD_R$1$2");
+              const fiRoundId2 = footyInfoRoundMap[roundProviderId2];
+              if (fiRoundId2 && fixture) {
+                const fiRetry = await fetchFootyInfoMeta(fiRoundId2, fixture.home, fixture.away);
+                if (fiRetry.homeScore > 0 || fiRetry.awayScore > 0) {
+                  meta.homeScore = fiRetry.homeScore;
+                  meta.awayScore = fiRetry.awayScore;
+                  meta.quarter = fiRetry.quarter;
+                  meta.clock = fiRetry.clock;
+                  meta.status = fiRetry.status;
                 } else {
-                  // Squiggle still empty — use DFS-calculated score but
-                  // check completion: if Squiggle says complete<100, it's live
                   meta.homeScore = homeScore;
                   meta.awayScore = awayScore;
                   meta.quarter = "Final";
                   meta.clock = "FT";
                   meta.status = "Full Time";
                 }
-              } catch (_) {
+              } else {
                 meta.homeScore = homeScore;
                 meta.awayScore = awayScore;
                 meta.quarter = "Final";
                 meta.clock = "FT";
                 meta.status = "Full Time";
               }
-            } else {
+            } catch (_) {
               meta.homeScore = homeScore;
               meta.awayScore = awayScore;
               meta.quarter = "Final";
@@ -1523,50 +1552,129 @@ app.get("/fantasy/:matchId", async (req, res) => {
 });
 
 // ------------------------------------------------------
-// Squiggle metadata fetcher
+// FootyInfo metadata fetcher
+// Fetches live/final scores from api.footyinfo.com/api/round_summary
+// homeTeam / awayTeam are our internal codes (e.g. "MELB", "RIC")
 // ------------------------------------------------------
-async function fetchSquiggleMeta(gameId) {
-  const url = `https://api.squiggle.com.au/?q=games&game=${gameId}`;
+
+// Map our internal team codes → FootyInfo abbreviations
+const FOOTY_INFO_TEAM_MAP = {
+  "MELB": "MEL",  // Melbourne
+  "RIC":  "RCH",  // Richmond
+  "PTA":  "PAD",  // Port Adelaide
+  "NTH":  "NTH",  // North Melbourne (same)
+  "GCS":  "GCS",  // Gold Coast (same)
+  "GWS":  "GWS",  // GWS (same)
+  "WBD":  "WBD",  // Western Bulldogs (same)
+  "BRL":  "BRL",  // Brisbane (same)
+  "CAR":  "CAR",  // Carlton (same)
+  "COL":  "COL",  // Collingwood (same)
+  "ESS":  "ESS",  // Essendon (same)
+  "FRE":  "FRE",  // Fremantle (same)
+  "GEE":  "GEE",  // Geelong (same)
+  "HAW":  "HAW",  // Hawthorn (same)
+  "STK":  "STK",  // St Kilda (same)
+  "SYD":  "SYD",  // Sydney (same)
+  "WCE":  "WCE",  // West Coast (same)
+  "ADE":  "ADE",  // Adelaide (same)
+};
+
+// Cache round summaries for 30 seconds to avoid hammering the API
+const _footyInfoCache = new Map();
+
+async function fetchFootyInfoMeta(roundId, homeTeam, awayTeam) {
+  const now = Date.now();
+  const cacheKey = String(roundId);
+
+  // Return cached data if fresh (< 30s old)
+  const cached = _footyInfoCache.get(cacheKey);
+  if (cached && (now - cached.ts) < 30000) {
+    return extractFootyInfoMatch(cached.data, homeTeam, awayTeam);
+  }
 
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
-    const response = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
-      signal: controller.signal,
-    });
+    const response = await fetch(
+      `https://api.footyinfo.com/api/round_summary?round_id=${roundId}`,
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json",
+          "Referer": "https://www.footyinfo.com/",
+          "Origin": "https://www.footyinfo.com",
+        },
+        signal: controller.signal,
+      }
+    );
     clearTimeout(timeout);
 
-    const json = await response.json();
-    const games = json.games || [];
-
-    if (!games.length) {
+    if (!response.ok) {
+      console.warn(`FootyInfo round_summary ${roundId} returned ${response.status}`);
       return { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "" };
     }
 
-    const g = games[0];
+    const json = await response.json();
+    _footyInfoCache.set(cacheKey, { data: json, ts: now });
 
-    if (g.complete === 100) {
-      return { homeScore: g.hscore ?? 0, awayScore: g.ascore ?? 0, quarter: "Final", clock: "FT", status: "Full Time" };
-    }
-
-    if (g.complete > 0) {
-      // Use Squiggle's pre-calculated scores (already in goals*6+behinds format)
-      return {
-        homeScore: g.hscore ?? 0,
-        awayScore: g.ascore ?? 0,
-        quarter: g.timestr || "",
-        clock: g.timestr || "",  // show e.g. "1/2 Time" in the clock field too
-        status: "In Progress"
-      };
-    }
-
-    return { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "Upcoming" };
+    return extractFootyInfoMatch(json, homeTeam, awayTeam);
 
   } catch (err) {
-    console.error(`Squiggle fetch failed for game ${gameId}:`, err.message);
+    console.error(`FootyInfo fetch failed for round ${roundId}:`, err.message);
     return { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "" };
   }
+}
+
+function extractFootyInfoMatch(roundData, homeTeam, awayTeam) {
+  const matches = roundData.matches || [];
+
+  // Convert our team codes to FootyInfo abbreviations for matching
+  const fiHome = FOOTY_INFO_TEAM_MAP[homeTeam] || homeTeam;
+  const fiAway = FOOTY_INFO_TEAM_MAP[awayTeam] || awayTeam;
+
+  const match = matches.find(m =>
+    m.home_team === fiHome && m.away_team === fiAway
+  );
+
+  if (!match) {
+    console.warn(`FootyInfo: no match found for ${fiHome} vs ${fiAway}`);
+    return { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "" };
+  }
+
+  // status: "L" = live, "C" = complete, "" = upcoming
+  if (match.status === "C" || match.complete === true) {
+    return {
+      homeScore: match.home_score ?? 0,
+      awayScore: match.away_score ?? 0,
+      quarter: "Final",
+      clock: "FT",
+      status: "Full Time",
+    };
+  }
+
+  if (match.status === "L") {
+    // quarter = "Q1"/"Q2"/"Q3"/"Q4" from the "middle" field
+    // seconds_remaining tells us time left in the quarter
+    const qtr = match.middle || "";
+    const secsLeft = match.seconds_remaining ?? 0;
+    const mins = Math.floor(secsLeft / 60);
+    const secs = secsLeft % 60;
+    const timeStr = secsLeft > 0
+      ? `${qtr} ${mins}:${String(secs).padStart(2, "0")}`
+      : qtr;
+    const clockStr = match.period_break ? `${qtr} Break` : timeStr;
+
+    return {
+      homeScore: match.home_score ?? 0,
+      awayScore: match.away_score ?? 0,
+      quarter: timeStr,
+      clock: clockStr,
+      status: "In Progress",
+    };
+  }
+
+  // Upcoming
+  return { homeScore: 0, awayScore: 0, quarter: "", clock: "", status: "Upcoming" };
 }
 
 // ------------------------------------------------------
