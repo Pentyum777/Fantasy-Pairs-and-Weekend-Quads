@@ -1532,7 +1532,7 @@ async function fetchSquiggleMeta(gameId) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
     const response = await fetch(url, {
-      headers: { "User-Agent": "DFS-Pairs-App/1.0" },
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
       signal: controller.signal,
     });
     clearTimeout(timeout);
