@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../repositories/fixture_repository.dart';
 import '../repositories/player_repository.dart';
@@ -101,6 +102,9 @@ class _ScoutScreenState extends State<ScoutScreen> {
   bool _hideFlagged = false;
   String _search = '';
   ScoutSort _sort = ScoutSort.af;
+
+  /// Player IDs the user has ticked for the "Generate List" feature.
+  final Set<String> _selectedPlayerIds = <String>{};
 
   final _searchCtrl = TextEditingController();
 
@@ -923,6 +927,19 @@ class _ScoutScreenState extends State<ScoutScreen> {
             onSelected: (v) => setState(() => _hideFlagged = v),
           ),
 
+          // Generate List — shows the ticked players in a copyable dialog
+          ActionChip(
+            avatar: const Icon(Icons.list_alt, size: 16),
+            label: Text(
+              _selectedPlayerIds.isEmpty
+                  ? 'Generate List'
+                  : 'Generate List (${_selectedPlayerIds.length})',
+            ),
+            onPressed: _selectedPlayerIds.isEmpty
+                ? null
+                : _showGenerateListDialog,
+          ),
+
           // Named squad filter — only shown when squad has been pasted
           if (_teamsAnnounced) ...[
             FilterChip(
@@ -1031,8 +1048,29 @@ class _ScoutScreenState extends State<ScoutScreen> {
             overflow: TextOverflow.ellipsis),
       );
 
-    // Fixed columns: # + name + team
+    // Fixed columns: tick / # / name / team
     Widget fixedHeader() => Row(children: [
+      // Master tickbox: tap to select/deselect all currently visible rows
+      SizedBox(
+        width: 32, height: 26,
+        child: Checkbox(
+          visualDensity: VisualDensity.compact,
+          value: rows.isNotEmpty &&
+              rows.every((s) => _selectedPlayerIds.contains(s.playerId)),
+          tristate: true,
+          onChanged: (v) {
+            setState(() {
+              final allSelected = rows.isNotEmpty &&
+                  rows.every((s) => _selectedPlayerIds.contains(s.playerId));
+              if (allSelected) {
+                _selectedPlayerIds.removeAll(rows.map((s) => s.playerId));
+              } else {
+                _selectedPlayerIds.addAll(rows.map((s) => s.playerId));
+              }
+            });
+          },
+        ),
+      ),
       hCell('#', numW),
       hCell('Player', nameW, align: Alignment.centerLeft),
       hCell('Team', teamW),
@@ -1082,6 +1120,24 @@ class _ScoutScreenState extends State<ScoutScreen> {
         height: 30,
         child: Row(
           children: [
+            // Per-row checkbox
+            Container(
+              width: 32, height: 30, color: bg,
+              alignment: Alignment.center,
+              child: Checkbox(
+                visualDensity: VisualDensity.compact,
+                value: _selectedPlayerIds.contains(s.playerId),
+                onChanged: (v) {
+                  setState(() {
+                    if (v == true) {
+                      _selectedPlayerIds.add(s.playerId);
+                    } else {
+                      _selectedPlayerIds.remove(s.playerId);
+                    }
+                  });
+                },
+              ),
+            ),
             // Fixed
             dCell('${i + 1}', numW, bg: bg),
             dCell(s.playerName, nameW,
@@ -1581,6 +1637,91 @@ class _ScoutScreenState extends State<ScoutScreen> {
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
+  /// Builds a formatted, copyable list of the players the user has ticked
+  /// and shows it in a dialog with a "Copy" button.
+  void _showGenerateListDialog() {
+    // Look up full player rows by ID, preserving display order from _allStats
+    final selectedRows = _allStats
+        .where((s) => _selectedPlayerIds.contains(s.playerId))
+        .toList();
+
+    final listText = StringBuffer();
+    listText.writeln('Scout List — ${selectedRows.length} player'
+        '${selectedRows.length == 1 ? '' : 's'}');
+    listText.writeln('');
+    for (var i = 0; i < selectedRows.length; i++) {
+      final s = selectedRows[i];
+      listText.writeln(
+        '${i + 1}. ${s.playerName} (${s.team}) '
+        '— AF avg ${s.afAvg}, L3 ${s.last3Avg}',
+      );
+    }
+
+    final controller = TextEditingController(text: listText.toString());
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Generated List'),
+        content: SizedBox(
+          width: 480,
+          child: TextField(
+            controller: controller,
+            readOnly: true,
+            maxLines: 14,
+            minLines: 8,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontFamily: 'monospace',
+                ),
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onTap: () => controller.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: controller.text.length,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              controller.selection = TextSelection(
+                baseOffset: 0,
+                extentOffset: controller.text.length,
+              );
+            },
+            child: const Text('Select All'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: controller.text));
+              if (!ctx.mounted) return;
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                const SnackBar(
+                  content: Text('Copied to clipboard'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const Text('Copy'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() => _selectedPlayerIds.clear());
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Clear & Close'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _gameTypeLabel(String type) {
     switch (type) {
       case 'thursday_pairs':  return 'Thursday Pairs';

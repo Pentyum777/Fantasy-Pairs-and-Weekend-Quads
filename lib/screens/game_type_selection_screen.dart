@@ -175,18 +175,21 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     // Scout
     // ------------------------------------------------------------
     if (type == "scout") {
-      // Collect already-drafted player IDs for the current round/game type
+      // Determine the default game type for the scout filter.
+      final scoutGameType = widget.round == null
+          ? 'weekend_quads'
+          : _defaultGameTypeForRound();
+
+      // Collect already-drafted player IDs for THIS specific game type only.
+      // Drafts in other game types (e.g. Weekend Quads) must NOT show as
+      // drafted when scouting Sunday Pairs — each game's drafts are independent.
       final drafted = <String>{};
-      for (final sel in _getAllSelectionsForRound()) {
+      for (final sel in _getSelectionsForGameType(scoutGameType)) {
         for (final pick in sel.picks) {
           final pid = pick.player?.id;
           if (pid != null && pid.isNotEmpty) drafted.add(pid);
         }
       }
-      // Determine the default game type for the scout filter.
-      final scoutGameType = widget.round == null
-          ? 'weekend_quads'
-          : _defaultGameTypeForRound();
 
       // Always check whether a custom game exists for this round —
       // if it does, pass its fixture IDs so the scout shows a
