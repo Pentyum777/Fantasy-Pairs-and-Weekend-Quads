@@ -103,8 +103,9 @@ class _ScoutScreenState extends State<ScoutScreen> {
   String _search = '';
   ScoutSort _sort = ScoutSort.af;
 
-  /// Player IDs the user has ticked for the "Generate List" feature.
-  final Set<String> _selectedPlayerIds = <String>{};
+  /// Player IDs the user has ticked for the "Generate List" feature,
+  /// in the order they were ticked. The first ticked player is rank 1, etc.
+  final List<String> _selectedPlayerIds = <String>[];
 
   final _searchCtrl = TextEditingController();
 
@@ -1063,9 +1064,15 @@ class _ScoutScreenState extends State<ScoutScreen> {
               final allSelected = rows.isNotEmpty &&
                   rows.every((s) => _selectedPlayerIds.contains(s.playerId));
               if (allSelected) {
-                _selectedPlayerIds.removeAll(rows.map((s) => s.playerId));
+                final visibleIds = rows.map((s) => s.playerId).toSet();
+                _selectedPlayerIds.removeWhere(visibleIds.contains);
               } else {
-                _selectedPlayerIds.addAll(rows.map((s) => s.playerId));
+                // Append any not-already-selected rows in their displayed order
+                for (final s in rows) {
+                  if (!_selectedPlayerIds.contains(s.playerId)) {
+                    _selectedPlayerIds.add(s.playerId);
+                  }
+                }
               }
             });
           },
@@ -1120,23 +1127,48 @@ class _ScoutScreenState extends State<ScoutScreen> {
         height: 30,
         child: Row(
           children: [
-            // Per-row checkbox
+            // Per-row checkbox with rank number when selected
             Container(
               width: 32, height: 30, color: bg,
               alignment: Alignment.center,
-              child: Checkbox(
-                visualDensity: VisualDensity.compact,
-                value: _selectedPlayerIds.contains(s.playerId),
-                onChanged: (v) {
-                  setState(() {
-                    if (v == true) {
-                      _selectedPlayerIds.add(s.playerId);
-                    } else {
-                      _selectedPlayerIds.remove(s.playerId);
-                    }
-                  });
-                },
-              ),
+              child: Builder(builder: (_) {
+                final rank = _selectedPlayerIds.indexOf(s.playerId);
+                final isSelected = rank >= 0;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedPlayerIds.remove(s.playerId);
+                      } else {
+                        _selectedPlayerIds.add(s.playerId);
+                      }
+                    });
+                  },
+                  child: Container(
+                    width: 22, height: 22,
+                    decoration: BoxDecoration(
+                      color: isSelected ? cs.primary : Colors.transparent,
+                      border: Border.all(
+                        color: isSelected ? cs.primary : cs.outline,
+                        width: 1.5,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    alignment: Alignment.center,
+                    child: isSelected
+                        ? Text(
+                            '${rank + 1}',
+                            style: TextStyle(
+                              color: cs.onPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                              height: 1.0,
+                            ),
+                          )
+                        : null,
+                  ),
+                );
+              }),
             ),
             // Fixed
             dCell('${i + 1}', numW, bg: bg),
@@ -1638,11 +1670,13 @@ class _ScoutScreenState extends State<ScoutScreen> {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   /// Builds a formatted, copyable list of the players the user has ticked
-  /// and shows it in a dialog with a "Copy" button.
+  /// in the order they were ticked, and shows it in a dialog with Copy.
   void _showGenerateListDialog() {
-    // Look up full player rows by ID, preserving display order from _allStats
-    final selectedRows = _allStats
-        .where((s) => _selectedPlayerIds.contains(s.playerId))
+    // Look up player rows by ID, preserving the order they were ticked in
+    final byId = {for (final s in _allStats) s.playerId: s};
+    final selectedRows = _selectedPlayerIds
+        .map((id) => byId[id])
+        .whereType<PlayerSeasonStats>()
         .toList();
 
     final listText = StringBuffer();
