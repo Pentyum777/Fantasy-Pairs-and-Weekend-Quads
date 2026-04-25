@@ -1364,8 +1364,12 @@ void _finaliseFridayPairsWinner() {
     "D": s.disposals,
     "M": s.marks,
     "T": s.tackles,
+    "HO": s.hitouts,
+    "FF": s.freesFor,
+    "FA": s.freesAgainst,
     "G": s.goals,
     "B": s.behinds,
+    "TOG": s.timeOnGroundPercentage,
   };
 }
 
@@ -1654,7 +1658,7 @@ Future<void> _forceApplyStats() async {
   final homeTeam = f.homeTeam;
   final awayTeam = f.awayTeam;
 
-  const columns = ["Player","AF","K","HB","D","M","T","G","B"];
+  const columns = ["Player","AF","K","HB","D","M","T","HO","FF","FA","G","B","TOG"];
 
   // ⭐ For historical rounds, fetch full match stats from backend ONCE.
   // Live rounds use _currentStatsByPlayerId which auto-refreshes via the
