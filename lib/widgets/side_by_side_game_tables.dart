@@ -204,6 +204,10 @@ class SideBySideGameTables extends StatelessWidget {
 
     /// NEW
     double statColumnWidth = 32,
+
+    /// Optional per-cell highlight colours, keyed by playerId then column.
+    /// Used for live-update flashes (green = increased, red = decreased).
+    Map<String, Map<String, Color>>? cellHighlights,
   }) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -343,8 +347,16 @@ class SideBySideGameTables extends StatelessWidget {
 
 
 
-                  return SizedBox(
+                  final highlight = cellHighlights?[row["playerId"]?.toString() ?? ""]?[c];
+                  return Container(
                     width: statColumnWidth,
+                    decoration: highlight != null
+                        ? BoxDecoration(
+                            color: highlight,
+                            borderRadius: BorderRadius.circular(3),
+                          )
+                        : null,
+                    alignment: Alignment.center,
                     child: Text(
                       "${row[c]}",
                       style: cellStyle,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../utils/afl_club_codes.dart';
@@ -43,6 +44,14 @@ class _StatsOverlayState extends State<StatsOverlay>
 
   late List<Map<String, dynamic>> _leftRows;
   late List<Map<String, dynamic>> _rightRows;
+
+  /// playerId → (column → highlight colour). Cleared after a short delay.
+  Map<String, Map<String, Color>> _leftHighlights = {};
+  Map<String, Map<String, Color>> _rightHighlights = {};
+  Timer? _highlightTimer;
+
+  /// Stat columns that should never flash — non-numeric or always-changing.
+  static const _noFlashCols = {"Player", "playerId", "playerName", "team", "guernsey"};
 
   static const Map<String, String> shortTeamNames = {
     "ADE": "Adelaide",
@@ -91,11 +100,66 @@ class _StatsOverlayState extends State<StatsOverlay>
   void _onRefreshTick() {
     if (!mounted) return;
     final fresh = widget.buildRows();
+    final newLeftHL = _diffRows(_leftRows, fresh.left);
+    final newRightHL = _diffRows(_rightRows, fresh.right);
+
     setState(() {
       _leftRows = fresh.left;
       _rightRows = fresh.right;
+      // Merge new highlights with any still-active ones (last write wins per cell)
+      newLeftHL.forEach((pid, cols) {
+        _leftHighlights.putIfAbsent(pid, () => {}).addAll(cols);
+      });
+      newRightHL.forEach((pid, cols) {
+        _rightHighlights.putIfAbsent(pid, () => {}).addAll(cols);
+      });
     });
-    _fadeController.forward(from: 0);
+
+    // Clear highlights after 1.5s
+    if (newLeftHL.isNotEmpty || newRightHL.isNotEmpty) {
+      _highlightTimer?.cancel();
+      _highlightTimer = Timer(const Duration(milliseconds: 1500), () {
+        if (!mounted) return;
+        setState(() {
+          _leftHighlights = {};
+          _rightHighlights = {};
+        });
+      });
+    }
+  }
+
+  /// Returns highlight map for changed numeric cells.
+  /// Green = increase, red = decrease.
+  Map<String, Map<String, Color>> _diffRows(
+    List<Map<String, dynamic>> oldRows,
+    List<Map<String, dynamic>> newRows,
+  ) {
+    final result = <String, Map<String, Color>>{};
+    final oldById = {
+      for (final r in oldRows)
+        if (r["playerId"] != null) r["playerId"].toString(): r,
+    };
+
+    for (final row in newRows) {
+      final pid = row["playerId"]?.toString();
+      if (pid == null) continue;
+      final oldRow = oldById[pid];
+      if (oldRow == null) continue;
+
+      for (final entry in row.entries) {
+        if (_noFlashCols.contains(entry.key)) continue;
+        final newVal = entry.value;
+        final oldVal = oldRow[entry.key];
+        if (newVal is! num || oldVal is! num) continue;
+        if (newVal == oldVal) continue;
+
+        final colour = newVal > oldVal
+            ? Colors.green.withOpacity(0.45)
+            : Colors.red.withOpacity(0.45);
+        result.putIfAbsent(pid, () => {})[entry.key] = colour;
+      }
+    }
+    return result;
   }
 
   @override
@@ -111,6 +175,7 @@ class _StatsOverlayState extends State<StatsOverlay>
   @override
   void dispose() {
     widget.refreshTick?.removeListener(_onRefreshTick);
+    _highlightTimer?.cancel();
     _fadeController.dispose();
     super.dispose();
   }
@@ -196,6 +261,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                     headerFg: _teamFg(leftCode),
                                     playerFormatter: _formatPlayerName,
                                     statColumnWidth: 32,
+                                    cellHighlights: _leftHighlights,
                                   ),
                                 ),
                                 const SizedBox(width: 6),
@@ -210,6 +276,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                     headerFg: _teamFg(rightCode),
                                     playerFormatter: _formatPlayerName,
                                     statColumnWidth: 32,
+                                    cellHighlights: _rightHighlights,
                                   ),
                                 ),
                               ],
@@ -226,6 +293,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                   headerFg: _teamFg(leftCode),
                                   playerFormatter: _formatPlayerName,
                                   statColumnWidth: 32,
+                                  cellHighlights: _leftHighlights,
                                 ),
                                 const SizedBox(height: 6),
                                 SideBySideGameTables.buildSingleTable(
@@ -238,6 +306,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                   headerFg: _teamFg(rightCode),
                                   playerFormatter: _formatPlayerName,
                                   statColumnWidth: 32,
+                                  cellHighlights: _rightHighlights,
                                 ),
                               ],
                             ),
