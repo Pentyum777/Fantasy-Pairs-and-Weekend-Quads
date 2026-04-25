@@ -1402,7 +1402,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
     };
 
     try {
-      const roundProviderId = cdMatchId.replace(/CD_M(\d{4})(\d{3})(\d{2})$/, "CD_R$1$2");
+      const roundProviderId = cdMatchId.replace(/CD_M(\d{9})\d{2}$/, "CD_R$1");
       const fiRoundId = footyInfoRoundMap[roundProviderId];
       const fixture = FIXTURES_2026[cdMatchId];
       if (fiRoundId && fixture) {
@@ -1494,7 +1494,7 @@ app.get("/fantasy/:matchId", async (req, res) => {
             // Re-try Squiggle once more for a definitive answer
             // Retry FootyInfo for authoritative status
             try {
-              const roundProviderId2 = cdMatchId.replace(/CD_M(\d{4})(\d{3})(\d{2})$/, "CD_R$1$2");
+              const roundProviderId2 = cdMatchId.replace(/CD_M(\d{9})\d{2}$/, "CD_R$1");
               const fiRoundId2 = footyInfoRoundMap[roundProviderId2];
               if (fiRoundId2 && fixture) {
                 const fiRetry = await fetchFootyInfoMeta(fiRoundId2, fixture.home, fixture.away);
