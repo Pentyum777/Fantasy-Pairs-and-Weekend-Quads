@@ -163,7 +163,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                 ],
               ),
               const SizedBox(height: 3),
-              if (widget.noStatsMessage != null)
+              if (widget.noStatsMessage != null && _leftRows.isEmpty && _rightRows.isEmpty)
                 Expanded(
                   child: Center(
                     child: Text(
