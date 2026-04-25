@@ -1168,7 +1168,9 @@ void _finaliseFridayPairsWinner() {
     if (f.complete) return "FT";
     final q = _quarterLabel(f);
     final t = _timeLabel(f);
+    if (q.isEmpty && t.isEmpty) return "";
     if (q.isEmpty) return t;
+    if (t.isEmpty) return q;
     return "$q • $t";
   }
 

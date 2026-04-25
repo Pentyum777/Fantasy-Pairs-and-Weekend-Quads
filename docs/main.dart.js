@@ -94283,11 +94283,14 @@ if(s.length!==0)return s
 s=a.r
 if(s.length!==0)return s
 return"--:--"},
-aeJ(a){var s,r
+aeJ(a){var s,r,q
 if(a.gn5(a))return"FT"
 s=this.RD(a)
 r=this.ajw(a)
-if(s.length===0)return r
+q=s.length===0
+if(q&&r.length===0)return""
+if(q)return r
+if(r.length===0)return s
 return s+" \u2022 "+r},
 a9U(){var s=this.a.e
 switch(s){case"thursday_pairs":return"Thursday Pairs"

@@ -1653,22 +1653,32 @@ function extractFootyInfoMatch(roundData, homeTeam, awayTeam) {
   }
 
   if (match.status === "L") {
-    // quarter = "Q1"/"Q2"/"Q3"/"Q4" from the "middle" field
-    // seconds_remaining tells us time left in the quarter
+    // FootyInfo "middle" field gives us:
+    //   "Q1"/"Q2"/"Q3"/"Q4"           when play is in progress
+    //   "QT"/"HT"/"3QT"               when on the break between quarters
+    //   "FT"                          when full time
+    // seconds_remaining = time left in the quarter (0 during breaks)
     const qtr = match.middle || "";
     const secsLeft = match.seconds_remaining ?? 0;
-    const mins = Math.floor(secsLeft / 60);
-    const secs = secsLeft % 60;
-    const timeStr = secsLeft > 0
-      ? `${qtr} ${mins}:${String(secs).padStart(2, "0")}`
-      : qtr;
-    const clockStr = match.period_break ? `${qtr} Break` : timeStr;
+
+    let quarterText = qtr;
+    let clockText = "";
+
+    if (match.period_break === true) {
+      // On the break — quarter shows "QT/HT/3QT", clock shows "Break"
+      clockText = "Break";
+    } else if (secsLeft > 0) {
+      // Quarter in progress — show MM:SS in clock field
+      const mins = Math.floor(secsLeft / 60);
+      const secs = secsLeft % 60;
+      clockText = `${mins}:${String(secs).padStart(2, "0")}`;
+    }
 
     return {
       homeScore: match.home_score ?? 0,
       awayScore: match.away_score ?? 0,
-      quarter: timeStr,
-      clock: clockStr,
+      quarter: quarterText,
+      clock: clockText,
       status: "In Progress",
     };
   }
