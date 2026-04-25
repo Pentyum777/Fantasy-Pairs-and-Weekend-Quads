@@ -94,6 +94,9 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   Map<String, AflPlayerMatchStats> _currentStatsByPlayerId = {};
 
+  /// Bumped every time _applyLiveStats runs so any open StatsOverlay can rebuild.
+  final ValueNotifier<int> _statsRefreshTick = ValueNotifier<int>(0);
+
   final FridayPairsService _fridayPairsService = FridayPairsService();
   bool _fridayWinnerSelected = false;
   int _fridayWinnerPosition = 0;
@@ -317,6 +320,7 @@ bool _isRoundHistorical() {
     _liveTimer?.cancel();
     _syncTimer?.cancel();
     _punterScrollController.dispose();
+    _statsRefreshTick.dispose();
     super.dispose();
   }
 
@@ -506,6 +510,9 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   }
 
   _currentStatsByPlayerId = map;
+
+  // Notify any open StatsOverlay to rebuild with the latest stats
+  _statsRefreshTick.value++;
 
   // ⭐ Write back to cache so returning to this game shows data instantly
   final cache = widget.gameDataCache;
@@ -1649,32 +1656,34 @@ Future<void> _forceApplyStats() async {
 
   const columns = ["Player","AF","K","HB","D","M","T","G","B"];
 
-  // ⭐ For historical rounds, fetch full match stats from backend
-  // This shows ALL players, not just those picked by punters
-  List<AflPlayerMatchStats> stats;
+  // ⭐ For historical rounds, fetch full match stats from backend ONCE.
+  // Live rounds use _currentStatsByPlayerId which auto-refreshes via the
+  // _statsRefreshTick notifier passed into the overlay.
+  List<AflPlayerMatchStats>? historicalStats;
   if (_isCompleted) {
     try {
-      stats = await MatchStatsParser.fetchMatchStats(
+      historicalStats = await MatchStatsParser.fetchMatchStats(
         matchId,
         widget.playerRepo,
         widget.fixtureRepo,
       );
     } catch (_) {
-      stats = _currentStatsByPlayerId.values.toList();
+      historicalStats = null;
     }
-  } else {
-    stats = _currentStatsByPlayerId.values.toList();
   }
 
-  final rowsA =
-      stats.where((s) => s.player?.club == homeTeam).map(_mapStats).toList();
-  final rowsB =
-      stats.where((s) => s.player?.club == awayTeam).map(_mapStats).toList();
-
-  _enrichStatsWithPlayerData(rowsA);
-  _enrichStatsWithPlayerData(rowsB);
-
-  final noStats = rowsA.isEmpty && rowsB.isEmpty;
+  // Builds rows from the freshest stats source on every rebuild.
+  // For completed rounds: uses the snapshot fetched above.
+  // For live rounds: reads _currentStatsByPlayerId which is updated every
+  // 5 seconds by _applyLiveStats.
+  ({List<Map<String, dynamic>> left, List<Map<String, dynamic>> right}) buildRows() {
+    final stats = historicalStats ?? _currentStatsByPlayerId.values.toList();
+    final rowsA = stats.where((s) => s.player?.club == homeTeam).map(_mapStats).toList();
+    final rowsB = stats.where((s) => s.player?.club == awayTeam).map(_mapStats).toList();
+    _enrichStatsWithPlayerData(rowsA);
+    _enrichStatsWithPlayerData(rowsB);
+    return (left: rowsA, right: rowsB);
+  }
 
   if (!mounted) return;
 
@@ -1683,10 +1692,10 @@ Future<void> _forceApplyStats() async {
     builder: (_) => StatsOverlay(
       leftTitle: homeTeam,
       rightTitle: awayTeam,
-      leftRows: noStats ? <Map<String, dynamic>>[] : rowsA,
-      rightRows: noStats ? <Map<String, dynamic>>[] : rowsB,
-      columns: noStats ? <String>[] : columns,
-      noStatsMessage: noStats ? "No stats available yet" : null,
+      columns: columns,
+      buildRows: buildRows,
+      refreshTick: _statsRefreshTick,
+      noStatsMessage: "No stats available yet",
     ),
   );
 }

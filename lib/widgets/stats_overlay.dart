@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../utils/afl_club_codes.dart';
 import '../theme/team_colours_by_club.dart';
@@ -7,12 +8,17 @@ class StatsOverlay extends StatefulWidget {
   final String leftTitle;
   final String rightTitle;
 
-  final List<Map<String, dynamic>> leftRows;
-  final List<Map<String, dynamic>> rightRows;
-
   /// Columns should be:
   /// ["Player","K","H","M","T","HO","FF","FA","G","B","TOG"]
   final List<String> columns;
+
+  /// Returns the latest left/right rows. Called on first build and again
+  /// every time [refreshTick] changes value.
+  final ({List<Map<String, dynamic>> left, List<Map<String, dynamic>> right}) Function() buildRows;
+
+  /// Bumped by the parent screen whenever stats are refreshed. The overlay
+  /// listens to this and re-pulls rows via [buildRows].
+  final ValueListenable<int>? refreshTick;
 
   final String? noStatsMessage;
 
@@ -20,9 +26,9 @@ class StatsOverlay extends StatefulWidget {
     super.key,
     required this.leftTitle,
     required this.rightTitle,
-    required this.leftRows,
-    required this.rightRows,
     required this.columns,
+    required this.buildRows,
+    this.refreshTick,
     this.noStatsMessage,
   });
 
@@ -35,8 +41,8 @@ class _StatsOverlayState extends State<StatsOverlay>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
-  List<Map<String, dynamic>>? _prevLeftRows;
-  List<Map<String, dynamic>>? _prevRightRows;
+  late List<Map<String, dynamic>> _leftRows;
+  late List<Map<String, dynamic>> _rightRows;
 
   static const Map<String, String> shortTeamNames = {
     "ADE": "Adelaide",
@@ -74,25 +80,37 @@ class _StatsOverlayState extends State<StatsOverlay>
     );
 
     _fadeController.forward();
+
+    final initial = widget.buildRows();
+    _leftRows = initial.left;
+    _rightRows = initial.right;
+
+    widget.refreshTick?.addListener(_onRefreshTick);
+  }
+
+  void _onRefreshTick() {
+    if (!mounted) return;
+    final fresh = widget.buildRows();
+    setState(() {
+      _leftRows = fresh.left;
+      _rightRows = fresh.right;
+    });
+    _fadeController.forward(from: 0);
   }
 
   @override
   void didUpdateWidget(covariant StatsOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    final leftChanged = widget.leftRows != _prevLeftRows;
-    final rightChanged = widget.rightRows != _prevRightRows;
-
-    if (leftChanged || rightChanged) {
-      _fadeController.forward(from: 0);
+    if (oldWidget.refreshTick != widget.refreshTick) {
+      oldWidget.refreshTick?.removeListener(_onRefreshTick);
+      widget.refreshTick?.addListener(_onRefreshTick);
     }
-
-    _prevLeftRows = widget.leftRows;
-    _prevRightRows = widget.rightRows;
   }
 
   @override
   void dispose() {
+    widget.refreshTick?.removeListener(_onRefreshTick);
     _fadeController.dispose();
     super.dispose();
   }
@@ -171,7 +189,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                   child: SideBySideGameTables.buildSingleTable(
                                     context,
                                     leftName,
-                                    widget.leftRows,
+                                    _leftRows,
                                     widget.columns,
                                     compact: true,
                                     headerBg: _teamBg(leftCode),
@@ -185,7 +203,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                   child: SideBySideGameTables.buildSingleTable(
                                     context,
                                     rightName,
-                                    widget.rightRows,
+                                    _rightRows,
                                     widget.columns,
                                     compact: true,
                                     headerBg: _teamBg(rightCode),
@@ -201,7 +219,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                 SideBySideGameTables.buildSingleTable(
                                   context,
                                   leftName,
-                                  widget.leftRows,
+                                  _leftRows,
                                   widget.columns,
                                   compact: true,
                                   headerBg: _teamBg(leftCode),
@@ -213,7 +231,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                 SideBySideGameTables.buildSingleTable(
                                   context,
                                   rightName,
-                                  widget.rightRows,
+                                  _rightRows,
                                   widget.columns,
                                   compact: true,
                                   headerBg: _teamBg(rightCode),
@@ -258,7 +276,7 @@ class _StatsOverlayState extends State<StatsOverlay>
   final initial = firstName.isNotEmpty ? "${firstName[0]}." : "";
 
   // Detect duplicate surnames across both tables
-  final allRows = [...widget.leftRows, ...widget.rightRows];
+  final allRows = [..._leftRows, ..._rightRows];
   final surnameCount = allRows.where((r) {
     final n = (r["playerName"] ?? r["Player"] ?? r["name"] ?? "").toString();
     return n.trim().endsWith(" $surname");
