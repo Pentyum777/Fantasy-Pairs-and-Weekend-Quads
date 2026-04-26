@@ -96,15 +96,32 @@ async function fetchRawDfs() {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
         "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
       Accept: "application/json,text/plain,*/*",
+      "Accept-Encoding": "identity", // disable gzip — chunk-decoder is fragile
     },
-    timeout: 10000,
+    timeout: 30000,
+    compress: false,
   });
 
   if (!res.ok) {
     throw new Error(`DFS live feed returned error: ${res.status}`);
   }
 
-  return await res.text();
+  // Read as Buffer first then decode whole thing as UTF-8.
+  // Doing res.text() lets node-fetch decode chunks individually, which
+  // corrupts multi-byte UTF-8 sequences split across chunk boundaries
+  // and leaves invalid characters that break JSON.parse at predictable
+  // offsets near multiples of 64KB.
+  const buf = await res.buffer();
+
+  // Validate Content-Length if present — short reads are the root cause
+  const expectedLen = parseInt(res.headers.get("content-length") || "0", 10);
+  if (expectedLen > 0 && buf.length < expectedLen) {
+    throw new Error(
+      `DFS live feed truncated: got ${buf.length} bytes, expected ${expectedLen}`
+    );
+  }
+
+  return buf.toString("utf8");
 }
 
 function parseDfsJson(raw) {
@@ -112,11 +129,21 @@ function parseDfsJson(raw) {
     throw new Error("DFS live feed returned HTML instead of JSON");
   }
 
+  // Quick sanity check — JSON should end with } or ]
+  const tail = raw.trim().slice(-1);
+  if (tail !== "}" && tail !== "]") {
+    throw new Error(
+      `DFS live feed truncated (ends with '${tail}', length ${raw.length})`
+    );
+  }
+
   let json;
   try {
     json = JSON.parse(raw);
   } catch (err) {
-    throw new Error("DFS live JSON parse failed: " + err.message);
+    throw new Error(
+      `DFS live JSON parse failed at length ${raw.length}: ${err.message}`
+    );
   }
 
   if (!json.playerStats || !Array.isArray(json.playerStats)) {
