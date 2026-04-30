@@ -1192,18 +1192,34 @@ app.get("/vsOpponentStats", async (req, res) => {
     }
 
     // Now calculate historical averages for each player vs their upcoming opponent
+    // Use each player's CURRENT team (from latest 2026 match_stats) to
+    // determine their upcoming opponent — not whatever team they played
+    // for historically. Otherwise traded players (Grundy moved MELB→SYD,
+    // Petracca MELB→GCS, etc.) get matched against the wrong opponent.
     const result = await pool.query(`
+      WITH current_teams AS (
+        -- Latest team each player is on according to 2026 match_stats
+        SELECT DISTINCT ON (player_name)
+          player_name,
+          team AS current_team
+        FROM match_stats
+        WHERE match_id LIKE 'CD_M2026%'
+          AND team <> ''
+          AND player_name <> ''
+        ORDER BY player_name, match_id DESC
+      )
       SELECT
         hs.player_name,
-        hs.team,
-        $1::jsonb->hs.team AS upcoming_opponent,
+        ct.current_team AS team,
+        $1::jsonb->>ct.current_team AS upcoming_opponent,
         COUNT(*) AS games_vs,
         ROUND(AVG(hs.score))::int AS avg_vs_opponent
       FROM historical_scores hs
-      WHERE hs.opponent = ($1::jsonb->>hs.team)
+      JOIN current_teams ct ON ct.player_name = hs.player_name
+      WHERE hs.opponent = ($1::jsonb->>ct.current_team)
         AND hs.score > 0
-        AND ($1::jsonb->>hs.team) IS NOT NULL
-      GROUP BY hs.player_name, hs.team
+        AND ($1::jsonb->>ct.current_team) IS NOT NULL
+      GROUP BY hs.player_name, ct.current_team
       HAVING COUNT(*) >= 1
       ORDER BY avg_vs_opponent DESC
     `, [JSON.stringify(teamOpponentMap)]);
