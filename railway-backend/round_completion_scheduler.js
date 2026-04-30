@@ -112,10 +112,25 @@ async function getRoundStatus(matchIds, round) {
 
 // ---------------------------------------------------------------------------
 // Fetch DFS stats for all matches in a round
-// Returns: Map of playerId -> stats object
+// Returns:
+//   {
+//     statsByPlayerId: { playerId -> {K,HB,D,...,AF} }   // legacy shape
+//     records:          [ {matchId, playerId, playerName, team, K,...,AF} ]
+//   }
 // ---------------------------------------------------------------------------
 async function fetchRoundStats(matchIds) {
   const statsByPlayerId = {};
+  const records = [];
+
+  // DFS team-code normalisation (DFS uses MEL/WB/RICH — we use MELB/WBD/RIC)
+  const normAbbr = (abbr) => {
+    const map = {
+      "MEL":  "MELB", "WB":   "WBD", "BRI":  "BRL",
+      "RICH": "RIC",  "CARL": "CAR", "COLL": "COL",
+      "GCFC": "GCS",  "NMFC": "NTH", "PORT": "PTA",
+    };
+    return map[abbr] || abbr;
+  };
 
   for (const cdMatchId of matchIds) {
     const dfsId = dfsMap[cdMatchId];
@@ -132,7 +147,7 @@ async function fetchRoundStats(matchIds) {
         const kicks = p.kicks ?? 0;
         const handballs = p.handballs ?? 0;
 
-        statsByPlayerId[pid] = {
+        const stats = {
           K: kicks,
           HB: handballs,
           D: kicks + handballs,
@@ -146,6 +161,20 @@ async function fetchRoundStats(matchIds) {
           TOG: p.timeOnGroundPercentage ?? 0,
           AF: p.fantasyPoints ?? calculateFantasyPoints(p),
         };
+
+        // Legacy shape (used by patchSelectionsForRound)
+        statsByPlayerId[pid] = stats;
+
+        // Full record (used to upsert into match_stats with correct match_id)
+        records.push({
+          matchId:    cdMatchId,
+          playerId:   pid,
+          playerName: (p.firstName && p.lastName)
+            ? `${p.firstName} ${p.lastName}`
+            : (p.displayName || p.name || ""),
+          team:       normAbbr(p.teamAbbr || p.team || ""),
+          stats,
+        });
       }
     } catch (err) {
       console.error(
@@ -155,7 +184,69 @@ async function fetchRoundStats(matchIds) {
     }
   }
 
-  return statsByPlayerId;
+  return { statsByPlayerId, records };
+}
+
+// ---------------------------------------------------------------------------
+// Upsert all player records into match_stats with the correct match_id.
+// This is what populates the Scout page's season averages, Last, L3, etc.
+// ---------------------------------------------------------------------------
+async function upsertMatchStatsForRound(pool, season, round, records) {
+  if (!records || records.length === 0) {
+    console.log(
+      `⚠️  RoundCompletion: No records to upsert for season=${season} round=${round}`
+    );
+    return 0;
+  }
+
+  let upserted = 0, skipped = 0;
+  for (const r of records) {
+    if (!r.playerId || !r.playerId.startsWith("CD_I") || !r.matchId) {
+      skipped++;
+      continue;
+    }
+    try {
+      await pool.query(
+        `INSERT INTO match_stats
+           (match_id, player_id, player_name, team,
+            kicks, handballs, disposals, marks, tackles, hitouts,
+            frees_for, frees_against, goals, behinds, tog, fantasy_points)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+         ON CONFLICT (match_id, player_id)
+         DO UPDATE SET
+           player_name    = EXCLUDED.player_name,
+           team           = EXCLUDED.team,
+           kicks          = EXCLUDED.kicks,
+           handballs      = EXCLUDED.handballs,
+           disposals      = EXCLUDED.disposals,
+           marks          = EXCLUDED.marks,
+           tackles        = EXCLUDED.tackles,
+           hitouts        = EXCLUDED.hitouts,
+           frees_for      = EXCLUDED.frees_for,
+           frees_against  = EXCLUDED.frees_against,
+           goals          = EXCLUDED.goals,
+           behinds        = EXCLUDED.behinds,
+           tog            = EXCLUDED.tog,
+           fantasy_points = EXCLUDED.fantasy_points`,
+        [
+          r.matchId, r.playerId, r.playerName, r.team,
+          r.stats.K, r.stats.HB, r.stats.D, r.stats.M, r.stats.T, r.stats.HO,
+          r.stats.FF, r.stats.FA, r.stats.G, r.stats.B, r.stats.TOG, r.stats.AF,
+        ]
+      );
+      upserted++;
+    } catch (err) {
+      console.warn(
+        `⚠️  RoundCompletion: upsert failed for ${r.playerId} @ ${r.matchId}: ${err.message}`
+      );
+      skipped++;
+    }
+  }
+
+  console.log(
+    `📥 RoundCompletion: match_stats upsert complete — ${upserted} upserted, ${skipped} skipped`
+  );
+  return upserted;
 }
 
 // ---------------------------------------------------------------------------
@@ -255,12 +346,16 @@ async function checkForCompletedRounds(pool) {
       `🏁 RoundCompletion: Round ${round} is complete — fetching stats...`
     );
 
-    const statsByPlayerId = await fetchRoundStats(matchIds);
+    const { statsByPlayerId, records } = await fetchRoundStats(matchIds);
 
     console.log(
-      `📊 RoundCompletion: ${Object.keys(statsByPlayerId).length} players' stats fetched`
+      `📊 RoundCompletion: ${Object.keys(statsByPlayerId).length} players' stats fetched (${records.length} match_stats records)`
     );
 
+    // 1. Upsert into match_stats (powers Scout page averages, Last, L3, etc.)
+    await upsertMatchStatsForRound(pool, CURRENT_SEASON, round, records);
+
+    // 2. Patch the selections table (final scores for each punter's picks)
     await patchSelectionsForRound(pool, CURRENT_SEASON, round, statsByPlayerId);
 
     // Mark as saved so we don't re-run until server restarts
@@ -289,3 +384,6 @@ export function startRoundCompletionScheduler(pool) {
     );
   }, CHECK_INTERVAL_MS);
 }
+
+// Exported for manual /ingestRoundStats/:season/:round endpoint in server.js
+export { fetchRoundStats, upsertMatchStatsForRound };

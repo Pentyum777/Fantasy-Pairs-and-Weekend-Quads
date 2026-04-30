@@ -1232,6 +1232,48 @@ app.get("/vsOpponentStats", async (req, res) => {
 });
 
 
+// POST /ingestRoundStats/:season/:round
+// Manually trigger the same DFS→match_stats ingest the round completion
+// scheduler runs automatically. Useful for backfilling rounds where the
+// scheduler missed (e.g. server was offline when round completed) or for
+// re-running after a player name correction.
+app.post("/ingestRoundStats/:season/:round", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const season = parseInt(req.params.season);
+    const round  = parseInt(req.params.round);
+
+    // Build list of match IDs for this round
+    const matchIds = Object.entries(FIXTURES_2026)
+      .filter(([, fx]) => fx.round === round)
+      .map(([matchId]) => matchId);
+
+    if (matchIds.length === 0) {
+      return res.status(400).json({ ok: false, error: `No fixtures for round ${round}` });
+    }
+
+    // Re-use the scheduler's helpers
+    const { fetchRoundStats, upsertMatchStatsForRound } =
+      await import("./round_completion_scheduler.js");
+
+    const { records } = await fetchRoundStats(matchIds);
+    const upserted = await upsertMatchStatsForRound(pool, season, round, records);
+
+    res.json({
+      ok: true,
+      season,
+      round,
+      matches: matchIds.length,
+      records: records.length,
+      upserted,
+    });
+  } catch (err) {
+    console.error("ingestRoundStats error:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+
 // GET /vsOpponentScores?season=&round=&player=
 // Returns the individual historical scores for one player vs the team they
 // are about to face in the upcoming round. Used by the Scout page's
