@@ -635,9 +635,16 @@ Widget build(BuildContext context) {
             player == null ? null : _getTeamColoursForPlayer(player);
 
         // ⭐ INNER CHIP COLOUR (unchanged for selected players)
+        // Note: Colors.transparent.withOpacity(0.85) produces 85% opaque BLACK,
+        // not transparent — because Colors.transparent is Color(0x00000000)
+        // and withOpacity only changes alpha, leaving the black RGB intact.
+        // For empty picks we must NOT apply withOpacity at all.
+        final teamBg = colours?["bg"];
         final Color chipBg = isCompleted
             ? Colors.grey.withOpacity(0.60) // override team colour
-            : (colours?["bg"] ?? Colors.transparent).withOpacity(0.85);
+            : (teamBg != null
+                ? teamBg.withOpacity(0.85)
+                : Colors.transparent);
 
         final Color chipFg = isCompleted
             ? Colors.black // override team fg

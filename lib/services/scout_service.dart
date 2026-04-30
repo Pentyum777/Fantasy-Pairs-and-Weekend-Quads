@@ -313,6 +313,47 @@ class ScoutService {
     }
   }
 
+  /// Returns the individual historical scores for one player vs the team
+  /// they're about to face in [round]. Used by the Scout page's vs Opp tap
+  /// to show the games behind the average.
+  Future<Map<String, dynamic>> fetchVsOpponentScores({
+    required int season,
+    required int round,
+    required String playerName,
+  }) async {
+    try {
+      final url = Uri.https(
+        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        '/vsOpponentScores',
+        {
+          'season': season.toString(),
+          'round':  round.toString(),
+          'player': playerName,
+        },
+      );
+      final res = await http.get(url);
+      if (res.statusCode != 200) return {'scores': [], 'opponent': null};
+      final json = jsonDecode(res.body);
+      final rawScores = json['scores'] as List<dynamic>? ?? [];
+      final scores = rawScores.map((s) {
+        final m = s as Map<String, dynamic>;
+        return {
+          'season': (m['season'] as num?)?.toInt(),
+          'round':  (m['round']  as num?)?.toInt(),
+          'team':   m['team']   as String? ?? '',
+          'score':  (m['score'] as num?)?.toInt() ?? 0,
+        };
+      }).toList();
+      return {
+        'opponent': json['opponent'] as String?,
+        'currentTeam': json['currentTeam'] as String?,
+        'scores': scores,
+      };
+    } catch (_) {
+      return {'scores': [], 'opponent': null};
+    }
+  }
+
   // ── Named squad persistence ──────────────────────────────────────────────────
 
   Future<Set<String>> fetchNamedSquadIds({

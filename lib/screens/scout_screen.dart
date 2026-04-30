@@ -1531,29 +1531,162 @@ class _ScoutScreenState extends State<ScoutScreen> {
     }
 
     final opponent = vsData?['opponent'] as String? ?? '';
-    return Container(
-      width: w, height: 30,
-      alignment: Alignment.center,
-      color: bg,
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text('$vsAvg${opponent.isNotEmpty ? " v$opponent" : ""}',
-            style: cellStyle?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: textColor,
-              fontSize: 10,
-            )),
-          Text('($vsGames g)',
-            style: cellStyle?.copyWith(
-              fontSize: 9,
-              color: cs.onSurface.withOpacity(0.5),
-            )),
+    return InkWell(
+      onTap: () => _showVsOpponentScores(s, opponent),
+      child: Container(
+        width: w, height: 30,
+        alignment: Alignment.center,
+        color: bg,
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('$vsAvg${opponent.isNotEmpty ? " v$opponent" : ""}',
+              style: cellStyle?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: textColor,
+                fontSize: 10,
+              )),
+            Text('($vsGames g)',
+              style: cellStyle?.copyWith(
+                fontSize: 9,
+                color: cs.onSurface.withOpacity(0.5),
+              )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Vs opponent score breakdown popup ──────────────────────────────────────
+  Future<void> _showVsOpponentScores(PlayerSeasonStats s, String opponent) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: SizedBox(
+          height: 60,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+    );
+
+    final result = await widget.scoutService.fetchVsOpponentScores(
+      season: widget.season,
+      round: widget.round ?? 0,
+      playerName: s.playerName,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context); // close loading
+
+    final scores = (result['scores'] as List?) ?? [];
+    final theme = Theme.of(context);
+
+    // Compute average and best for the footer
+    int avg = 0, best = 0;
+    if (scores.isNotEmpty) {
+      final values = scores.map((g) => (g['score'] as int?) ?? 0).toList();
+      avg = (values.reduce((a, b) => a + b) / values.length).round();
+      best = values.reduce((a, b) => a > b ? a : b);
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Expanded(child: Text('${s.playerName} v $opponent',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+            Text(s.team,
+              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+          ],
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        content: SizedBox(
+          width: 320,
+          child: scores.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text('No historical games against this opponent.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey)),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header row
+                    _vsScoreRow('Season', 'Rd', 'Team', 'AF', isHeader: true),
+                    const Divider(height: 1),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 360),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: scores.map((g) {
+                            final season = g['season']?.toString() ?? '';
+                            final round  = g['round'] != null ? 'R${g['round']}' : '';
+                            final team   = (g['team'] as String?) ?? '';
+                            final score  = (g['score'] as int?) ?? 0;
+                            return _vsScoreRow(season, round, team, '$score');
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    // Footer with avg/best
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(children: [
+                            Text('Games', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                            Text('${scores.length}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                          ]),
+                          Column(children: [
+                            Text('Avg', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                            Text('$avg', style: const TextStyle(fontWeight: FontWeight.w700)),
+                          ]),
+                          Column(children: [
+                            Text('Best', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                            Text('$best', style: const TextStyle(fontWeight: FontWeight.w700)),
+                          ]),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
   }
+
+  Widget _vsScoreRow(String season, String round, String team, String score,
+      {bool isHeader = false}) {
+    final style = TextStyle(
+      fontSize: isHeader ? 11 : 12,
+      fontWeight: isHeader ? FontWeight.w700 : FontWeight.w500,
+      color: isHeader ? Colors.grey[700] : null,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+      child: Row(
+        children: [
+          SizedBox(width: 60, child: Text(season, style: style)),
+          SizedBox(width: 40, child: Text(round, style: style)),
+          SizedBox(width: 60, child: Text(team, style: style)),
+          Expanded(child: Text(score, textAlign: TextAlign.right, style: style)),
+        ],
+      ),
+    );
+  }
+
 
   // ── Status chip ────────────────────────────────────────────────────────────
   Widget _buildStatusChip(PlayerSeasonStats s, bool isNamed,

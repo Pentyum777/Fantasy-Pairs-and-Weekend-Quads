@@ -258,21 +258,6 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
     );
   }
 
-  /// Returns all selections across all game types for the current round
-  /// Used to collect drafted player IDs for the Scout screen
-  List<dynamic> _getAllSelectionsForRound() {
-    final result = [];
-    for (final type in [
-      'thursday_pairs', 'friday_pairs', 'saturday_pairs',
-      'sunday_pairs', 'monday_pairs', 'weekend_quads',
-    ]) {
-      try {
-        result.addAll(_getSelectionsForGameType(type));
-      } catch (_) {}
-    }
-    return result;
-  }
-
   /// Returns the most relevant game type for the current round
   /// (first game type that has fixtures)
   String _defaultGameTypeForRound() {

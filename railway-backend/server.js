@@ -1232,6 +1232,88 @@ app.get("/vsOpponentStats", async (req, res) => {
 });
 
 
+// GET /vsOpponentScores?season=&round=&player=
+// Returns the individual historical scores for one player vs the team they
+// are about to face in the upcoming round. Used by the Scout page's
+// "vs Opp" cell tap to show the breakdown behind the average.
+app.get("/vsOpponentScores", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const season     = parseInt(req.query.season ?? 2026);
+    const round      = parseInt(req.query.round  ?? 1);
+    const playerName = req.query.player ?? "";
+
+    if (!playerName) {
+      return res.status(400).json({ ok: false, error: "player required" });
+    }
+
+    // Find the player's current team and the upcoming opponent for this round
+    const teamResult = await pool.query(
+      `SELECT team FROM match_stats
+       WHERE match_id LIKE 'CD_M2026%'
+         AND player_name = $1
+         AND team <> ''
+       ORDER BY match_id DESC
+       LIMIT 1`,
+      [playerName]
+    );
+    const playerTeam = teamResult.rows[0]?.team;
+    if (!playerTeam) {
+      return res.json({ ok: true, scores: [], opponent: null });
+    }
+
+    // Build round opponent map from FIXTURES_2026
+    let opponent = null;
+    for (const fixture of Object.values(FIXTURES_2026)) {
+      if (fixture.round !== round) continue;
+      if (fixture.home === playerTeam) { opponent = fixture.away; break; }
+      if (fixture.away === playerTeam) { opponent = fixture.home; break; }
+    }
+    if (!opponent) {
+      return res.json({ ok: true, scores: [], opponent: null });
+    }
+
+    // Pull every historical game by this player against that opponent.
+    // We try to include season/round if those columns exist; if they don't,
+    // we fall back gracefully.
+    let scores = [];
+    try {
+      const result = await pool.query(`
+        SELECT season, round, score, team
+        FROM historical_scores
+        WHERE player_name = $1
+          AND opponent = $2
+          AND score > 0
+        ORDER BY season DESC, round DESC
+      `, [playerName, opponent]);
+      scores = result.rows;
+    } catch (err) {
+      // Schema doesn't have season/round — fall back to score+team only
+      const result = await pool.query(`
+        SELECT score, team
+        FROM historical_scores
+        WHERE player_name = $1
+          AND opponent = $2
+          AND score > 0
+        ORDER BY score DESC
+      `, [playerName, opponent]);
+      scores = result.rows;
+    }
+
+    res.json({
+      ok: true,
+      player: playerName,
+      currentTeam: playerTeam,
+      opponent,
+      scores,
+    });
+  } catch (err) {
+    console.error("vsOpponentScores error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+
 // GET /playerGameLog/:season/:playerName
 // Returns all game scores for a player in a given season
 app.get("/playerGameLog/:season/:playerName", async (req, res) => {
