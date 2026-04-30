@@ -882,85 +882,116 @@ app.get("/injuryList", async (req, res) => {
 
     const html = await pageRes.text();
 
-    // ── Extract the article text ─────────────────────────────────────────────
-    // The page has one <article> element containing all 18 club injury tables.
-    // Strip all HTML tags to get plain text, then parse the repeating pattern:
-    //   PLAYER   INJURY   ESTIMATED RETURN
-    //   <name>   <injury> <timeline>
-    //   ...
-    // Each club block ends with "Updated: <date>" followed by "In the mix" prose.
+    // ── Extract player rows from the article HTML directly ─────────────────────
+    // The AFL injury page renders each player as a <tr> with three cells:
+    //   <td>Name</td> <td>Injury</td> <td>Timeline</td>
+    // Club headings come as <h2> or similar before each block, and each block
+    // ends with "Updated: <date>".
+    //
+    // We don't try to whitespace-collapse the whole article — that mashes the
+    // header text "PLAYER INJURY ESTIMATED RETURN" into the first player's
+    // name. Instead, find every <tr> and extract its three cells in order.
 
-    // Pull text between <article> tags (or fall back to full body)
     const articleMatch = html.match(/<article[\s\S]*?>([\s\S]*?)<\/article>/i);
-    const rawText = articleMatch
-      ? articleMatch[1].replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ")
-      : html.replace(/<[^>]+>/g, " ");
+    const articleHtml = articleMatch ? articleMatch[1] : html;
 
-    // Normalise whitespace
-    const text = rawText.replace(/\s+/g, " ").trim();
+    // Split into team blocks. Each block is preceded by a club identifier:
+    // either an h2 / h3 / h4 with the team name, or a "club-logo" image alt.
+    // The "Updated:" sentinel reliably ends each block.
+    //
+    // We split on the closing \"Updated:\" + date pattern. Whatever comes
+    // BEFORE the first \"Updated:\" is the first team's block, and so on.
+    //
+    // To know which team a block belongs to, we look inside it for one of
+    // the team name strings (since the page renders teams alphabetically).
+    const teamNames = {
+      "Adelaide":            "ADE",
+      "Brisbane":            "BRL",
+      "Carlton":             "CAR",
+      "Collingwood":         "COL",
+      "Essendon":            "ESS",
+      "Fremantle":           "FRE",
+      "Geelong":             "GEE",
+      "Gold Coast":          "GCS",
+      "GWS":                 "GWS",
+      "Greater Western":     "GWS",
+      "Hawthorn":            "HAW",
+      "Melbourne":           "MELB",
+      "North Melbourne":     "NTH",
+      "Port Adelaide":       "PTA",
+      "Richmond":            "RIC",
+      "St Kilda":            "STK",
+      "Sydney":              "SYD",
+      "West Coast":          "WCE",
+      "Western Bulldogs":    "WBD",
+    };
 
-    // ── Parse player rows ────────────────────────────────────────────────────
-    // Strategy: split on "Updated:" to isolate each club's block (18 clubs),
-    // then within each block extract rows between the header sentinel and the
-    // start of the "In the mix" prose.
-    //
-    // Each row has the form:  <PlayerName>  <Status/Injury>  <Timeline>
-    //
-    // Status/Injury examples from the AFL page:
-    //   Hamstring, ACL, Corked calf, Concussion, Knee, Shoulder, Foot, Back,
-    //   Suspension, Personal reasons, Conditioning, Appendix, Face, Hip, Quad,
-    //   Head/neck, Foot/Knee  (slash-separated dual injuries)
-    //
-    // Timeline examples:
-    //   1-2 weeks, 4-5 months, Test, TBC, Season, Indefinite,
-    //   Round 8, Round 13, Concussion protocols, Individualised program
-
-    // Regex for a single player row.
-    // Group 1 — player name:  Firstname [Middle] Lastname [jnr/snr]
-    // Group 2 — status:       1-4 words, capitalised, optional slash pair
-    // Group 3 — timeline:     any of the known return formats
-    const rowRegex =
-      /([A-Z][a-z]+(?:\s+[A-Za-z'][a-zA-Z'-]*){1,4})\s+((?:[A-Z][a-zA-Z]*(?:\/[A-Z][a-zA-Z]*)?\s*){1,4})\s+((?:\d+[-–+]?\d*\s*(?:weeks?|months?)|Test|TBC|Season|Indefinite|Round\s*\d+|Concussion\s*protocols?|Individualised\s*program|\d+\s*(?:weeks?|months?)))/gi;
+    // Helper — strip HTML tags and normalise whitespace inside a single cell
+    function cleanCell(html) {
+      return html
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&#39;/g, "'")
+        .replace(/&apos;/g, "'")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
 
     // Derive the flag type from the injury/status field.
-    // Returns one of: "INJ" | "SUSP" | "REST" | "OUT"
     function deriveFlagType(injury, timeline) {
-      const inj = injury.toUpperCase();
+      const inj = (injury || "").toUpperCase();
       const tl  = (timeline || "").toUpperCase();
       if (inj === "SUSPENSION") return "SUSP";
       if (inj === "PERSONAL REASONS") return "OUT";
-      if (inj === "CONDITIONING") return "REST";
-      // "Managed" doesn't appear in the injury field but guard anyway
-      if (inj === "MANAGED") return "REST";
-      // Test = fitness test, player is close to return — treat as REST
-      // (keeps them visible but signals they're not confirmed out)
+      if (inj === "CONDITIONING" || inj === "MANAGED") return "REST";
       if (tl === "TEST") return "REST";
       return "INJ";
     }
 
     const players = [];
-    let teamIndex = 0;
 
-    // Split on "Updated:" boundaries — each segment belongs to one team
-    const segments = text.split(/Updated\s*:/i);
+    // Split on "Updated:" date strings. Each preceding chunk is one team.
+    const teamBlocks = articleHtml.split(/Updated\s*:/i);
 
-    for (let i = 0; i < segments.length - 1 && teamIndex < INJURY_LIST_TEAM_ORDER.length; i++) {
-      const segment = segments[i];
-      const team = INJURY_LIST_TEAM_ORDER[teamIndex];
-      teamIndex++;
+    for (const block of teamBlocks) {
+      // Find which team this block belongs to by looking for a name in it.
+      // Earlier matches (in <h2>) win over body text references.
+      let team = null;
+      let teamMatchIdx = Infinity;
+      for (const [name, code] of Object.entries(teamNames)) {
+        const idx = block.indexOf(name);
+        if (idx >= 0 && idx < teamMatchIdx) {
+          teamMatchIdx = idx;
+          team = code;
+        }
+      }
+      if (!team) continue;
 
-      // Find the header sentinel "PLAYER INJURY ESTIMATED RETURN"
-      const headerIdx = segment.search(/PLAYER\s+INJURY\s+ESTIMATED\s+RETURN/i);
-      const block = headerIdx >= 0 ? segment.slice(headerIdx) : segment;
+      // Extract every <tr> ... </tr> from the block.
+      // Row format: 3 <td> cells (name, injury, timeline) — sometimes with
+      // additional <th> for the header row which we skip.
+      const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+      let trMatch;
+      while ((trMatch = trRegex.exec(block)) !== null) {
+        const trInner = trMatch[1];
+        // Header row uses <th> — skip it
+        if (/<th[\s>]/i.test(trInner)) continue;
 
-      rowRegex.lastIndex = 0;
-      let match;
-      while ((match = rowRegex.exec(block)) !== null) {
-        const playerName = match[1].trim();
-        const injury     = match[2].trim();
-        const timeline   = match[3].trim();
+        const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+        const cells = [];
+        let cMatch;
+        while ((cMatch = cellRegex.exec(trInner)) !== null) {
+          cells.push(cleanCell(cMatch[1]));
+        }
+        if (cells.length < 3) continue;
 
-        if (playerName.toUpperCase() === "PLAYER") continue;
+        const playerName = cells[0];
+        const injury     = cells[1];
+        const timeline   = cells[2];
+
+        // Skip rows where the name is empty or looks like a header
+        if (!playerName || /^PLAYER$/i.test(playerName)) continue;
 
         players.push({
           playerName,
