@@ -42,6 +42,7 @@ flutter:
 
   assets:
     - assets/logos/
+    - assets/completed/
     - assets/afl_players_2025.json
     - assets/afl_players_2026.json
     - assets/afl_fixtures_2026.xlsx
