@@ -1232,6 +1232,13 @@ app.get("/vsOpponentStats", async (req, res) => {
       return res.json({ ok: true, stats: [], noData: true });
     }
 
+    // Normalise team abbreviations: historical_scores uses 'MEL', app uses 'MELB'
+    const normForHistory = (t) => t === 'MELB' ? 'MEL' : t;
+    const histOpponentMap = {};
+    for (const [team, opp] of Object.entries(teamOpponentMap)) {
+      histOpponentMap[team] = normForHistory(opp);
+    }
+
     // Now calculate historical averages for each player vs their upcoming opponent.
     // Match historical_scores by last name + first initial since name formats vary
     // across sources: "Brad Hill" vs "Bradley Hill", "N Daicos" vs "Nick Daicos".
@@ -1259,13 +1266,13 @@ app.get("/vsOpponentStats", async (req, res) => {
       JOIN historical_scores hs
         ON SPLIT_PART(hs.player_name, ' ', -1) = SPLIT_PART(ct.player_name, ' ', -1)
         AND LEFT(hs.player_name, 1) = LEFT(ct.player_name, 1)
-      WHERE hs.opponent = ($1::jsonb->>ct.current_team)
+      WHERE hs.opponent = ($2::jsonb->>ct.current_team)
         AND hs.score > 0
-        AND ($1::jsonb->>ct.current_team) IS NOT NULL
+        AND ($2::jsonb->>ct.current_team) IS NOT NULL
       GROUP BY ct.player_name, ct.current_team
       HAVING COUNT(*) >= 1
       ORDER BY avg_vs_opponent DESC
-    `, [JSON.stringify(teamOpponentMap)]);
+    `, [JSON.stringify(teamOpponentMap), JSON.stringify(histOpponentMap)]);
 
     res.json({ ok: true, stats: result.rows });
   } catch (err) {
@@ -1419,6 +1426,9 @@ app.get("/vsOpponentScores", async (req, res) => {
       return res.json({ ok: true, scores: [], opponent: null });
     }
 
+    // Normalise for historical_scores which uses 'MEL' not 'MELB'
+    const histOpponent = opponent === 'MELB' ? 'MEL' : opponent;
+
     // Pull every historical game by this player against that opponent.
     // Match by last name + first initial to handle name variations.
     // Don't filter by team — traded players need full career history.
@@ -1434,7 +1444,7 @@ app.get("/vsOpponentScores", async (req, res) => {
           AND opponent = $3
           AND score > 0
         ORDER BY season DESC, round DESC
-      `, [lastName, firstInitial, opponent]);
+      `, [lastName, firstInitial, histOpponent]);
       scores = result.rows;
     } catch (err) {
       const result = await pool.query(`
@@ -1445,7 +1455,7 @@ app.get("/vsOpponentScores", async (req, res) => {
           AND opponent = $3
           AND score > 0
         ORDER BY score DESC
-      `, [lastName, firstInitial, opponent]);
+      `, [lastName, firstInitial, histOpponent]);
       scores = result.rows;
     }
 
