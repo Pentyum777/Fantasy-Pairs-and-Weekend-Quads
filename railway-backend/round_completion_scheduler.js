@@ -1,17 +1,16 @@
 /**
  * round_completion_scheduler.js
  *
- * Runs on the Railway server 24/7. Every 2 minutes it checks whether
- * any AFL round has just completed (all fixtures finished). When it
- * detects a completed round, it:
+ * Runs on the Railway server 24/7. Every 2 minutes it checks for
+ * AFL games that have completed and caches their stats immediately.
  *
- *   1. Fetches final DFS stats for every match in that round
- *   2. Loads all selections rows for that season/round from Postgres
- *   3. Patches each pick's stats with the real fantasy scores
- *   4. Saves back to Postgres
+ * KEY DESIGN: Stats are cached PER-GAME as soon as each game finishes,
+ * NOT after the whole round completes. This is critical because DFS
+ * only shows stats for the most recent game — older completed games
+ * disappear from the feed once the next game starts.
  *
- * This means stats are always saved automatically — no Flutter client
- * needs to be open when a round finishes.
+ * Once ALL games in a round are cached, it patches the selections table
+ * with final fantasy scores.
  *
  * Usage: imported and started from server.js
  */
@@ -28,8 +27,10 @@ const dfsMap = JSON.parse(
   fs.readFileSync(path.join(__dirname, "dfs_map.json"), "utf8")
 );
 
-// Track which rounds we've already saved so we don't double-save
-const savedRounds = new Set(); // "season-round" keys
+// Track which individual games we've already cached (match IDs)
+const cachedGames = new Set();
+// Track which rounds have been fully patched (selections table)
+const patchedRounds = new Set();
 
 const CHECK_INTERVAL_MS = 2 * 60 * 1000; // every 2 minutes
 const CURRENT_SEASON = 2026;
@@ -53,13 +54,11 @@ function calculateFantasyPoints(p) {
 
 // ---------------------------------------------------------------------------
 // Get all match IDs grouped by round for the current season
-// Uses dfs_map keys which follow CD_M{season}{round}{game} pattern
 // ---------------------------------------------------------------------------
 function getMatchesByRound() {
   const byRound = {};
 
   for (const [cdMatchId] of Object.entries(dfsMap)) {
-    // CD_M20260140401 → season=2026, competition=014, round=04, game=01
     const m = cdMatchId.match(/^CD_M(\d{4})(\d{3})(\d{2})(\d{2})$/);
     if (!m) continue;
 
@@ -77,134 +76,78 @@ function getMatchesByRound() {
 }
 
 // ---------------------------------------------------------------------------
-// Check if all matches in a round are complete by querying DFS directly.
-// DFS returns player stats only when a game is finished — if all games in
-// a round have stats, the round is complete. No Squiggle needed.
-// Returns: "all_complete" | "some_live" | "none_started"
+// DFS team-code normalisation
 // ---------------------------------------------------------------------------
-async function getRoundStatus(matchIds, round) {
-  let gamesWithStats = 0;
-  let gamesChecked = 0;
-
-  for (const matchId of matchIds) {
-    const dfsId = dfsMap[matchId];
-    if (!dfsId) continue;
-    gamesChecked++;
-
-    try {
-      const players = await scrapeDFS(String(dfsId));
-      // A game has stats if DFS returns players with non-zero fantasy points
-      const hasStats = players && players.some(p => (p.fantasyPoints ?? 0) > 0);
-      if (hasStats) gamesWithStats++;
-    } catch (err) {
-      // DFS fetch failed — treat as not yet complete
-    }
-  }
-
-  if (gamesChecked === 0) return "none_started";
-
-  console.log(`Round ${round} DFS check: ${gamesWithStats}/${gamesChecked} games have stats`);
-
-  if (gamesWithStats === gamesChecked) return "all_complete";
-  if (gamesWithStats > 0) return "some_live"; // mid-round
-  return "none_started";
-}
-
-// ---------------------------------------------------------------------------
-// Fetch DFS stats for all matches in a round
-// Returns:
-//   {
-//     statsByPlayerId: { playerId -> {K,HB,D,...,AF} }   // legacy shape
-//     records:          [ {matchId, playerId, playerName, team, K,...,AF} ]
-//   }
-// ---------------------------------------------------------------------------
-async function fetchRoundStats(matchIds) {
-  const statsByPlayerId = {};
-  const records = [];
-
-  // DFS team-code normalisation (DFS uses MEL/WB/RICH — we use MELB/WBD/RIC)
-  const normAbbr = (abbr) => {
-    const map = {
-      "MEL":  "MELB", "WB":   "WBD", "BRI":  "BRL",
-      "RICH": "RIC",  "CARL": "CAR", "COLL": "COL",
-      "GCFC": "GCS",  "NMFC": "NTH", "PORT": "PTA",
-    };
-    return map[abbr] || abbr;
+const normAbbr = (abbr) => {
+  const map = {
+    "MEL": "MELB", "WB": "WBD", "BRI": "BRL",
+    "RICH": "RIC", "CARL": "CAR", "COLL": "COL",
+    "GCFC": "GCS", "NMFC": "NTH", "PORT": "PTA",
   };
-
-  for (const cdMatchId of matchIds) {
-    const dfsId = dfsMap[cdMatchId];
-    if (!dfsId) continue;
-
-    try {
-      const players = await scrapeDFS(String(dfsId));
-      if (!players || players.length === 0) continue;
-
-      for (const p of players) {
-        const pid = p.playerId;
-        if (!pid) continue;
-
-        const kicks = p.kicks ?? 0;
-        const handballs = p.handballs ?? 0;
-
-        const stats = {
-          K: kicks,
-          HB: handballs,
-          D: kicks + handballs,
-          M: p.marks ?? 0,
-          T: p.tackles ?? 0,
-          HO: p.hitouts ?? 0,
-          FF: p.freesFor ?? 0,
-          FA: p.freesAgainst ?? 0,
-          G: p.goals ?? 0,
-          B: p.behinds ?? 0,
-          TOG: p.timeOnGroundPercentage ?? 0,
-          AF: p.fantasyPoints ?? calculateFantasyPoints(p),
-        };
-
-        // Legacy shape (used by patchSelectionsForRound)
-        statsByPlayerId[pid] = stats;
-
-        // Full record (used to upsert into match_stats with correct match_id)
-        records.push({
-          matchId:    cdMatchId,
-          playerId:   pid,
-          playerName: (p.firstName && p.lastName)
-            ? `${p.firstName} ${p.lastName}`
-            : (p.displayName || p.name || ""),
-          team:       normAbbr(p.teamAbbr || p.team || ""),
-          stats,
-        });
-      }
-    } catch (err) {
-      console.error(
-        `❌ RoundCompletion: DFS fetch failed for ${cdMatchId}:`,
-        err.message
-      );
-    }
-  }
-
-  return { statsByPlayerId, records };
-}
+  return map[abbr] || abbr;
+};
 
 // ---------------------------------------------------------------------------
-// Upsert all player records into match_stats with the correct match_id.
-// This is what populates the Scout page's season averages, Last, L3, etc.
+// Fetch and cache stats for a SINGLE game into match_stats.
+// Returns the records array (empty if DFS had no data).
 // ---------------------------------------------------------------------------
-async function upsertMatchStatsForRound(pool, season, round, records) {
-  if (!records || records.length === 0) {
-    console.log(
-      `⚠️  RoundCompletion: No records to upsert for season=${season} round=${round}`
-    );
-    return 0;
+async function fetchAndCacheGame(pool, cdMatchId) {
+  const dfsId = dfsMap[cdMatchId];
+  if (!dfsId) return [];
+
+  let players;
+  try {
+    players = await scrapeDFS(String(dfsId));
+  } catch (err) {
+    return [];
   }
 
-  let upserted = 0, skipped = 0;
+  if (!players || players.length === 0) return [];
+
+  // Check if any player has non-zero fantasy points (game actually started)
+  const hasStats = players.some((p) => (p.fantasyPoints ?? 0) > 0);
+  if (!hasStats) return [];
+
+  const records = [];
+  for (const p of players) {
+    const pid = p.playerId;
+    if (!pid || !pid.startsWith("CD_I")) continue;
+
+    const kicks = p.kicks ?? 0;
+    const handballs = p.handballs ?? 0;
+
+    const stats = {
+      K: kicks,
+      HB: handballs,
+      D: kicks + handballs,
+      M: p.marks ?? 0,
+      T: p.tackles ?? 0,
+      HO: p.hitouts ?? 0,
+      FF: p.freesFor ?? 0,
+      FA: p.freesAgainst ?? 0,
+      G: p.goals ?? 0,
+      B: p.behinds ?? 0,
+      TOG: p.timeOnGroundPercentage ?? 0,
+      AF: p.fantasyPoints ?? calculateFantasyPoints(p),
+    };
+
+    records.push({
+      matchId: cdMatchId,
+      playerId: pid,
+      playerName:
+        p.firstName && p.lastName
+          ? `${p.firstName} ${p.lastName}`
+          : p.displayName || p.name || "",
+      team: normAbbr(p.teamAbbr || p.team || ""),
+      stats,
+    });
+  }
+
+  if (records.length < 10) return []; // not enough data, skip
+
+  // Upsert into match_stats immediately
+  let upserted = 0;
   for (const r of records) {
-    if (!r.playerId || !r.playerId.startsWith("CD_I") || !r.matchId) {
-      skipped++;
-      continue;
-    }
     try {
       await pool.query(
         `INSERT INTO match_stats
@@ -236,32 +179,43 @@ async function upsertMatchStatsForRound(pool, season, round, records) {
       );
       upserted++;
     } catch (err) {
-      console.warn(
-        `⚠️  RoundCompletion: upsert failed for ${r.playerId} @ ${r.matchId}: ${err.message}`
-      );
-      skipped++;
+      // skip individual failures
     }
   }
 
   console.log(
-    `📥 RoundCompletion: match_stats upsert complete — ${upserted} upserted, ${skipped} skipped`
+    `📥 Cached game ${cdMatchId}: ${upserted} players saved to match_stats`
   );
-  return upserted;
+
+  return records;
 }
 
 // ---------------------------------------------------------------------------
-// Patch all selections rows for a given season/round with real stats
+// Check DB for which games already have stats cached
+// ---------------------------------------------------------------------------
+async function getAlreadyCachedGames(pool) {
+  try {
+    const result = await pool.query(
+      `SELECT match_id, COUNT(*) as cnt
+       FROM match_stats
+       WHERE match_id LIKE 'CD_M${CURRENT_SEASON}%'
+       GROUP BY match_id
+       HAVING COUNT(*) >= 20`
+    );
+    return new Set(result.rows.map((r) => r.match_id));
+  } catch (err) {
+    console.error("❌ getAlreadyCachedGames failed:", err.message);
+    return new Set();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Patch selections for a completed round
 // ---------------------------------------------------------------------------
 async function patchSelectionsForRound(pool, season, round, statsByPlayerId) {
-  if (Object.keys(statsByPlayerId).length === 0) {
-    console.log(
-      `⚠️  RoundCompletion: No stats fetched for season=${season} round=${round} — skipping patch`
-    );
-    return;
-  }
+  if (Object.keys(statsByPlayerId).length === 0) return;
 
   const client = await pool.connect();
-
   try {
     const result = await client.query(
       `SELECT id, game_type, picks
@@ -271,9 +225,7 @@ async function patchSelectionsForRound(pool, season, round, statsByPlayerId) {
     );
 
     if (result.rows.length === 0) {
-      console.log(
-        `ℹ️  RoundCompletion: No selections found for season=${season} round=${round}`
-      );
+      console.log(`ℹ️  No selections for season=${season} round=${round}`);
       return;
     }
 
@@ -287,11 +239,9 @@ async function patchSelectionsForRound(pool, season, round, statsByPlayerId) {
 
       const patchedPicks = picks.map((punterRow) => {
         if (!Array.isArray(punterRow)) return punterRow;
-
         return punterRow.map((pick) => {
           const pid = pick?.playerId;
           if (!pid) return pick;
-
           const stats = statsByPlayerId[pid];
           if (stats) {
             rowPatched = true;
@@ -311,18 +261,43 @@ async function patchSelectionsForRound(pool, season, round, statsByPlayerId) {
         );
         totalRows++;
         totalPatched += pickCount;
-        console.log(
-          `  ✅ Patched: season=${season} round=${round} game_type=${row.game_type} | ${pickCount} picks`
-        );
       }
     }
 
     console.log(
-      `✅ RoundCompletion: season=${season} round=${round} | ${totalRows} rows updated, ${totalPatched} picks patched`
+      `✅ Patched selections: season=${season} round=${round} | ${totalRows} rows, ${totalPatched} picks`
     );
   } finally {
     client.release();
   }
+}
+
+// ---------------------------------------------------------------------------
+// Build statsByPlayerId from match_stats DB for a set of match IDs
+// (used when patching selections from cached data, not from DFS)
+// ---------------------------------------------------------------------------
+async function loadStatsFromDB(pool, matchIds) {
+  const statsByPlayerId = {};
+  try {
+    const result = await pool.query(
+      `SELECT player_id, kicks, handballs, disposals, marks, tackles,
+              hitouts, frees_for, frees_against, goals, behinds, tog, fantasy_points
+       FROM match_stats
+       WHERE match_id = ANY($1)`,
+      [matchIds]
+    );
+    for (const r of result.rows) {
+      statsByPlayerId[r.player_id] = {
+        K: r.kicks, HB: r.handballs, D: r.disposals,
+        M: r.marks, T: r.tackles, HO: r.hitouts,
+        FF: r.frees_for, FA: r.frees_against,
+        G: r.goals, B: r.behinds, TOG: r.tog, AF: r.fantasy_points,
+      };
+    }
+  } catch (err) {
+    console.error("❌ loadStatsFromDB failed:", err.message);
+  }
+  return statsByPlayerId;
 }
 
 // ---------------------------------------------------------------------------
@@ -331,49 +306,48 @@ async function patchSelectionsForRound(pool, season, round, statsByPlayerId) {
 async function checkForCompletedRounds(pool) {
   const matchesByRound = getMatchesByRound();
 
+  // Load which games are already in the DB so we don't re-fetch
+  const dbCached = await getAlreadyCachedGames(pool);
+  for (const mid of dbCached) cachedGames.add(mid);
+
+  // 1. For each round, try to cache any completed games we haven't cached yet
   for (const [roundStr, matchIds] of Object.entries(matchesByRound)) {
     const round = parseInt(roundStr);
     const key = `${CURRENT_SEASON}-${round}`;
 
-    // Skip rounds we've already saved this server session
-    if (savedRounds.has(key)) continue;
+    // If round is fully patched, skip entirely
+    if (patchedRounds.has(key)) continue;
 
-    const status = await getRoundStatus(matchIds, round);
+    // Check each game individually
+    const uncachedIds = matchIds.filter((mid) => !cachedGames.has(mid));
 
-    if (status !== "all_complete") continue;
+    if (uncachedIds.length > 0) {
+      for (const mid of uncachedIds) {
+        const records = await fetchAndCacheGame(pool, mid);
+        if (records.length >= 10) {
+          cachedGames.add(mid);
+        }
+      }
+    }
 
-    console.log(
-      `🏁 RoundCompletion: Round ${round} is complete — fetching stats...`
-    );
+    // 2. If ALL games in this round are now cached, patch selections
+    const allCached = matchIds.every((mid) => cachedGames.has(mid));
+    if (allCached) {
+      console.log(`🏁 Round ${round}: all ${matchIds.length} games cached — patching selections`);
 
-    const { statsByPlayerId, records } = await fetchRoundStats(matchIds);
-
-    console.log(
-      `📊 RoundCompletion: ${Object.keys(statsByPlayerId).length} players' stats fetched (${records.length} match_stats records)`
-    );
-
-    // 1. Upsert into match_stats (powers Scout page averages, Last, L3, etc.)
-    await upsertMatchStatsForRound(pool, CURRENT_SEASON, round, records);
-
-    // 2. Patch the selections table (final scores for each punter's picks)
-    await patchSelectionsForRound(pool, CURRENT_SEASON, round, statsByPlayerId);
-
-    // Mark as saved so we don't re-run until server restarts
-    // (On next restart it will re-check, but the UPDATE is idempotent)
-    savedRounds.add(key);
+      const statsByPlayerId = await loadStatsFromDB(pool, matchIds);
+      await patchSelectionsForRound(pool, CURRENT_SEASON, round, statsByPlayerId);
+      patchedRounds.add(key);
+    }
   }
 }
 
 // ---------------------------------------------------------------------------
-// Public API — call this from server.js
+// Public API
 // ---------------------------------------------------------------------------
 export function startRoundCompletionScheduler(pool) {
-  console.log(
-    "🔄 Round completion scheduler started (checks every 2 minutes)"
-  );
+  console.log("🔄 Round completion scheduler started (checks every 2 minutes)");
 
-  // Run once immediately on startup to catch any rounds completed while
-  // the server was down
   checkForCompletedRounds(pool).catch((err) =>
     console.error("❌ RoundCompletion startup check failed:", err)
   );
@@ -385,5 +359,85 @@ export function startRoundCompletionScheduler(pool) {
   }, CHECK_INTERVAL_MS);
 }
 
-// Exported for manual /ingestRoundStats/:season/:round endpoint in server.js
+// ---------------------------------------------------------------------------
+// Exported for manual /ingestRoundStats endpoint and backfill
+// ---------------------------------------------------------------------------
+
+async function fetchRoundStats(matchIds) {
+  const statsByPlayerId = {};
+  const records = [];
+
+  for (const cdMatchId of matchIds) {
+    const dfsId = dfsMap[cdMatchId];
+    if (!dfsId) continue;
+
+    try {
+      const players = await scrapeDFS(String(dfsId));
+      if (!players || players.length === 0) continue;
+
+      for (const p of players) {
+        const pid = p.playerId;
+        if (!pid) continue;
+
+        const kicks = p.kicks ?? 0;
+        const handballs = p.handballs ?? 0;
+        const stats = {
+          K: kicks, HB: handballs, D: kicks + handballs,
+          M: p.marks ?? 0, T: p.tackles ?? 0, HO: p.hitouts ?? 0,
+          FF: p.freesFor ?? 0, FA: p.freesAgainst ?? 0,
+          G: p.goals ?? 0, B: p.behinds ?? 0,
+          TOG: p.timeOnGroundPercentage ?? 0,
+          AF: p.fantasyPoints ?? calculateFantasyPoints(p),
+        };
+        statsByPlayerId[pid] = stats;
+        records.push({
+          matchId: cdMatchId, playerId: pid,
+          playerName: (p.firstName && p.lastName)
+            ? `${p.firstName} ${p.lastName}` : (p.displayName || p.name || ""),
+          team: normAbbr(p.teamAbbr || p.team || ""),
+          stats,
+        });
+      }
+    } catch (err) {
+      console.error(`❌ DFS fetch failed for ${cdMatchId}:`, err.message);
+    }
+  }
+
+  return { statsByPlayerId, records };
+}
+
+async function upsertMatchStatsForRound(pool, season, round, records) {
+  if (!records || records.length === 0) return 0;
+
+  let upserted = 0;
+  for (const r of records) {
+    if (!r.playerId || !r.playerId.startsWith("CD_I") || !r.matchId) continue;
+    try {
+      await pool.query(
+        `INSERT INTO match_stats
+           (match_id, player_id, player_name, team,
+            kicks, handballs, disposals, marks, tackles, hitouts,
+            frees_for, frees_against, goals, behinds, tog, fantasy_points)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+         ON CONFLICT (match_id, player_id)
+         DO UPDATE SET
+           player_name = EXCLUDED.player_name, team = EXCLUDED.team,
+           kicks = EXCLUDED.kicks, handballs = EXCLUDED.handballs,
+           disposals = EXCLUDED.disposals, marks = EXCLUDED.marks,
+           tackles = EXCLUDED.tackles, hitouts = EXCLUDED.hitouts,
+           frees_for = EXCLUDED.frees_for, frees_against = EXCLUDED.frees_against,
+           goals = EXCLUDED.goals, behinds = EXCLUDED.behinds,
+           tog = EXCLUDED.tog, fantasy_points = EXCLUDED.fantasy_points`,
+        [
+          r.matchId, r.playerId, r.playerName, r.team,
+          r.stats.K, r.stats.HB, r.stats.D, r.stats.M, r.stats.T, r.stats.HO,
+          r.stats.FF, r.stats.FA, r.stats.G, r.stats.B, r.stats.TOG, r.stats.AF,
+        ]
+      );
+      upserted++;
+    } catch (err) { /* skip */ }
+  }
+  return upserted;
+}
+
 export { fetchRoundStats, upsertMatchStatsForRound };

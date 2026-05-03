@@ -1232,6 +1232,58 @@ app.get("/vsOpponentStats", async (req, res) => {
 });
 
 
+// POST /backfillMatchStats
+// Accepts an array of player stat records directly (no DFS needed).
+// Use when DFS data is no longer available for a completed round.
+// Body: { records: [ {match_id, player_id, player_name, team, kicks, ...} ] }
+app.post("/backfillMatchStats", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const records = req.body.records;
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({ ok: false, error: "No records provided" });
+    }
+
+    let upserted = 0;
+    let skipped = 0;
+    for (const r of records) {
+      if (!r.player_id || !r.match_id) { skipped++; continue; }
+      try {
+        await pool.query(
+          `INSERT INTO match_stats
+             (match_id, player_id, player_name, team,
+              kicks, handballs, disposals, marks, tackles, hitouts,
+              frees_for, frees_against, goals, behinds, tog, fantasy_points)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+           ON CONFLICT (match_id, player_id)
+           DO UPDATE SET
+             player_name = EXCLUDED.player_name, team = EXCLUDED.team,
+             kicks = EXCLUDED.kicks, handballs = EXCLUDED.handballs,
+             disposals = EXCLUDED.disposals, marks = EXCLUDED.marks,
+             tackles = EXCLUDED.tackles, hitouts = EXCLUDED.hitouts,
+             frees_for = EXCLUDED.frees_for, frees_against = EXCLUDED.frees_against,
+             goals = EXCLUDED.goals, behinds = EXCLUDED.behinds,
+             tog = EXCLUDED.tog, fantasy_points = EXCLUDED.fantasy_points`,
+          [
+            r.match_id, r.player_id, r.player_name || "", r.team || "",
+            r.kicks || 0, r.handballs || 0, r.disposals || 0, r.marks || 0,
+            r.tackles || 0, r.hitouts || 0, r.frees_for || 0, r.frees_against || 0,
+            r.goals || 0, r.behinds || 0, r.tog || 0, r.fantasy_points || 0,
+          ]
+        );
+        upserted++;
+      } catch (err) {
+        skipped++;
+      }
+    }
+
+    res.json({ ok: true, upserted, skipped, total: records.length });
+  } catch (err) {
+    console.error("backfillMatchStats error:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // POST /ingestRoundStats/:season/:round
 // Manually trigger the same DFS→match_stats ingest the round completion
 // scheduler runs automatically. Useful for backfilling rounds where the
