@@ -390,6 +390,39 @@ app.get("/matchStats/:matchId", async (req, res) => {
       // DFS returns zeroed-out rows for games it no longer has data for.
       const hasRealStats = dfsPlayers && dfsPlayers.some(p => (p.fantasyPoints ?? 0) > 0 || (p.kicks ?? 0) > 0);
       if (dfsPlayers && dfsPlayers.length > 0 && hasRealStats) {
+        // Cache to match_stats DB so data persists after DFS drops the game
+        const normAbbr = (a) => ({"MEL":"MELB","WB":"WBD","BRI":"BRL","RICH":"RIC","CARL":"CAR","COLL":"COL","GCFC":"GCS","NMFC":"NTH","PORT":"PTA"}[a] || a);
+        for (const p of dfsPlayers) {
+          if (!p.playerId || !p.playerId.startsWith("CD_I")) continue;
+          try {
+            await pool.query(
+              `INSERT INTO match_stats
+                 (match_id, player_id, player_name, team,
+                  kicks, handballs, disposals, marks, tackles, hitouts,
+                  frees_for, frees_against, goals, behinds, tog, fantasy_points)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+               ON CONFLICT (match_id, player_id)
+               DO UPDATE SET
+                 player_name=EXCLUDED.player_name, team=EXCLUDED.team,
+                 kicks=EXCLUDED.kicks, handballs=EXCLUDED.handballs,
+                 disposals=EXCLUDED.disposals, marks=EXCLUDED.marks,
+                 tackles=EXCLUDED.tackles, hitouts=EXCLUDED.hitouts,
+                 frees_for=EXCLUDED.frees_for, frees_against=EXCLUDED.frees_against,
+                 goals=EXCLUDED.goals, behinds=EXCLUDED.behinds,
+                 tog=EXCLUDED.tog, fantasy_points=EXCLUDED.fantasy_points`,
+              [
+                cdMatchId, p.playerId,
+                (p.firstName && p.lastName) ? `${p.firstName} ${p.lastName}` : (p.displayName || p.playerName || ""),
+                normAbbr(p.teamAbbr || p.team || ""),
+                p.kicks||0, p.handballs||0, (p.kicks||0)+(p.handballs||0),
+                p.marks||0, p.tackles||0, p.hitouts||0,
+                p.freesFor||0, p.freesAgainst||0, p.goals||0, p.behinds||0,
+                p.timeOnGroundPercentage||0, p.fantasyPoints ?? calculateFantasyPoints(p),
+              ]
+            );
+          } catch (_) { /* skip individual failures */ }
+        }
+
         return res.json({
           ok: true,
           players: dfsPlayers.map(p => ({ ...p, af: calculateFantasyPoints(p) }))
@@ -1406,50 +1439,58 @@ app.get("/playerGameLog/:season/:playerName", async (req, res) => {
     const season     = parseInt(req.params.season);
     const playerName = decodeURIComponent(req.params.playerName);
 
+    // Resolve player_name to player_id first (handles name variations like "J Noble" vs "John Noble")
+    const idLookup = await pool.query(
+      `SELECT player_id FROM match_stats
+       WHERE match_id LIKE $1 AND player_name = $2 AND player_id LIKE 'CD_I%'
+       LIMIT 1`,
+      [`CD_M${season}%`, playerName]
+    );
+    const playerId = idLookup.rows[0]?.player_id;
+    if (!playerId) {
+      return res.json({ ok: true, games: [] });
+    }
+
     const result = await pool.query(`
       SELECT
         match_id,
         fantasy_points AS score,
-        kicks, handballs, disposals, marks, tackles, goals, behinds, tog
+        kicks, handballs, disposals, marks, tackles, goals, behinds, tog,
+        team
       FROM match_stats
       WHERE match_id LIKE $1
-        AND player_name = $2
+        AND player_id = $2
         AND fantasy_points > 0
       ORDER BY match_id ASC
-    `, [`CD_M${season}%`, playerName]);
+    `, [`CD_M${season}%`, playerId]);
 
-    // Map match_id to round number and opponent using FIXTURES_2026
+    const playerTeam = result.rows.find(r => r.team && r.team !== '')?.team ?? '';
+
     const rows = result.rows.map(r => {
       const m = r.match_id.match(/CD_M\d{4}014(\d{2})\d{2}/);
       const round = m ? parseInt(m[1]) : 0;
-      // Find opponent from fixture map
       const fixture = FIXTURES_2026[r.match_id];
-      // We need the player's team to know which side is the opponent
-      // Use match_stats team column — query it separately or look up fixture
-      const opponent = fixture
-        ? null  // will resolve below with team info
-        : null;
-      return { ...r, round, fixture: fixture ?? null };
-    });
-
-    // Get player team from match_stats for opponent lookup
-    const teamResult = await pool.query(
-      `SELECT DISTINCT team FROM match_stats WHERE player_name = $1 AND team != '' LIMIT 1`,
-      [playerName]
-    );
-    const playerTeam = teamResult.rows[0]?.team ?? '';
-
-    const rowsWithOpponent = rows.map(r => {
-      const fixture = r.fixture;
       let opponent = '';
       if (fixture && playerTeam) {
         opponent = fixture.home === playerTeam ? fixture.away : fixture.home;
       }
-      const { fixture: _f, ...rest } = r;
-      return { ...rest, opponent };
+      return {
+        match_id: r.match_id,
+        score: r.score,
+        kicks: r.kicks,
+        handballs: r.handballs,
+        disposals: r.disposals,
+        marks: r.marks,
+        tackles: r.tackles,
+        goals: r.goals,
+        behinds: r.behinds,
+        tog: r.tog,
+        round,
+        opponent,
+      };
     });
 
-    res.json({ ok: true, games: rowsWithOpponent });
+    res.json({ ok: true, games: rows });
   } catch (err) {
     console.error("playerGameLog error:", err);
     res.status(500).json({ error: "Failed" });
