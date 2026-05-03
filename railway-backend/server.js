@@ -386,7 +386,10 @@ app.get("/matchStats/:matchId", async (req, res) => {
     // 1. Try live DFS feed first (works for current round)
     if (dfsId) {
       const dfsPlayers = await scrapeDFS(dfsId);
-      if (dfsPlayers && dfsPlayers.length > 0) {
+      // Only use DFS data if players have actual scores (non-zero AF).
+      // DFS returns zeroed-out rows for games it no longer has data for.
+      const hasRealStats = dfsPlayers && dfsPlayers.some(p => (p.fantasyPoints ?? 0) > 0 || (p.kicks ?? 0) > 0);
+      if (dfsPlayers && dfsPlayers.length > 0 && hasRealStats) {
         return res.json({
           ok: true,
           players: dfsPlayers.map(p => ({ ...p, af: calculateFantasyPoints(p) }))
@@ -1091,56 +1094,43 @@ app.get("/teamLineups", async (req, res) => {
       return res.json({ ok: true, matches: allMatchInfo, source: "afl", updatedAt: new Date().toISOString() });
     }
 
-    // ── Step 3: get player names from our DB for teams with named squads ────────
-    // The AFL CFS matchRosters API is IP-restricted to requests from AFL's own
-    // servers, so we can't call it from Railway. Instead, we query our player
-    // stats table for all players belonging to the named teams — the Flutter
-    // app will then use these names to highlight the correct players in the
-    // scout table using the existing namedSquad matching logic.
-    //
-    // This returns ALL active players for each team, which is the correct
-    // behaviour: once a team names their 22, we flag the whole team as
-    // "available for selection" so the user can see who to pick from.
-    const namedTeams = new Set();
-    for (const m of namedMatches) {
-      if (m.home?.team?.abbreviation) namedTeams.add(AFL_ABBR_TO_TEAM[m.home.team.abbreviation] || m.home.team.abbreviation);
-      if (m.away?.team?.abbreviation) namedTeams.add(AFL_ABBR_TO_TEAM[m.away.team.abbreviation] || m.away.team.abbreviation);
-    }
-
-    // Query player_season_stats for all players in the named teams
-    let playersByTeam = {};
-    if (namedTeams.size > 0) {
-      try {
-        const teamList = [...namedTeams];
-        const placeholders = teamList.map((_, i) => `$${i + 1}`).join(",");
-        const result = await pool.query(
-          `SELECT DISTINCT
-             (array_agg(player_name ORDER BY CASE WHEN player_name <> '' THEN 0 ELSE 1 END, player_name))[1] AS player_name,
-             (array_agg(team        ORDER BY CASE WHEN team        <> '' THEN 0 ELSE 1 END, team       ))[1] AS team
-           FROM match_stats
-           WHERE match_id LIKE 'CD_M2026%'
-             AND team = ANY($1::text[])
-             AND player_name <> ''
-           GROUP BY player_id
-           ORDER BY team, player_name`,
-          [teamList]
-        );
-        for (const row of result.rows) {
-          if (!playersByTeam[row.team]) playersByTeam[row.team] = [];
-          playersByTeam[row.team].push(row.player_name);
-        }
-        console.log(`teamLineups: found players for teams: ${Object.entries(playersByTeam).map(([t,ps]) => t+':'+ps.length).join(', ')}`);
-      } catch (dbErr) {
-        console.warn("teamLineups: DB lookup failed:", dbErr.message);
-      }
-    }
-
-    // Merge player names into match info
+    // ── Step 3: get actual named squad players from AFL CFS API ──────────────
+    // For each match with lineups announced, fetch the real named 22+
+    // from the AFL CFS matchItem endpoint (same as /namedSquad uses).
+    // This ensures only actually-selected players show as "named".
     for (const matchInfo of allMatchInfo) {
       if (!matchInfo.available) continue;
-      matchInfo.homePlayers = playersByTeam[matchInfo.home] || [];
-      matchInfo.awayPlayers = playersByTeam[matchInfo.away] || [];
-      // Keep available=true even if playersByTeam is empty — status is still useful
+
+      try {
+        const apiUrl = `https://api.afl.com.au/cfs/afl/matchItem/${matchInfo.aflMatchId}`;
+        const rosterRes = await fetch(apiUrl, {
+          headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
+          timeout: 8000,
+        });
+
+        if (rosterRes.ok) {
+          const data = await rosterRes.json();
+
+          const extractNames = (team) => {
+            const lineup = team?.lineup ?? team?.players ?? [];
+            return lineup
+              .filter(p => p.position !== "SUB_22")
+              .map(p => {
+                const pl = p.player || p;
+                const first = pl.givenName || pl.firstName || "";
+                const last = pl.surname || pl.lastName || "";
+                return `${first} ${last}`.trim();
+              })
+              .filter(Boolean);
+          };
+
+          matchInfo.homePlayers = extractNames(data?.homeTeam ?? data?.home);
+          matchInfo.awayPlayers = extractNames(data?.awayTeam ?? data?.away);
+        }
+      } catch (fetchErr) {
+        console.warn(`teamLineups: CFS fetch failed for match ${matchInfo.aflMatchId}:`, fetchErr.message);
+        // Fall back to empty — don't pollute with all DB players
+      }
     }
 
     const withPlayers = allMatchInfo.filter(m => m.available && m.homePlayers.length > 0).length;

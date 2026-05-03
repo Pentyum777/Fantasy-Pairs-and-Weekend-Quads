@@ -488,7 +488,7 @@ void _buildStatsFromSnapshot() {
 }
 
 void _applyLiveStats(List<AflPlayerMatchStats> stats) {
-  final Map<String, AflPlayerMatchStats> map = {};
+  final Map<String, AflPlayerMatchStats> map = Map<String, AflPlayerMatchStats>.from(_currentStatsByPlayerId);
 
   for (final s in stats) {
     try {
@@ -502,7 +502,13 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
       s.isCompletedGame = completed;
       s.isLiveGame = live;
 
-      map[s.player!.id] = s;
+      // Only update if new stats have actual data (non-zero AF),
+      // or if we don't have this player yet
+      final existing = map[s.player!.id];
+      final newAF = s.fantasyPoints;
+      if (existing == null || (newAF != null && newAF > 0)) {
+        map[s.player!.id] = s;
+      }
     } catch (e) {
       debugPrint("⚠️ _applyLiveStats skip player: $e");
       continue;
