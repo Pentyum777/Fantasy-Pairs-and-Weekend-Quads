@@ -1232,13 +1232,13 @@ app.get("/vsOpponentStats", async (req, res) => {
       return res.json({ ok: true, stats: [], noData: true });
     }
 
-    // Now calculate historical averages for each player vs their upcoming opponent
-    // Use player_id to reliably determine current team (handles name variations
-    // like "J Noble" vs "John Noble" across different data sources).
+    // Now calculate historical averages for each player vs their upcoming opponent.
+    // Match historical_scores by last name + first initial since name formats vary
+    // across sources: "Brad Hill" vs "Bradley Hill", "N Daicos" vs "Nick Daicos".
+    // Don't filter by team on historical_scores — traded players (e.g. Petracca
+    // MELB→GCS) need their full career history vs the opponent.
     const result = await pool.query(`
       WITH current_teams AS (
-        -- Latest team each player is on according to 2026 match_stats
-        -- Use player_id to group, pick most recent name and team
         SELECT DISTINCT ON (player_id)
           player_id,
           player_name,
@@ -1248,14 +1248,6 @@ app.get("/vsOpponentStats", async (req, res) => {
           AND team <> ''
           AND player_name <> ''
         ORDER BY player_id, match_id DESC
-      ),
-      all_names AS (
-        -- Collect ALL name variations for each player_id so we can match historical_scores
-        SELECT player_id, player_name AS name_variant
-        FROM match_stats
-        WHERE match_id LIKE 'CD_M2026%'
-          AND player_name <> ''
-        GROUP BY player_id, player_name
       )
       SELECT
         ct.player_name,
@@ -1263,9 +1255,10 @@ app.get("/vsOpponentStats", async (req, res) => {
         $1::jsonb->>ct.current_team AS upcoming_opponent,
         COUNT(*) AS games_vs,
         ROUND(AVG(hs.score))::int AS avg_vs_opponent
-      FROM historical_scores hs
-      JOIN all_names an ON an.name_variant = hs.player_name
-      JOIN current_teams ct ON ct.player_id = an.player_id
+      FROM current_teams ct
+      JOIN historical_scores hs
+        ON SPLIT_PART(hs.player_name, ' ', -1) = SPLIT_PART(ct.player_name, ' ', -1)
+        AND LEFT(hs.player_name, 1) = LEFT(ct.player_name, 1)
       WHERE hs.opponent = ($1::jsonb->>ct.current_team)
         AND hs.score > 0
         AND ($1::jsonb->>ct.current_team) IS NOT NULL
@@ -1427,29 +1420,32 @@ app.get("/vsOpponentScores", async (req, res) => {
     }
 
     // Pull every historical game by this player against that opponent.
-    // We try to include season/round if those columns exist; if they don't,
-    // we fall back gracefully.
+    // Match by last name + first initial to handle name variations.
+    // Don't filter by team — traded players need full career history.
     let scores = [];
+    const lastName = playerName.split(' ').slice(-1)[0];
+    const firstInitial = playerName.charAt(0);
     try {
       const result = await pool.query(`
         SELECT season, round, score, team
         FROM historical_scores
-        WHERE player_name = ANY($1)
-          AND opponent = $2
+        WHERE SPLIT_PART(player_name, ' ', -1) = $1
+          AND LEFT(player_name, 1) = $2
+          AND opponent = $3
           AND score > 0
         ORDER BY season DESC, round DESC
-      `, [names, opponent]);
+      `, [lastName, firstInitial, opponent]);
       scores = result.rows;
     } catch (err) {
-      // Schema doesn't have season/round — fall back to score+team only
       const result = await pool.query(`
         SELECT score, team
         FROM historical_scores
-        WHERE player_name = ANY($1)
-          AND opponent = $2
+        WHERE SPLIT_PART(player_name, ' ', -1) = $1
+          AND LEFT(player_name, 1) = $2
+          AND opponent = $3
           AND score > 0
         ORDER BY score DESC
-      `, [names, opponent]);
+      `, [lastName, firstInitial, opponent]);
       scores = result.rows;
     }
 
