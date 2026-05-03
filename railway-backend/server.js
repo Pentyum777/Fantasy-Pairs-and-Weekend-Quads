@@ -526,8 +526,8 @@ app.get("/playerSeasonStats/:season", async (req, res) => {
       WITH season_stats AS (
         SELECT
           player_id,
-          (array_agg(player_name ORDER BY CASE WHEN player_name <> '' THEN 0 ELSE 1 END, player_name))[1] AS player_name,
-          (array_agg(team        ORDER BY CASE WHEN team        <> '' THEN 0 ELSE 1 END, team       ))[1] AS team,
+          (array_agg(player_name ORDER BY match_id DESC))[1] AS player_name,
+          (array_agg(team        ORDER BY match_id DESC))[1] AS team,
           COUNT(*)::int                             AS games,
           ROUND(AVG(fantasy_points))::int           AS af_avg,
           MAX(fantasy_points)                       AS af_best,
