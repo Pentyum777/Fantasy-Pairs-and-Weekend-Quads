@@ -27,6 +27,24 @@ const squiggleMap = JSON.parse(
   fs.readFileSync(path.join(__dirname, "squiggle_map.json"), "utf8")
 );
 
+// Player name lookup: player_id -> canonical full name
+// Used to normalise names across DFS (short "N Daicos") and AFL (full "Nick Daicos")
+const PLAYER_NAMES_BY_ID = {};
+try {
+  const playersFile = fs.readFileSync(path.join(__dirname, "players_2026.json"), "utf8");
+  const playersData = JSON.parse(playersFile);
+  const playersList = playersData.players || playersData;
+  for (const p of playersList) {
+    if (p.id) {
+      // Replace non-breaking spaces with regular spaces
+      PLAYER_NAMES_BY_ID[p.id] = (p.name || "").replace(/\u00a0/g, " ");
+    }
+  }
+  console.log(`📋 Loaded ${Object.keys(PLAYER_NAMES_BY_ID).length} player names for lookup`);
+} catch (err) {
+  console.warn("⚠️ Could not load players_2026.json for name lookup:", err.message);
+}
+
 const footyInfoRoundMap = JSON.parse(
   fs.readFileSync(path.join(__dirname, "footyinfo_round_map.json"), "utf8")
 );
@@ -412,7 +430,7 @@ app.get("/matchStats/:matchId", async (req, res) => {
                  tog=EXCLUDED.tog, fantasy_points=EXCLUDED.fantasy_points`,
               [
                 cdMatchId, p.playerId,
-                (p.firstName && p.lastName) ? `${p.firstName} ${p.lastName}` : (p.displayName || p.playerName || ""),
+                PLAYER_NAMES_BY_ID[p.playerId] || (p.firstName && p.lastName) ? `${p.firstName} ${p.lastName}` : (p.displayName || p.playerName || ""),
                 normAbbr(p.teamAbbr || p.team || ""),
                 p.kicks||0, p.handballs||0, (p.kicks||0)+(p.handballs||0),
                 p.marks||0, p.tackles||0, p.hitouts||0,
@@ -1215,34 +1233,43 @@ app.get("/vsOpponentStats", async (req, res) => {
     }
 
     // Now calculate historical averages for each player vs their upcoming opponent
-    // Use each player's CURRENT team (from latest 2026 match_stats) to
-    // determine their upcoming opponent — not whatever team they played
-    // for historically. Otherwise traded players (Grundy moved MELB→SYD,
-    // Petracca MELB→GCS, etc.) get matched against the wrong opponent.
+    // Use player_id to reliably determine current team (handles name variations
+    // like "J Noble" vs "John Noble" across different data sources).
     const result = await pool.query(`
       WITH current_teams AS (
         -- Latest team each player is on according to 2026 match_stats
-        SELECT DISTINCT ON (player_name)
+        -- Use player_id to group, pick most recent name and team
+        SELECT DISTINCT ON (player_id)
+          player_id,
           player_name,
           team AS current_team
         FROM match_stats
         WHERE match_id LIKE 'CD_M2026%'
           AND team <> ''
           AND player_name <> ''
-        ORDER BY player_name, match_id DESC
+        ORDER BY player_id, match_id DESC
+      ),
+      all_names AS (
+        -- Collect ALL name variations for each player_id so we can match historical_scores
+        SELECT player_id, player_name AS name_variant
+        FROM match_stats
+        WHERE match_id LIKE 'CD_M2026%'
+          AND player_name <> ''
+        GROUP BY player_id, player_name
       )
       SELECT
-        hs.player_name,
+        ct.player_name,
         ct.current_team AS team,
         $1::jsonb->>ct.current_team AS upcoming_opponent,
         COUNT(*) AS games_vs,
         ROUND(AVG(hs.score))::int AS avg_vs_opponent
       FROM historical_scores hs
-      JOIN current_teams ct ON ct.player_name = hs.player_name
+      JOIN all_names an ON an.name_variant = hs.player_name
+      JOIN current_teams ct ON ct.player_id = an.player_id
       WHERE hs.opponent = ($1::jsonb->>ct.current_team)
         AND hs.score > 0
         AND ($1::jsonb->>ct.current_team) IS NOT NULL
-      GROUP BY hs.player_name, ct.current_team
+      GROUP BY ct.player_name, ct.current_team
       HAVING COUNT(*) >= 1
       ORDER BY avg_vs_opponent DESC
     `, [JSON.stringify(teamOpponentMap)]);
@@ -1364,9 +1391,9 @@ app.get("/vsOpponentScores", async (req, res) => {
       return res.status(400).json({ ok: false, error: "player required" });
     }
 
-    // Find the player's current team and the upcoming opponent for this round
-    const teamResult = await pool.query(
-      `SELECT team FROM match_stats
+    // Find the player's current team via player_id (handles name variations)
+    const idLookup = await pool.query(
+      `SELECT player_id, team FROM match_stats
        WHERE match_id LIKE 'CD_M2026%'
          AND player_name = $1
          AND team <> ''
@@ -1374,10 +1401,19 @@ app.get("/vsOpponentScores", async (req, res) => {
        LIMIT 1`,
       [playerName]
     );
-    const playerTeam = teamResult.rows[0]?.team;
-    if (!playerTeam) {
+    const playerTeam = idLookup.rows[0]?.team;
+    const playerId = idLookup.rows[0]?.player_id;
+    if (!playerTeam || !playerId) {
       return res.json({ ok: true, scores: [], opponent: null });
     }
+
+    // Collect all name variants for this player_id
+    const nameVariants = await pool.query(
+      `SELECT DISTINCT player_name FROM match_stats
+       WHERE player_id = $1 AND player_name <> ''`,
+      [playerId]
+    );
+    const names = nameVariants.rows.map(r => r.player_name);
 
     // Build round opponent map from FIXTURES_2026
     let opponent = null;
@@ -1398,22 +1434,22 @@ app.get("/vsOpponentScores", async (req, res) => {
       const result = await pool.query(`
         SELECT season, round, score, team
         FROM historical_scores
-        WHERE player_name = $1
+        WHERE player_name = ANY($1)
           AND opponent = $2
           AND score > 0
         ORDER BY season DESC, round DESC
-      `, [playerName, opponent]);
+      `, [names, opponent]);
       scores = result.rows;
     } catch (err) {
       // Schema doesn't have season/round — fall back to score+team only
       const result = await pool.query(`
         SELECT score, team
         FROM historical_scores
-        WHERE player_name = $1
+        WHERE player_name = ANY($1)
           AND opponent = $2
           AND score > 0
         ORDER BY score DESC
-      `, [playerName, opponent]);
+      `, [names, opponent]);
       scores = result.rows;
     }
 
