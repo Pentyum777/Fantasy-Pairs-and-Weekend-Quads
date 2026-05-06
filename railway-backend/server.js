@@ -567,6 +567,17 @@ app.get("/punterInsights", async (req, res) => {
     const overallMap = {};   // game_type -> { mostSelected, mostWinning, etc. }
     let debugLogged = false;
 
+    // Skip test/invalid punter names: numbers, special chars, all lowercase
+    const isValidPunterName = (n) => {
+      if (!n || !n.trim()) return false;
+      const t = n.trim();
+      if (/\d/.test(t)) return false;           // "Pennyy 2"
+      if (/[*#@!]/.test(t)) return false;       // "Test*"
+      if (t === t.toLowerCase()) return false;  // "test"
+      if (t.length < 2) return false;
+      return true;
+    };
+
     for (const row of result.rows) {
       const gameType = row.game_type; // 'sunday_pairs' or 'weekend_quads'
       const round = row.round;
@@ -575,7 +586,7 @@ app.get("/punterInsights", async (req, res) => {
 
       for (let i = 0; i < names.length; i++) {
         const name = names[i];
-        if (!name || !name.trim()) continue;
+        if (!isValidPunterName(name)) continue;
 
         const punterPicks = Array.isArray(picks[i]) ? picks[i] : [];
         if (punterPicks.length === 0) continue;
@@ -640,7 +651,7 @@ app.get("/punterInsights", async (req, res) => {
       let bestPlayerScores = [];
       for (let i = 0; i < names.length; i++) {
         const name = names[i];
-        if (!name || !name.trim()) continue;
+        if (!isValidPunterName(name)) continue;
         const punterPicks = Array.isArray(picks[i]) ? picks[i] : [];
         let score = 0;
         const pScores = [];
@@ -673,6 +684,7 @@ app.get("/punterInsights", async (req, res) => {
       }
       const ov = overallMap[gameType];
       for (let i = 0; i < names.length; i++) {
+        if (!isValidPunterName(names[i])) continue;
         const punterPicks = Array.isArray(picks[i]) ? picks[i] : [];
         const isWinner = names[i] === winnerName;
         for (let p = 0; p < punterPicks.length; p++) {
