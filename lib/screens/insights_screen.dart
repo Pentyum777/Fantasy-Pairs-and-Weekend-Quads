@@ -48,11 +48,14 @@ class _InsightsScreenState extends State<InsightsScreen> {
     }
   }
 
+  static const _excludedPunters = {'Penn'};
+
   List<String> _validPunterNames() {
     return _punters.keys
         .where((n) => n.isNotEmpty && n[0] == n[0].toUpperCase() && n[0] != n[0].toLowerCase())
         .where((n) => !RegExp(r'\d').hasMatch(n))
         .where((n) => !RegExp(r'[*#@!]').hasMatch(n))
+        .where((n) => !_excludedPunters.contains(n))
         .toList()..sort();
   }
 

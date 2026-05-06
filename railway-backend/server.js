@@ -615,13 +615,15 @@ app.get("/punterInsights", async (req, res) => {
     const overallMap = {};   // game_type -> { mostSelected, mostWinning, etc. }
     let debugLogged = false;
 
-    // Skip test/invalid punter names: numbers, special chars, all lowercase
+    // Skip test/invalid punter names
+    const EXCLUDED_PUNTERS = new Set(["Penn"]); // manually excluded names
     const isValidPunterName = (n) => {
       if (!n || !n.trim()) return false;
       const t = n.trim();
-      if (/\d/.test(t)) return false;           // "Pennyy 2"
-      if (/[*#@!]/.test(t)) return false;       // "Test*"
-      if (t === t.toLowerCase()) return false;  // "test"
+      if (EXCLUDED_PUNTERS.has(t)) return false;  // manually excluded
+      if (/\d/.test(t)) return false;              // "Pennyy 2"
+      if (/[*#@!]/.test(t)) return false;          // "Test*"
+      if (t === t.toLowerCase()) return false;     // "test"
       if (t.length < 2) return false;
       return true;
     };
