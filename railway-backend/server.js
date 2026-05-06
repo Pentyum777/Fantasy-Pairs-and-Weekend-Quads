@@ -565,6 +565,7 @@ app.get("/punterInsights", async (req, res) => {
     // Process all rounds across both game types
     const punterMap = {};    // punterName -> { pairs: {...}, quads: {...} }
     const overallMap = {};   // game_type -> { mostSelected, mostWinning, etc. }
+    let debugLogged = false;
 
     for (const row of result.rows) {
       const gameType = row.game_type; // 'sunday_pairs' or 'weekend_quads'
@@ -586,13 +587,27 @@ app.get("/punterInsights", async (req, res) => {
 
         for (let p = 0; p < punterPicks.length; p++) {
           const pick = punterPicks[p];
-          if (!pick) continue;
+          if (!pick || typeof pick !== 'object') continue;
+
+          // Debug: log first pick structure once
+          if (!debugLogged) {
+            console.log("📋 punterInsights sample pick keys:", JSON.stringify(Object.keys(pick)));
+            if (pick.player) console.log("📋 punterInsights sample pick.player keys:", JSON.stringify(Object.keys(pick.player)));
+            else console.log("📋 punterInsights: pick.player is", pick.player);
+            console.log("📋 punterInsights sample pick snippet:", JSON.stringify(pick).substring(0, 400));
+            debugLogged = true;
+          }
+
           const af = pick.stats?.AF ?? pick.fantasyPoints ?? 0;
           totalScore += af;
 
-          const playerName = pick.player?.name || pick.player?.playerName || "";
+          // Player name could be in various locations depending on how data was saved
+          const playerName = pick.player?.name 
+            || pick.player?.playerName 
+            || pick.playerName 
+            || pick.name
+            || "";
           if (playerName) {
-            playerNames.push(playerName);
             playerScores.push({ name: playerName, score: af, draftPos: p + 1 });
           }
         }
@@ -660,8 +675,12 @@ app.get("/punterInsights", async (req, res) => {
         const isWinner = names[i] === winnerName;
         for (let p = 0; p < punterPicks.length; p++) {
           const pick = punterPicks[p];
-          if (!pick) continue;
-          const playerName = pick.player?.name || pick.player?.playerName || "";
+          if (!pick || typeof pick !== 'object') continue;
+          const playerName = pick.player?.name 
+            || pick.player?.playerName 
+            || pick.playerName 
+            || pick.name
+            || "";
           const af = pick.stats?.AF ?? pick.fantasyPoints ?? 0;
           if (playerName) {
             ov.playerSelections[playerName] = (ov.playerSelections[playerName] || 0) + 1;
