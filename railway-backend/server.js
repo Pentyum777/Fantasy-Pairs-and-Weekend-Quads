@@ -516,7 +516,188 @@ app.get("/scoutAccess", (req, res) => {
   res.json({ ok: true, allowed });
 });
 
-// GET /playerSeasonStats/:season
+// GET /punterInsights?season=2026
+// Returns comprehensive punter stats across all game types
+app.get("/punterInsights", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const season = parseInt(req.query.season || "2026");
+
+    const result = await pool.query(
+      `SELECT round, game_type, punter_names, picks
+       FROM selections
+       WHERE season = $1
+       ORDER BY game_type, round ASC`,
+      [season]
+    );
+
+    // Process all rounds across both game types
+    const punterMap = {};    // punterName -> { pairs: {...}, quads: {...} }
+    const overallMap = {};   // game_type -> { mostSelected, mostWinning, etc. }
+
+    for (const row of result.rows) {
+      const gameType = row.game_type; // 'sunday_pairs' or 'weekend_quads'
+      const round = row.round;
+      const names = Array.isArray(row.punter_names) ? row.punter_names : [];
+      const picks = Array.isArray(row.picks) ? row.picks : [];
+
+      for (let i = 0; i < names.length; i++) {
+        const name = names[i];
+        if (!name || !name.trim()) continue;
+
+        const punterPicks = Array.isArray(picks[i]) ? picks[i] : [];
+        if (punterPicks.length === 0) continue;
+
+        // Calculate total score for this round
+        let totalScore = 0;
+        const playerNames = [];
+        const playerScores = [];
+
+        for (let p = 0; p < punterPicks.length; p++) {
+          const pick = punterPicks[p];
+          if (!pick) continue;
+          const af = pick.stats?.AF ?? pick.fantasyPoints ?? 0;
+          totalScore += af;
+
+          const playerName = pick.player?.name || pick.player?.playerName || "";
+          if (playerName) {
+            playerNames.push(playerName);
+            playerScores.push({ name: playerName, score: af, draftPos: p + 1 });
+          }
+        }
+
+        // Init punter entry
+        if (!punterMap[name]) {
+          punterMap[name] = {
+            sunday_pairs: { rounds: 0, totalScore: 0, highScore: 0, wins: 0, playerCounts: {}, scores: [], draftPositions: [] },
+            weekend_quads: { rounds: 0, totalScore: 0, highScore: 0, wins: 0, playerCounts: {}, scores: [], draftPositions: [] },
+          };
+        }
+
+        const entry = punterMap[name][gameType];
+        entry.rounds++;
+        entry.totalScore += totalScore;
+        if (totalScore > entry.highScore) entry.highScore = totalScore;
+        entry.scores.push({ round, score: totalScore });
+
+        for (const ps of playerScores) {
+          entry.playerCounts[ps.name] = (entry.playerCounts[ps.name] || 0) + 1;
+          entry.draftPositions.push(ps.draftPos);
+        }
+      }
+
+      // Determine winner for this round/gameType
+      let bestScore = -1;
+      let winnerName = null;
+      let bestPlayerScores = [];
+      for (let i = 0; i < names.length; i++) {
+        const name = names[i];
+        if (!name || !name.trim()) continue;
+        const punterPicks = Array.isArray(picks[i]) ? picks[i] : [];
+        let score = 0;
+        const pScores = [];
+        for (const pick of punterPicks) {
+          if (!pick) continue;
+          const af = pick.stats?.AF ?? pick.fantasyPoints ?? 0;
+          score += af;
+          pScores.push(af);
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          winnerName = name;
+          bestPlayerScores = pScores;
+        }
+      }
+      if (winnerName && punterMap[winnerName]) {
+        punterMap[winnerName][gameType].wins++;
+      }
+
+      // Track overall stats
+      if (!overallMap[gameType]) {
+        overallMap[gameType] = {
+          playerSelections: {},
+          playerWins: {},
+          allScores: [],
+          winningScores: [],
+          winningDraftPositions: [],
+          allDraftPositions: [],
+        };
+      }
+      const ov = overallMap[gameType];
+      for (let i = 0; i < names.length; i++) {
+        const punterPicks = Array.isArray(picks[i]) ? picks[i] : [];
+        const isWinner = names[i] === winnerName;
+        for (let p = 0; p < punterPicks.length; p++) {
+          const pick = punterPicks[p];
+          if (!pick) continue;
+          const playerName = pick.player?.name || pick.player?.playerName || "";
+          const af = pick.stats?.AF ?? pick.fantasyPoints ?? 0;
+          if (playerName) {
+            ov.playerSelections[playerName] = (ov.playerSelections[playerName] || 0) + 1;
+            ov.allDraftPositions.push(p + 1);
+            if (isWinner) {
+              ov.playerWins[playerName] = (ov.playerWins[playerName] || 0) + 1;
+              ov.winningDraftPositions.push(p + 1);
+              ov.winningScores.push(af);
+            }
+          }
+          if (af > 0) ov.allScores.push(af);
+        }
+      }
+    }
+
+    // Build punter summaries
+    const punters = {};
+    for (const [name, data] of Object.entries(punterMap)) {
+      punters[name] = {};
+      for (const gt of ['sunday_pairs', 'weekend_quads']) {
+        const d = data[gt];
+        if (d.rounds === 0) continue;
+        const mostSelected = Object.entries(d.playerCounts).sort((a, b) => b[1] - a[1]);
+        const avgDraft = d.draftPositions.length > 0
+          ? (d.draftPositions.reduce((a, b) => a + b, 0) / d.draftPositions.length).toFixed(1)
+          : null;
+        const highestDraft = d.draftPositions.length > 0 ? Math.min(...d.draftPositions) : null;
+        punters[name][gt] = {
+          rounds: d.rounds,
+          wins: d.wins,
+          totalScore: d.totalScore,
+          highScore: d.highScore,
+          avgScore: Math.round(d.totalScore / d.rounds),
+          mostSelected: mostSelected.length > 0 ? { name: mostSelected[0][0], count: mostSelected[0][1] } : null,
+          highestDraftPos: highestDraft,
+          avgDraftPos: avgDraft ? parseFloat(avgDraft) : null,
+          scores: d.scores,
+        };
+      }
+    }
+
+    // Build overall summaries
+    const overall = {};
+    for (const gt of ['sunday_pairs', 'weekend_quads']) {
+      const ov = overallMap[gt];
+      if (!ov) continue;
+      const mostSelected = Object.entries(ov.playerSelections).sort((a, b) => b[1] - a[1]);
+      const mostWinning = Object.entries(ov.playerWins).sort((a, b) => b[1] - a[1]);
+      overall[gt] = {
+        mostSelectedPlayer: mostSelected[0] ? { name: mostSelected[0][0], count: mostSelected[0][1] } : null,
+        mostWinningPlayer: mostWinning[0] ? { name: mostWinning[0][0], count: mostWinning[0][1] } : null,
+        highestScore: ov.allScores.length > 0 ? Math.max(...ov.allScores) : 0,
+        avgScore: ov.allScores.length > 0 ? Math.round(ov.allScores.reduce((a, b) => a + b, 0) / ov.allScores.length) : 0,
+        avgWinningDraftPos: ov.winningDraftPositions.length > 0
+          ? parseFloat((ov.winningDraftPositions.reduce((a, b) => a + b, 0) / ov.winningDraftPositions.length).toFixed(1))
+          : null,
+        mostWinningDraftPos: ov.winningDraftPositions.length > 0 ? Math.min(...ov.winningDraftPositions) : null,
+      };
+    }
+
+    res.json({ ok: true, season, punters, overall });
+  } catch (err) {
+    console.error("punterInsights error:", err);
+    res.status(500).json({ error: "Failed to load insights" });
+  }
+});
+
 // Returns season averages for all players from match_stats table
 app.get("/playerSeasonStats/:season", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");

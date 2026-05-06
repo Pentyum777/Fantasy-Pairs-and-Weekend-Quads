@@ -16,6 +16,7 @@ import '../services/game_data_cache.dart';
 import '../screens/game_view_screen.dart';
 import 'championship_screen.dart';
 import 'custom_pairs_builder_screen.dart';
+import 'insights_screen.dart';
 
 import '../widgets/background_container.dart';
 import '../services/scout_service.dart';
@@ -233,6 +234,18 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       return;
     }
 
+    // Insights
+    // ------------------------------------------------------------
+    if (type == "insights") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => InsightsScreen(season: widget.season),
+        ),
+      );
+      return;
+    }
+
     // ------------------------------------------------------------
     // Normal game types
     // ------------------------------------------------------------
@@ -333,6 +346,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       "custom_builder",   // ⭐ NEW
       "custom_game",      // ⭐ NEW
       "championship",
+      "insights",
       if (_scoutAllowed) "scout",
     ];
 
@@ -356,6 +370,8 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
           return "Custom Game";        // ⭐ NEW
         case "championship":
           return "The Championship";
+        case "insights":
+          return "Insights 📊";
         case "scout":
           return "Scout 🔍";
         default:
