@@ -601,8 +601,10 @@ app.get("/punterInsights", async (req, res) => {
           const af = pick.stats?.AF ?? pick.fantasyPoints ?? 0;
           totalScore += af;
 
-          // Player name could be in various locations depending on how data was saved
-          const playerName = pick.player?.name 
+          // Player name: picks store playerId at top level, not a player object
+          const playerId = pick.playerId || pick.player?.id || "";
+          const playerName = PLAYER_NAMES_BY_ID[playerId] 
+            || pick.player?.name 
             || pick.player?.playerName 
             || pick.playerName 
             || pick.name
@@ -676,7 +678,9 @@ app.get("/punterInsights", async (req, res) => {
         for (let p = 0; p < punterPicks.length; p++) {
           const pick = punterPicks[p];
           if (!pick || typeof pick !== 'object') continue;
-          const playerName = pick.player?.name 
+          const playerId2 = pick.playerId || pick.player?.id || "";
+          const playerName = PLAYER_NAMES_BY_ID[playerId2]
+            || pick.player?.name 
             || pick.player?.playerName 
             || pick.playerName 
             || pick.name
