@@ -58,12 +58,27 @@ app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 app.options("*", cors());
 app.use(express.json({ limit: '10mb' }));
 
-// Serve profile pictures as static files
-const profilePicsDir = path.join(__dirname, "profile_pics");
-if (!fs.existsSync(profilePicsDir)) {
-  fs.mkdirSync(profilePicsDir, { recursive: true });
-}
-app.use("/profile_pics", express.static(profilePicsDir));
+// ── Profile Pictures (stored in Postgres for persistence) ─────────────
+
+// GET /profile_pics/:name.jpg — serve from DB
+app.get("/profile_pics/:filename", async (req, res) => {
+  try {
+    const safeName = req.params.filename.replace(/\.jpg$/, "");
+    const result = await pool.query(
+      `SELECT image_data FROM profile_pics WHERE safe_name = $1`,
+      [safeName]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).end();
+    }
+    const buffer = Buffer.from(result.rows[0].image_data, "base64");
+    res.setHeader("Content-Type", "image/jpeg");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.send(buffer);
+  } catch (err) {
+    res.status(500).end();
+  }
+});
 
 // POST /uploadProfilePic — accepts { punterName, imageBase64 }
 app.post("/uploadProfilePic", async (req, res) => {
@@ -73,18 +88,51 @@ app.post("/uploadProfilePic", async (req, res) => {
     if (!punterName || !imageBase64) {
       return res.status(400).json({ error: "punterName and imageBase64 required" });
     }
-    // Sanitise filename
     const safeName = punterName.replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
-    const filePath = path.join(profilePicsDir, `${safeName}.jpg`);
-    
-    // Strip data URL prefix if present
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-    fs.writeFileSync(filePath, Buffer.from(base64Data, "base64"));
-    
-    console.log(`📸 Saved profile pic for ${punterName} → ${safeName}.jpg`);
+
+    await pool.query(
+      `INSERT INTO profile_pics (safe_name, punter_name, image_data)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (safe_name)
+       DO UPDATE SET image_data = EXCLUDED.image_data, punter_name = EXCLUDED.punter_name, updated_at = NOW()`,
+      [safeName, punterName, base64Data]
+    );
+
+    console.log(`📸 Saved profile pic for ${punterName} → ${safeName}`);
     res.json({ ok: true, url: `/profile_pics/${safeName}.jpg` });
   } catch (err) {
     console.error("uploadProfilePic error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /bulkUploadProfilePics — accepts { pics: [{ punterName, imageBase64 }] }
+// For initial batch upload of all pics from the Punter Profile Pics folder
+app.post("/bulkUploadProfilePics", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const pics = req.body.pics;
+    if (!Array.isArray(pics)) return res.status(400).json({ error: "pics array required" });
+
+    let uploaded = 0;
+    for (const { punterName, imageBase64 } of pics) {
+      if (!punterName || !imageBase64) continue;
+      const safeName = punterName.replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+      await pool.query(
+        `INSERT INTO profile_pics (safe_name, punter_name, image_data)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (safe_name)
+         DO UPDATE SET image_data = EXCLUDED.image_data, punter_name = EXCLUDED.punter_name, updated_at = NOW()`,
+        [safeName, punterName, base64Data]
+      );
+      uploaded++;
+    }
+    console.log(`📸 Bulk uploaded ${uploaded} profile pics`);
+    res.json({ ok: true, uploaded });
+  } catch (err) {
+    console.error("bulkUploadProfilePics error:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -579,7 +627,12 @@ app.get("/punterInsights", async (req, res) => {
     };
 
     for (const row of result.rows) {
-      const gameType = row.game_type; // 'sunday_pairs' or 'weekend_quads'
+      const rawGameType = row.game_type;
+      // Normalise: all pairs variants → 'pairs', quads stays 'quads'
+      const isPairs = rawGameType.includes('pairs') || rawGameType.includes('custom');
+      const gameType = isPairs ? 'pairs' : (rawGameType === 'weekend_quads' ? 'quads' : null);
+      if (!gameType) continue; // skip unknown game types
+
       const round = row.round;
       const names = Array.isArray(row.punter_names) ? row.punter_names : [];
       const picks = Array.isArray(row.picks) ? row.picks : [];
@@ -716,7 +769,7 @@ app.get("/punterInsights", async (req, res) => {
     const punters = {};
     for (const [name, data] of Object.entries(punterMap)) {
       punters[name] = {};
-      for (const gt of ['sunday_pairs', 'weekend_quads']) {
+      for (const gt of ['pairs', 'quads']) {
         const d = data[gt];
         if (!d || d.rounds === 0) continue;
         const mostSelected = Object.entries(d.playerCounts).sort((a, b) => b[1] - a[1]);
@@ -731,6 +784,7 @@ app.get("/punterInsights", async (req, res) => {
           highScore: d.highScore,
           avgScore: Math.round(d.totalScore / d.rounds),
           mostSelected: mostSelected.length > 0 ? { name: mostSelected[0][0], count: mostSelected[0][1] } : null,
+          playerCounts: d.playerCounts,
           highestDraftPos: highestDraft,
           avgDraftPos: avgDraft ? parseFloat(avgDraft) : null,
           scores: d.scores,
@@ -740,7 +794,7 @@ app.get("/punterInsights", async (req, res) => {
 
     // Build overall summaries
     const overall = {};
-    for (const gt of ['sunday_pairs', 'weekend_quads']) {
+    for (const gt of ['pairs', 'quads']) {
       const ov = overallMap[gt];
       if (!ov) continue;
       const mostSelected = Object.entries(ov.playerSelections).sort((a, b) => b[1] - a[1]);
