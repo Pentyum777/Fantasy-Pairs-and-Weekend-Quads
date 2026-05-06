@@ -568,10 +568,10 @@ app.get("/punterInsights", async (req, res) => {
 
         // Init punter entry
         if (!punterMap[name]) {
-          punterMap[name] = {
-            sunday_pairs: { rounds: 0, totalScore: 0, highScore: 0, wins: 0, playerCounts: {}, scores: [], draftPositions: [] },
-            weekend_quads: { rounds: 0, totalScore: 0, highScore: 0, wins: 0, playerCounts: {}, scores: [], draftPositions: [] },
-          };
+          punterMap[name] = {};
+        }
+        if (!punterMap[name][gameType]) {
+          punterMap[name][gameType] = { rounds: 0, totalScore: 0, highScore: 0, wins: 0, playerCounts: {}, scores: [], draftPositions: [] };
         }
 
         const entry = punterMap[name][gameType];
