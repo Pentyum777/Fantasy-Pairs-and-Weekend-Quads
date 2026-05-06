@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'punter_profile_screen.dart';
 
 class InsightsScreen extends StatefulWidget {
   final int season;
@@ -19,7 +20,6 @@ class _InsightsScreenState extends State<InsightsScreen>
 
   Map<String, dynamic> _punters = {};
   Map<String, dynamic> _overall = {};
-  String? _selectedPunter;
 
   static const _baseUrl =
       "https://fantasy-pairs-and-weekend-quads-production.up.railway.app";
@@ -42,30 +42,18 @@ class _InsightsScreenState extends State<InsightsScreen>
       _loading = true;
       _error = null;
     });
-
     try {
       final res = await http.get(
         Uri.parse("$_baseUrl/punterInsights?season=${widget.season}"),
       );
-
-      if (res.statusCode != 200) {
-        throw Exception("Server returned ${res.statusCode}");
-      }
-
+      if (res.statusCode != 200) throw Exception("Server returned ${res.statusCode}");
       final data = jsonDecode(res.body);
-      if (data['ok'] != true) {
-        throw Exception(data['error'] ?? "Unknown error");
-      }
+      if (data['ok'] != true) throw Exception(data['error'] ?? "Unknown error");
 
       setState(() {
         _punters = Map<String, dynamic>.from(data['punters'] ?? {});
         _overall = Map<String, dynamic>.from(data['overall'] ?? {});
         _loading = false;
-
-        // Auto-select first punter
-        if (_selectedPunter == null && _punters.isNotEmpty) {
-          _selectedPunter = _punters.keys.first;
-        }
       });
     } catch (e) {
       setState(() {
@@ -78,34 +66,36 @@ class _InsightsScreenState extends State<InsightsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
-        title: const Text("Insights"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
+        title: const Text("Insights", style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF1A1A2E),
+        foregroundColor: Colors.white,
+        elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.black87,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Colors.deepPurple,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white54,
+          indicatorColor: const Color(0xFF8B5CF6),
+          indicatorWeight: 3,
           tabs: const [
-            Tab(text: "Punter View"),
             Tab(text: "Overall"),
+            Tab(text: "Punters"),
           ],
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6)))
           : _error != null
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                      Text(_error!, style: const TextStyle(color: Colors.redAccent)),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadData,
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B5CF6)),
                         child: const Text("Retry"),
                       ),
                     ],
@@ -114,304 +104,185 @@ class _InsightsScreenState extends State<InsightsScreen>
               : TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildPunterView(),
-                    _buildOverallView(),
+                    _buildOverallTab(),
+                    _buildPuntersTab(),
                   ],
                 ),
     );
   }
 
-  // ─── Punter View ──────────────────────────────────────────────
+  // ─── Overall Tab ──────────────────────────────────────────────
 
-  Widget _buildPunterView() {
-    if (_punters.isEmpty) {
-      return const Center(child: Text("No punter data available"));
-    }
-
-    final sortedNames = _punters.keys.toList()..sort();
-
-    return Column(
-      children: [
-        // Punter selector
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: DropdownButtonFormField<String>(
-            value: _selectedPunter,
-            decoration: InputDecoration(
-              labelText: "Select Punter",
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            items: sortedNames
-                .map((name) => DropdownMenuItem(
-                      value: name,
-                      child: Text(name),
-                    ))
-                .toList(),
-            onChanged: (val) => setState(() => _selectedPunter = val),
-          ),
-        ),
-
-        // Stats cards
-        Expanded(
-          child: _selectedPunter == null
-              ? const Center(child: Text("Select a punter"))
-              : _buildPunterStats(_selectedPunter!),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPunterStats(String punterName) {
-    final data = _punters[punterName] as Map<String, dynamic>? ?? {};
-
+  Widget _buildOverallTab() {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildGameTypeCard(
-          "Sunday Pairs",
-          data['sunday_pairs'] as Map<String, dynamic>?,
-          Colors.blue,
-        ),
+        _buildOverallCard("Sunday Pairs", _overall['sunday_pairs'], const Color(0xFF3B82F6)),
         const SizedBox(height: 16),
-        _buildGameTypeCard(
-          "Weekend Quads",
-          data['weekend_quads'] as Map<String, dynamic>?,
-          Colors.deepPurple,
-        ),
+        _buildOverallCard("Weekend Quads", _overall['weekend_quads'], const Color(0xFF8B5CF6)),
       ],
     );
   }
 
-  Widget _buildGameTypeCard(
-      String title, Map<String, dynamic>? data, Color color) {
-    if (data == null || (data['rounds'] ?? 0) == 0) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: color)),
-              const SizedBox(height: 8),
-              Text("No games played",
-                  style: TextStyle(color: Colors.grey[600])),
-            ],
-          ),
-        ),
-      );
-    }
+  Widget _buildOverallCard(String title, dynamic data, Color color) {
+    final d = data is Map<String, dynamic> ? data : null;
 
-    final mostSelected = data['mostSelected'] as Map<String, dynamic>?;
-    final scores = (data['scores'] as List?)
-            ?.map((s) => Map<String, dynamic>.from(s))
-            .toList() ??
-        [];
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(title,
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: color)),
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "${data['rounds']} games",
-                    style: TextStyle(
-                        color: color,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "${data['wins'] ?? 0} wins",
-              style: TextStyle(
-                  color: Colors.green[700],
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            _statRow("Highest Score", "${data['highScore'] ?? 0}"),
-            _statRow("Average Score", "${data['avgScore'] ?? 0}"),
-            _statRow(
-              "Most Selected Player",
-              mostSelected != null
-                  ? "${mostSelected['name']} (${mostSelected['count']}x)"
-                  : "–",
-            ),
-            _statRow(
-              "Highest Draft Position",
-              data['highestDraftPos'] != null
-                  ? "#${data['highestDraftPos']}"
-                  : "–",
-            ),
-            _statRow(
-              "Average Draft Position",
-              data['avgDraftPos'] != null
-                  ? "#${data['avgDraftPos']}"
-                  : "–",
-            ),
-            if (scores.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 8),
-              Text("Round-by-Round",
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[700])),
-              const SizedBox(height: 8),
-              ...scores.map((s) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 60,
-                          child: Text("Rd ${s['round']}",
-                              style: TextStyle(color: Colors.grey[600])),
-                        ),
-                        Text("${s['score']}",
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  )),
-            ],
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withOpacity(0.15), color.withOpacity(0.05)],
         ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
-    );
-  }
-
-  Widget _statRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(label, style: TextStyle(color: Colors.grey[700])),
-          ),
-          Text(value,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 15)),
+          Text(title,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+          const SizedBox(height: 16),
+          if (d == null)
+            Text("No data available", style: TextStyle(color: Colors.white54))
+          else ...[
+            _overallStat("Most Selected Player",
+                d['mostSelectedPlayer'] != null
+                    ? "${d['mostSelectedPlayer']['name']} (${d['mostSelectedPlayer']['count']}x)"
+                    : "–"),
+            _overallStat("Most Winning Player",
+                d['mostWinningPlayer'] != null
+                    ? "${d['mostWinningPlayer']['name']} (${d['mostWinningPlayer']['count']} wins)"
+                    : "–"),
+            _overallStat("Highest Score", "${d['highestScore'] ?? 0}"),
+            _overallStat("Average Score", "${d['avgScore'] ?? 0}"),
+            _overallStat("Best Winning Draft Pos",
+                d['mostWinningDraftPos'] != null ? "#${d['mostWinningDraftPos']}" : "–"),
+            _overallStat("Avg Winning Draft Pos",
+                d['avgWinningDraftPos'] != null ? "#${d['avgWinningDraftPos']}" : "–"),
+          ],
         ],
       ),
     );
   }
 
-  // ─── Overall View ─────────────────────────────────────────────
-
-  Widget _buildOverallView() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _buildOverallCard(
-          "Sunday Pairs",
-          _overall['sunday_pairs'] as Map<String, dynamic>?,
-          Colors.blue,
-        ),
-        const SizedBox(height: 16),
-        _buildOverallCard(
-          "Weekend Quads",
-          _overall['weekend_quads'] as Map<String, dynamic>?,
-          Colors.deepPurple,
-        ),
-      ],
+  Widget _overallStat(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14))),
+          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        ],
+      ),
     );
   }
 
-  Widget _buildOverallCard(
-      String title, Map<String, dynamic>? data, Color color) {
-    if (data == null) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: color)),
-              const SizedBox(height: 8),
-              Text("No data available",
-                  style: TextStyle(color: Colors.grey[600])),
-            ],
-          ),
-        ),
-      );
+  // ─── Punters Tab ──────────────────────────────────────────────
+
+  Widget _buildPuntersTab() {
+    if (_punters.isEmpty) {
+      return const Center(child: Text("No punters found", style: TextStyle(color: Colors.white54)));
     }
 
-    final mostSelected = data['mostSelectedPlayer'] as Map<String, dynamic>?;
-    final mostWinning = data['mostWinningPlayer'] as Map<String, dynamic>?;
+    final names = _punters.keys.toList()..sort();
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: color)),
-            const SizedBox(height: 16),
-            _statRow(
-              "Most Selected Player",
-              mostSelected != null
-                  ? "${mostSelected['name']} (${mostSelected['count']}x)"
-                  : "–",
-            ),
-            _statRow(
-              "Most Winning Player",
-              mostWinning != null
-                  ? "${mostWinning['name']} (${mostWinning['count']} wins)"
-                  : "–",
-            ),
-            _statRow("Highest Score", "${data['highestScore'] ?? 0}"),
-            _statRow("Average Score", "${data['avgScore'] ?? 0}"),
-            _statRow(
-              "Most Winning Draft Position",
-              data['mostWinningDraftPos'] != null
-                  ? "#${data['mostWinningDraftPos']}"
-                  : "–",
-            ),
-            _statRow(
-              "Average Winning Draft Position",
-              data['avgWinningDraftPos'] != null
-                  ? "#${data['avgWinningDraftPos']}"
-                  : "–",
-            ),
-          ],
-        ),
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.85,
       ),
+      itemCount: names.length,
+      itemBuilder: (context, index) {
+        final name = names[index];
+        final data = _punters[name] as Map<String, dynamic>? ?? {};
+
+        // Count total rounds and wins across all game types
+        int totalRounds = 0;
+        int totalWins = 0;
+        for (final gt in data.values) {
+          if (gt is Map<String, dynamic>) {
+            totalRounds += (gt['rounds'] as int? ?? 0);
+            totalWins += (gt['wins'] as int? ?? 0);
+          }
+        }
+
+        final safeName = name.replaceAll(RegExp(r'[^a-zA-Z0-9_\- ]'), '').replaceAll(RegExp(r'\s+'), '_');
+        final picUrl = "$_baseUrl/profile_pics/$safeName.jpg";
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PunterProfileScreen(
+                  punterName: name,
+                  punterData: data,
+                  season: widget.season,
+                ),
+              ),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF252547),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Profile pic
+                CircleAvatar(
+                  radius: 36,
+                  backgroundColor: const Color(0xFF8B5CF6).withOpacity(0.3),
+                  backgroundImage: NetworkImage(picUrl),
+                  onBackgroundImageError: (_, __) {},
+                  child: Text(
+                    _initials(name),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Name
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                // Quick stats
+                Text(
+                  "$totalRounds games · $totalWins wins",
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return "${parts[0][0]}${parts[1][0]}".toUpperCase();
+    }
+    return name.isNotEmpty ? name[0].toUpperCase() : "?";
   }
 }

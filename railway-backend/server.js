@@ -56,7 +56,38 @@ const app = express();
 
 app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"] }));
 app.options("*", cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+
+// Serve profile pictures as static files
+const profilePicsDir = path.join(__dirname, "profile_pics");
+if (!fs.existsSync(profilePicsDir)) {
+  fs.mkdirSync(profilePicsDir, { recursive: true });
+}
+app.use("/profile_pics", express.static(profilePicsDir));
+
+// POST /uploadProfilePic — accepts { punterName, imageBase64 }
+app.post("/uploadProfilePic", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { punterName, imageBase64 } = req.body;
+    if (!punterName || !imageBase64) {
+      return res.status(400).json({ error: "punterName and imageBase64 required" });
+    }
+    // Sanitise filename
+    const safeName = punterName.replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
+    const filePath = path.join(profilePicsDir, `${safeName}.jpg`);
+    
+    // Strip data URL prefix if present
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    fs.writeFileSync(filePath, Buffer.from(base64Data, "base64"));
+    
+    console.log(`📸 Saved profile pic for ${punterName} → ${safeName}.jpg`);
+    res.json({ ok: true, url: `/profile_pics/${safeName}.jpg` });
+  } catch (err) {
+    console.error("uploadProfilePic error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ------------------------------------------------------
 // Helpers

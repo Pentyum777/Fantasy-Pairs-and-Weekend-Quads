@@ -32,6 +32,9 @@ dependencies:
 
   csv: ^5.0.2
 
+  # Image picker for profile photos
+  image_picker: ^1.0.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -53,8 +56,3 @@ flutter:
     - assets/data/
     - assets/images/stadium_glow.png
     - assets/images/Football.Logo.png
-    
-
-
-
-
