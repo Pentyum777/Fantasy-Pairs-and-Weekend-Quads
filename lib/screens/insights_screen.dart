@@ -406,11 +406,14 @@ class _InsightsScreenState extends State<InsightsScreen> {
   /// On wide screens: Row. On narrow screens: Column.
   Widget _responsiveRow(BuildContext context, List<Widget> children) {
     if (_isWide(context)) {
+      final List<Widget> rowChildren = [];
+      for (int i = 0; i < children.length; i++) {
+        if (i > 0) rowChildren.add(const SizedBox(width: 10));
+        rowChildren.add(Expanded(child: children[i]));
+      }
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: children.map((c) => Expanded(child: c)).toList()
-          ..insertAll(1, [const SizedBox(width: 10)])
-          ..insertAll(children.length > 2 ? 3 : 999, children.length > 2 ? [const SizedBox(width: 10)] : []),
+        children: rowChildren,
       );
     }
     return Column(
