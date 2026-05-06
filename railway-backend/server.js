@@ -608,7 +608,7 @@ app.get("/punterInsights", async (req, res) => {
           bestPlayerScores = pScores;
         }
       }
-      if (winnerName && punterMap[winnerName]) {
+      if (winnerName && punterMap[winnerName] && punterMap[winnerName][gameType]) {
         punterMap[winnerName][gameType].wins++;
       }
 
@@ -652,7 +652,7 @@ app.get("/punterInsights", async (req, res) => {
       punters[name] = {};
       for (const gt of ['sunday_pairs', 'weekend_quads']) {
         const d = data[gt];
-        if (d.rounds === 0) continue;
+        if (!d || d.rounds === 0) continue;
         const mostSelected = Object.entries(d.playerCounts).sort((a, b) => b[1] - a[1]);
         const avgDraft = d.draftPositions.length > 0
           ? (d.draftPositions.reduce((a, b) => a + b, 0) / d.draftPositions.length).toFixed(1)
