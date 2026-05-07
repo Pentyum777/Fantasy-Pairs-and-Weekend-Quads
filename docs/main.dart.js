@@ -95882,7 +95882,7 @@ d=k.$1("HO")
 c=k.$1("FF")
 b=k.$1("FA")
 a=new A.iM(m,j,i,h,g,f,e,k.$1("G"),k.$1("B"),d,k.$1("TOG"),c,b,k.$1("AF"))
-a.db=!0
+a.db=k.$1("AF")>0
 a0.n(0,m.a,a)}if(a0.a!==0){this.ch=a0
 A.dU().$1("\u2705 Built stats from snapshot: ${statsMap.length} players")}},
 Oi(a){var s,r,q,p,o,n,m,l,k,j,i,h,g=this,f=A.fa(g.ch,t.N,t.en)

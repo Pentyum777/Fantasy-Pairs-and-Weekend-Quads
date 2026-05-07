@@ -475,7 +475,7 @@ void _buildStatsFromSnapshot() {
         timeOnGroundPercentage: asInt("TOG"),
         fantasyPoints: asInt("AF"),
       );
-      s.isCompletedGame = true;
+      s.isCompletedGame = (asInt("AF") > 0);
       s.isLiveGame = false;
       statsMap[player.id] = s;
     }
