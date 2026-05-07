@@ -600,30 +600,15 @@ class _ScoutScreenState extends State<ScoutScreen> {
       }
 
       // ── Auto-populate named squad from team lineups page ─────────────────
-      // Match each announced match to the fixtures for this game type.
-      // Players listed as IN on the AFL lineups page are added to namedSquad.
+      // The teamLineups endpoint now returns player IDs directly from the AFL CFS API.
+      // Use those IDs instead of matching by name (which fails on name mismatches).
       final lineupNamedIds = <String>{};
       for (final lineupMatch in teamLineups) {
         if (lineupMatch['available'] != true) continue;
-        final homeTeam = lineupMatch['home'] as String? ?? '';
-        final awayTeam = lineupMatch['away'] as String? ?? '';
-        final homeNames = (lineupMatch['homePlayers'] as List?)?.cast<String>() ?? [];
-        final awayNames = (lineupMatch['awayPlayers'] as List?)?.cast<String>() ?? [];
-        // Find matching player IDs by name+team
-        for (final name in homeNames) {
-          final p = stats.where((s) =>
-            s.playerName.trim().toLowerCase() == name.trim().toLowerCase() &&
-            s.team == homeTeam
-          ).firstOrNull;
-          if (p != null) lineupNamedIds.add(p.playerId);
-        }
-        for (final name in awayNames) {
-          final p = stats.where((s) =>
-            s.playerName.trim().toLowerCase() == name.trim().toLowerCase() &&
-            s.team == awayTeam
-          ).firstOrNull;
-          if (p != null) lineupNamedIds.add(p.playerId);
-        }
+        final homeIds = (lineupMatch['homePlayerIds'] as List?)?.cast<String>() ?? [];
+        final awayIds = (lineupMatch['awayPlayerIds'] as List?)?.cast<String>() ?? [];
+        lineupNamedIds.addAll(homeIds);
+        lineupNamedIds.addAll(awayIds);
       }
 
       // Merge persisted backend squad + AFL lineup squad + AFL API squad

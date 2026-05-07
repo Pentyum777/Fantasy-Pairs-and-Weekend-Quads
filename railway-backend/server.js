@@ -1441,6 +1441,8 @@ app.get("/teamLineups", async (req, res) => {
       available: namedStatuses.has(m.status),
       homePlayers: [],
       awayPlayers: [],
+      homePlayerIds: [],
+      awayPlayerIds: [],
     }));
 
     if (namedMatches.length === 0) {
@@ -1465,21 +1467,29 @@ app.get("/teamLineups", async (req, res) => {
         if (rosterRes.ok) {
           const data = await rosterRes.json();
 
-          const extractNames = (team) => {
+          const extractInfo = (team) => {
             const lineup = team?.lineup ?? team?.players ?? [];
-            return lineup
-              .filter(p => p.position !== "SUB_22")
-              .map(p => {
-                const pl = p.player || p;
-                const first = pl.givenName || pl.firstName || "";
-                const last = pl.surname || pl.lastName || "";
-                return `${first} ${last}`.trim();
-              })
-              .filter(Boolean);
+            const names = [];
+            const ids = [];
+            for (const p of lineup) {
+              if (p.position === "SUB_22") continue;
+              const pl = p.player || p;
+              const first = pl.givenName || pl.firstName || "";
+              const last = pl.surname || pl.lastName || "";
+              const name = `${first} ${last}`.trim();
+              const id = pl.playerId || p.playerId || "";
+              if (name) names.push(name);
+              if (id) ids.push(id);
+            }
+            return { names, ids };
           };
 
-          matchInfo.homePlayers = extractNames(data?.homeTeam ?? data?.home);
-          matchInfo.awayPlayers = extractNames(data?.awayTeam ?? data?.away);
+          const homeInfo = extractInfo(data?.homeTeam ?? data?.home);
+          const awayInfo = extractInfo(data?.awayTeam ?? data?.away);
+          matchInfo.homePlayers = homeInfo.names;
+          matchInfo.awayPlayers = awayInfo.names;
+          matchInfo.homePlayerIds = homeInfo.ids;
+          matchInfo.awayPlayerIds = awayInfo.ids;
         }
       } catch (fetchErr) {
         console.warn(`teamLineups: CFS fetch failed for match ${matchInfo.aflMatchId}:`, fetchErr.message);
