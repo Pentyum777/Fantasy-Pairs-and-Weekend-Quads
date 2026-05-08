@@ -1263,23 +1263,42 @@ app.get("/injuryList", async (req, res) => {
     // the team name strings (since the page renders teams alphabetically).
     const teamNames = {
       "Adelaide":            "ADE",
+      "Adelaide Crows":      "ADE",
       "Brisbane":            "BRL",
+      "Brisbane Lions":      "BRL",
       "Carlton":             "CAR",
+      "Carlton Blues":       "CAR",
       "Collingwood":         "COL",
+      "Collingwood Magpies": "COL",
       "Essendon":            "ESS",
+      "Essendon Bombers":    "ESS",
       "Fremantle":           "FRE",
+      "Fremantle Dockers":   "FRE",
       "Geelong":             "GEE",
+      "Geelong Cats":        "GEE",
       "Gold Coast":          "GCS",
+      "Gold Coast Suns":     "GCS",
       "GWS":                 "GWS",
+      "GWS Giants":          "GWS",
       "Greater Western":     "GWS",
+      "Greater Western Sydney": "GWS",
       "Hawthorn":            "HAW",
+      "Hawthorn Hawks":      "HAW",
       "Melbourne":           "MELB",
+      "Melbourne Demons":    "MELB",
       "North Melbourne":     "NTH",
+      "North Melbourne Kangaroos": "NTH",
+      "Kangaroos":           "NTH",
       "Port Adelaide":       "PTA",
+      "Port Adelaide Power": "PTA",
       "Richmond":            "RIC",
+      "Richmond Tigers":     "RIC",
       "St Kilda":            "STK",
+      "St Kilda Saints":     "STK",
       "Sydney":              "SYD",
+      "Sydney Swans":        "SYD",
       "West Coast":          "WCE",
+      "West Coast Eagles":   "WCE",
       "Western Bulldogs":    "WBD",
     };
 
@@ -1309,22 +1328,24 @@ app.get("/injuryList", async (req, res) => {
     const players = [];
     const teamsFound = new Set();
 
-    // Split on "Updated:" date strings. Each preceding chunk is one team.
+    // The AFL injury page has one block per team in alphabetical order.
+    // Block 0 (before first "Updated:") is the first team (Adelaide).
+    // Blocks 1-18 are Brisbane through Western Bulldogs.
+    const TEAM_ORDER = [
+      "ADE", "BRL", "CAR", "COL", "ESS", "FRE",
+      "GEE", "GCS", "GWS", "HAW", "MELB", "NTH",
+      "PTA", "RIC", "STK", "SYD", "WCE", "WBD",
+    ];
+
     const teamBlocks = articleHtml.split(/Updated\s*:/i);
     console.log(`injuryList: ${teamBlocks.length} blocks found after splitting on "Updated:"`);
 
-    for (const block of teamBlocks) {
-      // Find which team this block belongs to by looking for a name in it.
-      // Earlier matches (in <h2>) win over body text references.
-      let team = null;
-      let teamMatchIdx = Infinity;
-      for (const [name, code] of Object.entries(teamNames)) {
-        const idx = block.indexOf(name);
-        if (idx >= 0 && idx < teamMatchIdx) {
-          teamMatchIdx = idx;
-          team = code;
-        }
-      }
+    for (let blockIdx = 0; blockIdx < teamBlocks.length; blockIdx++) {
+      const block = teamBlocks[blockIdx];
+
+      // Map block index to team: block 0 = ADE, block 1 = BRL, etc.
+      // The last block (index 18) is WBD's "In the mix" with no table data
+      const team = blockIdx < TEAM_ORDER.length ? TEAM_ORDER[blockIdx] : null;
       if (!team) continue;
       teamsFound.add(team);
 
