@@ -1307,9 +1307,11 @@ app.get("/injuryList", async (req, res) => {
     }
 
     const players = [];
+    const teamsFound = new Set();
 
     // Split on "Updated:" date strings. Each preceding chunk is one team.
     const teamBlocks = articleHtml.split(/Updated\s*:/i);
+    console.log(`injuryList: ${teamBlocks.length} blocks found after splitting on "Updated:"`);
 
     for (const block of teamBlocks) {
       // Find which team this block belongs to by looking for a name in it.
@@ -1324,6 +1326,7 @@ app.get("/injuryList", async (req, res) => {
         }
       }
       if (!team) continue;
+      teamsFound.add(team);
 
       // Extract every <tr> ... </tr> from the block.
       // Row format: 3 <td> cells (name, injury, timeline) — sometimes with
@@ -1360,7 +1363,12 @@ app.get("/injuryList", async (req, res) => {
       }
     }
 
-    console.log(`injuryList: parsed ${players.length} players from AFL page`);
+    const allTeams = new Set(Object.values(teamNames));
+    const missingTeams = [...allTeams].filter(t => !teamsFound.has(t));
+    console.log(`injuryList: parsed ${players.length} players from ${teamsFound.size} teams`);
+    if (missingTeams.length > 0) {
+      console.log(`injuryList: MISSING teams: ${missingTeams.join(', ')}`);
+    }
     res.json({ ok: true, players, source: "afl", updatedAt: new Date().toISOString() });
 
   } catch (err) {
