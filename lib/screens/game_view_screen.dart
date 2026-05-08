@@ -655,8 +655,11 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
     return hasRealName || hasPick;
   }).length;
 
-  // Always show at least 15 rows; grow beyond 15 when more punters are named
-  _visiblePunterCount = usedCount > 15 ? usedCount : 15;
+  // Show the actual number of active punters.
+  // If nobody has been added yet, default to 15.
+  // If fewer than 15 are playing, show only that many.
+  // If more than 15 are playing, show all of them.
+  _visiblePunterCount = usedCount > 0 ? usedCount : 15;
 
   // Always sync dropdown to real count
   _maxPunterDropdown = _visiblePunterCount;
