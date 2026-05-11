@@ -219,7 +219,7 @@ class SideBySideGameTables extends StatelessWidget {
     );
 
     final cellStyle = TextStyle(
-      fontSize: compact ? 11 : 13,
+      fontSize: compact ? (statColumnWidth < 28 ? 9 : 11) : 13,
       height: 1.1,
     );
 
@@ -309,17 +309,18 @@ class SideBySideGameTables extends StatelessWidget {
         children: [
           // ⭐ Fixed-width guernsey box for perfect alignment
           SizedBox(
-            width: 26,
+            width: statColumnWidth < 28 ? 20 : 26,
             child: Text(
               guernsey,
               style: theme.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.bold,
+                fontSize: statColumnWidth < 28 ? 10 : null,
               ),
               textAlign: TextAlign.right,
             ),
           ),
 
-          const SizedBox(width: 4),
+          const SizedBox(width: 3),
 
           Expanded(
             child: Text(

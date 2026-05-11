@@ -75,6 +75,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
 
   int _visiblePunterCount = 15;
   int _maxPunterDropdown = 25;
+  bool _punterCountManuallySet = false;
   bool _isCompleted = false;
 
   bool _leaderboardCollapsed = false;
@@ -638,32 +639,27 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
     }
   }
 
-  // Recompute visible punters
+  // Recompute visible punters (only if not manually set)
   _recomputeVisiblePunterCount();
-
-  // Sync dropdown to real count
-  _maxPunterDropdown = _visiblePunterCount;
 
   debugPrint("✅ Snapshot applied: visible=$_visiblePunterCount, maxDrop=$_maxPunterDropdown");
 }
 
   void _recomputeVisiblePunterCount() {
-  final usedCount = _selections.where((p) {
-    final name = p.punterName.trim();
-    final hasRealName = name.isNotEmpty;
-    final hasPick = p.picks.any((pick) => pick.player != null);
-    return hasRealName || hasPick;
-  }).length;
+    // If the user has manually set the count, don't override it
+    if (_punterCountManuallySet) return;
 
-  // Show the actual number of active punters.
-  // If nobody has been added yet, default to 15.
-  // If fewer than 15 are playing, show only that many.
-  // If more than 15 are playing, show all of them.
-  _visiblePunterCount = usedCount > 0 ? usedCount : 15;
+    final usedCount = _selections.where((p) {
+      final name = p.punterName.trim();
+      final hasRealName = name.isNotEmpty;
+      final hasPick = p.picks.any((pick) => pick.player != null);
+      return hasRealName || hasPick;
+    }).length;
 
-  // Always sync dropdown to real count
-  _maxPunterDropdown = _visiblePunterCount;
-}
+    // Default to 15. Only change if there are more active punters than 15.
+    _visiblePunterCount = usedCount > 15 ? usedCount : 15;
+    _maxPunterDropdown = 25;
+  }
 
 
 
@@ -1849,7 +1845,8 @@ Future<void> _forceApplyStats() async {
 
                               if (custom != null && custom > 0) {
                                 setState(() {
-                                  _maxPunterDropdown = custom;
+                                  _punterCountManuallySet = true;
+                                  _maxPunterDropdown = custom > 25 ? custom : 25;
                                   _visiblePunterCount = custom;
 
                                   while (_selections.length < custom) {
@@ -1869,7 +1866,10 @@ Future<void> _forceApplyStats() async {
                               return;
                             }
 
-                            setState(() => _visiblePunterCount = value);
+                            setState(() {
+                              _punterCountManuallySet = true;
+                              _visiblePunterCount = value;
+                            });
                           }
                         : null,
                   ),

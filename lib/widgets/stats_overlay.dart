@@ -189,7 +189,11 @@ class _StatsOverlayState extends State<StatsOverlay>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final isWide = size.width >= 600;
+    // Side-by-side only on tablets and desktops (width >= 900)
+    // Phones in landscape (~700px) still stack vertically
+    final isWide = size.width >= 900;
+    // Narrower stat columns on small screens
+    final statWidth = size.width < 600 ? 24.0 : 32.0;
 
     final leftCode = AflClubCodes.normalize(widget.leftTitle);
     final rightCode = AflClubCodes.normalize(widget.rightTitle);
@@ -198,7 +202,10 @@ class _StatsOverlayState extends State<StatsOverlay>
     final rightName = shortTeamNames[rightCode] ?? rightCode;
 
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: size.width < 600 ? 2 : 6,
+        vertical: size.width < 600 ? 4 : 8,
+      ),
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: ConstrainedBox(
@@ -207,7 +214,7 @@ class _StatsOverlayState extends State<StatsOverlay>
           maxHeight: size.height * 0.96,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(3),
+          padding: EdgeInsets.all(size.width < 600 ? 2 : 3),
           child: Column(
             children: [
               Row(
@@ -260,7 +267,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                     headerBg: _teamBg(leftCode),
                                     headerFg: _teamFg(leftCode),
                                     playerFormatter: _formatPlayerName,
-                                    statColumnWidth: 32,
+                                    statColumnWidth: statWidth,
                                     cellHighlights: _leftHighlights,
                                   ),
                                 ),
@@ -275,7 +282,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                     headerBg: _teamBg(rightCode),
                                     headerFg: _teamFg(rightCode),
                                     playerFormatter: _formatPlayerName,
-                                    statColumnWidth: 32,
+                                    statColumnWidth: statWidth,
                                     cellHighlights: _rightHighlights,
                                   ),
                                 ),
@@ -292,7 +299,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                   headerBg: _teamBg(leftCode),
                                   headerFg: _teamFg(leftCode),
                                   playerFormatter: _formatPlayerName,
-                                  statColumnWidth: 32,
+                                  statColumnWidth: statWidth,
                                   cellHighlights: _leftHighlights,
                                 ),
                                 const SizedBox(height: 6),
@@ -305,7 +312,7 @@ class _StatsOverlayState extends State<StatsOverlay>
                                   headerBg: _teamBg(rightCode),
                                   headerFg: _teamFg(rightCode),
                                   playerFormatter: _formatPlayerName,
-                                  statColumnWidth: 32,
+                                  statColumnWidth: statWidth,
                                   cellHighlights: _rightHighlights,
                                 ),
                               ],
