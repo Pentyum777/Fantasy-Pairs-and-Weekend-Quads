@@ -77,6 +77,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   int _maxPunterDropdown = 25;
   bool _punterCountManuallySet = false;
   List<String> _knownPunterNames = [];
+  bool _showAveragePreview = false;
   bool _isCompleted = false;
 
   bool _leaderboardCollapsed = false;
@@ -666,6 +667,64 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
   }
 
   Future<void> _fetchKnownPunterNames() async {
+
+  // ---------------------------------------------------------------------------
+  // Average Preview — overlays season averages onto punter scores
+  // ---------------------------------------------------------------------------
+
+  /// Cache of actual stats before average preview was toggled on
+  Map<String, AflPlayerMatchStats>? _cachedActualStats;
+
+  void _applyAveragePreview() {
+    // Cache current stats so we can restore later
+    _cachedActualStats = Map.from(_currentStatsByPlayerId);
+
+    // Build a map of playerId -> season average from available players
+    final avgMap = <String, int>{};
+    if (_seasonPlayers != null) {
+      for (final player in _seasonPlayers!) {
+        if (player.fantasyScore > 0) {
+          avgMap[player.id] = player.fantasyScore;
+        }
+      }
+    }
+
+    // Update each punter's live score using averages
+    for (final selection in _selections) {
+      int avgTotal = 0;
+      for (final pick in selection.picks) {
+        final player = pick.player;
+        if (player == null) continue;
+        final avg = avgMap[player.id] ?? player.fantasyScore;
+        avgTotal += avg;
+
+        // Create a temporary stats entry with the average as fantasy points
+        if (!_currentStatsByPlayerId.containsKey(player.id)) {
+          _currentStatsByPlayerId[player.id] = AflPlayerMatchStats(
+            player: player,
+            team: player.club,
+            fantasyPoints: avg,
+          );
+        }
+      }
+      selection.liveScore = avgTotal;
+    }
+  }
+
+  void _restoreActualScores() {
+    if (_cachedActualStats != null) {
+      _currentStatsByPlayerId = _cachedActualStats!;
+      _cachedActualStats = null;
+    }
+
+    // Recalculate actual scores
+    for (final selection in _selections) {
+      selection.liveScore = widget.fantasyService.calculatePunterScore(
+        selection: selection,
+        liveStatsByPlayerId: _currentStatsByPlayerId,
+      );
+    }
+  }
     try {
       final res = await http.get(Uri.parse(
         "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/punterInsights?season=${widget.season}",
@@ -1939,6 +1998,54 @@ Future<void> _forceApplyStats() async {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
+                    ),
+                  ),
+                ),
+
+              const SizedBox(width: 8),
+
+              // ------------------------------------------------------------
+              // AVERAGE PREVIEW TOGGLE (admin only)
+              // ------------------------------------------------------------
+              if (widget.userRoleService.isAdmin)
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _showAveragePreview = !_showAveragePreview;
+                      if (_showAveragePreview) {
+                        _applyAveragePreview();
+                      } else {
+                        // Restore actual scores
+                        _restoreActualScores();
+                      }
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _showAveragePreview
+                          ? Colors.orange.shade700
+                          : Colors.grey.shade700,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _showAveragePreview ? Icons.visibility : Icons.visibility_off,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _showAveragePreview ? "AVG ON" : "AVG",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
