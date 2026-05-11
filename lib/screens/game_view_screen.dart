@@ -2171,6 +2171,9 @@ Future<void> _forceApplyStats() async {
                       ? () {
                           _recomputeVisiblePunterCount();
                           _saveSnapshot();
+                          if (_showAveragePreview) {
+                            _applyAveragePreview();
+                          }
                           setState(() {});
                         }
                       : null,
