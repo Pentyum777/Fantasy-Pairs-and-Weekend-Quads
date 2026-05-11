@@ -76,6 +76,7 @@ class _GameViewScreenState extends State<GameViewScreen> {
   int _visiblePunterCount = 15;
   int _maxPunterDropdown = 25;
   bool _punterCountManuallySet = false;
+  List<String> _knownPunterNames = [];
   bool _isCompleted = false;
 
   bool _leaderboardCollapsed = false;
@@ -230,6 +231,9 @@ void initState() {
     _seasonPlayers = cache.getPlayers(widget.season);
     _loadingPlayers = false;
     _recomputeVisiblePunterCount();
+
+    // Load known punter names for dropdown
+    _fetchKnownPunterNames();
     // Enrich with averages if not yet done (fantasyScore still 0)
     if (_seasonPlayers!.every((p) => p.fantasyScore == 0)) {
       _enrichPlayerFantasyScores(_seasonPlayers!);
@@ -659,6 +663,29 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
     // Default to 15. Only change if there are more active punters than 15.
     _visiblePunterCount = usedCount > 15 ? usedCount : 15;
     _maxPunterDropdown = 25;
+  }
+
+  Future<void> _fetchKnownPunterNames() async {
+    try {
+      final res = await http.get(Uri.parse(
+        "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/punterInsights?season=${widget.season}",
+      ));
+      if (res.statusCode != 200) return;
+      final data = jsonDecode(res.body);
+      if (data['ok'] != true) return;
+      final punters = data['punters'] as Map<String, dynamic>? ?? {};
+      final names = punters.keys
+          .where((n) => n.isNotEmpty && n[0] == n[0].toUpperCase() && n[0] != n[0].toLowerCase())
+          .where((n) => !RegExp(r'\d').hasMatch(n))
+          .where((n) => !RegExp(r'[*#@!]').hasMatch(n))
+          .toList()
+        ..sort();
+      if (mounted) {
+        setState(() => _knownPunterNames = names);
+      }
+    } catch (_) {
+      // Silently fail — dropdown will just show names from current table
+    }
   }
 
 
@@ -2044,6 +2071,7 @@ Future<void> _forceApplyStats() async {
                   scrollController: _punterScrollController,
                   fantasyService: widget.fantasyService,
                   userRoleService: widget.userRoleService,
+                  knownPunterNames: _knownPunterNames,
                   onTimestampChanged: (t) {
                     setState(() => _timestampLabel = t);
                   },

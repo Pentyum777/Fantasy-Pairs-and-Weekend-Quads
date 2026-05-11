@@ -43,6 +43,9 @@ class PunterSelectionTable extends StatefulWidget {
   final UserRoleService userRoleService;
   final PunterScoreService fantasyService;
 
+  /// Known punter names for the dropdown (from previous rounds / insights)
+  final List<String> knownPunterNames;
+
   const PunterSelectionTable({
     super.key,
     required this.gameType,
@@ -61,6 +64,7 @@ class PunterSelectionTable extends StatefulWidget {
     required this.scrollController,
     required this.userRoleService,
     required this.fantasyService,
+    this.knownPunterNames = const [],
     this.onChanged,
     this.onTimestampChanged,
     this.onLiveScoreUpdateSave,
@@ -464,78 +468,246 @@ Widget build(BuildContext context) {
   // ---------------------------------------------------------------------------
 
   Widget _punterCell(BuildContext context, PunterSelection row) {
-  final theme = Theme.of(context);
+    final theme = Theme.of(context);
+    final isEditable = widget.userRoleService.isAdmin && !widget.readOnly;
 
-  final controller = _controllers[row.punterNumber] ??=
-      TextEditingController(text: row.punterName);
+    final controller = _controllers[row.punterNumber] ??=
+        TextEditingController(text: row.punterName);
 
-  final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
+    final focusNode = _punterFocusNodes[row.punterNumber] ??= FocusNode();
 
-  // Keep controller in sync with model
-  if (controller.text != row.punterName) {
-    controller.text = row.punterName;
-    controller.selection = TextSelection.collapsed(
-      offset: controller.text.length,
+    // Keep controller in sync with model
+    if (controller.text != row.punterName) {
+      controller.text = row.punterName;
+      controller.selection = TextSelection.collapsed(
+        offset: controller.text.length,
+      );
+    }
+
+    // Build dropdown items: known names + any names already in this round's table
+    // that aren't in the known list, excluding the current row's name
+    final tableNames = widget.selections
+        .map((s) => s.punterName.trim())
+        .where((n) => n.isNotEmpty)
+        .toSet();
+    final allNames = <String>{...widget.knownPunterNames, ...tableNames}
+        .where((n) => n.isNotEmpty)
+        .toList()
+      ..sort();
+
+    return Container(
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.only(left: 1),
+      child: GestureDetector(
+        onTap: isEditable
+            ? () => _showPunterPicker(context, row, controller, allNames)
+            : null,
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                enabled: isEditable,
+                controller: controller,
+                focusNode: focusNode,
+                textAlign: TextAlign.left,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.1,
+                ),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 2),
+                  hintText: isEditable ? "Tap to select" : "",
+                  hintStyle: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade400,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                onChanged: (value) {
+                  final formatted = value.isEmpty
+                      ? value
+                      : value[0].toUpperCase() + value.substring(1);
+                  if (formatted != value) {
+                    controller.value = controller.value.copyWith(
+                      text: formatted,
+                      selection:
+                          TextSelection.collapsed(offset: formatted.length),
+                    );
+                  }
+                  row.punterName = formatted;
+                  widget.onChanged?.call();
+                },
+                onSubmitted: (_) {
+                  row.punterName = controller.text.trim();
+                  widget.onChanged?.call();
+                },
+                onEditingComplete: () {
+                  row.punterName = controller.text.trim();
+                  widget.onChanged?.call();
+                  final nextIndex = row.punterNumber + 1;
+                  final nextNode = _punterFocusNodes[nextIndex];
+                  if (nextNode != null) {
+                    FocusScope.of(context).requestFocus(nextNode);
+                  } else {
+                    FocusScope.of(context).unfocus();
+                  }
+                },
+              ),
+            ),
+            if (isEditable)
+              GestureDetector(
+                onTap: () =>
+                    _showPunterPicker(context, row, controller, allNames),
+                child: Icon(Icons.arrow_drop_down,
+                    size: 18, color: Colors.grey.shade500),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
-  return Container(
-    alignment: Alignment.centerLeft,
-    padding: const EdgeInsets.only(left: 1),
-    child: TextField(
-      enabled: widget.userRoleService.isAdmin && !widget.readOnly,
-      controller: controller,
-      focusNode: focusNode,
-      textAlign: TextAlign.left,
-      style: theme.textTheme.bodySmall?.copyWith(
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.1,
+  void _showPunterPicker(
+    BuildContext context,
+    PunterSelection row,
+    TextEditingController controller,
+    List<String> allNames,
+  ) {
+    // Names already used in this round (exclude current row)
+    final usedNames = widget.selections
+        .where((s) => s.punterNumber != row.punterNumber)
+        .map((s) => s.punterName.trim().toUpperCase())
+        .where((n) => n.isNotEmpty)
+        .toSet();
+
+    // Filter out already-used names
+    final available =
+        allNames.where((n) => !usedNames.contains(n.toUpperCase())).toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      decoration: const InputDecoration(
-        border: InputBorder.none,
-        isDense: true,
-        contentPadding: EdgeInsets.symmetric(vertical: 2),
+      builder: (ctx) {
+        String filter = "";
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final filtered = filter.isEmpty
+                ? available
+                : available
+                    .where((n) =>
+                        n.toUpperCase().contains(filter.toUpperCase()))
+                    .toList();
 
-        // ⭐ No placeholder at all
-        hintText: "",
-      ),
-      onChanged: (value) {
-        final formatted = value.isEmpty
-            ? value
-            : value[0].toUpperCase() + value.substring(1);
-
-        if (formatted != value) {
-          controller.value = controller.value.copyWith(
-            text: formatted,
-            selection: TextSelection.collapsed(offset: formatted.length),
-          );
-        }
-
-        row.punterName = formatted;
-        widget.onChanged?.call();
+            return DraggableScrollableSheet(
+              initialChildSize: 0.5,
+              minChildSize: 0.3,
+              maxChildSize: 0.8,
+              expand: false,
+              builder: (ctx, scrollController) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Column(
+                    children: [
+                      // Handle bar
+                      Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      // Search / new name input
+                      TextField(
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: "Search or type new name...",
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 12),
+                        ),
+                        onChanged: (v) => setSheetState(() => filter = v),
+                        onSubmitted: (v) {
+                          // Allow typing a brand new name
+                          final newName = v.trim();
+                          if (newName.isNotEmpty) {
+                            final formatted = newName[0].toUpperCase() +
+                                newName.substring(1);
+                            row.punterName = formatted;
+                            controller.text = formatted;
+                            widget.onChanged?.call();
+                            Navigator.pop(ctx);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      // "Clear" option
+                      if (row.punterName.isNotEmpty)
+                        ListTile(
+                          dense: true,
+                          leading: const Icon(Icons.clear, size: 18, color: Colors.red),
+                          title: const Text("Clear name",
+                              style: TextStyle(color: Colors.red, fontSize: 14)),
+                          onTap: () {
+                            row.punterName = "";
+                            controller.text = "";
+                            widget.onChanged?.call();
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                      const Divider(height: 1),
+                      // List of known names
+                      Expanded(
+                        child: ListView.builder(
+                          controller: scrollController,
+                          itemCount: filtered.length,
+                          itemBuilder: (ctx, i) {
+                            final name = filtered[i];
+                            final isCurrent = name == row.punterName;
+                            return ListTile(
+                              dense: true,
+                              title: Text(
+                                name,
+                                style: TextStyle(
+                                  fontWeight: isCurrent
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isCurrent ? Colors.blue : null,
+                                ),
+                              ),
+                              trailing: isCurrent
+                                  ? const Icon(Icons.check,
+                                      size: 18, color: Colors.blue)
+                                  : null,
+                              onTap: () {
+                                row.punterName = name;
+                                controller.text = name;
+                                widget.onChanged?.call();
+                                Navigator.pop(ctx);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
       },
-      onSubmitted: (_) {
-        // Ensure save happens when user presses enter/done
-        row.punterName = controller.text.trim();
-        widget.onChanged?.call();
-      },
-      onEditingComplete: () {
-        // Sync the current text to the model before moving focus
-        row.punterName = controller.text.trim();
-        widget.onChanged?.call();
-
-        final nextIndex = row.punterNumber + 1;
-        final nextNode = _punterFocusNodes[nextIndex];
-
-        if (nextNode != null) {
-          FocusScope.of(context).requestFocus(nextNode);
-        } else {
-          FocusScope.of(context).unfocus();
-        }
-      },
-    ),
-  );
-}
+    );
+  }
 
 
   // ---------------------------------------------------------------------------
