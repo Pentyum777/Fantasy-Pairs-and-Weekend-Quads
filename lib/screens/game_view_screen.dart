@@ -665,15 +665,7 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 
 Future<void> _saveSnapshot() async {
   try {
-    final hasAny = _selections.any((p) {
-      final name = p.punterName.trim();
-      final hasRealName = name.isNotEmpty;
-      final hasPick = p.picks.any((pick) => pick.player != null);
-      return hasRealName || hasPick;
-    });
-
-    if (!hasAny) return;
-
+    // Always save — even if all names are cleared, we need to persist that
     final safeRound = widget.round ?? 0;
 
     final url = Uri.https(

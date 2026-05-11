@@ -514,7 +514,16 @@ Widget build(BuildContext context) {
         row.punterName = formatted;
         widget.onChanged?.call();
       },
+      onSubmitted: (_) {
+        // Ensure save happens when user presses enter/done
+        row.punterName = controller.text.trim();
+        widget.onChanged?.call();
+      },
       onEditingComplete: () {
+        // Sync the current text to the model before moving focus
+        row.punterName = controller.text.trim();
+        widget.onChanged?.call();
+
         final nextIndex = row.punterNumber + 1;
         final nextNode = _punterFocusNodes[nextIndex];
 
