@@ -692,11 +692,13 @@ app.get("/punterInsights", async (req, res) => {
         entry.rounds++;
         entry.totalScore += totalScore;
         if (totalScore > entry.highScore) entry.highScore = totalScore;
-        entry.scores.push({ round, score: totalScore });
+        entry.scores.push({ round, score: totalScore, day: rawGameType.replace('_pairs', '').replace('_', ' ') });
+
+        // Draft position = punter's position in the table for this round (i + 1)
+        entry.draftPositions.push(i + 1);
 
         for (const ps of playerScores) {
           entry.playerCounts[ps.name] = (entry.playerCounts[ps.name] || 0) + 1;
-          entry.draftPositions.push(ps.draftPos);
         }
       }
 
@@ -731,10 +733,10 @@ app.get("/punterInsights", async (req, res) => {
         overallMap[gameType] = {
           playerSelections: {},
           playerWins: {},
-          allScores: [],
-          winningScores: [],
-          winningDraftPositions: [],
-          allDraftPositions: [],
+          allRoundTotals: [],        // punter round totals (not individual player scores)
+          winningRoundTotals: [],    // winning punter round totals
+          winningDraftPositions: [], // draft pos of winning punters
+          allDraftPositions: [],     // draft pos of all punters
         };
       }
       const ov = overallMap[gameType];
@@ -742,8 +744,10 @@ app.get("/punterInsights", async (req, res) => {
         if (!isValidPunterName(names[i])) continue;
         const punterPicks = Array.isArray(picks[i]) ? picks[i] : [];
         const isWinner = names[i] === winnerName;
-        for (let p = 0; p < punterPicks.length; p++) {
-          const pick = punterPicks[p];
+        
+        // Calculate punter's round total
+        let punterTotal = 0;
+        for (const pick of punterPicks) {
           if (!pick || typeof pick !== 'object') continue;
           const playerId2 = pick.playerId || pick.player?.id || "";
           const playerName = PLAYER_NAMES_BY_ID[playerId2]
@@ -753,16 +757,22 @@ app.get("/punterInsights", async (req, res) => {
             || pick.name
             || "";
           const af = pick.stats?.AF ?? pick.fantasyPoints ?? 0;
+          punterTotal += af;
           if (playerName) {
             ov.playerSelections[playerName] = (ov.playerSelections[playerName] || 0) + 1;
-            ov.allDraftPositions.push(p + 1);
             if (isWinner) {
               ov.playerWins[playerName] = (ov.playerWins[playerName] || 0) + 1;
-              ov.winningDraftPositions.push(p + 1);
-              ov.winningScores.push(af);
             }
           }
-          if (af > 0) ov.allScores.push(af);
+        }
+
+        if (punterTotal > 0) {
+          ov.allRoundTotals.push(punterTotal);
+          ov.allDraftPositions.push(i + 1); // draft pos = table position
+          if (isWinner) {
+            ov.winningRoundTotals.push(punterTotal);
+            ov.winningDraftPositions.push(i + 1);
+          }
         }
       }
     }
@@ -789,7 +799,7 @@ app.get("/punterInsights", async (req, res) => {
           playerCounts: d.playerCounts,
           highestDraftPos: highestDraft,
           avgDraftPos: avgDraft ? parseFloat(avgDraft) : null,
-          scores: d.scores,
+          scores: d.scores.sort((a, b) => a.round - b.round),
         };
       }
     }
@@ -804,8 +814,8 @@ app.get("/punterInsights", async (req, res) => {
       overall[gt] = {
         mostSelectedPlayer: mostSelected[0] ? { name: mostSelected[0][0], count: mostSelected[0][1] } : null,
         mostWinningPlayer: mostWinning[0] ? { name: mostWinning[0][0], count: mostWinning[0][1] } : null,
-        highestScore: ov.allScores.length > 0 ? Math.max(...ov.allScores) : 0,
-        avgScore: ov.allScores.length > 0 ? Math.round(ov.allScores.reduce((a, b) => a + b, 0) / ov.allScores.length) : 0,
+        highestScore: ov.allRoundTotals.length > 0 ? Math.max(...ov.allRoundTotals) : 0,
+        avgScore: ov.allRoundTotals.length > 0 ? Math.round(ov.allRoundTotals.reduce((a, b) => a + b, 0) / ov.allRoundTotals.length) : 0,
         avgWinningDraftPos: ov.winningDraftPositions.length > 0
           ? parseFloat((ov.winningDraftPositions.reduce((a, b) => a + b, 0) / ov.winningDraftPositions.length).toFixed(1))
           : null,

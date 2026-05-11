@@ -492,10 +492,14 @@ class _InsightsScreenState extends State<InsightsScreen> {
           ...scores.map((s) {
             final score = s['score'] as int? ?? 0;
             final isAbove = score >= avgScore;
+            final day = s['day'] as String? ?? '';
+            final dayLabel = day.isNotEmpty && day != 'weekend quads'
+                ? " ${day[0].toUpperCase()}"  // e.g., " T" for thursday
+                : "";
             return Padding(
               padding: const EdgeInsets.only(bottom: 6),
               child: Row(children: [
-                SizedBox(width: 46, child: Text("Rd ${s['round']}",
+                SizedBox(width: 56, child: Text("Rd ${s['round']}$dayLabel",
                     style: const TextStyle(color: Colors.white54, fontSize: 12))),
                 Expanded(child: ClipRRect(
                   borderRadius: BorderRadius.circular(3),
