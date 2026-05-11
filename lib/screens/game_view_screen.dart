@@ -666,8 +666,6 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
     _maxPunterDropdown = 25;
   }
 
-  Future<void> _fetchKnownPunterNames() async {
-
   // ---------------------------------------------------------------------------
   // Average Preview — overlays season averages onto punter scores
   // ---------------------------------------------------------------------------
@@ -725,6 +723,8 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
       );
     }
   }
+
+  Future<void> _fetchKnownPunterNames() async {
     try {
       final res = await http.get(Uri.parse(
         "https://fantasy-pairs-and-weekend-quads-production.up.railway.app/punterInsights?season=${widget.season}",

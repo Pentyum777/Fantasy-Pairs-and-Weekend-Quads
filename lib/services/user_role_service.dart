@@ -7,6 +7,7 @@ class UserRoleService {
     "wayne.penfold@gmail.com",
     "wayneliz7@outlook.com",
     "chrisoakenfall@gmail.com",
+    "matty_hyatt@hotmail.com",
      };
 
   String? _currentUser;
