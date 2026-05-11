@@ -509,7 +509,7 @@ app.get("/matchStats/:matchId", async (req, res) => {
                  tog=EXCLUDED.tog, fantasy_points=EXCLUDED.fantasy_points`,
               [
                 cdMatchId, p.playerId,
-                PLAYER_NAMES_BY_ID[p.playerId] || (p.firstName && p.lastName) ? `${p.firstName} ${p.lastName}` : (p.displayName || p.playerName || ""),
+                PLAYER_NAMES_BY_ID[p.playerId] || ((p.firstName && p.lastName) ? `${p.firstName} ${p.lastName}` : (p.displayName || p.playerName || "")),
                 normAbbr(p.teamAbbr || p.team || ""),
                 p.kicks||0, p.handballs||0, (p.kicks||0)+(p.handballs||0),
                 p.marks||0, p.tackles||0, p.hitouts||0,
@@ -829,8 +829,8 @@ app.get("/playerSeasonStats/:season", async (req, res) => {
       WITH season_stats AS (
         SELECT
           player_id,
-          (array_agg(player_name ORDER BY match_id DESC))[1] AS player_name,
-          (array_agg(team        ORDER BY match_id DESC))[1] AS team,
+          (array_agg(player_name ORDER BY CASE WHEN player_name <> '' THEN 0 ELSE 1 END, match_id DESC))[1] AS player_name,
+          (array_agg(team        ORDER BY CASE WHEN team <> '' THEN 0 ELSE 1 END, match_id DESC))[1] AS team,
           COUNT(*)::int                             AS games,
           ROUND(AVG(fantasy_points))::int           AS af_avg,
           MAX(fantasy_points)                       AS af_best,
@@ -864,7 +864,7 @@ app.get("/playerSeasonStats/:season", async (req, res) => {
       SELECT * FROM season_stats
       ORDER BY af_avg DESC
     `, [`CD_M${season}%`]);
-    res.json({ ok: true, players: result.rows });
+    res.json({ ok: true, players: result.rows, _v: "2026-05-12a" });
   } catch (err) {
     console.error("playerSeasonStats error:", err);
     res.status(500).json({ error: "Failed" });
