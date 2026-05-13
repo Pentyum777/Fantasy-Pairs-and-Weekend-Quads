@@ -1,4 +1,5 @@
 import 'player_pick.dart';
+import 'afl_player.dart';
 
 class PunterSelection {
   final int punterNumber;
