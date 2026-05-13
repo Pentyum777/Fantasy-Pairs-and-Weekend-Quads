@@ -42,9 +42,9 @@ class PunterSelectionTable extends StatefulWidget {
 
   final UserRoleService userRoleService;
   final PunterScoreService fantasyService;
-
-  /// Known punter names for the dropdown (from previous rounds / insights)
   final List<String> knownPunterNames;
+  final bool showAveragePreview;
+  final List<AflPlayer> allPlayers;
 
   const PunterSelectionTable({
     super.key,
@@ -65,6 +65,8 @@ class PunterSelectionTable extends StatefulWidget {
     required this.userRoleService,
     required this.fantasyService,
     this.knownPunterNames = const [],
+    this.showAveragePreview = false,
+    this.allPlayers = const [],
     this.onChanged,
     this.onTimestampChanged,
     this.onLiveScoreUpdateSave,
@@ -1118,10 +1120,12 @@ Widget build(BuildContext context) {
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
-          "${row.totalScore}",
+          widget.showAveragePreview
+              ? "${row.avgScore(widget.allPlayers)}"
+              : "${row.totalScore}",
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            color: Colors.black,
+            color: widget.showAveragePreview ? Colors.orange.shade200 : Colors.black,
           ),
         ),
       ),

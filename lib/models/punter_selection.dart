@@ -77,4 +77,18 @@ bool isCompletedPunter = false;
     }
     return total;
   }
+
+  /// Returns the sum of each selected player's season average fantasy score.
+  int avgScore(List<AflPlayer> allPlayers) {
+    final avgMap = <String, int>{
+      for (final p in allPlayers) p.id: p.fantasyScore,
+    };
+    int total = 0;
+    for (final pick in picks) {
+      final player = pick.player;
+      if (player == null) continue;
+      total += avgMap[player.id] ?? player.fantasyScore;
+    }
+    return total;
+  }
 }
