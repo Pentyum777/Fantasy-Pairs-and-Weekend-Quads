@@ -1889,7 +1889,21 @@ Future<void> _forceApplyStats() async {
                             setState(() {
                               _punterCountManuallySet = true;
                               _visiblePunterCount = value;
+
+                              // Grow _selections if needed
+                              final playersPerPunter = widget.selections.isNotEmpty
+                                  ? widget.selections.first.picks.length
+                                  : (widget.gameType == "weekend_quads" ? 4 : 2);
+                              while (_selections.length < value) {
+                                _selections.add(
+                                  PunterSelection.empty(
+                                    punterNumber: _selections.length + 1,
+                                    playersPerPunter: playersPerPunter,
+                                  ),
+                                );
+                              }
                             });
+                            _saveSnapshot();
                           }
                         : null,
                   ),

@@ -98,9 +98,9 @@ final ScrollController _horizontalController = ScrollController();
 
   // Responsive column widths
   double get kPunterColumnWidth {
-    if (isPortraitPhone(context)) return 55;
-    if (isLandscapePhone) return 60;
-    return 70;
+    if (isPortraitPhone(context)) return 70;
+    if (isLandscapePhone) return 80;
+    return 90;
   }
 
   double get kPickColumnWidth {
