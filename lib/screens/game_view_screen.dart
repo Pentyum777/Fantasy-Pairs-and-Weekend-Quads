@@ -2141,7 +2141,7 @@ Future<void> _forceApplyStats() async {
                 width: leaderboardWidth,
                 child: LeaderboardPanel(
                   // ⭐ CRITICAL: use _selections, not the stale parameter
-                  punters: _sortedSelections(),
+                  punters: _sortedSelections().take(_visiblePunterCount).toList(),
 
                   rowHeight: UIDimensions.rowHeight,
                   collapsed: _leaderboardCollapsed,
