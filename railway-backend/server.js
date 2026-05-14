@@ -1031,6 +1031,39 @@ app.get("/debug/squigglemap/:matchId", async (req, res) => {
   res.json({ matchId, squiggleId: squiggleId ?? null, found: !!squiggleId });
 });
 
+// GET /debug/footyinfolineup/:matchId — test FootyInfo API for lineups
+app.get("/debug/footyinfolineup/:matchId", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  const matchId = req.params.matchId;
+  const results = {};
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Accept": "application/json",
+    "Referer": "https://www.footyinfo.com/",
+    "Origin": "https://www.footyinfo.com",
+  };
+  const endpoints = [
+    `https://api.footyinfo.com/api/match?match_id=${matchId}`,
+    `https://api.footyinfo.com/api/match_detail?match_id=${matchId}`,
+    `https://api.footyinfo.com/api/lineup?match_id=${matchId}`,
+    `https://api.footyinfo.com/api/lineups?match_id=${matchId}`,
+    `https://api.footyinfo.com/api/squad?match_id=${matchId}`,
+    `https://api.footyinfo.com/api/teams?match_id=${matchId}`,
+    `https://api.footyinfo.com/api/game?match_id=${matchId}`,
+    `https://api.footyinfo.com/api/game_summary?match_id=${matchId}`,
+  ];
+  for (const url of endpoints) {
+    try {
+      const r = await fetch(url, { headers, timeout: 5000 });
+      const body = r.ok ? await r.text() : null;
+      results[url] = { status: r.status, bodySnippet: body ? body.substring(0, 500) : null };
+    } catch (e) {
+      results[url] = { error: e.message };
+    }
+  }
+  res.json(results);
+});
+
 // ── Refresh fixture scores directly from Squiggle by round ───────────────────
 // GET /squiggleScores/:season/:round
 // Returns live/final scores for all games in a round directly from Squiggle
@@ -1529,80 +1562,115 @@ app.get("/teamLineups", async (req, res) => {
       if (!matchInfo.cfsMatchId) matchInfo.cfsMatchId = matchInfo.aflMatchId;
     }
 
-    // ── Step 4: get named squad by scraping each AFL match page ──────────────
-    // The CFS API (api.afl.com.au) now returns 401 Unauthorized.
-    // Instead scrape the AFL match page at afl.com.au/afl/matches/{id}
-    // which embeds lineup data as JSON in a script tag.
+    // ── Step 3: get named squad players ──────────────────────────────────────
+    // Try multiple approaches since the CFS API now requires auth (401).
     for (const matchInfo of allMatchInfo) {
       if (!matchInfo.available) continue;
 
+      // Approach 1: AFL v2 API match detail (may include lineups)
       try {
-        const matchPageUrl = `https://www.afl.com.au/afl/matches/${matchInfo.cfsMatchId}`;
+        const v2Url = `https://aflapi.afl.com.au/afl/v2/matches/${matchInfo.aflMatchId}`;
+        const v2Res = await fetch(v2Url, {
+          headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
+          timeout: 8000,
+        });
+
+        if (v2Res.ok) {
+          const data = await v2Res.json();
+          const match = data.match || data;
+
+          const extractPlayers = (side) => {
+            const players = side?.players || side?.lineup || side?.teamList || [];
+            const names = [], ids = [];
+            for (const p of players) {
+              const pl = p.player || p;
+              const id = pl.playerId || pl.id || "";
+              const first = pl.givenName || pl.firstName || "";
+              const last = pl.surname || pl.lastName || pl.displayName || "";
+              const name = (first + " " + last).trim() || (pl.name || "");
+              if (id.startsWith("CD_I")) ids.push(id);
+              if (name) names.push(name);
+            }
+            return { names, ids };
+          };
+
+          const home = extractPlayers(match?.homeTeam ?? match?.home);
+          const away = extractPlayers(match?.awayTeam ?? match?.away);
+
+          if (home.ids.length > 0 || away.ids.length > 0) {
+            matchInfo.homePlayers = home.names;
+            matchInfo.awayPlayers = away.names;
+            matchInfo.homePlayerIds = home.ids;
+            matchInfo.awayPlayerIds = away.ids;
+            console.log(`teamLineups: v2 API got ${home.ids.length + away.ids.length} players for ${matchInfo.home} v ${matchInfo.away}`);
+            continue;
+          }
+        }
+      } catch (e) { /* try next approach */ }
+
+      // Approach 2: AFL v2 teamlists endpoint
+      try {
+        const teamlistUrl = `https://aflapi.afl.com.au/afl/v2/matches/${matchInfo.aflMatchId}/teamlists`;
+        const tlRes = await fetch(teamlistUrl, {
+          headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
+          timeout: 8000,
+        });
+
+        if (tlRes.ok) {
+          const data = await tlRes.json();
+          const extractFromList = (list) => {
+            const names = [], ids = [];
+            for (const p of (list || [])) {
+              const pl = p.player || p;
+              const id = pl.playerId || pl.id || "";
+              const name = (pl.givenName || pl.firstName || "") + " " + (pl.surname || pl.lastName || "");
+              if (id.startsWith("CD_I")) ids.push(id);
+              if (name.trim()) names.push(name.trim());
+            }
+            return { names, ids };
+          };
+
+          const home = extractFromList(data?.homeTeam?.players || data?.home?.players);
+          const away = extractFromList(data?.awayTeam?.players || data?.away?.players);
+
+          if (home.ids.length > 0 || away.ids.length > 0) {
+            matchInfo.homePlayers = home.names;
+            matchInfo.awayPlayers = away.names;
+            matchInfo.homePlayerIds = home.ids;
+            matchInfo.awayPlayerIds = away.ids;
+            console.log(`teamLineups: teamlists got ${home.ids.length + away.ids.length} players for ${matchInfo.home} v ${matchInfo.away}`);
+            continue;
+          }
+        }
+      } catch (e) { /* try next approach */ }
+
+      // Approach 3: scrape AFL match page for embedded player IDs
+      try {
+        const matchPageUrl = `https://www.afl.com.au/afl/matches/${matchInfo.cfsMatchId || matchInfo.aflMatchId}`;
         const pageRes = await fetch(matchPageUrl, {
-          headers: { "User-Agent": "Mozilla/5.0", "Accept": "text/html" },
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "text/html,application/xhtml+xml",
+          },
           timeout: 10000,
         });
 
-        if (!pageRes.ok) {
-          console.warn(`teamLineups: match page ${matchInfo.cfsMatchId} returned ${pageRes.status}`);
-          continue;
+        if (pageRes.ok) {
+          const html = await pageRes.text();
+          const idMatches = [...html.matchAll(/"playerId"\s*:\s*"(CD_I\d+)"/g)];
+          const ids = [...new Set(idMatches.map(m => m[1]))];
+          if (ids.length > 0) {
+            const mid = Math.ceil(ids.length / 2);
+            matchInfo.homePlayerIds = ids.slice(0, mid);
+            matchInfo.awayPlayerIds = ids.slice(mid);
+            matchInfo.homePlayers = matchInfo.homePlayerIds.map(id => PLAYER_NAMES_BY_ID[id] || "").filter(Boolean);
+            matchInfo.awayPlayers = matchInfo.awayPlayerIds.map(id => PLAYER_NAMES_BY_ID[id] || "").filter(Boolean);
+            console.log(`teamLineups: page scrape got ${ids.length} players for ${matchInfo.home} v ${matchInfo.away}`);
+            continue;
+          }
         }
-
-        const html = await pageRes.text();
-
-        // The page embeds lineup data as JSON in a script tag like:
-        // window.__PRELOADED_STATE__ = {...} or similar
-        // Try to extract player names from the HTML directly
-        const playerNames = [];
-        const playerIds = [];
-
-        // Method 1: look for playerId patterns in embedded JSON
-        const idMatches = [...html.matchAll(/"playerId"\s*:\s*"(CD_I\d+)"/g)];
-        for (const m of idMatches) {
-          if (!playerIds.includes(m[1])) playerIds.push(m[1]);
-        }
-
-        // Method 2: look for player name patterns in lineup sections
-        const nameMatches = [...html.matchAll(/class="[^"]*squad[^"]*player[^"]*name[^"]*"[^>]*>([^<]+)</g)];
-        for (const m of nameMatches) {
-          const name = m[1].trim();
-          if (name && !playerNames.includes(name)) playerNames.push(name);
-        }
-
-        // Method 3: look for JSON data embedded in page
-        const jsonMatch = html.match(/window\.__(?:AFL_DATA|PRELOADED_STATE|MATCH_DATA)__\s*=\s*({.*?})\s*;/s);
-        if (jsonMatch) {
-          try {
-            const data = JSON.parse(jsonMatch[1]);
-            const extractFromData = (obj) => {
-              if (!obj || typeof obj !== 'object') return;
-              if (obj.playerId && obj.playerId.startsWith('CD_I')) {
-                if (!playerIds.includes(obj.playerId)) playerIds.push(obj.playerId);
-              }
-              Object.values(obj).forEach(v => extractFromData(v));
-            };
-            extractFromData(data);
-          } catch (_) {}
-        }
-
-        // Split playerIds between home and away (first half = home)
-        if (playerIds.length > 0) {
-          const mid = Math.ceil(playerIds.length / 2);
-          matchInfo.homePlayerIds = playerIds.slice(0, mid);
-          matchInfo.awayPlayerIds = playerIds.slice(mid);
-          matchInfo.homePlayers = matchInfo.homePlayerIds
-            .map(id => PLAYER_NAMES_BY_ID[id] || "")
-            .filter(Boolean);
-          matchInfo.awayPlayers = matchInfo.awayPlayerIds
-            .map(id => PLAYER_NAMES_BY_ID[id] || "")
-            .filter(Boolean);
-          console.log(`teamLineups: ${matchInfo.home} v ${matchInfo.away}: found ${playerIds.length} player IDs from match page`);
-        } else {
-          console.warn(`teamLineups: no player IDs found on match page ${matchInfo.cfsMatchId}`);
-        }
-
-      } catch (fetchErr) {
-        console.warn(`teamLineups: match page fetch failed for ${matchInfo.cfsMatchId}:`, fetchErr.message);
+      } catch (e) {
+        console.warn(`teamLineups: all approaches failed for ${matchInfo.home} v ${matchInfo.away}`);
       }
     }
 
