@@ -1890,9 +1890,9 @@ Future<void> _forceApplyStats() async {
                               _punterCountManuallySet = true;
                               _visiblePunterCount = value;
 
-                              // Grow _selections if needed
-                              final playersPerPunter = widget.selections.isNotEmpty
-                                  ? widget.selections.first.picks.length
+                              // Grow _selections to match chosen count
+                              final playersPerPunter = _selections.isNotEmpty
+                                  ? _selections.first.picks.length
                                   : (widget.gameType == "weekend_quads" ? 4 : 2);
                               while (_selections.length < value) {
                                 _selections.add(
@@ -1903,7 +1903,10 @@ Future<void> _forceApplyStats() async {
                                 );
                               }
                             });
-                            _saveSnapshot();
+                            // Save after setState so snapshot includes new rows
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _saveSnapshot();
+                            });
                           }
                         : null,
                   ),
@@ -2138,7 +2141,7 @@ Future<void> _forceApplyStats() async {
                 width: leaderboardWidth,
                 child: LeaderboardPanel(
                   // ⭐ CRITICAL: use _selections, not the stale parameter
-                  punters: _sortedSelections().take(_visiblePunterCount).toList(),
+                  punters: _sortedSelections(),
 
                   rowHeight: UIDimensions.rowHeight,
                   collapsed: _leaderboardCollapsed,

@@ -500,17 +500,19 @@ Widget build(BuildContext context) {
     return Container(
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.only(left: 1),
-      child: GestureDetector(
-        onTap: isEditable
-            ? () => _showPunterPicker(context, row, controller, allNames)
-            : null,
-        child: Row(
-          children: [
-            Expanded(
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              // Tapping the name text opens the picker
+              onTap: isEditable
+                  ? () => _showPunterPicker(context, row, controller, allNames)
+                  : null,
               child: TextField(
                 enabled: isEditable,
                 controller: controller,
                 focusNode: focusNode,
+                readOnly: true, // prevent keyboard; picker handles input
                 textAlign: TextAlign.left,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
@@ -526,46 +528,20 @@ Widget build(BuildContext context) {
                     fontStyle: FontStyle.italic,
                   ),
                 ),
-                onChanged: (value) {
-                  final formatted = value.isEmpty
-                      ? value
-                      : value[0].toUpperCase() + value.substring(1);
-                  if (formatted != value) {
-                    controller.value = controller.value.copyWith(
-                      text: formatted,
-                      selection:
-                          TextSelection.collapsed(offset: formatted.length),
-                    );
-                  }
-                  row.punterName = formatted;
-                  widget.onChanged?.call();
-                },
-                onSubmitted: (_) {
-                  row.punterName = controller.text.trim();
-                  widget.onChanged?.call();
-                },
-                onEditingComplete: () {
-                  row.punterName = controller.text.trim();
-                  widget.onChanged?.call();
-                  final nextIndex = row.punterNumber + 1;
-                  final nextNode = _punterFocusNodes[nextIndex];
-                  if (nextNode != null) {
-                    FocusScope.of(context).requestFocus(nextNode);
-                  } else {
-                    FocusScope.of(context).unfocus();
-                  }
-                },
+                onTap: isEditable
+                    ? () => _showPunterPicker(context, row, controller, allNames)
+                    : null,
               ),
             ),
-            if (isEditable)
-              GestureDetector(
-                onTap: () =>
-                    _showPunterPicker(context, row, controller, allNames),
-                child: Icon(Icons.arrow_drop_down,
-                    size: 18, color: Colors.grey.shade500),
-              ),
-          ],
-        ),
+          ),
+          if (isEditable)
+            GestureDetector(
+              onTap: () =>
+                  _showPunterPicker(context, row, controller, allNames),
+              child: Icon(Icons.arrow_drop_down,
+                  size: 18, color: Colors.grey.shade500),
+            ),
+        ],
       ),
     );
   }
