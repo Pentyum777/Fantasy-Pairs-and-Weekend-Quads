@@ -1044,6 +1044,32 @@ Widget build(BuildContext context) {
   final theme = Theme.of(context);
   final cs = theme.colorScheme;
 
+  // ── Average Preview Mode ──────────────────────────────────────────────────
+  if (widget.showAveragePreview && pick.player != null) {
+    final avg = widget.allPlayers
+        .where((p) => p.id == pick.player!.id)
+        .map((p) => p.fantasyScore)
+        .firstOrNull ?? pick.player!.fantasyScore;
+
+    return Container(
+      alignment: Alignment.center,
+      padding: EdgeInsets.zero,
+      decoration: BoxDecoration(
+        color: const Color(0xFFB45309).withOpacity(0.25), // dark amber
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        "$avg",
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFD97706), // amber-600
+        ),
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
   final bool isCompleted = pick.player != null && pick.isCompleted == true;
   final bool isLive = pick.isLive == true;
 
@@ -1101,7 +1127,7 @@ Widget build(BuildContext context) {
               : "${row.totalScore}",
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            color: widget.showAveragePreview ? Colors.orange.shade200 : Colors.black,
+            color: widget.showAveragePreview ? const Color(0xFFD97706) : Colors.black,
           ),
         ),
       ),
