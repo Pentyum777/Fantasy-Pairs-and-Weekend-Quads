@@ -1118,7 +1118,9 @@ Widget build(BuildContext context) {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.20),
+          color: widget.showAveragePreview
+              ? Colors.orange.shade400.withOpacity(0.70)
+              : Colors.black.withOpacity(0.20),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(

@@ -2142,10 +2142,11 @@ Future<void> _forceApplyStats() async {
                 child: LeaderboardPanel(
                   // ⭐ CRITICAL: use _selections, not the stale parameter
                   punters: _sortedSelections().take(_visiblePunterCount).toList(),
-
                   rowHeight: UIDimensions.rowHeight,
                   collapsed: _leaderboardCollapsed,
                   scrollController: _punterScrollController,
+                  showAveragePreview: _showAveragePreview,
+                  allPlayers: _seasonPlayers ?? [],
                   onCollapseChanged: (collapsed) {
                     setState(() => _leaderboardCollapsed = collapsed);
                   },
@@ -2161,7 +2162,12 @@ Future<void> _forceApplyStats() async {
 
 List<PunterSelection> _sortedSelections() {
   final list = List<PunterSelection>.from(_selections);
-  list.sort((a, b) => b.totalScore.compareTo(a.totalScore));
+  if (_showAveragePreview) {
+    final players = _seasonPlayers ?? [];
+    list.sort((a, b) => b.avgScore(players).compareTo(a.avgScore(players)));
+  } else {
+    list.sort((a, b) => b.totalScore.compareTo(a.totalScore));
+  }
   return list;
 }
 

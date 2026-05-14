@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/ui_dimensions.dart';
+import '../models/afl_player.dart';
 import '../models/punter_selection.dart';
 import 'leaderboard_table.dart';
 
@@ -9,6 +10,8 @@ class LeaderboardPanel extends StatelessWidget {
   final bool collapsed;
   final ScrollController? scrollController;
   final void Function(bool collapsed)? onCollapseChanged;
+  final bool showAveragePreview;
+  final List<AflPlayer> allPlayers;
 
   const LeaderboardPanel({
     super.key,
@@ -17,6 +20,8 @@ class LeaderboardPanel extends StatelessWidget {
     required this.collapsed,
     this.scrollController,
     this.onCollapseChanged,
+    this.showAveragePreview = false,
+    this.allPlayers = const [],
   });
 
   @override
@@ -63,6 +68,8 @@ class LeaderboardPanel extends StatelessWidget {
                       rowHeight: rowHeight,
                       totalWidth: expandedWidth,
                       scrollController: scrollController,
+                      showAveragePreview: showAveragePreview,
+                      allPlayers: allPlayers,
                     ).buildHeader(context),
                   ),
 
@@ -97,6 +104,8 @@ class LeaderboardPanel extends StatelessWidget {
                             scrollController: scrollController,
                             textColorOverride:
                                 isCompleted ? Colors.white : null,
+                            showAveragePreview: showAveragePreview,
+                            allPlayers: allPlayers,
                           ).buildBodyRow(context, index),
                         );
                       },

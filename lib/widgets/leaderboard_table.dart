@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/afl_player.dart';
 import '../models/punter_selection.dart';
 import '../constants/ui_dimensions.dart';
 
@@ -11,6 +12,9 @@ class LeaderboardTable extends StatelessWidget {
   // ⭐ NEW — allows LeaderboardPanel to override text color
   final Color? textColorOverride;
 
+  final bool showAveragePreview;
+  final List<AflPlayer> allPlayers;
+
   const LeaderboardTable({
     super.key,
     required this.punters,
@@ -18,6 +22,8 @@ class LeaderboardTable extends StatelessWidget {
     required this.totalWidth,
     this.scrollController,
     this.textColorOverride,
+    this.showAveragePreview = false,
+    this.allPlayers = const [],
   });
 
   // ⭐ REQUIRED — this is what your file was missing
@@ -140,21 +146,32 @@ class LeaderboardTable extends StatelessWidget {
   }
 
   Widget _scoreCell(BuildContext context, PunterSelection p) {
-    final color = textColorOverride ??
-        Theme.of(context).textTheme.bodyMedium?.color;
+    final isAvg = showAveragePreview;
+    final score = isAvg
+        ? p.avgScore(allPlayers)
+        : (p.picks.isEmpty ? p.liveScore : p.totalScore);
+
+    final color = isAvg ? Colors.black : (textColorOverride ?? Theme.of(context).textTheme.bodyMedium?.color);
 
     return Container(
       width: UIDimensions.totalColumnWidth,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Text(
-        // ⭐ Use liveScore for championship entries (picks is empty, score stored in liveScore)
-        // Use totalScore for game leaderboard entries (score computed from picks)
-        (p.picks.isEmpty ? p.liveScore : p.totalScore).toString(),
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        decoration: isAvg
+            ? BoxDecoration(
+                color: Colors.orange.shade400.withOpacity(0.70),
+                borderRadius: BorderRadius.circular(4),
+              )
+            : null,
+        child: Text(
+          score.toString(),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+        ),
       ),
     );
   }
