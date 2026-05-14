@@ -1055,14 +1055,14 @@ Widget build(BuildContext context) {
       alignment: Alignment.center,
       padding: EdgeInsets.zero,
       decoration: BoxDecoration(
-        color: const Color(0xFFB45309).withOpacity(0.25), // dark amber
+        color: Colors.orange.shade400.withOpacity(0.70), // dark amber
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         "$avg",
         style: theme.textTheme.bodySmall?.copyWith(
           fontWeight: FontWeight.w700,
-          color: const Color(0xFFD97706), // amber-600
+          color: Colors.black,
         ),
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,
@@ -1127,7 +1127,7 @@ Widget build(BuildContext context) {
               : "${row.totalScore}",
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            color: widget.showAveragePreview ? const Color(0xFFD97706) : Colors.black,
+            color: Colors.black,
           ),
         ),
       ),
