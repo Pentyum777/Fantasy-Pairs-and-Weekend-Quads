@@ -613,7 +613,6 @@ app.get("/punterInsights", async (req, res) => {
     // Process all rounds across both game types
     const punterMap = {};    // punterName -> { pairs: {...}, quads: {...} }
     const overallMap = {};   // game_type -> { mostSelected, mostWinning, etc. }
-    let debugLogged = false;
 
     // Skip test/invalid punter names
     const EXCLUDED_PUNTERS = new Set(["Penn"]); // manually excluded names
@@ -654,15 +653,6 @@ app.get("/punterInsights", async (req, res) => {
         for (let p = 0; p < punterPicks.length; p++) {
           const pick = punterPicks[p];
           if (!pick || typeof pick !== 'object') continue;
-
-          // Debug: log first pick structure once
-          if (!debugLogged) {
-            console.log("📋 punterInsights sample pick keys:", JSON.stringify(Object.keys(pick)));
-            if (pick.player) console.log("📋 punterInsights sample pick.player keys:", JSON.stringify(Object.keys(pick.player)));
-            else console.log("📋 punterInsights: pick.player is", pick.player);
-            console.log("📋 punterInsights sample pick snippet:", JSON.stringify(pick).substring(0, 400));
-            debugLogged = true;
-          }
 
           const af = pick.stats?.AF ?? pick.fantasyPoints ?? 0;
           totalScore += af;
