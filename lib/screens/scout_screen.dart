@@ -644,6 +644,12 @@ class _ScoutScreenState extends State<ScoutScreen> {
         }
       }
 
+      // If a player is in the named squad, clear ALL injury flags —
+      // being selected overrides any injury/rest/managed status.
+      for (final playerId in mergedIds) {
+        updatedFlags.remove(playerId);
+      }
+
       setState(() {
         _allStats = stats;
         _flags = updatedFlags;
