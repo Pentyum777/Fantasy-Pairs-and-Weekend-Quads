@@ -122,14 +122,14 @@ class LeaderboardTable extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
         "${index + 1}",
-        style: Theme.of(context).textTheme.bodyMedium,
+        style: Theme.of(context).textTheme.bodySmall,
       ),
     );
   }
 
   Widget _punterNameCell(BuildContext context, PunterSelection p) {
     final color = textColorOverride ??
-        Theme.of(context).textTheme.bodyMedium?.color;
+        Theme.of(context).textTheme.bodySmall?.color;
 
     return Container(
       width: UIDimensions.punterNameColumnWidth,
@@ -138,7 +138,7 @@ class LeaderboardTable extends StatelessWidget {
       child: Text(
         p.punterName,
         overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: color,
             ),
       ),
@@ -151,7 +151,7 @@ class LeaderboardTable extends StatelessWidget {
         ? p.avgScore(allPlayers)
         : (p.picks.isEmpty ? p.liveScore : p.totalScore);
 
-    final color = isAvg ? Colors.black : (textColorOverride ?? Theme.of(context).textTheme.bodyMedium?.color);
+    final color = isAvg ? Colors.black : (textColorOverride ?? Theme.of(context).textTheme.bodySmall?.color);
 
     return Container(
       width: UIDimensions.totalColumnWidth,
@@ -167,7 +167,7 @@ class LeaderboardTable extends StatelessWidget {
             : null,
         child: Text(
           score.toString(),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
