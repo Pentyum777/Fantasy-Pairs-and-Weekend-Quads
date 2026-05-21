@@ -1383,18 +1383,18 @@ void _finaliseFridayPairsWinner() {
     // guernsey is injected later by _enrichStatsWithPlayerData
 
     "Player": s.player?.name ?? "Unknown",
-    "AF": s.fantasyPoints,
-    "K": s.kicks,
-    "HB": s.handballs,
-    "D": s.disposals,
-    "M": s.marks,
-    "T": s.tackles,
-    "HO": s.hitouts,
-    "FF": s.freesFor,
-    "FA": s.freesAgainst,
-    "G": s.goals,
-    "B": s.behinds,
-    "TOG": s.timeOnGroundPercentage,
+    "AF": s.fantasyPoints ?? 0,
+    "K": s.kicks ?? 0,
+    "HB": s.handballs ?? 0,
+    "D": s.disposals ?? 0,
+    "M": s.marks ?? 0,
+    "T": s.tackles ?? 0,
+    "HO": s.hitouts ?? 0,
+    "FF": s.freesFor ?? 0,
+    "FA": s.freesAgainst ?? 0,
+    "G": s.goals ?? 0,
+    "B": s.behinds ?? 0,
+    "TOG": s.timeOnGroundPercentage ?? 0,
   };
 }
 

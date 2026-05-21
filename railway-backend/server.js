@@ -56,86 +56,7 @@ const app = express();
 
 app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"] }));
 app.options("*", cors());
-app.use(express.json({ limit: '10mb' }));
-
-// ── Profile Pictures (stored in Postgres for persistence) ─────────────
-
-// GET /profile_pics/:name.jpg — serve from DB
-app.get("/profile_pics/:filename", async (req, res) => {
-  try {
-    const safeName = req.params.filename.replace(/\.jpg$/, "");
-    const result = await pool.query(
-      `SELECT image_data FROM profile_pics WHERE safe_name = $1`,
-      [safeName]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).end();
-    }
-    const buffer = Buffer.from(result.rows[0].image_data, "base64");
-    res.setHeader("Content-Type", "image/jpeg");
-    res.setHeader("Cache-Control", "public, max-age=86400");
-    res.send(buffer);
-  } catch (err) {
-    res.status(500).end();
-  }
-});
-
-// POST /uploadProfilePic — accepts { punterName, imageBase64 }
-app.post("/uploadProfilePic", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  try {
-    const { punterName, imageBase64 } = req.body;
-    if (!punterName || !imageBase64) {
-      return res.status(400).json({ error: "punterName and imageBase64 required" });
-    }
-    const safeName = punterName.replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
-    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-
-    await pool.query(
-      `INSERT INTO profile_pics (safe_name, punter_name, image_data)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (safe_name)
-       DO UPDATE SET image_data = EXCLUDED.image_data, punter_name = EXCLUDED.punter_name, updated_at = NOW()`,
-      [safeName, punterName, base64Data]
-    );
-
-    console.log(`📸 Saved profile pic for ${punterName} → ${safeName}`);
-    res.json({ ok: true, url: `/profile_pics/${safeName}.jpg` });
-  } catch (err) {
-    console.error("uploadProfilePic error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST /bulkUploadProfilePics — accepts { pics: [{ punterName, imageBase64 }] }
-// For initial batch upload of all pics from the Punter Profile Pics folder
-app.post("/bulkUploadProfilePics", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  try {
-    const pics = req.body.pics;
-    if (!Array.isArray(pics)) return res.status(400).json({ error: "pics array required" });
-
-    let uploaded = 0;
-    for (const { punterName, imageBase64 } of pics) {
-      if (!punterName || !imageBase64) continue;
-      const safeName = punterName.replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
-      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-      await pool.query(
-        `INSERT INTO profile_pics (safe_name, punter_name, image_data)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (safe_name)
-         DO UPDATE SET image_data = EXCLUDED.image_data, punter_name = EXCLUDED.punter_name, updated_at = NOW()`,
-        [safeName, punterName, base64Data]
-      );
-      uploaded++;
-    }
-    console.log(`📸 Bulk uploaded ${uploaded} profile pics`);
-    res.json({ ok: true, uploaded });
-  } catch (err) {
-    console.error("bulkUploadProfilePics error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
+app.use(express.json());
 
 // ------------------------------------------------------
 // Helpers
@@ -509,7 +430,7 @@ app.get("/matchStats/:matchId", async (req, res) => {
                  tog=EXCLUDED.tog, fantasy_points=EXCLUDED.fantasy_points`,
               [
                 cdMatchId, p.playerId,
-                PLAYER_NAMES_BY_ID[p.playerId] || ((p.firstName && p.lastName) ? `${p.firstName} ${p.lastName}` : (p.displayName || p.playerName || "")),
+                PLAYER_NAMES_BY_ID[p.playerId] || (p.firstName && p.lastName) ? `${p.firstName} ${p.lastName}` : (p.displayName || p.playerName || ""),
                 normAbbr(p.teamAbbr || p.team || ""),
                 p.kicks||0, p.handballs||0, (p.kicks||0)+(p.handballs||0),
                 p.marks||0, p.tackles||0, p.hitouts||0,
@@ -595,241 +516,7 @@ app.get("/scoutAccess", (req, res) => {
   res.json({ ok: true, allowed });
 });
 
-// GET /punterInsights?season=2026
-// Returns comprehensive punter stats across all game types
-app.get("/punterInsights", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  try {
-    const season = parseInt(req.query.season || "2026");
-
-    const result = await pool.query(
-      `SELECT round, game_type, punter_names, picks
-       FROM selections
-       WHERE season = $1
-       ORDER BY game_type, round ASC`,
-      [season]
-    );
-
-    // Process all rounds across both game types
-    const punterMap = {};    // punterName -> { pairs: {...}, quads: {...} }
-    const overallMap = {};   // game_type -> { mostSelected, mostWinning, etc. }
-    let debugLogged = false;
-
-    // Skip test/invalid punter names
-    const EXCLUDED_PUNTERS = new Set(["Penn"]); // manually excluded names
-    const isValidPunterName = (n) => {
-      if (!n || !n.trim()) return false;
-      const t = n.trim();
-      if (EXCLUDED_PUNTERS.has(t)) return false;  // manually excluded
-      if (/\d/.test(t)) return false;              // "Pennyy 2"
-      if (/[*#@!]/.test(t)) return false;          // "Test*"
-      if (t === t.toLowerCase()) return false;     // "test"
-      if (t.length < 2) return false;
-      return true;
-    };
-
-    for (const row of result.rows) {
-      const rawGameType = row.game_type;
-      // Normalise: all pairs variants → 'pairs', quads stays 'quads'
-      const isPairs = rawGameType.includes('pairs') || rawGameType.includes('custom');
-      const gameType = isPairs ? 'pairs' : (rawGameType === 'weekend_quads' ? 'quads' : null);
-      if (!gameType) continue; // skip unknown game types
-
-      const round = row.round;
-      const names = Array.isArray(row.punter_names) ? row.punter_names : [];
-      const picks = Array.isArray(row.picks) ? row.picks : [];
-
-      for (let i = 0; i < names.length; i++) {
-        const name = names[i];
-        if (!isValidPunterName(name)) continue;
-
-        const punterPicks = Array.isArray(picks[i]) ? picks[i] : [];
-        if (punterPicks.length === 0) continue;
-
-        // Calculate total score for this round
-        let totalScore = 0;
-        const playerNames = [];
-        const playerScores = [];
-
-        for (let p = 0; p < punterPicks.length; p++) {
-          const pick = punterPicks[p];
-          if (!pick || typeof pick !== 'object') continue;
-
-          // Debug: log first pick structure once
-          if (!debugLogged) {
-            console.log("📋 punterInsights sample pick keys:", JSON.stringify(Object.keys(pick)));
-            if (pick.player) console.log("📋 punterInsights sample pick.player keys:", JSON.stringify(Object.keys(pick.player)));
-            else console.log("📋 punterInsights: pick.player is", pick.player);
-            console.log("📋 punterInsights sample pick snippet:", JSON.stringify(pick).substring(0, 400));
-            debugLogged = true;
-          }
-
-          const af = pick.stats?.AF ?? pick.fantasyPoints ?? 0;
-          totalScore += af;
-
-          // Player name: picks store playerId at top level, not a player object
-          const playerId = pick.playerId || pick.player?.id || "";
-          const playerName = PLAYER_NAMES_BY_ID[playerId] 
-            || pick.player?.name 
-            || pick.player?.playerName 
-            || pick.playerName 
-            || pick.name
-            || "";
-          if (playerName) {
-            playerScores.push({ name: playerName, score: af, draftPos: p + 1 });
-          }
-        }
-
-        // Init punter entry
-        if (!punterMap[name]) {
-          punterMap[name] = {};
-        }
-        if (!punterMap[name][gameType]) {
-          punterMap[name][gameType] = { rounds: 0, totalScore: 0, highScore: 0, wins: 0, playerCounts: {}, scores: [], draftPositions: [] };
-        }
-
-        const entry = punterMap[name][gameType];
-        entry.rounds++;
-        entry.totalScore += totalScore;
-        if (totalScore > entry.highScore) entry.highScore = totalScore;
-        entry.scores.push({ round, score: totalScore, day: rawGameType.replace('_pairs', '').replace('_', ' ') });
-
-        // Draft position = punter's position in the table for this round (i + 1)
-        entry.draftPositions.push(i + 1);
-
-        for (const ps of playerScores) {
-          entry.playerCounts[ps.name] = (entry.playerCounts[ps.name] || 0) + 1;
-        }
-      }
-
-      // Determine winner for this round/gameType
-      let bestScore = -1;
-      let winnerName = null;
-      let bestPlayerScores = [];
-      for (let i = 0; i < names.length; i++) {
-        const name = names[i];
-        if (!isValidPunterName(name)) continue;
-        const punterPicks = Array.isArray(picks[i]) ? picks[i] : [];
-        let score = 0;
-        const pScores = [];
-        for (const pick of punterPicks) {
-          if (!pick) continue;
-          const af = pick.stats?.AF ?? pick.fantasyPoints ?? 0;
-          score += af;
-          pScores.push(af);
-        }
-        if (score > bestScore) {
-          bestScore = score;
-          winnerName = name;
-          bestPlayerScores = pScores;
-        }
-      }
-      if (winnerName && punterMap[winnerName] && punterMap[winnerName][gameType]) {
-        punterMap[winnerName][gameType].wins++;
-      }
-
-      // Track overall stats
-      if (!overallMap[gameType]) {
-        overallMap[gameType] = {
-          playerSelections: {},
-          playerWins: {},
-          allRoundTotals: [],        // punter round totals (not individual player scores)
-          winningRoundTotals: [],    // winning punter round totals
-          winningDraftPositions: [], // draft pos of winning punters
-          allDraftPositions: [],     // draft pos of all punters
-        };
-      }
-      const ov = overallMap[gameType];
-      for (let i = 0; i < names.length; i++) {
-        if (!isValidPunterName(names[i])) continue;
-        const punterPicks = Array.isArray(picks[i]) ? picks[i] : [];
-        const isWinner = names[i] === winnerName;
-        
-        // Calculate punter's round total
-        let punterTotal = 0;
-        for (const pick of punterPicks) {
-          if (!pick || typeof pick !== 'object') continue;
-          const playerId2 = pick.playerId || pick.player?.id || "";
-          const playerName = PLAYER_NAMES_BY_ID[playerId2]
-            || pick.player?.name 
-            || pick.player?.playerName 
-            || pick.playerName 
-            || pick.name
-            || "";
-          const af = pick.stats?.AF ?? pick.fantasyPoints ?? 0;
-          punterTotal += af;
-          if (playerName) {
-            ov.playerSelections[playerName] = (ov.playerSelections[playerName] || 0) + 1;
-            if (isWinner) {
-              ov.playerWins[playerName] = (ov.playerWins[playerName] || 0) + 1;
-            }
-          }
-        }
-
-        if (punterTotal > 0) {
-          ov.allRoundTotals.push(punterTotal);
-          ov.allDraftPositions.push(i + 1); // draft pos = table position
-          if (isWinner) {
-            ov.winningRoundTotals.push(punterTotal);
-            ov.winningDraftPositions.push(i + 1);
-          }
-        }
-      }
-    }
-
-    // Build punter summaries
-    const punters = {};
-    for (const [name, data] of Object.entries(punterMap)) {
-      punters[name] = {};
-      for (const gt of ['pairs', 'quads']) {
-        const d = data[gt];
-        if (!d || d.rounds === 0) continue;
-        const mostSelected = Object.entries(d.playerCounts).sort((a, b) => b[1] - a[1]);
-        const avgDraft = d.draftPositions.length > 0
-          ? (d.draftPositions.reduce((a, b) => a + b, 0) / d.draftPositions.length).toFixed(1)
-          : null;
-        const highestDraft = d.draftPositions.length > 0 ? Math.min(...d.draftPositions) : null;
-        punters[name][gt] = {
-          rounds: d.rounds,
-          wins: d.wins,
-          totalScore: d.totalScore,
-          highScore: d.highScore,
-          avgScore: Math.round(d.totalScore / d.rounds),
-          mostSelected: mostSelected.length > 0 ? { name: mostSelected[0][0], count: mostSelected[0][1] } : null,
-          playerCounts: d.playerCounts,
-          highestDraftPos: highestDraft,
-          avgDraftPos: avgDraft ? parseFloat(avgDraft) : null,
-          scores: d.scores.sort((a, b) => a.round - b.round),
-        };
-      }
-    }
-
-    // Build overall summaries
-    const overall = {};
-    for (const gt of ['pairs', 'quads']) {
-      const ov = overallMap[gt];
-      if (!ov) continue;
-      const mostSelected = Object.entries(ov.playerSelections).sort((a, b) => b[1] - a[1]);
-      const mostWinning = Object.entries(ov.playerWins).sort((a, b) => b[1] - a[1]);
-      overall[gt] = {
-        mostSelectedPlayer: mostSelected[0] ? { name: mostSelected[0][0], count: mostSelected[0][1] } : null,
-        mostWinningPlayer: mostWinning[0] ? { name: mostWinning[0][0], count: mostWinning[0][1] } : null,
-        highestScore: ov.allRoundTotals.length > 0 ? Math.max(...ov.allRoundTotals) : 0,
-        avgScore: ov.allRoundTotals.length > 0 ? Math.round(ov.allRoundTotals.reduce((a, b) => a + b, 0) / ov.allRoundTotals.length) : 0,
-        avgWinningDraftPos: ov.winningDraftPositions.length > 0
-          ? parseFloat((ov.winningDraftPositions.reduce((a, b) => a + b, 0) / ov.winningDraftPositions.length).toFixed(1))
-          : null,
-        mostWinningDraftPos: ov.winningDraftPositions.length > 0 ? Math.min(...ov.winningDraftPositions) : null,
-      };
-    }
-
-    res.json({ ok: true, season, punters, overall });
-  } catch (err) {
-    console.error("punterInsights error:", err);
-    res.status(500).json({ error: "Failed to load insights" });
-  }
-});
-
+// GET /playerSeasonStats/:season
 // Returns season averages for all players from match_stats table
 app.get("/playerSeasonStats/:season", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -839,8 +526,8 @@ app.get("/playerSeasonStats/:season", async (req, res) => {
       WITH season_stats AS (
         SELECT
           player_id,
-          (array_agg(player_name ORDER BY CASE WHEN player_name <> '' THEN 0 ELSE 1 END, match_id DESC))[1] AS player_name,
-          (array_agg(team        ORDER BY CASE WHEN team <> '' THEN 0 ELSE 1 END, match_id DESC))[1] AS team,
+          (array_agg(player_name ORDER BY match_id DESC))[1] AS player_name,
+          (array_agg(team        ORDER BY match_id DESC))[1] AS team,
           COUNT(*)::int                             AS games,
           ROUND(AVG(fantasy_points))::int           AS af_avg,
           MAX(fantasy_points)                       AS af_best,
@@ -874,7 +561,7 @@ app.get("/playerSeasonStats/:season", async (req, res) => {
       SELECT * FROM season_stats
       ORDER BY af_avg DESC
     `, [`CD_M${season}%`]);
-    res.json({ ok: true, players: result.rows, _v: "2026-05-12a" });
+    res.json({ ok: true, players: result.rows });
   } catch (err) {
     console.error("playerSeasonStats error:", err);
     res.status(500).json({ error: "Failed" });
@@ -888,26 +575,40 @@ app.get("/namedSquad/:matchId", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   const matchId = req.params.matchId;
   try {
+    // AFL website match data endpoint (unofficial but stable)
+    const url = `https://www.afl.com.au/matches/${matchId}`;
+    const apiUrl = `https://api.afl.com.au/cfs/afl/matchItem/${matchId}`;
+
     let named = [];
     let available = false;
 
     try {
-      // Scrape the AFL match page - the CFS API now requires auth (401)
-      const matchPageUrl = `https://www.afl.com.au/afl/matches/${matchId}`;
-      const pageRes = await fetch(matchPageUrl, {
-        headers: { "User-Agent": "Mozilla/5.0", "Accept": "text/html" },
-        timeout: 10000,
+      const response = await fetch(apiUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "application/json",
+        },
+        timeout: 8000,
       });
 
-      if (pageRes.ok) {
-        const html = await pageRes.text();
-        // Extract playerId values embedded in the page JSON/HTML
-        const idMatches = [...html.matchAll(/"playerId"\s*:\s*"(CD_I\d+)"/g)];
-        named = [...new Set(idMatches.map(m => m[1]))];
+      if (response.ok) {
+        const data = await response.json();
+        // Extract player IDs from home and away lineups
+        // AFL squads are now 23 players + emergencies (typically 2-3)
+        const extractIds = (team) => {
+          const lineup = team?.lineup ?? team?.players ?? [];
+          return lineup
+            .filter(p => p.position !== "SUB_22") // keep emergencies, exclude sub-22
+            .map(p => p.player?.playerId ?? p.playerId ?? "")
+            .filter(Boolean);
+        };
+        const homeIds = extractIds(data?.homeTeam ?? data?.home);
+        const awayIds = extractIds(data?.awayTeam ?? data?.away);
+        named = [...homeIds, ...awayIds];
         available = named.length > 0;
       }
     } catch (fetchErr) {
-      console.warn("AFL match page fetch failed:", fetchErr.message);
+      console.warn("AFL lineup fetch failed:", fetchErr.message);
     }
 
     res.json({ ok: true, matchId, available, named });
@@ -1031,8 +732,8 @@ app.get("/debug/squigglemap/:matchId", async (req, res) => {
   res.json({ matchId, squiggleId: squiggleId ?? null, found: !!squiggleId });
 });
 
-// GET /debug/footyinfolineup/:matchId — test FootyInfo API for lineups
-app.get("/debug/footyinfolineup/:matchId", async (req, res) => {
+// GET /debug/footyinfomatch/:matchId — test FootyInfo API for player/bench data
+app.get("/debug/footyinfomatch/:matchId", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   const matchId = req.params.matchId;
   const results = {};
@@ -1046,17 +747,17 @@ app.get("/debug/footyinfolineup/:matchId", async (req, res) => {
     `https://api.footyinfo.com/api/match?match_id=${matchId}`,
     `https://api.footyinfo.com/api/match_detail?match_id=${matchId}`,
     `https://api.footyinfo.com/api/lineup?match_id=${matchId}`,
-    `https://api.footyinfo.com/api/lineups?match_id=${matchId}`,
-    `https://api.footyinfo.com/api/squad?match_id=${matchId}`,
-    `https://api.footyinfo.com/api/teams?match_id=${matchId}`,
     `https://api.footyinfo.com/api/game?match_id=${matchId}`,
-    `https://api.footyinfo.com/api/game_summary?match_id=${matchId}`,
+    `https://api.footyinfo.com/api/players?match_id=${matchId}`,
+    `https://api.footyinfo.com/api/match_players?match_id=${matchId}`,
+    `https://api.footyinfo.com/api/live?match_id=${matchId}`,
+    `https://api.footyinfo.com/api/stats?match_id=${matchId}`,
   ];
   for (const url of endpoints) {
     try {
-      const r = await fetch(url, { headers, timeout: 5000 });
-      const body = r.ok ? await r.text() : null;
-      results[url] = { status: r.status, bodySnippet: body ? body.substring(0, 500) : null };
+      const r = await fetch(url, { headers, timeout: 6000 });
+      const body = await r.text();
+      results[url] = { status: r.status, snippet: body.substring(0, 400) };
     } catch (e) {
       results[url] = { error: e.message };
     }
@@ -1292,42 +993,23 @@ app.get("/injuryList", async (req, res) => {
     // the team name strings (since the page renders teams alphabetically).
     const teamNames = {
       "Adelaide":            "ADE",
-      "Adelaide Crows":      "ADE",
       "Brisbane":            "BRL",
-      "Brisbane Lions":      "BRL",
       "Carlton":             "CAR",
-      "Carlton Blues":       "CAR",
       "Collingwood":         "COL",
-      "Collingwood Magpies": "COL",
       "Essendon":            "ESS",
-      "Essendon Bombers":    "ESS",
       "Fremantle":           "FRE",
-      "Fremantle Dockers":   "FRE",
       "Geelong":             "GEE",
-      "Geelong Cats":        "GEE",
       "Gold Coast":          "GCS",
-      "Gold Coast Suns":     "GCS",
       "GWS":                 "GWS",
-      "GWS Giants":          "GWS",
       "Greater Western":     "GWS",
-      "Greater Western Sydney": "GWS",
       "Hawthorn":            "HAW",
-      "Hawthorn Hawks":      "HAW",
       "Melbourne":           "MELB",
-      "Melbourne Demons":    "MELB",
       "North Melbourne":     "NTH",
-      "North Melbourne Kangaroos": "NTH",
-      "Kangaroos":           "NTH",
       "Port Adelaide":       "PTA",
-      "Port Adelaide Power": "PTA",
       "Richmond":            "RIC",
-      "Richmond Tigers":     "RIC",
       "St Kilda":            "STK",
-      "St Kilda Saints":     "STK",
       "Sydney":              "SYD",
-      "Sydney Swans":        "SYD",
       "West Coast":          "WCE",
-      "West Coast Eagles":   "WCE",
       "Western Bulldogs":    "WBD",
     };
 
@@ -1355,28 +1037,23 @@ app.get("/injuryList", async (req, res) => {
     }
 
     const players = [];
-    const teamsFound = new Set();
 
-    // The AFL injury page has one block per team in alphabetical order.
-    // Block 0 (before first "Updated:") is the first team (Adelaide).
-    // Blocks 1-18 are Brisbane through Western Bulldogs.
-    const TEAM_ORDER = [
-      "ADE", "BRL", "CAR", "COL", "ESS", "FRE",
-      "GEE", "GCS", "GWS", "HAW", "MELB", "NTH",
-      "PTA", "RIC", "STK", "SYD", "WCE", "WBD",
-    ];
-
+    // Split on "Updated:" date strings. Each preceding chunk is one team.
     const teamBlocks = articleHtml.split(/Updated\s*:/i);
-    console.log(`injuryList: ${teamBlocks.length} blocks found after splitting on "Updated:"`);
 
-    for (let blockIdx = 0; blockIdx < teamBlocks.length; blockIdx++) {
-      const block = teamBlocks[blockIdx];
-
-      // Map block index to team: block 0 = ADE, block 1 = BRL, etc.
-      // The last block (index 18) is WBD's "In the mix" with no table data
-      const team = blockIdx < TEAM_ORDER.length ? TEAM_ORDER[blockIdx] : null;
+    for (const block of teamBlocks) {
+      // Find which team this block belongs to by looking for a name in it.
+      // Earlier matches (in <h2>) win over body text references.
+      let team = null;
+      let teamMatchIdx = Infinity;
+      for (const [name, code] of Object.entries(teamNames)) {
+        const idx = block.indexOf(name);
+        if (idx >= 0 && idx < teamMatchIdx) {
+          teamMatchIdx = idx;
+          team = code;
+        }
+      }
       if (!team) continue;
-      teamsFound.add(team);
 
       // Extract every <tr> ... </tr> from the block.
       // Row format: 3 <td> cells (name, injury, timeline) — sometimes with
@@ -1413,12 +1090,7 @@ app.get("/injuryList", async (req, res) => {
       }
     }
 
-    const allTeams = new Set(Object.values(teamNames));
-    const missingTeams = [...allTeams].filter(t => !teamsFound.has(t));
-    console.log(`injuryList: parsed ${players.length} players from ${teamsFound.size} teams`);
-    if (missingTeams.length > 0) {
-      console.log(`injuryList: MISSING teams: ${missingTeams.join(', ')}`);
-    }
+    console.log(`injuryList: parsed ${players.length} players from AFL page`);
     res.json({ ok: true, players, source: "afl", updatedAt: new Date().toISOString() });
 
   } catch (err) {
@@ -1499,8 +1171,6 @@ app.get("/teamLineups", async (req, res) => {
       available: namedStatuses.has(m.status),
       homePlayers: [],
       awayPlayers: [],
-      homePlayerIds: [],
-      awayPlayerIds: [],
     }));
 
     if (namedMatches.length === 0) {
@@ -1508,175 +1178,47 @@ app.get("/teamLineups", async (req, res) => {
       return res.json({ ok: true, matches: allMatchInfo, source: "afl", updatedAt: new Date().toISOString() });
     }
 
-    // ── Step 3: scrape the AFL team lineups page to get correct match IDs ──────
-    // The AFL v2 API returns internal IDs that differ from the website match IDs.
-    // The CFS API (matchItem) needs the website IDs (e.g. 8117, 8121).
-    // Scrape the team lineups page to map team pairs → website match ID.
-    let aflWebMatchIds = {}; // "HOME_AWAY" → aflWebId
-    try {
-      const lineupPageRes = await fetch("https://www.afl.com.au/afl/matches/team-lineups", {
-        headers: { "User-Agent": "Mozilla/5.0", "Accept": "text/html" },
-        timeout: 10000,
-      });
-      if (lineupPageRes.ok) {
-        const pageHtml = await lineupPageRes.text();
-        // Extract AFL website match IDs from href="/afl/matches/XXXX"
-        const idMatches = [...pageHtml.matchAll(/href="\/afl\/matches\/(\d+)"/g)];
-        const pageIds = [...new Set(idMatches.map(m => m[1]))];
-
-        // Map each ID to team names from the page header
-        for (const webId of pageIds) {
-          const blockStart = pageHtml.indexOf(`/afl/matches/${webId}`);
-          if (blockStart < 0) continue;
-          const block = pageHtml.substring(blockStart, blockStart + 2000);
-          // Get team abbreviations from watermark classes
-          const homeAbbrMatch = block.match(/stats-team-watermark-background--(\w+)--left/);
-          const awayAbbrMatch = block.match(/stats-team-watermark-background--(\w+)--right/);
-          if (homeAbbrMatch && awayAbbrMatch) {
-            const key = `${homeAbbrMatch[1]}_${awayAbbrMatch[1]}`;
-            aflWebMatchIds[key] = webId;
-          }
-        }
-        console.log(`teamLineups: scraped ${Object.keys(aflWebMatchIds).length} web match IDs`);
-      }
-    } catch (scrapeErr) {
-      console.warn("teamLineups: page scrape failed:", scrapeErr.message);
-    }
-
-    // Match allMatchInfo to scraped web IDs using team abbreviations
-    const teamAbbrMap = {}; // app abbr → page abbr (e.g. MELB→melb, WBD→wb)
-    for (const matchInfo of allMatchInfo) {
-      const homeApp = matchInfo.home?.toLowerCase();
-      const awayApp = matchInfo.away?.toLowerCase();
-      // Try different combos since abbrs may differ slightly
-      for (const [key, webId] of Object.entries(aflWebMatchIds)) {
-        const [pageHome, pageAway] = key.split('_');
-        const homeMatch = homeApp?.includes(pageHome) || pageHome?.includes(homeApp?.substring(0,3) || '');
-        const awayMatch = awayApp?.includes(pageAway) || pageAway?.includes(awayApp?.substring(0,3) || '');
-        if (homeMatch && awayMatch) {
-          matchInfo.cfsMatchId = webId;
-          break;
-        }
-      }
-      // Fallback: use aflMatchId directly
-      if (!matchInfo.cfsMatchId) matchInfo.cfsMatchId = matchInfo.aflMatchId;
-    }
-
-    // ── Step 3: get named squad players ──────────────────────────────────────
-    // Try multiple approaches since the CFS API now requires auth (401).
+    // ── Step 3: get actual named squad players from AFL CFS API ──────────────
+    // For each match with lineups announced, fetch the real named 22+
+    // from the AFL CFS matchItem endpoint (same as /namedSquad uses).
+    // This ensures only actually-selected players show as "named".
     for (const matchInfo of allMatchInfo) {
       if (!matchInfo.available) continue;
 
-      // Approach 1: AFL v2 API match detail (may include lineups)
       try {
-        const v2Url = `https://aflapi.afl.com.au/afl/v2/matches/${matchInfo.aflMatchId}`;
-        const v2Res = await fetch(v2Url, {
+        const apiUrl = `https://api.afl.com.au/cfs/afl/matchItem/${matchInfo.aflMatchId}`;
+        const rosterRes = await fetch(apiUrl, {
           headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
           timeout: 8000,
         });
 
-        if (v2Res.ok) {
-          const data = await v2Res.json();
-          const match = data.match || data;
+        if (rosterRes.ok) {
+          const data = await rosterRes.json();
 
-          const extractPlayers = (side) => {
-            const players = side?.players || side?.lineup || side?.teamList || [];
-            const names = [], ids = [];
-            for (const p of players) {
-              const pl = p.player || p;
-              const id = pl.playerId || pl.id || "";
-              const first = pl.givenName || pl.firstName || "";
-              const last = pl.surname || pl.lastName || pl.displayName || "";
-              const name = (first + " " + last).trim() || (pl.name || "");
-              if (id.startsWith("CD_I")) ids.push(id);
-              if (name) names.push(name);
-            }
-            return { names, ids };
+          const extractNames = (team) => {
+            const lineup = team?.lineup ?? team?.players ?? [];
+            return lineup
+              .filter(p => p.position !== "SUB_22")
+              .map(p => {
+                const pl = p.player || p;
+                const first = pl.givenName || pl.firstName || "";
+                const last = pl.surname || pl.lastName || "";
+                return `${first} ${last}`.trim();
+              })
+              .filter(Boolean);
           };
 
-          const home = extractPlayers(match?.homeTeam ?? match?.home);
-          const away = extractPlayers(match?.awayTeam ?? match?.away);
-
-          if (home.ids.length > 0 || away.ids.length > 0) {
-            matchInfo.homePlayers = home.names;
-            matchInfo.awayPlayers = away.names;
-            matchInfo.homePlayerIds = home.ids;
-            matchInfo.awayPlayerIds = away.ids;
-            console.log(`teamLineups: v2 API got ${home.ids.length + away.ids.length} players for ${matchInfo.home} v ${matchInfo.away}`);
-            continue;
-          }
+          matchInfo.homePlayers = extractNames(data?.homeTeam ?? data?.home);
+          matchInfo.awayPlayers = extractNames(data?.awayTeam ?? data?.away);
         }
-      } catch (e) { /* try next approach */ }
-
-      // Approach 2: AFL v2 teamlists endpoint
-      try {
-        const teamlistUrl = `https://aflapi.afl.com.au/afl/v2/matches/${matchInfo.aflMatchId}/teamlists`;
-        const tlRes = await fetch(teamlistUrl, {
-          headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
-          timeout: 8000,
-        });
-
-        if (tlRes.ok) {
-          const data = await tlRes.json();
-          const extractFromList = (list) => {
-            const names = [], ids = [];
-            for (const p of (list || [])) {
-              const pl = p.player || p;
-              const id = pl.playerId || pl.id || "";
-              const name = (pl.givenName || pl.firstName || "") + " " + (pl.surname || pl.lastName || "");
-              if (id.startsWith("CD_I")) ids.push(id);
-              if (name.trim()) names.push(name.trim());
-            }
-            return { names, ids };
-          };
-
-          const home = extractFromList(data?.homeTeam?.players || data?.home?.players);
-          const away = extractFromList(data?.awayTeam?.players || data?.away?.players);
-
-          if (home.ids.length > 0 || away.ids.length > 0) {
-            matchInfo.homePlayers = home.names;
-            matchInfo.awayPlayers = away.names;
-            matchInfo.homePlayerIds = home.ids;
-            matchInfo.awayPlayerIds = away.ids;
-            console.log(`teamLineups: teamlists got ${home.ids.length + away.ids.length} players for ${matchInfo.home} v ${matchInfo.away}`);
-            continue;
-          }
-        }
-      } catch (e) { /* try next approach */ }
-
-      // Approach 3: scrape AFL match page for embedded player IDs
-      try {
-        const matchPageUrl = `https://www.afl.com.au/afl/matches/${matchInfo.cfsMatchId || matchInfo.aflMatchId}`;
-        const pageRes = await fetch(matchPageUrl, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Accept": "text/html,application/xhtml+xml",
-          },
-          timeout: 10000,
-        });
-
-        if (pageRes.ok) {
-          const html = await pageRes.text();
-          const idMatches = [...html.matchAll(/"playerId"\s*:\s*"(CD_I\d+)"/g)];
-          const ids = [...new Set(idMatches.map(m => m[1]))];
-          if (ids.length > 0) {
-            const mid = Math.ceil(ids.length / 2);
-            matchInfo.homePlayerIds = ids.slice(0, mid);
-            matchInfo.awayPlayerIds = ids.slice(mid);
-            matchInfo.homePlayers = matchInfo.homePlayerIds.map(id => PLAYER_NAMES_BY_ID[id] || "").filter(Boolean);
-            matchInfo.awayPlayers = matchInfo.awayPlayerIds.map(id => PLAYER_NAMES_BY_ID[id] || "").filter(Boolean);
-            console.log(`teamLineups: page scrape got ${ids.length} players for ${matchInfo.home} v ${matchInfo.away}`);
-            continue;
-          }
-        }
-      } catch (e) {
-        console.warn(`teamLineups: all approaches failed for ${matchInfo.home} v ${matchInfo.away}`);
+      } catch (fetchErr) {
+        console.warn(`teamLineups: CFS fetch failed for match ${matchInfo.aflMatchId}:`, fetchErr.message);
+        // Fall back to empty — don't pollute with all DB players
       }
     }
 
-    const withPlayers = allMatchInfo.filter(m => m.available && (m.homePlayers?.length || 0) > 0).length;
+    const withPlayers = allMatchInfo.filter(m => m.available && m.homePlayers.length > 0).length;
     console.log(`teamLineups: ${allMatchInfo.length} matches, ${withPlayers} with player names`);
-    allMatchInfo.forEach(m => console.log(`  ${m.home} v ${m.away}: available=${m.available}, cfsId=${m.cfsMatchId}, players=${(m.homePlayerIds?.length||0)+(m.awayPlayerIds?.length||0)}`));
     res.json({ ok: true, matches: allMatchInfo, source: "afl", updatedAt: new Date().toISOString() });
 
   } catch (err) {
