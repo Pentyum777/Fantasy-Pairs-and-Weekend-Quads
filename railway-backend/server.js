@@ -499,21 +499,110 @@ const FIXTURES_2026 = {"CD_M20260140001": {"home": "SYD", "away": "CAR", "round"
 // SCOUT FEATURE — player stats, access control, flags
 // ============================================================
 
-// Scout access allowlist — backend-controlled so new emails
-// can be added via SCOUT_EMAILS env var without a rebuild.
-// Format: comma-separated emails e.g. "a@b.com,c@d.com"
+// Scout access allowlist — kept for reference but no longer used as a gate.
+// Scout is now open to all logged-in users; per-user data is scoped by email
+// via the /scoutPrefs endpoints below.
 function getScoutAllowList() {
   const envList = process.env.SCOUT_EMAILS ?? "wpenfold@bigpond.net.au,wayneliz7@outlook.com,paulfruin30@gmail.com,chrisoakenfall@gmail.com";
   return envList.split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
 }
 
 // GET /scoutAccess?email=...
-// Returns {allowed: true/false}
+// Kept for backwards compatibility — always returns allowed:true now.
 app.get("/scoutAccess", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
-  const email = (req.query.email ?? "").trim().toLowerCase();
-  const allowed = getScoutAllowList().includes(email);
-  res.json({ ok: true, allowed });
+  res.json({ ok: true, allowed: true });
+});
+
+// ── Scout per-user preferences ───────────────────────────────────────────────
+// Stores sort order, filter toggles, and the ordered "Generate List" selection
+// scoped to one user + season + game type.
+//
+// Key format (set by the Flutter client):
+//   scout_prefs__{sanitised_email}__{season}__{game_type}
+//
+// GET  /scoutPrefs?key=...
+// POST /scoutPrefs       { key, sort, hideDrafted, hideFlagged, selectedPlayerIds }
+
+async function ensureScoutPrefsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS scout_prefs (
+      pref_key   TEXT PRIMARY KEY,
+      sort       TEXT    NOT NULL DEFAULT 'af',
+      hide_drafted  BOOLEAN NOT NULL DEFAULT FALSE,
+      hide_flagged  BOOLEAN NOT NULL DEFAULT FALSE,
+      selected_player_ids TEXT[] NOT NULL DEFAULT '{}',
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+}
+
+app.get("/scoutPrefs", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const key = (req.query.key ?? "").trim();
+    if (!key) return res.status(400).json({ error: "key is required" });
+
+    await ensureScoutPrefsTable();
+
+    const result = await pool.query(
+      `SELECT sort, hide_drafted, hide_flagged, selected_player_ids
+       FROM scout_prefs WHERE pref_key = $1`,
+      [key]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ ok: true, prefs: null });
+    }
+
+    const row = result.rows[0];
+    res.json({
+      ok: true,
+      prefs: {
+        sort: row.sort,
+        hideDrafted: row.hide_drafted,
+        hideFlagged: row.hide_flagged,
+        selectedPlayerIds: row.selected_player_ids ?? [],
+      },
+    });
+  } catch (err) {
+    console.error("scoutPrefs GET error:", err);
+    res.status(500).json({ error: "Failed to load scout prefs" });
+  }
+});
+
+app.post("/scoutPrefs", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { key, sort, hideDrafted, hideFlagged, selectedPlayerIds } = req.body;
+
+    if (!key) return res.status(400).json({ error: "key is required" });
+
+    await ensureScoutPrefsTable();
+
+    await pool.query(`
+      INSERT INTO scout_prefs
+        (pref_key, sort, hide_drafted, hide_flagged, selected_player_ids, updated_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+      ON CONFLICT (pref_key) DO UPDATE SET
+        sort               = EXCLUDED.sort,
+        hide_drafted       = EXCLUDED.hide_drafted,
+        hide_flagged       = EXCLUDED.hide_flagged,
+        selected_player_ids = EXCLUDED.selected_player_ids,
+        updated_at         = NOW()
+    `, [
+      key,
+      sort ?? "af",
+      hideDrafted === true,
+      hideFlagged === true,
+      Array.isArray(selectedPlayerIds) ? selectedPlayerIds : [],
+    ]);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("scoutPrefs POST error:", err);
+    res.status(500).json({ error: "Failed to save scout prefs" });
+  }
 });
 
 // GET /playerSeasonStats/:season

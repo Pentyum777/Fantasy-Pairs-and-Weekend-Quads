@@ -56,6 +56,11 @@ class ScoutScreen extends StatefulWidget {
   final PlayerRepository playerRepo;
   final ScoutService scoutService;
 
+  /// The email of the currently logged-in user. Used to scope persisted
+  /// list selections and sort/filter preferences so each user sees only
+  /// their own data.
+  final String userEmail;
+
   /// Player IDs already drafted in the current game
   final Set<String> draftedPlayerIds;
 
@@ -71,6 +76,7 @@ class ScoutScreen extends StatefulWidget {
     required this.fixtureRepo,
     required this.playerRepo,
     required this.scoutService,
+    required this.userEmail,
     required this.draftedPlayerIds,
     this.selectedFixtureIds,
   });
@@ -105,9 +111,51 @@ class _ScoutScreenState extends State<ScoutScreen> {
 
   /// Player IDs the user has ticked for the "Generate List" feature,
   /// in the order they were ticked. The first ticked player is rank 1, etc.
+  /// Scoped per user + game type so each person's list is private and
+  /// Weekend Quads selections don't bleed into Pairs views.
   final List<String> _selectedPlayerIds = <String>[];
 
   final _searchCtrl = TextEditingController();
+
+  // ── Per-user, per-game-type persistence key ────────────────────────────────
+  /// Unique key that scopes all persisted scout prefs to the current user
+  /// AND the active game type. Changing game type loads a fresh set of prefs.
+  String get _prefKey {
+    final safeEmail = widget.userEmail.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
+    return 'scout_prefs__${safeEmail}__${widget.season}__$_gameTypeFilter';
+  }
+
+  /// Persist the current sort + filter prefs and selected player list for
+  /// this user + game type.
+  Future<void> _saveUserPrefs() async {
+    await widget.scoutService.saveScoutPrefs(
+      key: _prefKey,
+      sort: _sort.name,
+      hideDrafted: _hideDrafted,
+      hideFlagged: _hideFlagged,
+      selectedPlayerIds: List<String>.from(_selectedPlayerIds),
+    );
+  }
+
+  /// Restore sort + filter prefs and selected player list for this user +
+  /// game type. Safe to call before [_loadData] — falls back to defaults.
+  Future<void> _loadUserPrefs() async {
+    final prefs = await widget.scoutService.loadScoutPrefs(key: _prefKey);
+    if (prefs == null) return;
+    if (!mounted) return;
+    setState(() {
+      _sort = ScoutSort.values.firstWhere(
+        (s) => s.name == (prefs['sort'] as String?),
+        orElse: () => ScoutSort.af,
+      );
+      _hideDrafted = prefs['hideDrafted'] as bool? ?? false;
+      _hideFlagged = prefs['hideFlagged'] as bool? ?? false;
+      final ids = (prefs['selectedPlayerIds'] as List?)?.cast<String>() ?? [];
+      _selectedPlayerIds
+        ..clear()
+        ..addAll(ids);
+    });
+  }
 
   // ── Init ───────────────────────────────────────────────────────────────────
   @override
@@ -118,7 +166,9 @@ class _ScoutScreenState extends State<ScoutScreen> {
     _gameTypeFilter = (widget.selectedFixtureIds?.isNotEmpty == true)
         ? 'custom_game'
         : widget.gameType;
-    _loadData();
+    // Restore per-user, per-game-type sort/filter prefs and list selections
+    // before kicking off the main data load so the UI is consistent.
+    _loadUserPrefs().then((_) => _loadData());
   }
 
   @override
@@ -869,7 +919,15 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 _vsOpponentStats = {};
                 _upcomingOpponent = '';
                 _fetchedDraftedIds = {}; // Reset so new game type fetches fresh
+                // Reset list selections and prefs — they will be restored
+                // from the per-user, per-game-type store below.
+                _selectedPlayerIds.clear();
+                _sort = ScoutSort.af;
+                _hideDrafted = false;
+                _hideFlagged = false;
               });
+              // Reload this user's prefs for the newly selected game type.
+              _loadUserPrefs();
               // Restart polling for new game type
               _startDraftedPolling();
               widget.scoutService.fetchVsOpponentStats(
@@ -902,21 +960,30 @@ class _ScoutScreenState extends State<ScoutScreen> {
             items: ScoutSort.values,
             itemLabel: (s) => s.label,
             value: _sort,
-            onChanged: (v) => setState(() => _sort = v ?? ScoutSort.af),
+            onChanged: (v) {
+              setState(() => _sort = v ?? ScoutSort.af);
+              _saveUserPrefs();
+            },
           ),
 
           // Hide drafted
           FilterChip(
             label: const Text('Hide drafted'),
             selected: _hideDrafted,
-            onSelected: (v) => setState(() => _hideDrafted = v),
+            onSelected: (v) {
+              setState(() => _hideDrafted = v);
+              _saveUserPrefs();
+            },
           ),
 
           // Hide flagged
           FilterChip(
             label: const Text('Hide flagged'),
             selected: _hideFlagged,
-            onSelected: (v) => setState(() => _hideFlagged = v),
+            onSelected: (v) {
+              setState(() => _hideFlagged = v);
+              _saveUserPrefs();
+            },
           ),
 
           // Generate List — shows the ticked players in a copyable dialog
@@ -1066,6 +1133,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 }
               }
             });
+            _saveUserPrefs();
           },
         ),
       ),
@@ -1134,6 +1202,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
                         _selectedPlayerIds.add(s.playerId);
                       }
                     });
+                    _saveUserPrefs();
                   },
                   child: Container(
                     width: 22, height: 22,
@@ -1867,6 +1936,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
           TextButton(
             onPressed: () {
               setState(() => _selectedPlayerIds.clear());
+              _saveUserPrefs();
               Navigator.of(ctx).pop();
             },
             child: const Text('Clear & Close'),

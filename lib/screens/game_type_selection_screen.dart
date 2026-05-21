@@ -53,19 +53,10 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
   final GameDataCache _gameDataCache = GameDataCache();
   final ChampionshipService championshipService = ChampionshipService();
   final ScoutService _scoutService = ScoutService();
-  bool _scoutAllowed = false;
 
   @override
   void initState() {
     super.initState();
-    _checkScoutAccess();
-  }
-
-  Future<void> _checkScoutAccess() async {
-    final email = widget.userRoleService.currentUser ?? '';
-    if (email.isEmpty) return;
-    final allowed = await _scoutService.checkAccess(email);
-    if (mounted) setState(() => _scoutAllowed = allowed);
   }
 
   bool isPortraitPhone(BuildContext context) {
@@ -210,6 +201,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
             fixtureRepo: widget.fixtureRepo,
             playerRepo: widget.playerRepo,
             scoutService: _scoutService,
+            userEmail: widget.userRoleService.currentUser ?? '',
             draftedPlayerIds: drafted,
             selectedFixtureIds: scoutFixtureIds,
           ),
@@ -347,7 +339,7 @@ class _GameTypeSelectionScreenState extends State<GameTypeSelectionScreen> {
       "custom_game",      // ⭐ NEW
       "championship",
       "insights",
-      if (_scoutAllowed) "scout",
+      "scout",
     ];
 
     String shortLabel(String type) {
