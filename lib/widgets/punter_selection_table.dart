@@ -486,62 +486,58 @@ Widget build(BuildContext context) {
       );
     }
 
-    // Build dropdown items: known names + any names already in this round's table
-    // that aren't in the known list, excluding the current row's name
-    final tableNames = widget.selections
-        .map((s) => s.punterName.trim())
-        .where((n) => n.isNotEmpty)
-        .toSet();
-    final allNames = <String>{...widget.knownPunterNames, ...tableNames}
-        .where((n) => n.isNotEmpty)
-        .toList()
-      ..sort();
-
     return Container(
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.only(left: 1),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              // Tapping the name text opens the picker
-              onTap: isEditable
-                  ? () => _showPunterPicker(context, row, controller, allNames)
-                  : null,
-              child: TextField(
-                enabled: isEditable,
-                controller: controller,
-                focusNode: focusNode,
-                readOnly: true, // prevent keyboard; picker handles input
-                textAlign: TextAlign.left,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.1,
-                ),
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 2),
-                  hintText: isEditable ? "Tap to select" : "",
-                  hintStyle: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade400,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                onTap: isEditable
-                    ? () => _showPunterPicker(context, row, controller, allNames)
-                    : null,
-              ),
-            ),
-          ),
-          if (isEditable)
-            GestureDetector(
-              onTap: () =>
-                  _showPunterPicker(context, row, controller, allNames),
-              child: Icon(Icons.arrow_drop_down,
-                  size: 18, color: Colors.grey.shade500),
-            ),
-        ],
+      child: TextField(
+        enabled: isEditable,
+        controller: controller,
+        focusNode: focusNode,
+        textAlign: TextAlign.left,
+        textCapitalization: TextCapitalization.characters,
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
+        ),
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(vertical: 2),
+          hintText: "",
+        ),
+        onChanged: (value) {
+          final upper = value.toUpperCase();
+          if (upper != value) {
+            controller.value = controller.value.copyWith(
+              text: upper,
+              selection: TextSelection.collapsed(offset: upper.length),
+            );
+          }
+          row.punterName = upper;
+          widget.onChanged?.call();
+        },
+        onSubmitted: (_) {
+          row.punterName = controller.text.trim();
+          widget.onChanged?.call();
+          // Move focus to next row
+          final nextNode = _punterFocusNodes[row.punterNumber + 1];
+          if (nextNode != null) {
+            FocusScope.of(context).requestFocus(nextNode);
+          } else {
+            FocusScope.of(context).unfocus();
+          }
+        },
+        onEditingComplete: () {
+          row.punterName = controller.text.trim();
+          widget.onChanged?.call();
+          // Move focus to next row
+          final nextNode = _punterFocusNodes[row.punterNumber + 1];
+          if (nextNode != null) {
+            FocusScope.of(context).requestFocus(nextNode);
+          } else {
+            FocusScope.of(context).unfocus();
+          }
+        },
       ),
     );
   }
