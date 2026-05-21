@@ -530,4 +530,53 @@ class ScoutService {
       await http.delete(url);
     } catch (_) {}
   }
+
+  // ── Per-user scout preferences ───────────────────────────────────────────────
+
+  /// Persists sort order, filter toggles, and the ordered "Generate List"
+  /// selection for one user + season + game type.
+  /// [key] is built by the screen as `scout_prefs__{email}__{season}__{gameType}`.
+  Future<void> saveScoutPrefs({
+    required String key,
+    required String sort,
+    required bool hideDrafted,
+    required bool hideFlagged,
+    required List<String> selectedPlayerIds,
+  }) async {
+    try {
+      final url = Uri.https(
+        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        '/scoutPrefs',
+      );
+      await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'key':               key,
+          'sort':              sort,
+          'hideDrafted':       hideDrafted,
+          'hideFlagged':       hideFlagged,
+          'selectedPlayerIds': selectedPlayerIds,
+        }),
+      );
+    } catch (_) {}
+  }
+
+  /// Loads the persisted prefs for [key].
+  /// Returns `null` if no prefs have been saved yet (caller uses defaults).
+  Future<Map<String, dynamic>?> loadScoutPrefs({required String key}) async {
+    try {
+      final url = Uri.https(
+        'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        '/scoutPrefs',
+        {'key': key},
+      );
+      final res = await http.get(url);
+      if (res.statusCode != 200) return null;
+      final json = jsonDecode(res.body) as Map<String, dynamic>;
+      return json['prefs'] as Map<String, dynamic>?;
+    } catch (_) {
+      return null;
+    }
+  }
 }
