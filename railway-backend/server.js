@@ -1457,10 +1457,9 @@ app.post("/backfillMatchStats", async (req, res) => {
 });
 
 // POST /backfillPlayerNames
-// ONE-TIME utility: fills empty player_name rows in match_stats using the
-// players_2026.json lookup already loaded into PLAYER_NAMES_BY_ID.
-// Hit once after deploy, check the `updated` count, then leave in place
-// (it's a no-op once all names are filled — only touches blank rows).
+// Overwrites rows in match_stats where player_name is blank or the literal
+// string "undefined undefined" (written by a now-fixed DFS scraper bug).
+// Safe to call repeatedly — only touches bad rows.
 app.post("/backfillPlayerNames", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   try {
@@ -1471,7 +1470,7 @@ app.post("/backfillPlayerNames", async (req, res) => {
         `UPDATE match_stats
          SET player_name = $1
          WHERE player_id = $2
-           AND (player_name IS NULL OR player_name = \'\')`,
+           AND (player_name IS NULL OR player_name = '' OR player_name = 'undefined undefined')`,
         [playerName, playerId]
       );
       updated += result.rowCount;
