@@ -1127,55 +1127,87 @@ app.get("/injuryList", async (req, res) => {
 
     const players = [];
 
-    // Split on "Updated:" date strings. Each preceding chunk is one team.
-    const teamBlocks = articleHtml.split(/Updated\s*:/i);
+    // Walk the article HTML sequentially, treating <h2>/<h3>/<h4> headings as
+    // team boundaries. This is robust to AFL page restructures that break the
+    // old "Updated:" split approach.
+    //
+    // Tokenise into: { type:'team', code } | { type:'row', cells[] }
+    // then assign each row to the most-recently-seen team heading.
 
-    for (const block of teamBlocks) {
-      // Find which team this block belongs to by looking for a name in it.
-      // Earlier matches (in <h2>) win over body text references.
-      let team = null;
-      let teamMatchIdx = Infinity;
-      for (const [name, code] of Object.entries(teamNames)) {
-        const idx = block.indexOf(name);
-        if (idx >= 0 && idx < teamMatchIdx) {
-          teamMatchIdx = idx;
-          team = code;
+    const tokens = [];
+    const nodeRegex = /(<h[2-4][^>]*>([\s\S]*?)<\/h[2-4]>)|(<tr[^>]*>([\s\S]*?)<\/tr>)/gi;
+    let nodeMatch;
+    // Sort team names longest-first so "North Melbourne" matches before "Melbourne"
+    const sortedTeamNames = Object.entries(teamNames).sort((a, b) => b[0].length - a[0].length);
+
+    while ((nodeMatch = nodeRegex.exec(articleHtml)) !== null) {
+      if (nodeMatch[1]) {
+        // Heading — check for a known team name
+        const headingText = nodeMatch[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        let found = null;
+        for (const [name, code] of sortedTeamNames) {
+          if (headingText.includes(name)) { found = code; break; }
         }
-      }
-      if (!team) continue;
-
-      // Extract every <tr> ... </tr> from the block.
-      // Row format: 3 <td> cells (name, injury, timeline) — sometimes with
-      // additional <th> for the header row which we skip.
-      const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-      let trMatch;
-      while ((trMatch = trRegex.exec(block)) !== null) {
-        const trInner = trMatch[1];
-        // Header row uses <th> — skip it
-        if (/<th[\s>]/i.test(trInner)) continue;
-
+        if (found) tokens.push({ type: 'team', code: found });
+      } else if (nodeMatch[3]) {
+        // Table row
+        const trInner = nodeMatch[4];
+        if (/<th[\s>]/i.test(trInner)) continue; // skip header rows
         const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
         const cells = [];
         let cMatch;
-        while ((cMatch = cellRegex.exec(trInner)) !== null) {
-          cells.push(cleanCell(cMatch[1]));
-        }
-        if (cells.length < 3) continue;
+        while ((cMatch = cellRegex.exec(trInner)) !== null) cells.push(cleanCell(cMatch[1]));
+        if (cells.length >= 3) tokens.push({ type: 'row', cells });
+      }
+    }
 
-        const playerName = cells[0];
-        const injury     = cells[1];
-        const timeline   = cells[2];
-
-        // Skip rows where the name is empty or looks like a header
+    // Assign rows to teams in document order
+    let currentTeam = null;
+    for (const token of tokens) {
+      if (token.type === 'team') {
+        currentTeam = token.code;
+      } else if (token.type === 'row' && currentTeam) {
+        const playerName = token.cells[0];
+        const injury     = token.cells[1];
+        const timeline   = token.cells[2];
         if (!playerName || /^PLAYER$/i.test(playerName)) continue;
-
         players.push({
           playerName,
-          team,
+          team: currentTeam,
           injury,
           estimatedReturn: timeline,
           flagType: deriveFlagType(injury, timeline),
         });
+      }
+    }
+
+    // Fallback: if heading-based approach found nothing (page restructured again),
+    // fall back to the old "Updated:" split so we degrade gracefully.
+    if (players.length === 0) {
+      console.warn('injuryList: heading parse found 0 players, falling back to Updated: split');
+      const teamBlocks = articleHtml.split(/Updated\s*:/i);
+      for (const block of teamBlocks) {
+        let team = null;
+        let teamMatchIdx = Infinity;
+        for (const [name, code] of sortedTeamNames) {
+          const idx = block.indexOf(name);
+          if (idx >= 0 && idx < teamMatchIdx) { teamMatchIdx = idx; team = code; }
+        }
+        if (!team) continue;
+        const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+        let trMatch;
+        while ((trMatch = trRegex.exec(block)) !== null) {
+          const trInner = trMatch[1];
+          if (/<th[\s>]/i.test(trInner)) continue;
+          const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+          const cells = [];
+          let cMatch;
+          while ((cMatch = cellRegex.exec(trInner)) !== null) cells.push(cleanCell(cMatch[1]));
+          if (cells.length < 3) continue;
+          const playerName = cells[0];
+          if (!playerName || /^PLAYER$/i.test(playerName)) continue;
+          players.push({ playerName, team, injury: cells[1], estimatedReturn: cells[2], flagType: deriveFlagType(cells[1], cells[2]) });
+        }
       }
     }
 

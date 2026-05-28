@@ -781,8 +781,10 @@ class _ScoutScreenState extends State<ScoutScreen> {
         return false;
       }
 
-      // Hide flagged
-      if (_hideFlagged && _flags.containsKey(s.playerId)) return false;
+      // Hide flagged — but never hide a player who has been named in a squad,
+      // since being selected overrides any injury/flag status.
+      final isNamed = _teamsAnnounced && _namedSquadIds.contains(s.playerId);
+      if (_hideFlagged && !isNamed && _flags.containsKey(s.playerId)) return false;
 
       // Search
       if (_search.isNotEmpty) {
