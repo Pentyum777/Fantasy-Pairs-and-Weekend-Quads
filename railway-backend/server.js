@@ -1456,6 +1456,34 @@ app.post("/backfillMatchStats", async (req, res) => {
   }
 });
 
+// POST /backfillPlayerNames
+// ONE-TIME utility: fills empty player_name rows in match_stats using the
+// players_2026.json lookup already loaded into PLAYER_NAMES_BY_ID.
+// Hit once after deploy, check the `updated` count, then leave in place
+// (it's a no-op once all names are filled — only touches blank rows).
+app.post("/backfillPlayerNames", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    let updated = 0;
+    for (const [playerId, playerName] of Object.entries(PLAYER_NAMES_BY_ID)) {
+      if (!playerName) continue;
+      const result = await pool.query(
+        `UPDATE match_stats
+         SET player_name = $1
+         WHERE player_id = $2
+           AND (player_name IS NULL OR player_name = \'\')`,
+        [playerName, playerId]
+      );
+      updated += result.rowCount;
+    }
+    console.log(`backfillPlayerNames: updated ${updated} rows`);
+    res.json({ ok: true, updated });
+  } catch (err) {
+    console.error("backfillPlayerNames error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /ingestRoundStats/:season/:round
 // Manually trigger the same DFS→match_stats ingest the round completion
 // scheduler runs automatically. Useful for backfilling rounds where the
