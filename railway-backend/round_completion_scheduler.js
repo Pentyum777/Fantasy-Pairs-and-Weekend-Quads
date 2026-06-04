@@ -134,10 +134,7 @@ async function fetchAndCacheGame(pool, cdMatchId) {
     records.push({
       matchId: cdMatchId,
       playerId: pid,
-      playerName:
-        p.firstName && p.lastName
-          ? `${p.firstName} ${p.lastName}`
-          : p.displayName || p.name || "",
+      playerName: p.playerName || "",
       team: normAbbr(p.teamAbbr || p.team || ""),
       stats,
     });
@@ -392,8 +389,7 @@ async function fetchRoundStats(matchIds) {
         statsByPlayerId[pid] = stats;
         records.push({
           matchId: cdMatchId, playerId: pid,
-          playerName: (p.firstName && p.lastName)
-            ? `${p.firstName} ${p.lastName}` : (p.displayName || p.name || ""),
+          playerName: p.playerName || "",
           team: normAbbr(p.teamAbbr || p.team || ""),
           stats,
         });
