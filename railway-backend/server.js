@@ -430,7 +430,7 @@ app.get("/matchStats/:matchId", async (req, res) => {
                  tog=EXCLUDED.tog, fantasy_points=EXCLUDED.fantasy_points`,
               [
                 cdMatchId, p.playerId,
-                PLAYER_NAMES_BY_ID[p.playerId] || (p.firstName && p.lastName) ? `${p.firstName} ${p.lastName}` : (p.displayName || p.playerName || ""),
+                PLAYER_NAMES_BY_ID[p.playerId] || p.playerName || "",
                 normAbbr(p.teamAbbr || p.team || ""),
                 p.kicks||0, p.handballs||0, (p.kicks||0)+(p.handballs||0),
                 p.marks||0, p.tackles||0, p.hitouts||0,
@@ -1489,9 +1489,10 @@ app.post("/backfillMatchStats", async (req, res) => {
 });
 
 // POST /backfillPlayerNames
-// Overwrites rows in match_stats where player_name is blank or the literal
-// string "undefined undefined" (written by a now-fixed DFS scraper bug).
-// Safe to call repeatedly — only touches bad rows.
+// Overwrites ALL rows in match_stats where player_name is blank, null, or the
+// literal string "undefined undefined" (written by the now-fixed DFS bug).
+// Uses the PLAYER_NAMES_BY_ID map loaded from players_2026.json.
+// Safe to call repeatedly -- only touches bad rows.
 app.post("/backfillPlayerNames", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   try {
@@ -1502,7 +1503,10 @@ app.post("/backfillPlayerNames", async (req, res) => {
         `UPDATE match_stats
          SET player_name = $1
          WHERE player_id = $2
-           AND (player_name IS NULL OR player_name = '' OR player_name = 'undefined undefined')`,
+           AND (player_name IS NULL
+             OR player_name = ''
+             OR player_name = 'undefined undefined'
+             OR player_name = 'undefined')`,
         [playerName, playerId]
       );
       updated += result.rowCount;
@@ -1512,6 +1516,62 @@ app.post("/backfillPlayerNames", async (req, res) => {
   } catch (err) {
     console.error("backfillPlayerNames error:", err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /retriggerRoundNames/:season/:round
+// Patches player_name for every blank/bad row in match_stats for a specific
+// round using PLAYER_NAMES_BY_ID. Call this after deploying the name-fix to
+// clean up existing data without needing DFS to still have the game.
+app.post("/retriggerRoundNames/:season/:round", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const season = parseInt(req.params.season);
+    const round  = parseInt(req.params.round);
+    if (isNaN(season) || isNaN(round)) {
+      return res.status(400).json({ ok: false, error: "season and round must be integers" });
+    }
+
+    // Find all distinct match_ids for this season+round in the DB
+    const matchRows = await pool.query(
+      `SELECT DISTINCT match_id FROM match_stats WHERE match_id LIKE $1`,
+      [`CD_M${season}%`]
+    );
+
+    // CD_M<4-digit season><3-digit series><2-digit round><2-digit game>
+    const roundMatchIds = matchRows.rows
+      .map(r => r.match_id)
+      .filter(id => {
+        const m = id.match(/^CD_M(\d{4})(\d{3})(\d{2})(\d{2})$/);
+        return m && parseInt(m[1]) === season && parseInt(m[3]) === round;
+      });
+
+    if (roundMatchIds.length === 0) {
+      return res.json({ ok: true, updated: 0, note: `No match_stats rows found for ${season} round ${round}` });
+    }
+
+    let updated = 0;
+    for (const [playerId, playerName] of Object.entries(PLAYER_NAMES_BY_ID)) {
+      if (!playerName) continue;
+      const result = await pool.query(
+        `UPDATE match_stats
+         SET player_name = $1
+         WHERE player_id = $2
+           AND match_id = ANY($3::text[])
+           AND (player_name IS NULL
+             OR player_name = ''
+             OR player_name = 'undefined undefined'
+             OR player_name = 'undefined')`,
+        [playerName, playerId, roundMatchIds]
+      );
+      updated += result.rowCount;
+    }
+
+    console.log(`retriggerRoundNames: ${season} R${round} -- updated ${updated} rows across ${roundMatchIds.length} matches`);
+    res.json({ ok: true, season, round, matches: roundMatchIds.length, updated });
+  } catch (err) {
+    console.error("retriggerRoundNames error:", err);
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
