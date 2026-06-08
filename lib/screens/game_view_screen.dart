@@ -1598,7 +1598,7 @@ Widget build(BuildContext context) {
     final metaStyle = TextStyle(
       fontSize: isLandscapePhone ? 10 : 11,
       fontWeight: FontWeight.w500,
-      color: isLive ? Colors.red.shade400 : Colors.grey.shade700,
+      color: isLive ? Colors.red.shade400 : Colors.grey.shade400,
       height: 1.1,
     );
 
