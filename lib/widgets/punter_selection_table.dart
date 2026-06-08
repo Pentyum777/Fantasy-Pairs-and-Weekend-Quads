@@ -106,7 +106,7 @@ final ScrollController _horizontalController = ScrollController();
   double get kPickColumnWidth {
     if (isPortraitPhone(context)) return 280;
     if (isLandscapePhone) return 300;
-    return 185;
+    return 140;
   }
 
   double get kPickScoreColumnWidth {
@@ -746,6 +746,7 @@ Widget build(BuildContext context) {
 
   return Container(
     color: bgColor, // ⭐ full-cell shading
+    alignment: Alignment.center,
     child: DropdownSearch<AflPlayer>(
       selectedItem: selectedPlayer,
       items: filteredPlayers,
@@ -857,6 +858,7 @@ Widget build(BuildContext context) {
           alignment: Alignment.center,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Long press to clear on touch devices
               if (canClear && isTouchDevice)
