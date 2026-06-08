@@ -8,15 +8,13 @@ import 'repositories/player_repository.dart';
 import 'services/punter_score_service.dart';
 import 'services/round_completion_service.dart';
 import 'services/user_role_service.dart';
-
-import 'screens/round_selection_screen.dart';
-import 'screens/game_type_selection_screen.dart';
-import 'screens/season_selection_screen.dart';
-
 import 'debug/afl_data_validator.dart';
+import 'theme/app_theme.dart';
+import 'widgets/background_container.dart';
+import 'screens/home_screen.dart';
 
 void main() {
-  print("🔥 MAIN EXECUTED — ${kIsWeb ? "WEB" : "WINDOWS/MOBILE"} VERSION");
+  print('🔥 MAIN EXECUTED — ${kIsWeb ? "WEB" : "WINDOWS/MOBILE"} VERSION');
   runApp(const MyApp());
 }
 
@@ -30,28 +28,22 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String? _token;
 
-  int selectedSeason = 2026;
+  late final FixtureRepository    fixtureRepo;
+  late final PlayerRepository     playerRepo;
+  late final PunterScoreService   fantasyService;
 
-  late final FixtureRepository fixtureRepo;
-  late final PlayerRepository playerRepo;
-  late final PunterScoreService fantasyService;
-
-  // ⭐ FIXED: no-arg constructor
-  final RoundCompletionService roundCompletionService =
-      RoundCompletionService();
-
-  final UserRoleService userRoleService = UserRoleService();
+  final RoundCompletionService roundCompletionService = RoundCompletionService();
+  final UserRoleService        userRoleService        = UserRoleService();
 
   Future<void>? _fixtureLoadFuture;
-
   bool _loggingIn = false;
 
   @override
   void initState() {
     super.initState();
 
-    fixtureRepo = FixtureRepository();
-    playerRepo = PlayerRepository();
+    fixtureRepo    = FixtureRepository();
+    playerRepo     = PlayerRepository();
     fantasyService = PunterScoreService();
 
     playerRepo.loadAllPlayers();
@@ -59,14 +51,11 @@ class _MyAppState extends State<MyApp> {
     if (kIsWeb) {
       MsalService.listenForToken((token, account) {
         if (!mounted) return;
-
         final email = account.username;
-        print("MSAL(Dart): Logged in as $email");
-
+        print('MSAL(Dart): Logged in as $email');
         userRoleService.setUser(email);
-
         setState(() {
-          _token = token;
+          _token             = token;
           _fixtureLoadFuture = _loadAllFixtures();
         });
       });
@@ -75,11 +64,12 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _loadAllFixtures() async {
     await fixtureRepo.loadFixturesFromExcelFile('assets/afl_fixtures_2026.xlsx');
-    await fixtureRepo.loadFixturesFromExcelFile('assets/afl_fixtures_2025_round_24.xlsx');
   }
 
+  // ── Login screen ────────────────────────────────────────────────────────────
+
   Widget _buildLoginUI(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    final size   = MediaQuery.sizeOf(context);
     final mobile = size.height > size.width && size.width < 600;
 
     return Center(
@@ -88,116 +78,103 @@ class _MyAppState extends State<MyApp> {
         child: GestureDetector(
           onTap: () {
             if (_loggingIn) return;
-
             setState(() => _loggingIn = true);
 
             if (kIsWeb) {
-              Future.microtask(() {
-                MsalService.startLogin(["User.Read"]);
-              });
+              Future.microtask(() => MsalService.startLogin(['User.Read']));
             } else {
-              userRoleService.setUser("wpenfold@bigpond.net.au");
+              userRoleService.setUser('wpenfold@bigpond.net.au');
               setState(() {
-                _token = "local-login";
+                _token             = 'local-login';
                 _fixtureLoadFuture = _loadAllFixtures();
               });
             }
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: EdgeInsets.all(mobile ? 12 : 20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(mobile ? 16 : 22),
-              boxShadow: _loggingIn
-                  ? []
-                  : [
-                      BoxShadow(
-                        color: Colors.blueAccent.withOpacity(0.55),
-                        blurRadius: 25,
-                        spreadRadius: 4,
-                      ),
-                    ],
-            ),
-            child: Opacity(
-              opacity: _loggingIn ? 0.4 : 1.0,
-              child: Image.asset(
-                "assets/images/Football.Logo.png",
-                height: mobile ? 100 : 150,
-                fit: BoxFit.contain,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: EdgeInsets.all(mobile ? 12 : 20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(mobile ? 16 : 22),
+                  boxShadow: _loggingIn
+                      ? []
+                      : [
+                          BoxShadow(
+                            color:      Colors.blueAccent.withOpacity(0.55),
+                            blurRadius: 25,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                ),
+                child: Opacity(
+                  opacity: _loggingIn ? 0.4 : 1.0,
+                  child: Image.asset(
+                    'assets/images/Football.Logo.png',
+                    height: mobile ? 100 : 150,
+                    fit:    BoxFit.contain,
+                  ),
+                ),
               ),
-            ),
+              SizedBox(height: mobile ? 16 : 20),
+              AnimatedOpacity(
+                opacity:  _loggingIn ? 0.0 : 1.0,
+                duration: const Duration(milliseconds: 180),
+                child: Text(
+                  'Tap to sign in',
+                  style: TextStyle(
+                    color:      Colors.white70,
+                    fontSize:   mobile ? 13 : 15,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
+  // ── Build ───────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AFL App',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/images/stadium_glow.png"),
-            fit: BoxFit.cover,
-          ),
-        ),
+      title:        'AFL Fantasy',
+      debugShowCheckedModeBanner: false,
+      theme:        AppTheme.dark,
+      home: BackgroundContainer(
         child: _token == null
-            ? _buildLoginUI(context)
+            ? Scaffold(
+                backgroundColor: Colors.transparent,
+                body:            SafeArea(child: _buildLoginUI(context)),
+              )
             : FutureBuilder(
-                future: _fixtureLoadFuture,
+                future:  _fixtureLoadFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Scaffold(
+                      backgroundColor: Colors.transparent,
+                      body: Center(child: CircularProgressIndicator()),
+                    );
                   }
 
+                  // Data validation (dev-mode only)
                   validateAflData(
                     fixtureRepo: fixtureRepo,
-                    playerRepo: playerRepo,
-                    season: selectedSeason,
+                    playerRepo:  playerRepo,
+                    season:      2026,
                   );
 
-                  return SeasonSelectionScreen(
-                    seasons: const [2025, 2026],
-                    onSelect: (season) {
-                      setState(() => selectedSeason = season);
-
-                      final rounds = <int?>[];
-
-                      if (fixtureRepo.preseasonFixturesForSeason(season).isNotEmpty) {
-                        rounds.add(null);
-                      }
-
-                      rounds.addAll(fixtureRepo.allRoundsForSeason(season));
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => RoundSelectionScreen(
-                            rounds: rounds,
-                            completedRounds: roundCompletionService.completedRounds,
-                            onRoundSelected: (round) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => GameTypeSelectionScreen(
-                                    season: season,
-                                    round: round,
-                                    fixtureRepo: fixtureRepo,
-                                    playerRepo: playerRepo,
-                                    fantasyService: fantasyService,
-                                    roundCompletionService: roundCompletionService,
-                                    userRoleService: userRoleService,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      );
-                    },
+                  return HomeScreen(
+                    seasons:               const [2026],
+                    fixtureRepo:           fixtureRepo,
+                    playerRepo:            playerRepo,
+                    fantasyService:        fantasyService,
+                    roundCompletionService: roundCompletionService,
+                    userRoleService:       userRoleService,
                   );
                 },
               ),
