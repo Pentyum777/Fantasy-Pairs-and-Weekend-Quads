@@ -770,8 +770,11 @@ Widget build(BuildContext context) {
 
       dropdownDecoratorProps: const DropDownDecoratorProps(
         dropdownSearchDecoration: InputDecoration(
-          isDense: true,
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          isDense: true,
+          isCollapsed: true,          // removes all InputDecorator padding
           contentPadding: EdgeInsets.zero,
         ),
       ),
