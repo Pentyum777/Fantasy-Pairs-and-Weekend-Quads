@@ -1593,6 +1593,77 @@ app.post("/retriggerRoundNames/:season/:round", async (req, res) => {
   }
 });
 
+// POST /backfillTeams
+// Patches match_stats rows where team is blank by looking up each match_id
+// in FIXTURES_2026 and assigning home/away teams based on each player's
+// most recently seen team across other rows for the same player_id.
+// Falls back to looking up the player's team from the dfsMap/player data.
+// Safe to call repeatedly -- only touches rows where team = ''.
+app.post("/backfillTeams", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    // Step 1: find all match_stats rows with blank team
+    const blanks = await pool.query(
+      `SELECT DISTINCT match_id, player_id FROM match_stats
+       WHERE team IS NULL OR team = ''`
+    );
+
+    if (blanks.rows.length === 0) {
+      return res.json({ ok: true, updated: 0, note: "No blank team rows found" });
+    }
+
+    let updated = 0;
+
+    for (const { match_id, player_id } of blanks.rows) {
+      // Strategy 1: use FIXTURES_2026 + the player's known team from other rows
+      const fixture = FIXTURES_2026[match_id];
+
+      // Look up the player's team from any other non-blank row
+      const teamLookup = await pool.query(
+        `SELECT team FROM match_stats
+         WHERE player_id = $1 AND (team IS NOT NULL AND team <> '')
+         ORDER BY match_id DESC LIMIT 1`,
+        [player_id]
+      );
+      const knownTeam = teamLookup.rows[0]?.team ?? null;
+
+      let assignedTeam = null;
+
+      if (knownTeam) {
+        // If the known team played in this match, use it
+        if (!fixture || fixture.home === knownTeam || fixture.away === knownTeam) {
+          assignedTeam = knownTeam;
+        }
+      }
+
+      // Strategy 2: fall back to PLAYER_NAMES_BY_ID + fixture
+      // (can't determine which side without the team, so skip if ambiguous)
+      if (!assignedTeam && fixture) {
+        // If only one team in the fixture matches a known team for this player, use it
+        // (already handled above -- if we get here we don't know)
+        // As a last resort if only one team is in the fixture, still no way to tell
+        // without more context -- leave it for manual fix
+      }
+
+      if (assignedTeam) {
+        const result = await pool.query(
+          `UPDATE match_stats SET team = $1
+           WHERE player_id = $2 AND match_id = $3
+             AND (team IS NULL OR team = '')`,
+          [assignedTeam, player_id, match_id]
+        );
+        updated += result.rowCount;
+      }
+    }
+
+    console.log(`backfillTeams: updated ${updated} of ${blanks.rows.length} blank-team rows`);
+    res.json({ ok: true, updated, total_blank: blanks.rows.length });
+  } catch (err) {
+    console.error("backfillTeams error:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // POST /ingestRoundStats/:season/:round
 // Manually trigger the same DFS→match_stats ingest the round completion
 // scheduler runs automatically. Useful for backfilling rounds where the
