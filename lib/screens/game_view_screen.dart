@@ -971,8 +971,8 @@ Future<void> _checkForRemoteChanges() async {
   }
 }
 
-Future<void> _refreshLive() async {
-  if (_isCompleted) return; // ⭐ do not overwrite final results
+Future<void> _refreshLive({bool force = false}) async {
+  if (_isCompleted && !force) return; // skip for completed rounds unless forced
   if (!mounted) return;
 
   try {
@@ -1949,9 +1949,9 @@ Future<void> _forceApplyStats() async {
               if (widget.userRoleService.isAdmin)
                 ElevatedButton(
                   onPressed: () async {
-                    await _refreshLive();      // fetch latest stats
-                    await _forceApplyStats();  // force reapply even if unchanged
-                    await _saveSnapshot();     // persist snapshot
+                    await _refreshLive(force: true); // fetch stats even for completed rounds
+                    await _forceApplyStats();         // reapply to table
+                    await _saveSnapshot();            // persist snapshot
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade600,
@@ -2178,8 +2178,8 @@ Future<void> _forceApplyStats() async {
           ? widget.overridePlayers!
           : seasonPlayers;
     }
-    final fixtures       = _fixturesForGameType();
-    final clubCodes      = fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
+    final fixtures  = _fixturesForGameType();
+    final clubCodes = fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
     return seasonPlayers
         .where((p) => p.club.isNotEmpty)
         .where((p) => clubCodes.contains(p.club))
@@ -2190,22 +2190,23 @@ Future<void> _forceApplyStats() async {
     if (_seasonPlayers == null || _seasonPlayers!.isEmpty) return;
     ScreenshotOverlay.show(
       context,
-      selections:          _selections,
-      sortedSelections:    _sortedSelections(),
-      visiblePunterCount:  _visiblePunterCount,
-      gameType:            widget.gameType,
-      season:              widget.season,
-      round:               widget.round ?? 0,
-      availablePlayers:    _availablePlayers(),
-      allPlayers:          _seasonPlayers ?? [],
-      fantasyService:      widget.fantasyService,
-      userRoleService:     widget.userRoleService,
-      isPlayerCompleted:   _isPlayerFromCompletedFixture,
-      showAveragePreview:  _showAveragePreview,
+      selections:         _selections,
+      sortedSelections:   _sortedSelections(),
+      visiblePunterCount: _visiblePunterCount,
+      gameType:           widget.gameType,
+      season:             widget.season,
+      round:              widget.round ?? 0,
+      availablePlayers:   _availablePlayers(),
+      allPlayers:         _seasonPlayers ?? [],
+      fantasyService:     widget.fantasyService,
+      userRoleService:    widget.userRoleService,
+      isPlayerCompleted:  _isPlayerFromCompletedFixture,
+      showAveragePreview: _showAveragePreview,
     );
   }
 
-List<PunterSelection> _sortedSelections() {
+  // ─────────────────────────────────────────────────────────────────────────
+  List<PunterSelection> _sortedSelections() {
   final list = List<PunterSelection>.from(_selections);
   if (_showAveragePreview) {
     final players = _seasonPlayers ?? [];
