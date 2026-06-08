@@ -561,11 +561,10 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
 
   final picksJson = (data["picks"] as List<dynamic>? ?? []);
 
-  // Determine required row count
+  // Determine required row count — use actual data, no hardcoded minimum
   final snapshotRowCount = [
     punterNames.length,
     picksJson.length,
-    15, // minimum default
   ].reduce((a, b) => a > b ? a : b);
 
   final playersPerPunter = _selections.isNotEmpty
@@ -670,9 +669,9 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
       return hasRealName || hasPick;
     }).length;
 
-    // Default to 15. Only change if there are more active punters than 15.
-    _visiblePunterCount = usedCount > 15 ? usedCount : 15;
-    _maxPunterDropdown = 25;
+    // Use the actual active punter count, minimum 1
+    _visiblePunterCount = usedCount > 0 ? usedCount : 15;
+    _maxPunterDropdown = _visiblePunterCount > 25 ? _visiblePunterCount : 25;
   }
 
   Future<void> _fetchKnownPunterNames() async {
@@ -773,22 +772,26 @@ Future<void> _saveSnapshot() async {
       widget.round,
     );
 
+    final matchIds = fixtures
+        .map((f) => f.matchId?.trim())
+        .where((id) => id != null && id.isNotEmpty)
+        .cast<String>()
+        .toList();
+
+    if (matchIds.isEmpty) return {};
+
+    // Fetch all fixtures in parallel — cuts 9 sequential calls down to 1 round-trip
+    final results = await Future.wait(
+      matchIds.map((id) => MatchStatsParser.fetchMatchStats(
+            id,
+            widget.playerRepo,
+            widget.fixtureRepo,
+          ).catchError((_) => <AflPlayerMatchStats>[])),
+    );
+
     final Map<String, AflPlayerMatchStats> roundStats = {};
-
-    for (final f in fixtures) {
-      final matchId = f.matchId?.trim();
-      if (matchId == null || matchId.isEmpty) continue;
-
-      // ⭐ Correct: use your existing backend parser
-      final stats = await MatchStatsParser.fetchMatchStats(
-        matchId,
-        widget.playerRepo,
-        widget.fixtureRepo,
-      );
-
-      if (stats.isEmpty) continue;
-
-      for (final s in stats) {
+    for (final statsList in results) {
+      for (final s in statsList) {
         if (s.player != null) {
           roundStats[s.player!.id] = s;
         }
