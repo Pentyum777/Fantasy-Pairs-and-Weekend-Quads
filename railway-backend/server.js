@@ -682,12 +682,19 @@ app.get("/namedSquad/:matchId", async (req, res) => {
 
       if (response.ok) {
         const data = await response.json();
-        // Extract player IDs from home and away lineups
-        // AFL squads are now 23 players + emergencies (typically 2-3)
+        // Extract player IDs from home and away lineups.
+        // When the match is finalised (CONFIRMED_TEAMS / IN_PROGRESS / CONCLUDED)
+        // sides are locked and emergencies should be excluded — they won't play.
+        // Before finalisation (UNCONFIRMED_TEAMS) keep emergencies so scouts can
+        // see the full announced squad including cover options.
+        const finalisedStatuses = new Set(["CONFIRMED_TEAMS", "IN_PROGRESS", "CONCLUDED"]);
+        const matchStatus = data?.status ?? data?.matchStatus ?? "";
+        const isFinalised = finalisedStatuses.has(matchStatus);
         const extractIds = (team) => {
           const lineup = team?.lineup ?? team?.players ?? [];
           return lineup
-            .filter(p => p.position !== "SUB_22") // keep emergencies, exclude sub-22
+            .filter(p => p.position !== "SUB_22")
+            .filter(p => !isFinalised || p.position !== "EMERG")
             .map(p => p.player?.playerId ?? p.playerId ?? "")
             .filter(Boolean);
         };
@@ -1316,21 +1323,32 @@ app.get("/teamLineups", async (req, res) => {
         if (rosterRes.ok) {
           const data = await rosterRes.json();
 
-          const extractNames = (team) => {
+          // When sides are finalised, emergencies are dropped - they won't play.
+          const finalisedStatuses = new Set(["CONFIRMED_TEAMS", "IN_PROGRESS", "CONCLUDED"]);
+          const isFinalised = finalisedStatuses.has(matchInfo.status);
+
+          const extractPlayers = (team) => {
             const lineup = team?.lineup ?? team?.players ?? [];
             return lineup
               .filter(p => p.position !== "SUB_22")
+              .filter(p => !isFinalised || p.position !== "EMERG")
               .map(p => {
                 const pl = p.player || p;
                 const first = pl.givenName || pl.firstName || "";
                 const last = pl.surname || pl.lastName || "";
-                return `${first} ${last}`.trim();
+                const name = `${first} ${last}`.trim();
+                const id = pl.playerId ?? p.playerId ?? "";
+                return { name, id };
               })
-              .filter(Boolean);
+              .filter(p => p.name || p.id);
           };
 
-          matchInfo.homePlayers = extractNames(data?.homeTeam ?? data?.home);
-          matchInfo.awayPlayers = extractNames(data?.awayTeam ?? data?.away);
+          const homePlayers = extractPlayers(data?.homeTeam ?? data?.home);
+          const awayPlayers = extractPlayers(data?.awayTeam ?? data?.away);
+          matchInfo.homePlayers   = homePlayers.map(p => p.name).filter(Boolean);
+          matchInfo.awayPlayers   = awayPlayers.map(p => p.name).filter(Boolean);
+          matchInfo.homePlayerIds = homePlayers.map(p => p.id).filter(Boolean);
+          matchInfo.awayPlayerIds = awayPlayers.map(p => p.id).filter(Boolean);
         }
       } catch (fetchErr) {
         console.warn(`teamLineups: CFS fetch failed for match ${matchInfo.aflMatchId}:`, fetchErr.message);
