@@ -100,25 +100,25 @@ final ScrollController _horizontalController = ScrollController();
   double get kPunterColumnWidth {
     if (isPortraitPhone(context)) return 70;
     if (isLandscapePhone) return 80;
-    return 72;
+    return 65;   // tight but enough for "BROWNIE", "FRENCHY" etc
   }
 
   double get kPickColumnWidth {
     if (isPortraitPhone(context)) return 280;
     if (isLandscapePhone) return 300;
-    return 160;
+    return 145;  // fits "Wanganeen-Milera" with slight overflow clipped
   }
 
   double get kPickScoreColumnWidth {
     if (isPortraitPhone(context)) return 26;
     if (isLandscapePhone) return 30;
-    return 36;
+    return 32;   // 3-digit scores max
   }
 
   double get kTotalColumnWidth {
     if (isPortraitPhone(context)) return 40;
     if (isLandscapePhone) return 45;
-    return 55;
+    return 48;   // 3-digit totals
   }
 
   double _minTableWidth(int pickCount) {
