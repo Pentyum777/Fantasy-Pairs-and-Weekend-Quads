@@ -106,7 +106,7 @@ final ScrollController _horizontalController = ScrollController();
   double get kPickColumnWidth {
     if (isPortraitPhone(context)) return 280;
     if (isLandscapePhone) return 300;
-    return 140;
+    return 160;
   }
 
   double get kPickScoreColumnWidth {
@@ -780,7 +780,7 @@ Widget build(BuildContext context) {
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
           isDense: true,
-          isCollapsed: true,          // removes all InputDecorator padding
+          isCollapsed: true,
           contentPadding: EdgeInsets.zero,
         ),
       ),
@@ -855,13 +855,14 @@ Widget build(BuildContext context) {
           ),
         );
 
-        return Container(
+        return SizedBox(
           width: kPickColumnWidth,
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          child: Align(
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
               // Long press to clear on touch devices
               if (canClear && isTouchDevice)
                 GestureDetector(
@@ -884,7 +885,8 @@ Widget build(BuildContext context) {
                     ),
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
         );
       },
