@@ -501,7 +501,7 @@ class _FilterChip extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // _PickerSheet — modal bottom sheet for season / round selection
 // ─────────────────────────────────────────────────────────────────────────────
-class _PickerSheet extends StatelessWidget {
+class _PickerSheet extends StatefulWidget {
   final String         title;
   final List<String>   items;
   final String         selected;
@@ -515,6 +515,36 @@ class _PickerSheet extends StatelessWidget {
     required this.onSelect,
     this.dimmed,
   });
+
+  @override
+  State<_PickerSheet> createState() => _PickerSheetState();
+}
+
+class _PickerSheetState extends State<_PickerSheet> {
+  final ScrollController _scrollController = ScrollController();
+  static const double _itemHeight = 48.0; // ListTile dense height
+
+  @override
+  void initState() {
+    super.initState();
+    // Scroll to selected item after the sheet has laid out
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final idx = widget.items.indexOf(widget.selected);
+      if (idx <= 0) return;
+      // Position selected item near the top, with a couple of items visible above
+      final offset = ((idx - 1) * _itemHeight).clamp(
+        0.0,
+        _scrollController.position.maxScrollExtent,
+      );
+      _scrollController.jumpTo(offset);
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -539,7 +569,7 @@ class _PickerSheet extends StatelessWidget {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  title,
+                  widget.title,
                   style: const TextStyle(
                     color:      AppTheme.textPrimary,
                     fontSize:   16,
@@ -551,12 +581,15 @@ class _PickerSheet extends StatelessWidget {
             const Divider(height: 1, color: AppTheme.border),
             Flexible(
               child: ListView.builder(
-                shrinkWrap:  false,
-                itemCount:   items.length,
+                controller: _scrollController,
+                shrinkWrap: false,
+                itemCount:  widget.items.length,
                 itemBuilder: (_, i) {
-                  final item       = items[i];
-                  final isSelected = item == selected;
-                  final isDimmed   = dimmed != null && i < dimmed!.length && dimmed![i];
+                  final item       = widget.items[i];
+                  final isSelected = item == widget.selected;
+                  final isDimmed   = widget.dimmed != null &&
+                      i < widget.dimmed!.length &&
+                      widget.dimmed![i];
 
                   return ListTile(
                     dense:   true,
@@ -578,13 +611,13 @@ class _PickerSheet extends StatelessWidget {
                             : null),
                     onTap: () {
                       Navigator.pop(context);
-                      onSelect(item);
+                      widget.onSelect(item);
                     },
                   );
                 },
               ),
             ),
-              const SizedBox(height: 8),
+            const SizedBox(height: 8),
           ],
         ),
       ),
