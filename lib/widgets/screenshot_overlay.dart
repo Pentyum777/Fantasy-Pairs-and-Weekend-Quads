@@ -108,7 +108,10 @@ class ScreenshotOverlay extends StatelessWidget {
   // box, then let FittedBox shrink/grow it to fill the screen.  This means
   // we never have to manually calculate a scale factor.
 
-  static const double _naturalTableWidth      = 900.0; // wide enough for picks
+  // Table width derived from actual column widths (desktop values):
+  // punter(52) + picks * (pick(145) + score(32)) + total(48)
+  static double _naturalTableWidth(int picks) =>
+      52 + picks * (145 + 32) + 48.0;
   static const double _naturalLeaderboardWidth =
       UIDimensions.rankColumnWidth +
       UIDimensions.punterNameColumnWidth +
@@ -124,16 +127,17 @@ class ScreenshotOverlay extends StatelessWidget {
         _padding * 2;
   }
 
-  double get _naturalWidth =>
-      _naturalTableWidth + _naturalLeaderboardWidth + _padding * 3;
+  double _naturalWidth(int picks) =>
+      _naturalTableWidth(picks) + _naturalLeaderboardWidth + _padding * 3;
 
   // ── Build ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final punterCount   = visiblePunterCount;
-    final naturalH      = _naturalHeight(punterCount);
     final picks         = gameType == 'weekend_quads' ? 4 : 2;
+    final naturalH      = _naturalHeight(punterCount);
+    final naturalW      = _naturalWidth(picks);
 
     final leaderboardPunters =
         sortedSelections.take(punterCount).toList();
@@ -154,10 +158,10 @@ class ScreenshotOverlay extends StatelessWidget {
                   fit:       BoxFit.contain,
                   alignment: Alignment.center,
                   child: SizedBox(
-                    width:  _naturalWidth,
+                    width:  naturalW,
                     height: naturalH,
                     child: _buildTableContent(
-                      context, picks, leaderboardPunters, naturalH),
+                      context, picks, leaderboardPunters, naturalH, naturalW),
                   ),
                 ),
               ),
@@ -197,8 +201,10 @@ class ScreenshotOverlay extends StatelessWidget {
     int picks,
     List<PunterSelection> leaderboardPunters,
     double naturalH,
+    double naturalW,
   ) {
     final theme = Theme.of(context);
+    final tableW = _naturalTableWidth(picks);
 
     return Container(
       color: theme.colorScheme.surface,
@@ -208,13 +214,13 @@ class ScreenshotOverlay extends StatelessWidget {
         children: [
           // ── Punter selection table ───────────────────────────────────────
           SizedBox(
-            width:  _naturalTableWidth,
+            width:  tableW,
             height: naturalH - _padding * 2,
             child: PunterSelectionTable(
               gameType:           gameType,
               season:             season,
               round:              round,
-              tableWidth:         _naturalTableWidth,
+              tableWidth:         tableW,
               visiblePunterCount: visiblePunterCount,
               playersPerPunter:   picks,
               availablePlayers:   availablePlayers,
