@@ -57,16 +57,16 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor:          const Color(0xCC0D0D0D), // 80% opaque
         indicatorColor:           _primary.withOpacity(0.25),
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          final active = states.contains(WidgetState.selected);
+        labelTextStyle: MaterialStateProperty.resolveWith((states) {
+          final active = states.contains(MaterialState.selected);
           return TextStyle(
             fontSize:   11,
             fontWeight: active ? FontWeight.w700 : FontWeight.w500,
             color:      active ? _primaryLight : _textSecondary,
           );
         }),
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          final active = states.contains(WidgetState.selected);
+        iconTheme: MaterialStateProperty.resolveWith((states) {
+          final active = states.contains(MaterialState.selected);
           return IconThemeData(
             color: active ? _primaryLight : _textSecondary,
             size:  22,
@@ -74,7 +74,7 @@ class AppTheme {
         }),
       ),
 
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color:        _surfaceCard,
         elevation:    0,
         shape: RoundedRectangleBorder(
