@@ -645,8 +645,16 @@ void _applyLiveStats(List<AflPlayerMatchStats> stats) {
     }
   }
 
-  // Recompute visible punters (only if not manually set)
-  _recomputeVisiblePunterCount();
+  // Restore saved punter count if present in snapshot
+  final savedCount = data["visiblePunterCount"];
+  if (savedCount is int && savedCount > 0) {
+    _visiblePunterCount  = savedCount;
+    _punterCountManuallySet = true;
+    if (savedCount > _maxPunterDropdown) _maxPunterDropdown = savedCount;
+  } else {
+    // Recompute visible punters (only if not manually set)
+    _recomputeVisiblePunterCount();
+  }
 
   debugPrint("✅ Snapshot applied: visible=$_visiblePunterCount, maxDrop=$_maxPunterDropdown");
 }
@@ -727,6 +735,7 @@ Future<void> _saveSnapshot() async {
       "round": safeRound,
       "punterNames": punterNames,
       "picks": picks,
+      "visiblePunterCount": _visiblePunterCount,
     });
 
     final saveRes = await http.post(
