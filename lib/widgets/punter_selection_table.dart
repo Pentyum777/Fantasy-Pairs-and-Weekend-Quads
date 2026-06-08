@@ -805,14 +805,14 @@ Widget build(BuildContext context) {
         // For empty picks we must NOT apply withOpacity at all.
         final teamBg = colours?["bg"];
         final Color chipBg = isCompleted
-            ? Colors.grey.withOpacity(0.60) // override team colour
+            ? Colors.grey.withOpacity(0.60)
             : (teamBg != null
                 ? teamBg.withOpacity(0.85)
-                : Colors.transparent);
+                : Colors.white.withOpacity(0.12)); // neutral fallback — keeps chips visible
 
         final Color chipFg = isCompleted
-            ? Colors.black // override team fg
-            : (colours?["fg"] ?? cs.onSurfaceVariant);
+            ? Colors.white
+            : (colours?["fg"] ?? Colors.white);
 
         // ⭐ Touch devices (phone/tablet): long press chip to clear
         // Desktop (mouse): show X button as before
@@ -845,10 +845,12 @@ Widget build(BuildContext context) {
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
+              style: const TextStyle(
                 fontWeight: FontWeight.w600,
-                color: chipFg,
-              ),
+                fontSize: 12,
+                letterSpacing: 0.1,
+                color: Colors.white, // overridden below per chip
+              ).copyWith(color: chipFg),
             ),
           ),
         );
