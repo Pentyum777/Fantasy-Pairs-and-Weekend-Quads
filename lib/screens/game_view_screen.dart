@@ -1266,16 +1266,24 @@ void _finaliseFridayPairsWinner() {
                   ? widget.gameType
                   : null,
               isDense: true,
-              icon: const Icon(Icons.arrow_drop_down, size: 14),
+              icon: const Icon(Icons.arrow_drop_down, size: 14, color: Colors.white),
+              dropdownColor: const Color(0xFF1A1A2E),
               style: TextStyle(
                 fontSize: labelSize,
                 fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
               items: _navGameTypes.map((g) {
                 return DropdownMenuItem<String>(
                   value: g["key"],
-                  child: Text(g["label"]!,
-                      style: TextStyle(fontSize: labelSize)),
+                  child: Text(
+                    g["label"]!,
+                    style: TextStyle(
+                      fontSize: labelSize,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 );
               }).toList(),
               onChanged: (type) {

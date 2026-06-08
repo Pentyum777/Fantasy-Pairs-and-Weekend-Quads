@@ -98,9 +98,9 @@ final ScrollController _horizontalController = ScrollController();
 
   // Responsive column widths
   double get kPunterColumnWidth {
-    if (isPortraitPhone(context)) return 55;  // "BROWNIE" at ~11px font
-    if (isLandscapePhone) return 58;
-    return 52;
+    if (isPortraitPhone(context)) return 60;
+    if (isLandscapePhone) return 62;
+    return 68;  // fits 8-char names like "FRENCHY2" comfortably
   }
 
   double get kPickColumnWidth {
@@ -500,9 +500,11 @@ Widget build(BuildContext context) {
         focusNode: focusNode,
         textAlign: TextAlign.left,
         textCapitalization: TextCapitalization.characters,
+        maxLines: 1,
         style: theme.textTheme.bodySmall?.copyWith(
           fontWeight: FontWeight.w600,
           letterSpacing: 0.1,
+          overflow: TextOverflow.ellipsis,
         ),
         decoration: const InputDecoration(
           border: InputBorder.none,
