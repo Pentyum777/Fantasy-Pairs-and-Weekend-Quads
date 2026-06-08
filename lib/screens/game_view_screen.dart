@@ -1311,16 +1311,24 @@ void _finaliseFridayPairsWinner() {
           child: DropdownButton<int>(
             value: currentRound,
             isDense: true,
-            icon: const Icon(Icons.arrow_drop_down, size: 14),
+            icon: const Icon(Icons.arrow_drop_down, size: 14, color: Colors.white),
+            dropdownColor: const Color(0xFF1A1A2E),
             style: TextStyle(
               fontSize: labelSize,
               fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
             items: allRounds.map((r) {
               return DropdownMenuItem<int>(
                 value: r,
-                child: Text(RoundHelper.label(r),
-                    style: TextStyle(fontSize: labelSize)),
+                child: Text(
+                  RoundHelper.label(r),
+                  style: TextStyle(
+                    fontSize: labelSize,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               );
             }).toList(),
             onChanged: (r) {
