@@ -744,10 +744,66 @@ Widget build(BuildContext context) {
   final pickKey = "${row.punterNumber}_${pick.pickNumber}";
   _pickFocusNodes.putIfAbsent(pickKey, () => FocusNode());
 
-  return Container(
-    color: bgColor, // ⭐ full-cell shading
+  // ── Variables that were previously inside dropdownBuilder — moved to method scope
+  final safeName = (selectedPlayer?.fullName ?? "").trim();
+  final text = safeName.isEmpty ? hintText : safeName;
+
+  final colours = selectedPlayer == null ? null : _getTeamColoursForPlayer(selectedPlayer);
+  final teamBg = colours?["bg"];
+  final Color chipBg = isCompleted
+      ? Colors.grey.withOpacity(0.60)
+      : (teamBg != null
+          ? teamBg.withOpacity(0.85)
+          : Colors.white.withOpacity(0.12));
+  final Color chipFg = isCompleted ? Colors.white : (colours?["fg"] ?? Colors.white);
+
+  final bool isTouchDevice = MediaQuery.of(context).size.shortestSide < 1200;
+  final bool canClear = widget.userRoleService.isAdmin && !widget.readOnly && selectedPlayer != null;
+
+  void clearPick() {
+    setState(() {
+      owner.picks[colIndex].player = null;
+      owner.picks[colIndex].stats = null;
+    });
+    widget.onChanged?.call();
+  }
+
+  final chip = Container(
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+    decoration: BoxDecoration(
+      color: chipBg,
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: IntrinsicWidth(
+      child: Text(
+        text,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+          letterSpacing: 0.1,
+        ).copyWith(color: chipFg),
+      ),
+    ),
+  );
+
+  // Centred chip overlay — sits on top of the invisible DropdownSearch
+  final chipOverlay = Center(
+    child: canClear && isTouchDevice
+        ? GestureDetector(onLongPress: clearPick, child: chip)
+        : IgnorePointer(child: chip),
+  );
+
+  return Stack(
     alignment: Alignment.center,
-    child: DropdownSearch<AflPlayer>(
+    children: [
+      Container(color: bgColor),
+      Opacity(
+        opacity: 0.0,
+        child: DropdownSearch<AflPlayer>(
       selectedItem: selectedPlayer,
       items: filteredPlayers,
       itemAsString: (p) => p.fullName,
@@ -791,105 +847,7 @@ Widget build(BuildContext context) {
 
       clearButtonProps: const ClearButtonProps(isVisible: false),
 
-      dropdownBuilder: (context, player) {
-        final safeName = (player?.fullName ?? "").trim();
-        final text = safeName.isEmpty ? hintText : safeName;
-
-        final colours =
-            player == null ? null : _getTeamColoursForPlayer(player);
-
-        // ⭐ INNER CHIP COLOUR (unchanged for selected players)
-        // Note: Colors.transparent.withOpacity(0.85) produces 85% opaque BLACK,
-        // not transparent — because Colors.transparent is Color(0x00000000)
-        // and withOpacity only changes alpha, leaving the black RGB intact.
-        // For empty picks we must NOT apply withOpacity at all.
-        final teamBg = colours?["bg"];
-        final Color chipBg = isCompleted
-            ? Colors.grey.withOpacity(0.60)
-            : (teamBg != null
-                ? teamBg.withOpacity(0.85)
-                : Colors.white.withOpacity(0.12)); // neutral fallback — keeps chips visible
-
-        final Color chipFg = isCompleted
-            ? Colors.white
-            : (colours?["fg"] ?? Colors.white);
-
-        // ⭐ Touch devices (phone/tablet): long press chip to clear
-        // Desktop (mouse): show X button as before
-        // shortestSide < 900 covers phones and iPads
-        final bool isTouchDevice =
-            MediaQuery.of(context).size.shortestSide < 1200;
-
-        final bool canClear = widget.userRoleService.isAdmin &&
-            !widget.readOnly &&
-            player != null;
-
-        void clearPick() {
-          setState(() {
-            owner.picks[colIndex].player = null;
-            owner.picks[colIndex].stats = null;
-          });
-          widget.onChanged?.call();
-        }
-
-        final chip = Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-          decoration: BoxDecoration(
-            color: chipBg,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: IntrinsicWidth(
-            child: Text(
-              text,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-                letterSpacing: 0.1,
-                color: Colors.white, // overridden below per chip
-              ).copyWith(color: chipFg),
-            ),
-          ),
-        );
-
-        return SizedBox(
-          width: kPickColumnWidth,
-          child: Align(
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-              // Long press to clear on touch devices
-              if (canClear && isTouchDevice)
-                GestureDetector(
-                  onLongPress: clearPick,
-                  child: chip,
-                )
-              else
-                chip,
-
-              // X button — desktop only
-              if (canClear && !isTouchDevice)
-                GestureDetector(
-                  onTap: clearPick,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Icon(
-                      Icons.clear,
-                      size: 16,
-                      color: cs.error,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      dropdownBuilder: (context, player) => const SizedBox.shrink(),
 
       onChanged: (player) {
         setState(() {
@@ -923,6 +881,19 @@ Widget build(BuildContext context) {
         }
       },
     ),
+      ), // close Opacity
+      // Centred chip overlay
+      chipOverlay,
+      // X button — desktop only
+      if (canClear && !isTouchDevice)
+        Positioned(
+          right: 2,
+          child: GestureDetector(
+            onTap: clearPick,
+            child: Icon(Icons.clear, size: 14, color: cs.error),
+          ),
+        ),
+    ],
   );
 }
 
