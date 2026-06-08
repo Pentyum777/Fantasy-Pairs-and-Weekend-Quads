@@ -518,70 +518,75 @@ class _PickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.6;
     return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.only(top: 10, bottom: 4),
-            width: 36, height: 4,
-            decoration: BoxDecoration(
-              color:        AppTheme.border,
-              borderRadius: BorderRadius.circular(2),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color:        AppTheme.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color:      AppTheme.textPrimary,
-                  fontSize:   16,
-                  fontWeight: FontWeight.w700,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color:      AppTheme.textPrimary,
+                    fontSize:   16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
-          ),
-          const Divider(height: 1, color: AppTheme.border),
-          ListView.builder(
-            shrinkWrap:  true,
-            physics:     const NeverScrollableScrollPhysics(),
-            itemCount:   items.length,
-            itemBuilder: (_, i) {
-              final item      = items[i];
-              final isSelected = item == selected;
-              final isDimmed   = dimmed != null && i < dimmed!.length && dimmed![i];
+            const Divider(height: 1, color: AppTheme.border),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap:  false,
+                itemCount:   items.length,
+                itemBuilder: (_, i) {
+                  final item       = items[i];
+                  final isSelected = item == selected;
+                  final isDimmed   = dimmed != null && i < dimmed!.length && dimmed![i];
 
-              return ListTile(
-                dense:   true,
-                title: Text(
-                  item,
-                  style: TextStyle(
-                    color: isDimmed
-                        ? AppTheme.textSecondary
-                        : AppTheme.textPrimary,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-                    fontSize: 14,
-                  ),
-                ),
-                trailing: isSelected
-                    ? const Icon(Icons.check, color: AppTheme.primaryLight, size: 18)
-                    : (isDimmed
-                        ? const Icon(Icons.check_circle_outline,
-                            color: AppTheme.textSecondary, size: 16)
-                        : null),
-                onTap: () {
-                  Navigator.pop(context);
-                  onSelect(item);
+                  return ListTile(
+                    dense:   true,
+                    title: Text(
+                      item,
+                      style: TextStyle(
+                        color: isDimmed
+                            ? AppTheme.textSecondary
+                            : AppTheme.textPrimary,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                        fontSize: 14,
+                      ),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(Icons.check, color: AppTheme.primaryLight, size: 18)
+                        : (isDimmed
+                            ? const Icon(Icons.check_circle_outline,
+                                color: AppTheme.textSecondary, size: 16)
+                            : null),
+                    onTap: () {
+                      Navigator.pop(context);
+                      onSelect(item);
+                    },
+                  );
                 },
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
+              ),
+            ),
+              const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

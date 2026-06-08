@@ -27,6 +27,7 @@ import 'package:my_app/utils/afl_club_codes.dart';
 import '../parsers/match_stats_parser.dart';
 import '../constants/ui_dimensions.dart';
 import '../services/game_data_cache.dart';
+import '../widgets/screenshot_overlay.dart';
 
 class GameViewScreen extends StatefulWidget {
   final int season;
@@ -1449,6 +1450,13 @@ Widget build(BuildContext context) {
           toolbarHeight: isLandscapePhone ? 36 : 44,
           titleSpacing: 4,
           title: _buildAppBarTitle(isLandscapePhone),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.photo_camera_outlined),
+              tooltip: 'Screenshot mode',
+              onPressed: _openScreenshotMode,
+            ),
+          ],
         ),
         body: Column(
           children: [
@@ -2159,6 +2167,43 @@ Future<void> _forceApplyStats() async {
     ),
   );
 }
+
+// ── Screenshot mode ─────────────────────────────────────────────────────────
+
+  List<AflPlayer> _availablePlayers() {
+    final seasonPlayers = _seasonPlayers;
+    if (seasonPlayers == null || seasonPlayers.isEmpty) return [];
+    if (isCustomBuilder || isCustomGame) {
+      return (widget.overridePlayers?.isNotEmpty ?? false)
+          ? widget.overridePlayers!
+          : seasonPlayers;
+    }
+    final fixtures       = _fixturesForGameType();
+    final clubCodes      = fixtures.expand((f) => [f.homeTeam, f.awayTeam]).toSet();
+    return seasonPlayers
+        .where((p) => p.club.isNotEmpty)
+        .where((p) => clubCodes.contains(p.club))
+        .toList();
+  }
+
+  void _openScreenshotMode() {
+    if (_seasonPlayers == null || _seasonPlayers!.isEmpty) return;
+    ScreenshotOverlay.show(
+      context,
+      selections:          _selections,
+      sortedSelections:    _sortedSelections(),
+      visiblePunterCount:  _visiblePunterCount,
+      gameType:            widget.gameType,
+      season:              widget.season,
+      round:               widget.round ?? 0,
+      availablePlayers:    _availablePlayers(),
+      allPlayers:          _seasonPlayers ?? [],
+      fantasyService:      widget.fantasyService,
+      userRoleService:     widget.userRoleService,
+      isPlayerCompleted:   _isPlayerFromCompletedFixture,
+      showAveragePreview:  _showAveragePreview,
+    );
+  }
 
 List<PunterSelection> _sortedSelections() {
   final list = List<PunterSelection>.from(_selections);
