@@ -329,10 +329,10 @@ app.get("/seasonResults", (req, res) => {
 // ------------------------------------------------------
 // GET /punterInsights?season=2026
 //
-// Reads from the saved round results files (written by saveRoundResults)
-// which contain the final verified scores per punter per round.
-// This is more accurate than re-computing from raw selections because
-// saveRoundResults captures all 4 picks with live match stats applied.
+// Reads directly from the Postgres `selections` table — the persistent
+// source of truth that survives Railway restarts (unlike the filesystem).
+// Computes per-punter stats (rounds, wins, scores, draft positions) from
+// saved picks for all pairs and quads game types.
 // ------------------------------------------------------
 app.get("/punterInsights", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -343,63 +343,59 @@ app.get("/punterInsights", async (req, res) => {
 
     const PAIRS_TYPES = [
       "thursday_pairs", "friday_pairs", "saturday_pairs",
-      "sunday_pairs",   "monday_pairs",
+      "sunday_pairs", "monday_pairs",
     ];
     const QUADS_TYPES = ["weekend_quads"];
 
-    const seasonDir = path.join(SEASON_RESULTS_ROOT, String(season));
-    if (!fs.existsSync(seasonDir)) {
+    // Load all selections for this season from Postgres
+    const result = await pool.query(
+      `SELECT game_type, round, punter_names, picks
+       FROM selections
+       WHERE season = $1
+       ORDER BY round ASC`,
+      [season]
+    );
+
+    if (result.rows.length === 0) {
       return res.json({ ok: true, punters: {}, overall: { pairs: null, quads: null } });
     }
 
-    // Load all round result files across all game types
-    const roundData = { pairs: [], quads: [] };
+    // Build per-punter stats keyed by name
+    const punterStats = {};
 
-    const gameTypeDirs = fs.readdirSync(seasonDir);
-    for (const gt of gameTypeDirs) {
-      const gameClass = PAIRS_TYPES.includes(gt) ? "pairs"
-                      : QUADS_TYPES.includes(gt)  ? "quads"
+    for (const row of result.rows) {
+      const gameType  = row.game_type;
+      const round     = row.round;
+      const names     = Array.isArray(row.punter_names) ? row.punter_names : [];
+      const picks     = Array.isArray(row.picks) ? row.picks : [];
+
+      const gameClass = PAIRS_TYPES.includes(gameType) ? "pairs"
+                      : QUADS_TYPES.includes(gameType) ? "quads"
                       : null;
       if (!gameClass) continue;
 
-      const gtDir = path.join(seasonDir, gt);
-      if (!fs.statSync(gtDir).isDirectory()) continue;
+      // Compute each punter's score by summing AF from their picks
+      const punterScores = names.map((name, i) => {
+        const punterPicks = Array.isArray(picks[i]) ? picks[i] : [];
+        const score = punterPicks.reduce((sum, pick) => {
+          const af = pick?.stats?.AF ?? pick?.stats?.af ?? 0;
+          return sum + (typeof af === "number" ? af : 0);
+        }, 0);
+        return { name: (name || "").trim(), score, draftPos: i + 1 };
+      }).filter(p => p.name && p.score > 0);
 
-      const files = fs.readdirSync(gtDir)
-        .filter(f => f.startsWith("round_") && f.endsWith(".json"))
-        .sort();
+      if (punterScores.length === 0) continue;
 
-      for (const file of files) {
-        try {
-          const data = JSON.parse(fs.readFileSync(path.join(gtDir, file), "utf8"));
-          if (!Array.isArray(data.punters) || data.punters.length === 0) continue;
-          roundData[gameClass].push({ round: data.round, punters: data.punters });
-        } catch (_) { /* skip malformed files */ }
-      }
-    }
+      // Rank by score descending
+      const sorted = [...punterScores].sort((a, b) => b.score - a.score);
+      const winnerName = sorted[0].name;
 
-    // Build per-punter stats
-    const punterStats = {};
-
-    for (const gameClass of ["pairs", "quads"]) {
-      for (const { round, punters } of roundData[gameClass]) {
-        const active = punters.filter(p => p.name && p.name.trim() && p.total > 0);
-        if (active.length === 0) continue;
-
-        const sorted = [...active].sort((a, b) => b.total - a.total);
-        const winner = sorted[0];
-
-        active.forEach((p, draftIndex) => {
-          const name     = p.name.trim();
-          const score    = p.total;
-          const rank     = sorted.findIndex(s => s.name === p.name) + 1;
-          const draftPos = draftIndex + 1;
-          const won      = p.name === winner.name;
-
-          if (!punterStats[name]) punterStats[name] = { pairs: [], quads: [] };
-          punterStats[name][gameClass].push({ round, score, rank, draftPos, won });
-        });
-      }
+      punterScores.forEach(({ name, score, draftPos }) => {
+        const rank = sorted.findIndex(s => s.name === name) + 1;
+        const won  = name === winnerName;
+        if (!punterStats[name]) punterStats[name] = { pairs: [], quads: [] };
+        punterStats[name][gameClass].push({ round, score, rank, draftPos, won });
+      });
     }
 
     // Compute per-punter response
@@ -410,23 +406,24 @@ app.get("/punterInsights", async (req, res) => {
         const entries = data[gameClass];
         if (entries.length === 0) { punters[name][gameClass] = null; continue; }
 
-        const scores     = entries.map(e => e.score);
-        const wins       = entries.filter(e => e.won).length;
-        const highScore  = Math.max(...scores);
-        const avgScore   = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+        const scores   = entries.map(e => e.score);
+        const wins     = entries.filter(e => e.won).length;
+        const highScore = Math.max(...scores);
+        const avgScore  = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
 
-        const highestDraftPos = entries.reduce((best, e) =>
-          e.draftPos < best ? e.draftPos : best, 99);
+        const highestDraftPos = entries.reduce(
+          (best, e) => e.draftPos < best ? e.draftPos : best, 99
+        );
         const avgDraftPos = Math.round(
           entries.reduce((sum, e) => sum + e.draftPos, 0) / entries.length
         );
-        const winDraftPositions = entries.filter(e => e.won).map(e => e.draftPos);
-        const avgWinningDraftPos = winDraftPositions.length > 0
-          ? Math.round(winDraftPositions.reduce((a, b) => a + b, 0) / winDraftPositions.length)
+        const winDraftPos = entries.filter(e => e.won).map(e => e.draftPos);
+        const avgWinningDraftPos = winDraftPos.length > 0
+          ? Math.round(winDraftPos.reduce((a, b) => a + b, 0) / winDraftPos.length)
           : null;
 
         punters[name][gameClass] = {
-          rounds:             entries.length,
+          rounds:            entries.length,
           wins,
           highScore,
           avgScore,
@@ -453,26 +450,29 @@ app.get("/punterInsights", async (req, res) => {
       const avgScore     = Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length);
       const highestScore = Math.max(...allScores);
 
+      // Most winning punter
       const winCounts = {};
       for (const [name, data] of Object.entries(punterStats)) {
-        const wins = data[gameClass].filter(e => e.won).length;
-        if (wins > 0) winCounts[name] = wins;
+        const w = data[gameClass].filter(e => e.won).length;
+        if (w > 0) winCounts[name] = w;
       }
       const topWinner = Object.entries(winCounts).sort((a, b) => b[1] - a[1])[0];
 
-      const winDraftPositions = Object.values(punterStats)
+      // Most common winning draft position
+      const winDraftPos = Object.values(punterStats)
         .flatMap(d => d[gameClass].filter(e => e.won).map(e => e.draftPos));
       const draftPosCounts = {};
-      winDraftPositions.forEach(p => draftPosCounts[p] = (draftPosCounts[p] || 0) + 1);
-      const topDraftPos = Object.entries(draftPosCounts).sort((a, b) => b[1] - a[1])[0];
-      const avgWinDraftPos = winDraftPositions.length > 0
-        ? Math.round(winDraftPositions.reduce((a, b) => a + b, 0) / winDraftPositions.length)
+      winDraftPos.forEach(p => draftPosCounts[p] = (draftPosCounts[p] || 0) + 1);
+      const topDraftPos = Object.entries(draftPosCounts)
+        .sort((a, b) => b[1] - a[1])[0];
+      const avgWinDraftPos = winDraftPos.length > 0
+        ? Math.round(winDraftPos.reduce((a, b) => a + b, 0) / winDraftPos.length)
         : null;
 
       overall[gameClass] = {
         avgScore,
         highestScore,
-        mostWinningPlayer:   topWinner  ? { name: topWinner[0], count: topWinner[1] } : null,
+        mostWinningPlayer:   topWinner   ? { name: topWinner[0], count: topWinner[1] } : null,
         mostWinningDraftPos: topDraftPos ? parseInt(topDraftPos[0]) : null,
         avgWinningDraftPos:  avgWinDraftPos,
       };
