@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../constants/ui_dimensions.dart';
 import '../models/afl_player.dart';
+import '../models/afl_player_match_stats.dart';
 import '../models/punter_selection.dart';
 import '../services/punter_score_service.dart';
 import '../services/user_role_service.dart';
@@ -45,7 +46,7 @@ class ScreenshotOverlay extends StatelessWidget {
   final List<AflPlayer>       allPlayers;
   final PunterScoreService    fantasyService;
   final UserRoleService       userRoleService;
-  final bool Function(dynamic) isPlayerCompleted;
+  final bool Function(AflPlayerMatchStats) isPlayerCompleted;
   final bool                  showAveragePreview;
 
   const ScreenshotOverlay({
@@ -77,7 +78,7 @@ class ScreenshotOverlay extends StatelessWidget {
     required List<AflPlayer>       allPlayers,
     required PunterScoreService    fantasyService,
     required UserRoleService       userRoleService,
-    required bool Function(dynamic) isPlayerCompleted,
+    required bool Function(AflPlayerMatchStats) isPlayerCompleted,
     required bool                  showAveragePreview,
   }) {
     showDialog(
@@ -130,7 +131,6 @@ class ScreenshotOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screen        = MediaQuery.sizeOf(context);
     final punterCount   = visiblePunterCount;
     final naturalH      = _naturalHeight(punterCount);
     final picks         = gameType == 'weekend_quads' ? 4 : 2;
