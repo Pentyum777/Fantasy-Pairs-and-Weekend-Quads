@@ -410,7 +410,12 @@ Widget build(BuildContext context) {
     final index = row.punterNumber - 1;
     final isStriped = index.isOdd;
 
-    final isRowCompleted = row.isCompletedPunter == true; final bg = isRowCompleted ? Colors.grey.withOpacity(0.60) : (isStriped ? cs.surfaceVariant.withAlpha(64) : cs.surface);
+    final isRowCompleted = row.isCompletedPunter == true;
+    final bg = isRowCompleted
+        ? Colors.grey.withOpacity(0.60)
+        : (isStriped
+            ? Colors.white.withOpacity(0.07)
+            : Colors.black.withOpacity(0.25));
 
     return Container(
       height: UIDimensions.rowHeight,
@@ -812,7 +817,7 @@ Widget build(BuildContext context) {
         // Desktop (mouse): show X button as before
         // shortestSide < 900 covers phones and iPads
         final bool isTouchDevice =
-            MediaQuery.of(context).size.shortestSide < 900;
+            MediaQuery.of(context).size.shortestSide < 1200;
 
         final bool canClear = widget.userRoleService.isAdmin &&
             !widget.readOnly &&
@@ -1119,7 +1124,7 @@ Widget build(BuildContext context) {
         decoration: BoxDecoration(
           color: widget.showAveragePreview
               ? Colors.orange.shade400.withOpacity(0.70)
-              : Colors.black.withOpacity(0.20),
+              : Colors.white.withOpacity(0.15),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
@@ -1128,7 +1133,7 @@ Widget build(BuildContext context) {
               : "${row.totalScore}",
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            color: Colors.black,
+            color: Colors.white,
           ),
         ),
       ),

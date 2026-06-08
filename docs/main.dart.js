@@ -100690,11 +100690,8 @@ for(p=f.length,o=0;o<f.length;f.length===p||(0,A.M)(f),++o)q.push(n.a8i(l,k,f[o]
 return A.ajN(A.mR(A.ajN(A.mR(new A.dP(new A.al(i,1/0,0,1/0),A.bv(A.b([s,B.bP,A.bv(q,B.n,B.l,B.m)],r),B.at,B.l,B.m),m),h,B.B,m,m,B.ak),h,new A.ayi(),!0),g,B.B,m,m,B.a7),g,m,!0)},
 a8i(a,b,c,d){var s,r,q,p,o,n,m,l,k=this,j=null
 if(c.f)s=A.A(153,158,158,158)
-else if((c.a-1&1)===1){r=b.dx
-r=(r==null?b.cy:r).a
-r=A.A(64,r>>>16&255,r>>>8&255,r&255)
-s=r}else{r=b.cy
-s=r}r=k.gKU()
+else s=(c.a-1&1)===1?A.A(18,255,255,255):A.A(64,0,0,0)
+r=k.gKU()
 q=k.c
 q.toString
 p=t.p
@@ -100712,11 +100709,11 @@ p.toString
 a=A.E(p)
 p=k.a
 n=p.dx
-m=n?A.A(B.d.aG(178.5),255,167,38):A.A(51,0,0,0)
+m=n?A.A(B.d.aG(178.5),255,167,38):A.A(38,255,255,255)
 l=A.bV(4)
 p=n?""+c.B7(p.dy):""+c.gtw()
 n=a.p3.z
-r.push(A.aF(j,A.aF(B.w,A.aF(j,A.a7(p,j,j,j,j,n==null?j:n.k5(B.p,B.O),j,j),B.f,j,j,new A.aW(m,j,j,l,j,j,B.A),j,j,j,B.ox,j,j,j),B.f,j,j,j,j,j,j,B.d7,j,j,j),B.f,j,j,new A.aW(j,j,j,j,j,j,B.A),j,j,j,j,j,j,q))
+r.push(A.aF(j,A.aF(B.w,A.aF(j,A.a7(p,j,j,j,j,n==null?j:n.k5(B.k,B.O),j,j),B.f,j,j,new A.aW(m,j,j,l,j,j,B.A),j,j,j,B.ox,j,j,j),B.f,j,j,j,j,j,j,B.d7,j,j,j),B.f,j,j,new A.aW(j,j,j,j,j,j,B.A),j,j,j,j,j,j,q))
 return A.aF(j,A.aX(r,B.n,B.l,B.m),B.f,j,j,new A.aW(s,j,j,j,j,j,B.A),j,34,j,j,j,j,j)},
 ajs(a,b){var s,r,q,p,o=this,n=null,m=A.E(a),l=o.a,k=l.cx.b===B.bq&&!l.x
 l=o.r
@@ -100895,7 +100892,7 @@ else{s=s?f:p.h(0,"fg")
 if(s==null){s=g.d
 n=s.dy
 s=n==null?s.db:n
-k=s}else k=s}j=A.b6(a,f,t.w).w.a.ge7()<900
+k=s}else k=s}j=A.b6(a,f,t.w).w.a.ge7()<1200
 s=g.a
 n=s.a
 i=n.cx.b===B.bq&&!n.x&&!e
