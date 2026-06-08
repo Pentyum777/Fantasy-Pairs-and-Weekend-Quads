@@ -100662,7 +100662,7 @@ gKU(){var s=this.c
 s.toString
 if(this.wG(s))return 70
 if(this.giC())return 80
-return 90},
+return 72},
 gwK(){var s=this.c
 s.toString
 if(this.wG(s))return 280

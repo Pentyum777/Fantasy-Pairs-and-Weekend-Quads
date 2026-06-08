@@ -100,7 +100,7 @@ final ScrollController _horizontalController = ScrollController();
   double get kPunterColumnWidth {
     if (isPortraitPhone(context)) return 70;
     if (isLandscapePhone) return 80;
-    return 90;
+    return 72;
   }
 
   double get kPickColumnWidth {
