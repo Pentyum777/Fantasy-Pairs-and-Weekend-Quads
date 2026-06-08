@@ -80,11 +80,17 @@ class _HomeScreenState extends State<HomeScreen> {
   int? _defaultRound() {
     final rounds = widget.fixtureRepo.allRoundsForSeason(_season);
     if (rounds.isEmpty) return null;
-    // Default to the first incomplete round, or the last completed one
-    final completed = widget.roundCompletionService.completedRounds;
+    final today = DateTime.now();
+    // Return the first round whose last game date is today or in the future
     for (final r in rounds) {
-      if (!completed.contains(r)) return r;
+      final fixtures = widget.fixtureRepo.fixturesForSeasonRound(_season, r);
+      final lastDate = fixtures
+          .map((f) => f.date)
+          .whereType<DateTime>()
+          .fold<DateTime?>(null, (a, b) => a == null || b.isAfter(a) ? b : a);
+      if (lastDate != null && !lastDate.isBefore(today)) return r;
     }
+    // All rounds are in the past — default to the last round
     return rounds.last;
   }
 
