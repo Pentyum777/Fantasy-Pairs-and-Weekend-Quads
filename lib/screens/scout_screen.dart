@@ -1180,8 +1180,12 @@ class _ScoutScreenState extends State<ScoutScreen> {
       final isNamed = _teamsAnnounced && _namedSquadIds.contains(s.playerId);
       final nameStyle = cellStyle?.copyWith(
         fontWeight: FontWeight.w600,
-        color: flag != null ? flag.flag.colour : null,
+        color: isDrafted
+            ? (flag != null ? flag.flag.colour : Colors.white54)
+            : (flag != null ? flag.flag.colour : null),
         decoration: isDrafted ? TextDecoration.lineThrough : null,
+        decorationColor: isDrafted ? Colors.white54 : null,
+        decorationThickness: isDrafted ? 2.0 : null,
       );
 
       return SizedBox(
