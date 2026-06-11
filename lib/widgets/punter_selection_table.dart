@@ -937,10 +937,11 @@ Widget build(BuildContext context) {
       // ⭐ If the round is completed, keep existing scores rather than zeroing them
       if (s == null) {
         if (widget.isCompleted) {
-          // Round is done — don't overwrite scores we already have from the snapshot
-          pick.isCompleted = true;
+          // Round is done — only mark completed if we actually have a score
+          final hasScore = (pick.fantasyPoints ?? 0) > 0;
+          pick.isCompleted = hasScore;
           pick.isLive = false;
-          allCompleted = allCompleted && (pick.fantasyPoints ?? 0) > 0;
+          if (!hasScore) allCompleted = false;
         } else {
           pick.isCompleted = false;
           pick.isLive = false;
