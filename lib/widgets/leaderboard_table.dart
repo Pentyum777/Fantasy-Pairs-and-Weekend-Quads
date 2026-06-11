@@ -122,7 +122,7 @@ class LeaderboardTable extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
         "${index + 1}",
-        style: Theme.of(context).textTheme.bodySmall,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
       ),
     );
   }
@@ -140,6 +140,7 @@ class LeaderboardTable extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: color,
+              fontSize: 11,
             ),
       ),
     );
@@ -156,9 +157,11 @@ class LeaderboardTable extends StatelessWidget {
     return Container(
       width: UIDimensions.totalColumnWidth,
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 2),
+      padding: EdgeInsets.zero,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        padding: isAvg
+            ? const EdgeInsets.symmetric(horizontal: 4, vertical: 1)
+            : EdgeInsets.zero,
         decoration: isAvg
             ? BoxDecoration(
                 color: Colors.orange.shade400.withOpacity(0.70),
@@ -170,6 +173,7 @@ class LeaderboardTable extends StatelessWidget {
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: color,
+                fontSize: 11,
               ),
         ),
       ),
