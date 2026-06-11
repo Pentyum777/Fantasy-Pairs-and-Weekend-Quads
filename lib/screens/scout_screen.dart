@@ -776,7 +776,13 @@ class _ScoutScreenState extends State<ScoutScreen> {
       }
 
       // Hide drafted
-      final allDrafted = {...widget.draftedPlayerIds, ..._fetchedDraftedIds};
+      final activeGameType = _gameTypeFilter.isNotEmpty
+          ? _gameTypeFilter
+          : widget.gameType;
+      final localDraftedForFilter = activeGameType == widget.gameType
+          ? widget.draftedPlayerIds
+          : <String>{};
+      final allDrafted = {...localDraftedForFilter, ..._fetchedDraftedIds};
       if (_hideDrafted && allDrafted.contains(s.playerId)) {
         return false;
       }
@@ -1175,7 +1181,16 @@ class _ScoutScreenState extends State<ScoutScreen> {
       final s = rows[i];
       final bg = rowBg(i, s);
       final flag = _flags[s.playerId];
-      final allDraftedRow = {...widget.draftedPlayerIds, ..._fetchedDraftedIds};
+      // Only include locally-passed drafted IDs when the active filter
+      // matches the game type this Scout was opened for — prevents quads
+      // picks bleeding into friday pairs view and vice versa.
+      final activeFilter = _gameTypeFilter.isNotEmpty
+          ? _gameTypeFilter
+          : widget.gameType;
+      final localDrafted = activeFilter == widget.gameType
+          ? widget.draftedPlayerIds
+          : <String>{};
+      final allDraftedRow = {...localDrafted, ..._fetchedDraftedIds};
       final isDrafted = allDraftedRow.contains(s.playerId);
       final isNamed = _teamsAnnounced && _namedSquadIds.contains(s.playerId);
       final nameStyle = cellStyle?.copyWith(
