@@ -412,7 +412,7 @@ Widget build(BuildContext context) {
 
     final isRowCompleted = row.isCompletedPunter == true;
     final bg = isRowCompleted
-        ? Colors.grey.withOpacity(0.60)
+        ? Colors.green.shade900.withOpacity(0.55)
         : (isStriped
             ? Colors.white.withOpacity(0.07)
             : Colors.black.withOpacity(0.25));
