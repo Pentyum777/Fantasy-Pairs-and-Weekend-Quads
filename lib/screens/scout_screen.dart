@@ -334,7 +334,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
           ElevatedButton(
             onPressed: () {
               final matched = _parseSquadFromText(ctrl.text);
-              if (matched.isEmpty) {
+              if (matched.named.isEmpty && matched.emergency.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('No players matched — check the format')),
                 );
@@ -357,7 +357,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Added ${matched.length} players to named squad'),
+                  content: Text('Added ${matched.named.length + matched.emergency.length} players to named squad'),
                   duration: const Duration(seconds: 2),
                 ),
               );
