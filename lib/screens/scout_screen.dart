@@ -192,6 +192,11 @@ class _ScoutScreenState extends State<ScoutScreen> {
     };
 
     final emergencySections = {'emergencies', 'emergency'};
+    // Sections that signal a new team has started — reset emergency flag
+    final teamStartSections = {
+      'full backs', 'half backs', 'centres', 'half forwards',
+      'full forwards', 'followers',
+    };
     bool inEmergency = false;
 
     final candidateNames = <String>[];
@@ -201,7 +206,12 @@ class _ScoutScreenState extends State<ScoutScreen> {
       if (line.isEmpty) continue;
       if (RegExp(r'^\d+$').hasMatch(line)) continue;
       if (sectionLabels.contains(line.toLowerCase())) {
-        inEmergency = emergencySections.contains(line.toLowerCase());
+        // A new team-position section resets the emergency flag
+        if (teamStartSections.contains(line.toLowerCase())) {
+          inEmergency = false;
+        } else {
+          inEmergency = emergencySections.contains(line.toLowerCase());
+        }
         continue;
       }
       if (RegExp(r'^[A-Z][a-z]').hasMatch(line) ||
