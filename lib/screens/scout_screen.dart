@@ -203,10 +203,11 @@ class _ScoutScreenState extends State<ScoutScreen> {
     final emergencyNames = <String>[];
 
     for (final line in lines) {
-      if (line.isEmpty) continue;
+      // Blank line = team boundary — reset emergency flag
+      if (line.isEmpty) { inEmergency = false; continue; }
       if (RegExp(r'^\d+$').hasMatch(line)) continue;
       if (sectionLabels.contains(line.toLowerCase())) {
-        // A new team-position section resets the emergency flag
+        // A new team-position section also resets the emergency flag
         if (teamStartSections.contains(line.toLowerCase())) {
           inEmergency = false;
         } else {
@@ -1848,7 +1849,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
       return const Icon(Icons.check_circle, size: 14, color: Colors.green);
     }
     if (isEmergency) {
-      return const Icon(Icons.star, size: 14, color: Colors.orange);
+      return const Icon(Icons.star, size: 14, color: Colors.blue);
     }
     if (isNamed) {
       return const Icon(Icons.star, size: 14, color: Color(0xFFFFAA00));
