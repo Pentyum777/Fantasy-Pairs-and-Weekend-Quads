@@ -202,25 +202,32 @@ class _ScoutScreenState extends State<ScoutScreen> {
     final candidateNames = <String>[];
     final emergencyNames = <String>[];
 
+    debugPrint('🔍 Squad parse: ${lines.length} lines');
     for (final line in lines) {
       // Blank line = team boundary — reset emergency flag
       if (line.isEmpty) { inEmergency = false; continue; }
       if (RegExp(r'^\d+$').hasMatch(line)) continue;
       if (sectionLabels.contains(line.toLowerCase())) {
-        // A new team-position section also resets the emergency flag
         if (teamStartSections.contains(line.toLowerCase())) {
           inEmergency = false;
+          debugPrint('🔵 RESET: $line');
         } else {
           inEmergency = emergencySections.contains(line.toLowerCase());
+          debugPrint('🟡 SECTION: $line -> inEmergency=$inEmergency');
         }
         continue;
       }
       if (RegExp(r'^[A-Z][a-z]').hasMatch(line) ||
           RegExp(r'^[A-Z]\. [A-Z]').hasMatch(line)) {
-        if (inEmergency) emergencyNames.add(line);
-        else candidateNames.add(line);
+        if (inEmergency) {
+          emergencyNames.add(line);
+          debugPrint('🟠 EMERGENCY: $line');
+        } else {
+          candidateNames.add(line);
+        }
       }
     }
+    debugPrint('✅ Named: ${candidateNames.length}, Emergency: ${emergencyNames.length}');
 
     final matched = <String>{};
 
