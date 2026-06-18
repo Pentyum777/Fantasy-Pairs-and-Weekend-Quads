@@ -183,7 +183,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
   /// Parses player names from AFL team lineup paste.
   /// Handles both "L. Cowan" abbreviated and "Jake Kolodjashnij" full name formats.
   ({Set<String> named, Set<String> emergency}) _parseSquadFromText(String text) {
-    final lines = text.split(RegExp(r'[\n\r]+')).map((l) => l.trim()).toList();
+    final lines = text.split(RegExp(r'\r?\n')).map((l) => l.trim()).toList();
 
     final sectionLabels = {
       'full backs', 'half backs', 'centres', 'half forwards',

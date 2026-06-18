@@ -99403,7 +99403,7 @@ s.fx$=0
 s=this.z
 if(s!=null)s.aV(0)
 this.aA()},
-aja(b2){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5=this,a6=null,a7="^[A-Z]\\. ",a8=" ",a9=B.c.iS(b2,A.bn("[\\n\\r]+",!0,!1)),b0=A.J(a9).i("T<1,d>"),b1=A.V(new A.T(a9,new A.aB5(),b0),!0,b0.i("ai.E"))
+aja(b2){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5=this,a6=null,a7="^[A-Z]\\. ",a8=" ",a9=B.c.iS(b2,A.bn("\\r?\\n",!0,!1)),b0=A.J(a9).i("T<1,d>"),b1=A.V(new A.T(a9,new A.aB5(),b0),!0,b0.i("ai.E"))
 b0=t.N
 s=A.d6(["full backs","half backs","centres","half forwards","full forwards","followers","interchanges","emergencies","interchange","emergency","ruck"],b0)
 r=A.d6(["emergencies","emergency"],b0)
