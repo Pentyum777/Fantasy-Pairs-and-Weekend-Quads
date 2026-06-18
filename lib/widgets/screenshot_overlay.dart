@@ -142,56 +142,53 @@ class ScreenshotOverlay extends StatelessWidget {
     final leaderboardPunters =
         sortedSelections.take(punterCount).toList();
 
-    return GestureDetector(
-      // Tap anywhere outside the table to dismiss
-      onTap: () => Navigator.of(context).pop(),
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: Stack(
-          children: [
-            // ── Centred, scaled table ──────────────────────────────────────
-            Center(
-              child: GestureDetector(
-                // Swallow taps on the table itself so they don't dismiss
-                onTap: () {},
-                child: FittedBox(
-                  fit:       BoxFit.contain,
-                  alignment: Alignment.center,
-                  child: SizedBox(
-                    width:  naturalW,
-                    height: naturalH,
-                    child: _buildTableContent(
-                      context, picks, leaderboardPunters, naturalH, naturalW),
-                  ),
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // ── Zoomable, scaled table ──────────────────────────────────────
+          InteractiveViewer(
+            minScale:          0.5,
+            maxScale:          4.0,
+            boundaryMargin:    const EdgeInsets.all(double.infinity),
+            child: Center(
+              child: FittedBox(
+                fit:       BoxFit.contain,
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width:  naturalW,
+                  height: naturalH,
+                  child: _buildTableContent(
+                    context, picks, leaderboardPunters, naturalH, naturalW),
                 ),
               ),
             ),
+          ),
 
-            // ── Close button ───────────────────────────────────────────────
-            Positioned(
-              top:   MediaQuery.paddingOf(context).top + 8,
-              right: 12,
-              child: _CloseButton(onTap: () => Navigator.of(context).pop()),
-            ),
+          // ── Close button ─────────────────────────────────────────────────
+          Positioned(
+            top:   MediaQuery.paddingOf(context).top + 8,
+            right: 12,
+            child: _CloseButton(onTap: () => Navigator.of(context).pop()),
+          ),
 
-            // ── Hint label ─────────────────────────────────────────────────
-            Positioned(
-              bottom: MediaQuery.paddingOf(context).bottom + 12,
-              left:   0,
-              right:  0,
-              child: const Center(
-                child: Text(
-                  'Tap anywhere to close',
-                  style: TextStyle(
-                    color:    Colors.white38,
-                    fontSize: 12,
-                    letterSpacing: 0.3,
-                  ),
+          // ── Hint label ───────────────────────────────────────────────────
+          Positioned(
+            bottom: MediaQuery.paddingOf(context).bottom + 12,
+            left:   0,
+            right:  0,
+            child: const Center(
+              child: Text(
+                'Pinch to zoom · tap ✕ to close',
+                style: TextStyle(
+                  color:    Colors.white38,
+                  fontSize: 12,
+                  letterSpacing: 0.3,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
