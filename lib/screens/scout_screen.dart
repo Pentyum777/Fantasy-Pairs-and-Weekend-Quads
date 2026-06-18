@@ -91,7 +91,8 @@ class _ScoutScreenState extends State<ScoutScreen> {
   bool _loading = true;
   List<PlayerSeasonStats> _allStats = [];
   Map<String, PlayerFlagEntry> _flags = {};
-  Set<String> _namedSquadIds = {};
+  Set<String> _namedSquadIds    = {};
+  Set<String> _emergencySquadIds = {};
   bool _teamsAnnounced = false;
   Set<String> _fetchedDraftedIds = {};
   Timer? _draftedPollTimer;
@@ -181,7 +182,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
 
   /// Parses player names from AFL team lineup paste.
   /// Handles both "L. Cowan" abbreviated and "Jake Kolodjashnij" full name formats.
-  Set<String> _parseSquadFromText(String text) {
+  ({Set<String> named, Set<String> emergency}) _parseSquadFromText(String text) {
     final lines = text.split(RegExp(r'[\n\r]+')).map((l) => l.trim()).toList();
 
     final sectionLabels = {
@@ -190,14 +191,23 @@ class _ScoutScreenState extends State<ScoutScreen> {
       'interchange', 'emergency', 'ruck',
     };
 
+    final emergencySections = {'emergencies', 'emergency'};
+    bool inEmergency = false;
+
     final candidateNames = <String>[];
+    final emergencyNames = <String>[];
+
     for (final line in lines) {
       if (line.isEmpty) continue;
       if (RegExp(r'^\d+$').hasMatch(line)) continue;
-      if (sectionLabels.contains(line.toLowerCase())) continue;
+      if (sectionLabels.contains(line.toLowerCase())) {
+        inEmergency = emergencySections.contains(line.toLowerCase());
+        continue;
+      }
       if (RegExp(r'^[A-Z][a-z]').hasMatch(line) ||
           RegExp(r'^[A-Z]\. [A-Z]').hasMatch(line)) {
-        candidateNames.add(line);
+        if (inEmergency) emergencyNames.add(line);
+        else candidateNames.add(line);
       }
     }
 
@@ -248,7 +258,40 @@ class _ScoutScreenState extends State<ScoutScreen> {
       }
     }
 
-    return matched;
+    // Match emergencies with same logic
+    final emergencyMatched = <String>{};
+    for (final name in emergencyNames) {
+      if (RegExp(r'^[A-Z]\. ').hasMatch(name)) {
+        final parts = name.split('. ');
+        if (parts.length >= 2) {
+          final initial  = parts[0].toUpperCase();
+          final lastName = parts.sublist(1).join(' ').trim().toLowerCase();
+          for (final s in _allStats) {
+            final np = s.playerName.trim().split(' ');
+            if (np.length < 2) continue;
+            if (np.last.toLowerCase() == lastName && np.first[0].toUpperCase() == initial) {
+              emergencyMatched.add(s.playerId); break;
+            }
+          }
+        }
+      } else {
+        final parts = name.trim().toLowerCase().split(' ');
+        if (parts.length < 2) continue;
+        PlayerSeasonStats? exactMatch;
+        PlayerSeasonStats? initialMatch;
+        for (final s in _allStats) {
+          final sp = s.playerName.trim().toLowerCase().split(' ');
+          if (sp.length < 2) continue;
+          if (sp.last != parts.last) continue;
+          if (sp.first == parts.first) { exactMatch = s; break; }
+          else if (sp.first[0] == parts.first[0] && initialMatch == null) { initialMatch = s; }
+        }
+        final best = exactMatch ?? initialMatch;
+        if (best != null) emergencyMatched.add(best.playerId);
+      }
+    }
+
+    return (named: matched, emergency: emergencyMatched);
   }
 
   /// Shows dialog to paste AFL team lineup text
@@ -297,9 +340,11 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 );
                 return;
               }
-              final newIds = {..._namedSquadIds, ...matched};
+              final newIds      = {..._namedSquadIds, ...matched.named};
+              final newEmergIds = {..._emergencySquadIds, ...matched.emergency};
               setState(() {
-                _namedSquadIds = newIds;
+                _namedSquadIds    = newIds;
+                _emergencySquadIds = newEmergIds;
                 _teamsAnnounced = true;
               });
               // Persist to backend so all devices see the squad
@@ -1191,8 +1236,9 @@ class _ScoutScreenState extends State<ScoutScreen> {
           ? widget.draftedPlayerIds
           : <String>{};
       final allDraftedRow = {...localDrafted, ..._fetchedDraftedIds};
-      final isDrafted = allDraftedRow.contains(s.playerId);
-      final isNamed = _teamsAnnounced && _namedSquadIds.contains(s.playerId);
+      final isDrafted   = allDraftedRow.contains(s.playerId);
+      final isNamed     = _teamsAnnounced && _namedSquadIds.contains(s.playerId);
+      final isEmergency = _teamsAnnounced && _emergencySquadIds.contains(s.playerId);
       final nameStyle = cellStyle?.copyWith(
         fontWeight: FontWeight.w600,
         color: isDrafted
@@ -1357,7 +1403,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
                               width: flagW, height: 30,
                               alignment: Alignment.center,
                               color: bg,
-                              child: _buildStatusChip(s, isNamed, isDrafted, flag),
+                              child: _buildStatusChip(s, isNamed, isEmergency, isDrafted, flag),
                             ),
                           ),
                         ],
@@ -1771,7 +1817,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
 
   // ── Status chip ────────────────────────────────────────────────────────────
   Widget _buildStatusChip(PlayerSeasonStats s, bool isNamed,
-      bool isDrafted, PlayerFlagEntry? flag) {
+      bool isEmergency, bool isDrafted, PlayerFlagEntry? flag) {
     if (flag != null) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
@@ -1790,6 +1836,9 @@ class _ScoutScreenState extends State<ScoutScreen> {
     }
     if (isDrafted) {
       return const Icon(Icons.check_circle, size: 14, color: Colors.green);
+    }
+    if (isEmergency) {
+      return const Icon(Icons.star, size: 14, color: Colors.orange);
     }
     if (isNamed) {
       return const Icon(Icons.star, size: 14, color: Color(0xFFFFAA00));
