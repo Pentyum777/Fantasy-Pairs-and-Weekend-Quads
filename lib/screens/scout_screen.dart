@@ -202,7 +202,6 @@ class _ScoutScreenState extends State<ScoutScreen> {
     final candidateNames = <String>[];
     final emergencyNames = <String>[];
 
-    debugPrint('🔍 Squad parse: ${lines.length} lines');
     for (final line in lines) {
       // Blank line = team boundary — reset emergency flag
       if (line.isEmpty) { inEmergency = false; continue; }
@@ -210,24 +209,17 @@ class _ScoutScreenState extends State<ScoutScreen> {
       if (sectionLabels.contains(line.toLowerCase())) {
         if (teamStartSections.contains(line.toLowerCase())) {
           inEmergency = false;
-          debugPrint('🔵 RESET: $line');
         } else {
           inEmergency = emergencySections.contains(line.toLowerCase());
-          debugPrint('🟡 SECTION: $line -> inEmergency=$inEmergency');
         }
         continue;
       }
       if (RegExp(r'^[A-Z][a-z]').hasMatch(line) ||
           RegExp(r'^[A-Z]\. [A-Z]').hasMatch(line)) {
-        if (inEmergency) {
-          emergencyNames.add(line);
-          debugPrint('🟠 EMERGENCY: $line');
-        } else {
-          candidateNames.add(line);
-        }
+        if (inEmergency) emergencyNames.add(line);
+        else candidateNames.add(line);
       }
     }
-    debugPrint('✅ Named: ${candidateNames.length}, Emergency: ${emergencyNames.length}');
 
     final matched = <String>{};
 
@@ -360,10 +352,16 @@ class _ScoutScreenState extends State<ScoutScreen> {
               }
               final newIds      = {..._namedSquadIds, ...matched.named};
               final newEmergIds = {..._emergencySquadIds, ...matched.emergency};
+              // Auto-clear injury/rest/test flags for named and emergency players
+              final allNewIds = {...newIds, ...newEmergIds};
+              final updatedFlags = Map<String, PlayerFlagEntry>.from(_flags)
+                ..removeWhere((id, _) => allNewIds.contains(id));
+
               setState(() {
-                _namedSquadIds    = newIds;
+                _namedSquadIds     = newIds;
                 _emergencySquadIds = newEmergIds;
-                _teamsAnnounced = true;
+                _teamsAnnounced    = true;
+                _flags             = updatedFlags;
               });
               // Persist to backend so all devices see the squad
               widget.scoutService.saveNamedSquadIds(
@@ -833,9 +831,10 @@ class _ScoutScreenState extends State<ScoutScreen> {
       // Team filter
       if (_teamFilter != null && s.team != _teamFilter) return false;
 
-      // Named squad filter
+      // Named squad filter — show named AND emergencies
       if (_namedOnly && _teamsAnnounced) {
-        if (!_namedSquadIds.contains(s.playerId)) return false;
+        if (!_namedSquadIds.contains(s.playerId) &&
+            !_emergencySquadIds.contains(s.playerId)) return false;
       }
 
       // Hide drafted
@@ -850,10 +849,10 @@ class _ScoutScreenState extends State<ScoutScreen> {
         return false;
       }
 
-      // Hide flagged — but never hide a player who has been named in a squad,
-      // since being selected overrides any injury/flag status.
+      // Hide flagged — but never hide named or emergency players
       final isNamed = _teamsAnnounced && _namedSquadIds.contains(s.playerId);
-      if (_hideFlagged && !isNamed && _flags.containsKey(s.playerId)) return false;
+      final isEmergencyFilter = _teamsAnnounced && _emergencySquadIds.contains(s.playerId);
+      if (_hideFlagged && !isNamed && !isEmergencyFilter && _flags.containsKey(s.playerId)) return false;
 
       // Search
       if (_search.isNotEmpty) {
