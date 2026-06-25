@@ -252,23 +252,31 @@ class FixtureParser {
   }
 
   DateTime _combineDateAndTime(DateTime date, String timeText) {
+    // Handle "7.30pm" or "12.35pm" format
+    final dotMatch = RegExp(r'^(\d{1,2})\.(\d{2})(am|pm)$', caseSensitive: false)
+        .firstMatch(timeText.trim());
+    if (dotMatch != null) {
+      int hour = int.tryParse(dotMatch.group(1)!) ?? 0;
+      final minute = int.tryParse(dotMatch.group(2)!) ?? 0;
+      final ampm = dotMatch.group(3)!.toUpperCase();
+      if (ampm == "PM" && hour != 12) hour += 12;
+      if (ampm == "AM" && hour == 12) hour = 0;
+      return DateTime(date.year, date.month, date.day, hour, minute);
+    }
+
+    // Handle "7:30 pm" or "7:30pm" format
     final parts = timeText.split(RegExp(r'[:\s]'));
-    if (parts.length < 3) return date;
+    if (parts.length < 2) return date;
 
     int hour = int.tryParse(parts[0]) ?? 0;
-    final minute = int.tryParse(parts[1]) ?? 0;
-    final ampm = parts[2].toUpperCase();
+    final minute = int.tryParse(parts[1].replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    final ampmPart = parts.length > 2 ? parts[2] : parts[1].replaceAll(RegExp(r'[0-9]'), '');
+    final ampm = ampmPart.toUpperCase();
 
     if (ampm == "PM" && hour != 12) hour += 12;
     if (ampm == "AM" && hour == 12) hour = 0;
 
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-      hour,
-      minute,
-    );
+    return DateTime(date.year, date.month, date.day, hour, minute);
   }
 
   int _monthFromName(String monthName) {
