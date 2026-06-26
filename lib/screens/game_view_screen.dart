@@ -1770,7 +1770,8 @@ Future<void> _forceApplyStats() async {
   Widget _buildPunterControls() {
   final theme = Theme.of(context);
 
-  return AnimatedContainer(
+  return ClipRect(
+    child: AnimatedContainer(
     duration: const Duration(milliseconds: 200),
     height: _controlsCollapsed ? 32 : null,
     padding: EdgeInsets.symmetric(
@@ -2061,7 +2062,8 @@ Future<void> _forceApplyStats() async {
           ),
       ],
     ),
-  );
+  ),
+  ); // ClipRect
 }
 
 
@@ -2131,42 +2133,66 @@ Future<void> _forceApplyStats() async {
               // ⭐ PUNTER TABLE
               // ------------------------------------------------------------
               Expanded(
-                child: PunterSelectionTable(
-                  key: _punterTableKey,
+                child: LayoutBuilder(
+                  builder: (context, tableConstraints) {
+                    // Mirror _minTableWidth from PunterSelectionTable so we
+                    // know when to enable horizontal scrolling in portrait.
+                    final isPortrait = MediaQuery.of(context).size.height >
+                        MediaQuery.of(context).size.width;
+                    final punterCol = isPortrait ? 60.0 : 62.0;
+                    final pickCol = isPortrait ? 130.0 : 130.0;
+                    final scoreCol = isPortrait ? 28.0 : 28.0;
+                    final totalCol = isPortrait ? 36.0 : 36.0;
+                    final minW = punterCol +
+                        picks * (pickCol + scoreCol) +
+                        totalCol;
+                    final effectiveWidth =
+                        tableConstraints.maxWidth < minW
+                            ? minW
+                            : tableConstraints.maxWidth;
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: effectiveWidth,
+                        child: PunterSelectionTable(
+                          key: _punterTableKey,
 
-                  gameType: widget.gameType,
-                  season: widget.season,
-                  round: safeRound,
-                  tableWidth: null,
-                  visiblePunterCount: _visiblePunterCount,
-                  playersPerPunter: picks,
-                  availablePlayers: availablePlayers,
-                  isPlayerCompleted: _isPlayerFromCompletedFixture,   // ⭐ HERE
+                          gameType: widget.gameType,
+                          season: widget.season,
+                          round: safeRound,
+                          tableWidth: null,
+                          visiblePunterCount: _visiblePunterCount,
+                          playersPerPunter: picks,
+                          availablePlayers: availablePlayers,
+                          isPlayerCompleted: _isPlayerFromCompletedFixture,
 
+                          // ⭐ CRITICAL: use _selections (the live list)
+                          selections: _selections,
 
-                  // ⭐ CRITICAL: use _selections (the live list)
-                  selections: _selections,
-
-                  isCompleted: _isCompleted,
-                  readOnly: readOnly,
-                  onChanged: (!readOnly)
-                      ? () {
-                          _recomputeVisiblePunterCount();
-                          _saveSnapshot();
-                          setState(() {});
-                        }
-                      : null,
-                  collapsed: _leaderboardCollapsed,
-                  scrollController: _punterScrollController,
-                  fantasyService: widget.fantasyService,
-                  userRoleService: widget.userRoleService,
-                  knownPunterNames: _knownPunterNames,
-                  showAveragePreview: _showAveragePreview,
-                  allPlayers: _seasonPlayers ?? [],
-                  onTimestampChanged: (t) {
-                    setState(() => _timestampLabel = t);
+                          isCompleted: _isCompleted,
+                          readOnly: readOnly,
+                          onChanged: (!readOnly)
+                              ? () {
+                                  _recomputeVisiblePunterCount();
+                                  _saveSnapshot();
+                                  setState(() {});
+                                }
+                              : null,
+                          collapsed: _leaderboardCollapsed,
+                          scrollController: _punterScrollController,
+                          fantasyService: widget.fantasyService,
+                          userRoleService: widget.userRoleService,
+                          knownPunterNames: _knownPunterNames,
+                          showAveragePreview: _showAveragePreview,
+                          allPlayers: _seasonPlayers ?? [],
+                          onTimestampChanged: (t) {
+                            setState(() => _timestampLabel = t);
+                          },
+                          onLiveScoreUpdateSave: null,
+                        ),
+                      ),
+                    );
                   },
-                  onLiveScoreUpdateSave: null,
                 ),
               ),
 
