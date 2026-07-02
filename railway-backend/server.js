@@ -1325,6 +1325,7 @@ app.get("/injuryList", async (req, res) => {
         for (const [name, code] of sortedTeamNames) {
           if (headingText.includes(name)) { found = code; break; }
         }
+        console.log(`🏥 heading: "${headingText}" → ${found || 'NO MATCH'}`);
         if (found) tokens.push({ type: 'team', code: found });
       } else if (nodeMatch[3]) {
         // Table row
