@@ -603,6 +603,8 @@ app.get("/matchStats/:matchId", async (req, res) => {
 
         return res.json({
           ok: true,
+          isLive: true,
+          isCompleted: false,
           players: dfsPlayers.map(p => ({ ...p, af: calculateFantasyPoints(p) }))
         });
       }
@@ -638,7 +640,7 @@ app.get("/matchStats/:matchId", async (req, res) => {
         fantasyPoints:         r.fantasy_points,
         af:                    r.fantasy_points,
       }));
-      return res.json({ ok: true, players });
+      return res.json({ ok: true, isCompleted: true, isLive: false, players });
     }
 
     // 3. Nothing found
@@ -1209,6 +1211,9 @@ const INJURY_LIST_TEAM_ORDER = [
 app.get("/injuryList", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   try {
+    console.log("🏥 injuryList: fetching AFL injury page...");
+    const fetchStart = Date.now();
+
     const pageRes = await fetch(
       "https://www.afl.com.au/matches/injury-list",
       {
@@ -1216,14 +1221,19 @@ app.get("/injuryList", async (req, res) => {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
           "Accept": "text/html,application/xhtml+xml",
         },
+        signal: AbortSignal.timeout(15000),
       }
     );
 
+    console.log(`🏥 injuryList: HTTP ${pageRes.status} in ${Date.now() - fetchStart}ms`);
+
     if (!pageRes.ok) {
+      console.warn(`🏥 injuryList: non-OK status ${pageRes.status}`);
       return res.json({ ok: true, players: [], source: "unavailable" });
     }
 
     const html = await pageRes.text();
+    console.log(`🏥 injuryList: got ${html.length} chars of HTML`);
 
     // ── Extract player rows from the article HTML directly ─────────────────────
     // The AFL injury page renders each player as a <tr> with three cells:
@@ -1247,6 +1257,28 @@ app.get("/injuryList", async (req, res) => {
     //
     // To know which team a block belongs to, we look inside it for one of
     // the team name strings (since the page renders teams alphabetically).
+    const teamNames = {
+      "Adelaide":            "ADE",
+      "Brisbane":            "BRL",
+      "Carlton":             "CAR",
+      "Collingwood":         "COL",
+      "Essendon":            "ESS",
+      "Fremantle":           "FRE",
+      "Geelong":             "GEE",
+      "Gold Coast":          "GCS",
+      "GWS":                 "GWS",
+      "Greater Western":     "GWS",
+      "Hawthorn":            "HAW",
+      "Melbourne":           "MELB",
+      "North Melbourne":     "NTH",
+      "Port Adelaide":       "PTA",
+      "Richmond":            "RIC",
+      "St Kilda":            "STK",
+      "Sydney":              "SYD",
+      "West Coast":          "WCE",
+      "Western Bulldogs":    "WBD",
+    };
+
     // Helper — strip HTML tags and normalise whitespace inside a single cell
     function cleanCell(html) {
       return html
@@ -1272,57 +1304,103 @@ app.get("/injuryList", async (req, res) => {
 
     const players = [];
 
-    // The AFL injury page embeds a club-badge image before each team's table.
-    // The image URL contains a code like "Badge-Refresh_ADEL_FA", "Badge-Refresh_ESS_FA" etc.
-    // We split the article on <table>...</table> blocks, find the badge code in the
-    // chunk preceding each table, map it to our 3-letter team code, then parse the rows.
+    // Walk the article HTML sequentially, treating <h2>/<h3>/<h4> headings as
+    // team boundaries. This is robust to AFL page restructures that break the
+    // old "Updated:" split approach.
+    //
+    // Tokenise into: { type:'team', code } | { type:'row', cells[] }
+    // then assign each row to the most-recently-seen team heading.
 
-    const badgeToTeam = {
-      ADEL: 'ADE', BRIS: 'BRL', CARL: 'CAR', COLL: 'COL', ESS:  'ESS',
-      FREM: 'FRE', GEEL: 'GEE', GCS:  'GCS', GWS:  'GWS', HAW:  'HAW',
-      MELB: 'MELB', NM:  'NTH', PA:   'PTA', RICH: 'RIC', STK:  'STK',
-      SYD:  'SYD', WCE:  'WCE', WB:   'WBD',
-    };
+    const tokens = [];
+    const nodeRegex = /(<h[2-4][^>]*>([\s\S]*?)<\/h[2-4]>)|(<tr[^>]*>([\s\S]*?)<\/tr>)/gi;
+    let nodeMatch;
+    // Sort team names longest-first so "North Melbourne" matches before "Melbourne"
+    const sortedTeamNames = Object.entries(teamNames).sort((a, b) => b[0].length - a[0].length);
 
-    // Split article into segments: [pre-table1, table1, pre-table2, table2, ...]
-    const tableRegex = /(<table[\s\S]*?<\/table>)/gi;
-    const segments = articleHtml.split(tableRegex);
-    // segments[0] = before first table, segments[1] = table1, segments[2] = between, segments[3] = table2 ...
-
-    for (let i = 1; i < segments.length; i += 2) {
-      const tableHtml = segments[i];
-      const pre       = segments[i - 1] || '';
-
-      // Find badge code in the preceding segment
-      const badgeMatch = pre.match(/Badge-Refresh_([A-Z]+)_FA/);
-      if (!badgeMatch) continue;
-      const team = badgeToTeam[badgeMatch[1]];
-      if (!team) continue;
-
-      // Parse <tr> rows from this table
-      const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-      let trMatch;
-      while ((trMatch = trRegex.exec(tableHtml)) !== null) {
-        const trInner = trMatch[1];
+    while ((nodeMatch = nodeRegex.exec(articleHtml)) !== null) {
+      if (nodeMatch[1]) {
+        // Heading — check for a known team name
+        const headingText = nodeMatch[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        let found = null;
+        for (const [name, code] of sortedTeamNames) {
+          if (headingText.includes(name)) { found = code; break; }
+        }
+        if (found) tokens.push({ type: 'team', code: found });
+      } else if (nodeMatch[3]) {
+        // Table row
+        const trInner = nodeMatch[4];
         if (/<th[\s>]/i.test(trInner)) continue; // skip header rows
         const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
         const cells = [];
         let cMatch;
         while ((cMatch = cellRegex.exec(trInner)) !== null) cells.push(cleanCell(cMatch[1]));
-        if (cells.length < 3) continue;
-        const playerName = cells[0];
-        if (!playerName || /^PLAYER$/i.test(playerName)) continue;
-        const injury   = cells[1];
-        const timeline = cells[2];
-        players.push({ playerName, team, injury, estimatedReturn: timeline, flagType: deriveFlagType(injury, timeline) });
+        if (cells.length >= 3) tokens.push({ type: 'row', cells });
       }
     }
 
-    console.log(`injuryList: parsed ${players.length} players from AFL page`);
+    // Assign rows to teams in document order
+    let currentTeam = null;
+    for (const token of tokens) {
+      if (token.type === 'team') {
+        currentTeam = token.code;
+      } else if (token.type === 'row' && currentTeam) {
+        const playerName = token.cells[0];
+        const injury     = token.cells[1];
+        const timeline   = token.cells[2];
+        if (!playerName || /^PLAYER$/i.test(playerName)) continue;
+        players.push({
+          playerName,
+          team: currentTeam,
+          injury,
+          estimatedReturn: timeline,
+          flagType: deriveFlagType(injury, timeline),
+        });
+      }
+    }
+
+    // Fallback: if heading-based approach found nothing (page restructured again),
+    // fall back to the old "Updated:" split so we degrade gracefully.
+    if (players.length === 0) {
+      console.warn('injuryList: heading parse found 0 players, falling back to Updated: split');
+      const teamBlocks = articleHtml.split(/Updated\s*:/i);
+      for (const block of teamBlocks) {
+        let team = null;
+        let teamMatchIdx = Infinity;
+        for (const [name, code] of sortedTeamNames) {
+          const idx = block.indexOf(name);
+          if (idx >= 0 && idx < teamMatchIdx) { teamMatchIdx = idx; team = code; }
+        }
+        if (!team) continue;
+        const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+        let trMatch;
+        while ((trMatch = trRegex.exec(block)) !== null) {
+          const trInner = trMatch[1];
+          if (/<th[\s>]/i.test(trInner)) continue;
+          const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+          const cells = [];
+          let cMatch;
+          while ((cMatch = cellRegex.exec(trInner)) !== null) cells.push(cleanCell(cMatch[1]));
+          if (cells.length < 3) continue;
+          const playerName = cells[0];
+          if (!playerName || /^PLAYER$/i.test(playerName)) continue;
+          players.push({ playerName, team, injury: cells[1], estimatedReturn: cells[2], flagType: deriveFlagType(cells[1], cells[2]) });
+        }
+      }
+    }
+
+    console.log(`🏥 injuryList: parsed ${players.length} players from AFL page`);
+    if (players.length === 0) {
+      // Log a snippet of the HTML to help diagnose page structure changes
+      const snippet = html.substring(0, 500).replace(/\s+/g, ' ');
+      console.warn(`🏥 injuryList: 0 players parsed. HTML snippet: ${snippet}`);
+    } else {
+      // Log first and last player as a sanity check
+      console.log(`🏥 injuryList: first=${players[0].playerName} (${players[0].team}), last=${players[players.length-1].playerName} (${players[players.length-1].team})`);
+    }
     res.json({ ok: true, players, source: "afl", updatedAt: new Date().toISOString() });
 
   } catch (err) {
-    console.error("injuryList error:", err.message);
+    console.error("🏥 injuryList error:", err.message, err.cause ? `(cause: ${err.cause?.message})` : "");
     res.json({ ok: true, players: [], source: "error", message: err.message });
   }
 });
