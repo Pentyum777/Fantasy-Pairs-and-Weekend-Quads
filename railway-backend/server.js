@@ -1304,71 +1304,82 @@ app.get("/injuryList", async (req, res) => {
 
     const players = [];
 
-    // Walk the article HTML sequentially, treating <h2>/<h3>/<h4> headings as
-    // team boundaries. This is robust to AFL page restructures that break the
-    // old "Updated:" split approach.
-    //
-    // Tokenise into: { type:'team', code } | { type:'row', cells[] }
-    // then assign each row to the most-recently-seen team heading.
+    // The AFL page uses promo-image sections with team-coded filenames to
+    // separate each club's injury table. Pattern in image URLs:
+    //   ..._ADEL_FA-1x.jpg  → ADE
+    //   ..._BRIS_FA-1x.jpg  → BRL  etc.
+    // Each team section ends with an "Updated:" row inside the table.
+    // We split the article on promo-image sections and read team code from URL.
 
-    const tokens = [];
-    const nodeRegex = /(<h[2-4][^>]*>([\s\S]*?)<\/h[2-4]>)|(<tr[^>]*>([\s\S]*?)<\/tr>)/gi;
-    let nodeMatch;
-    // Sort team names longest-first so "North Melbourne" matches before "Melbourne"
-    const sortedTeamNames = Object.entries(teamNames).sort((a, b) => b[0].length - a[0].length);
+    const promoTeamMap = {
+      'ADEL': 'ADE', 'BRIS': 'BRL', 'CARL': 'CAR', 'COLL': 'COL',
+      'ESS':  'ESS', 'FREM': 'FRE', 'GEEL': 'GEE', 'GCS':  'GCS',
+      'GWS':  'GWS', 'HAW':  'HAW', 'MELB': 'MELB','NM':   'NTH',
+      'PA':   'PTA', 'RICH': 'RIC', 'STK':  'STK', 'SYD':  'SYD',
+      'WCE':  'WCE', 'WB':   'WBD',
+    };
 
-    while ((nodeMatch = nodeRegex.exec(articleHtml)) !== null) {
-      if (nodeMatch[1]) {
-        // Heading — check for a known team name
-        const headingText = nodeMatch[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        let found = null;
-        for (const [name, code] of sortedTeamNames) {
-          if (headingText.includes(name)) { found = code; break; }
+    // Split article on <section> tags (each club has a promo-image section)
+    const sectionRegex = /<section[^>]*class="[^"]*promo-image[^"]*"[\s\S]*?<\/section>/gi;
+    const sectionMatches = [...articleHtml.matchAll(sectionRegex)];
+    console.log(`🏥 injuryList: found ${sectionMatches.length} promo-image sections`);
+
+    if (sectionMatches.length > 0) {
+      for (let si = 0; si < sectionMatches.length; si++) {
+        const section = sectionMatches[si];
+        const sectionEnd = section.index + section[0].length;
+        const nextSectionStart = si + 1 < sectionMatches.length
+          ? sectionMatches[si + 1].index
+          : articleHtml.length;
+
+        // Get team code from image URL in this section
+        const urlMatch = section[0].match(/photo-resources[^"]*?_([A-Z]{2,6})_FA/);
+        if (!urlMatch) continue;
+        const teamCode = promoTeamMap[urlMatch[1]];
+        if (!teamCode) {
+          console.warn(`🏥 unknown team code: ${urlMatch[1]}`);
+          continue;
         }
-        console.log(`🏥 heading: "${headingText}" → ${found || 'NO MATCH'}`);
-        if (found) tokens.push({ type: 'team', code: found });
-      } else if (nodeMatch[3]) {
-        // Table row
-        const trInner = nodeMatch[4];
-        if (/<th[\s>]/i.test(trInner)) continue; // skip header rows
-        const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-        const cells = [];
-        let cMatch;
-        while ((cMatch = cellRegex.exec(trInner)) !== null) cells.push(cleanCell(cMatch[1]));
-        if (cells.length >= 3) tokens.push({ type: 'row', cells });
+
+        // Extract table rows between end of this section and start of next
+        const tableSlice = articleHtml.slice(sectionEnd, nextSectionStart);
+        const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+        let trMatch;
+        let teamPlayerCount = 0;
+        while ((trMatch = trRegex.exec(tableSlice)) !== null) {
+          const trInner = trMatch[1];
+          if (/<th[\s>]/i.test(trInner)) continue; // skip header row
+          const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+          const cells = [];
+          let cMatch;
+          while ((cMatch = cellRegex.exec(trInner)) !== null) cells.push(cleanCell(cMatch[1]));
+          if (cells.length < 3) continue; // skip Updated: row (colspan=3 gives 1 cell)
+          const playerName = cells[0];
+          if (!playerName || /^PLAYER$/i.test(playerName) || /Updated/i.test(playerName)) continue;
+          players.push({
+            playerName,
+            team: teamCode,
+            injury: cells[1],
+            estimatedReturn: cells[2],
+            flagType: deriveFlagType(cells[1], cells[2]),
+          });
+          teamPlayerCount++;
+        }
+        console.log(`🏥 ${teamCode}: ${teamPlayerCount} players`);
       }
     }
 
-    // Assign rows to teams in document order
-    let currentTeam = null;
-    for (const token of tokens) {
-      if (token.type === 'team') {
-        currentTeam = token.code;
-      } else if (token.type === 'row' && currentTeam) {
-        const playerName = token.cells[0];
-        const injury     = token.cells[1];
-        const timeline   = token.cells[2];
-        if (!playerName || /^PLAYER$/i.test(playerName)) continue;
-        players.push({
-          playerName,
-          team: currentTeam,
-          injury,
-          estimatedReturn: timeline,
-          flagType: deriveFlagType(injury, timeline),
-        });
-      }
-    }
-
-    // Fallback: if heading-based approach found nothing (page restructured again),
-    // fall back to the old "Updated:" split so we degrade gracefully.
+    // Fallback to Updated: split if section approach found nothing
     if (players.length === 0) {
-      console.warn('injuryList: heading parse found 0 players, falling back to Updated: split');
+      console.warn('🏥 injuryList: section parse found 0 players, falling back to Updated: split');
+      const sortedTeamNames = Object.entries(teamNames).sort((a, b) => b[0].length - a[0].length);
       const teamBlocks = articleHtml.split(/Updated\s*:/i);
       for (const block of teamBlocks) {
         let team = null;
         let teamMatchIdx = Infinity;
+        const cleanBlock = block.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
         for (const [name, code] of sortedTeamNames) {
-          const idx = block.indexOf(name);
+          const idx = cleanBlock.indexOf(name);
           if (idx >= 0 && idx < teamMatchIdx) { teamMatchIdx = idx; team = code; }
         }
         if (!team) continue;
