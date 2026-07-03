@@ -17,6 +17,17 @@ class PlayerRepository {
       return _playersBySeason[season]!;
     }
 
+    return _fetchSeason(season);
+  }
+
+  // ------------------------------------------------------------
+  // FORCE RELOAD (bypasses the in-memory cache, re-reads the asset)
+  // ------------------------------------------------------------
+  Future<List<AflPlayer>> reloadSeason(int season) async {
+    return _fetchSeason(season);
+  }
+
+  Future<List<AflPlayer>> _fetchSeason(int season) async {
     final path = 'assets/data/players_$season.json';
     print("🔥 Loading $path");
 

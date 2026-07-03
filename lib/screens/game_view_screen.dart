@@ -228,7 +228,10 @@ void initState() {
     _currentStatsByPlayerId = cache.getStats(cacheKey);
   }
 
-  // Restore cached players immediately (skips the async load)
+  // Restore cached players immediately (skips the async load / avoids a flash
+  // of "loading"), then silently refresh from the players_2026.json asset in
+  // the background so newly added/edited players (e.g. a roster addition)
+  // show up without requiring a full app restart to clear the session cache.
   if (cache != null && cache.hasPlayers(widget.season)) {
     _seasonPlayers = cache.getPlayers(widget.season);
     _loadingPlayers = false;
@@ -240,6 +243,22 @@ void initState() {
     if (_seasonPlayers!.every((p) => p.fantasyScore == 0)) {
       _enrichPlayerFantasyScores(_seasonPlayers!);
     }
+
+    // ⭐ Background refresh: re-read players_$season.json and update both
+    // the cache and the visible list if anything changed (e.g. new player
+    // added to the roster file). This is a local asset read, so it's cheap.
+    widget.playerRepo.reloadSeason(widget.season).then((fresh) {
+      if (!mounted) return;
+      final freshIds = fresh.map((p) => p.id).toSet();
+      final cachedIds = _seasonPlayers!.map((p) => p.id).toSet();
+      if (freshIds.length != cachedIds.length || !freshIds.containsAll(cachedIds)) {
+        cache.setPlayers(widget.season, fresh);
+        setState(() {
+          _seasonPlayers = fresh;
+        });
+        _enrichPlayerFantasyScores(fresh);
+      }
+    });
 
     // Only fetch fresh snapshot from network if we have no prior data
     // Exclude placeholder names like P1, P2... from hasData check
