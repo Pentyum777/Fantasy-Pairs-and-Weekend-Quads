@@ -15,55 +15,6 @@
       "season": 2026
     },
     {
-      "id": "CD_I993903",
-      "name": "Jacob Hopper",
-      "club": "RIC",
-      "guernseyNumber": 2,
-      "season": 2026
-    },
-    {
-      "id": "CD_I1036104",
-      "name": "Will Lewis",
-      "club": "WBD",
-      "guernseyNumber": 28,
-      "season": 2026
-    },
-    {
-      "id": "CD_I1040573",
-      "name": "Christopher Scerri",
-      "club": "FRE",
-      "guernseyNumber": 45,
-      "season": 2026
-    },
-    {
-      "id": "CD_I1034305",
-      "name": "Jacob Farrow",
-      "club": "ESS",
-      "guernseyNumber": 2,
-      "season": 2026
-    },
-    {
-      "id": "CD_I1020887",
-      "name": "Paddy Cross",
-      "club": "MELB",
-      "guernseyNumber": 41,
-      "season": 2026
-    },
-    {
-      "id": "CD_I1029603",
-      "name": "Mitch Zadow",
-      "club": "PTA",
-      "guernseyNumber": 39,
-      "season": 2026
-    },
-    {
-      "id": "CD_I1011771",
-      "name": "Flynn Perez",
-      "club": "HAW",
-      "guernseyNumber": 39,
-      "season": 2026
-    },
-    {
       "id": "CD_I1030311",
       "name": "Adam Sweid",
       "club": "FRE",
@@ -152,6 +103,13 @@
       "name": "Alex Neal-Bullen",
       "club": "ADE",
       "guernseyNumber": 28,
+      "season": 2026
+    },
+{
+      "id": "CD_I1023273",
+      "name": "Hugo Hall-Kahan",
+      "club": "ADE",
+      "guernseyNumber":40,
       "season": 2026
     },
     {
@@ -5510,7 +5468,7 @@
       "season": 2026
     },
     {
-      "id": "CD_I1013494",
+      "id": "CD_I1012862",
       "name": "Elijah Hollands",
       "club": "CAR",
       "guernseyNumber": 20,
@@ -5542,6 +5500,27 @@
       "name": "Zeke Uwland",
       "club": "GCS",
       "guernseyNumber": 32,
+      "season": 2026
+    },
+    {
+      "id": "CD_I993903",
+      "name": "Jacob Hopper",
+      "club": "RIC",
+      "guernseyNumber": 0,
+      "season": 2026
+    },
+    {
+      "id": "CD_I1034305",
+      "name": "Jacob Farrow",
+      "club": "ESS",
+      "guernseyNumber": 0,
+      "season": 2026
+    },
+    {
+      "id": "CD_I1027367",
+      "name": "Zane Peucker",
+      "club": "RIC",
+      "guernseyNumber": 0,
       "season": 2026
     },
     {
