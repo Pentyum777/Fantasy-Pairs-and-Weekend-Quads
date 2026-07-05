@@ -1,7 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 
 import '../repositories/player_repository.dart';
 import '../services/championship_service.dart';
+
+// Allows click-and-drag horizontal scrolling with a mouse, in addition to
+// the default touch/stylus/trackpad support — needed for the Overall
+// Championship table's round columns on desktop, where there was
+// previously no way to trigger the scroll at all.
+class _HorizontalDragScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
+}
 
 class ChampionshipScreen extends StatefulWidget {
   final ChampionshipService service;
@@ -67,6 +82,16 @@ class _ChampionshipScreenState extends State<ChampionshipScreen>
         title: const Text("Monthly Medal"),
         backgroundColor: theme.colorScheme.surface,
         actions: [
+          if (!_loading && _selectedSeries != null)
+            IconButton(
+              icon: const Icon(Icons.camera_alt_outlined),
+              tooltip: "Snapshot",
+              onPressed: () => _MedalSnapshotOverlay.show(
+                context,
+                service: widget.service,
+                selectedSeries: _selectedSeries!,
+              ),
+            ),
           if (!_loading)
             IconButton(
               icon: const Icon(Icons.refresh),
@@ -276,6 +301,14 @@ class _PointsTableState extends State<_PointsTable> {
   final _headerScroll = ScrollController();
   final _bodyScroll = ScrollController();
 
+  // Fixed (rank/name) column and scrollable (rounds/total) column are
+  // rendered as two separate vertical lists so the horizontal scroll of
+  // the rounds columns can be ONE single widget (see below). These two
+  // controllers keep their vertical position in sync with each other.
+  final _leftVScroll = ScrollController();
+  final _rightVScroll = ScrollController();
+  bool _syncingV = false;
+
   @override
   void initState() {
     super.initState();
@@ -284,12 +317,26 @@ class _PointsTableState extends State<_PointsTable> {
         _headerScroll.jumpTo(_bodyScroll.offset);
       }
     });
+    _leftVScroll.addListener(() {
+      if (_syncingV) return;
+      _syncingV = true;
+      if (_rightVScroll.hasClients) _rightVScroll.jumpTo(_leftVScroll.offset);
+      _syncingV = false;
+    });
+    _rightVScroll.addListener(() {
+      if (_syncingV) return;
+      _syncingV = true;
+      if (_leftVScroll.hasClients) _leftVScroll.jumpTo(_rightVScroll.offset);
+      _syncingV = false;
+    });
   }
 
   @override
   void dispose() {
     _headerScroll.dispose();
     _bodyScroll.dispose();
+    _leftVScroll.dispose();
+    _rightVScroll.dispose();
     super.dispose();
   }
 
@@ -459,24 +506,63 @@ class _PointsTableState extends State<_PointsTable> {
 
         // Body
         Expanded(
-          child: ListView.builder(
-            itemCount: rows.length,
-            itemExtent: rowH,
-            itemBuilder: (ctx, i) => Row(
-              children: [
-                fixedRow(i),
-                Expanded(
-                  child: widget.scrollable
-                      ? SingleChildScrollView(
+          child: widget.scrollable
+              ? ScrollConfiguration(
+                  // Desktop (mouse) users need drag-to-scroll enabled —
+                  // by default Flutter only allows touch/stylus/trackpad.
+                  behavior: _HorizontalDragScrollBehavior(),
+                  child: Row(
+                    children: [
+                      // Fixed rank/punter column — its own vertical list,
+                      // kept in sync with the scrollable column below.
+                      SizedBox(
+                        width: rankW + nameW,
+                        child: ListView.builder(
+                          controller: _leftVScroll,
+                          itemCount: rows.length,
+                          itemExtent: rowH,
+                          itemBuilder: (ctx, i) => fixedRow(i),
+                        ),
+                      ),
+                      // Scrollable rounds/total column — ONE horizontal
+                      // scroll region for every row at once (previously
+                      // each row had its own scroll view sharing a single
+                      // controller, so dragging one row didn't move the
+                      // others or the header).
+                      Expanded(
+                        child: Scrollbar(
                           controller: _bodyScroll,
-                          scrollDirection: Axis.horizontal,
-                          child: scrollRow(i),
-                        )
-                      : scrollRow(i),
+                          thumbVisibility: true,
+                          trackVisibility: true,
+                          notificationPredicate: (_) => true,
+                          child: SingleChildScrollView(
+                            controller: _bodyScroll,
+                            scrollDirection: Axis.horizontal,
+                            child: SizedBox(
+                              width: scrollWidth,
+                              child: ListView.builder(
+                                controller: _rightVScroll,
+                                itemCount: rows.length,
+                                itemExtent: rowH,
+                                itemBuilder: (ctx, i) => scrollRow(i),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: rows.length,
+                  itemExtent: rowH,
+                  itemBuilder: (ctx, i) => Row(
+                    children: [
+                      fixedRow(i),
+                      Expanded(child: scrollRow(i)),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          ),
         ),
       ],
     );
@@ -558,6 +644,201 @@ class _PointsLegend extends StatelessWidget {
             ],
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MEDAL SNAPSHOT OVERLAY
+//
+// Full-screen modal that renders the Overall Championship table and the
+// selected Monthly Medal table side by side, at natural (desktop) size,
+// scaled to fit the device via FittedBox — same pattern as ScreenshotOverlay
+// used for the punter selection table + leaderboard.
+// ─────────────────────────────────────────────────────────────────────────────
+class _MedalSnapshotOverlay extends StatelessWidget {
+  final ChampionshipService service;
+  final String selectedSeries;
+
+  const _MedalSnapshotOverlay({
+    required this.service,
+    required this.selectedSeries,
+  });
+
+  static void show(
+    BuildContext context, {
+    required ChampionshipService service,
+    required String selectedSeries,
+  }) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black,
+      barrierDismissible: true,
+      builder: (_) => _MedalSnapshotOverlay(
+        service: service,
+        selectedSeries: selectedSeries,
+      ),
+    );
+  }
+
+  // Natural (desktop) column widths — matches the non-phone branch of
+  // _PointsTableState.build so the snapshot always renders at full detail
+  // regardless of the device it's captured on.
+  static const double _rankW = 32;
+  static const double _nameW = 100;
+  static const double _roundW = 42;
+  static const double _totalW = 48;
+  static const double _rowH = 30;
+  static const double _headerH = 28;
+  static const double _titleBlockH = 32; // title text + spacing, with buffer
+  static const double _padding = 12.0;
+  static const double _gap = 16.0;
+
+  double _tableWidth(int roundCount) =>
+      _rankW + _nameW + roundCount * _roundW + _totalW;
+
+  double _tableHeight(int rowCount) =>
+      _titleBlockH + _headerH + rowCount * _rowH;
+
+  @override
+  Widget build(BuildContext context) {
+    final overallRows =
+        service.buildPointsTable(roundNumbers: null);
+    final overallRounds =
+        service.sortedRoundNumbers(roundNumbers: null);
+
+    final monthRoundNumbers = service.roundNumbersForSeries(selectedSeries);
+    final monthRows =
+        service.buildPointsTable(roundNumbers: monthRoundNumbers);
+
+    final overallW = _tableWidth(overallRounds.length);
+    final monthW = _tableWidth(monthRoundNumbers.length);
+    final overallH = _tableHeight(overallRows.length);
+    final monthH = _tableHeight(monthRows.length);
+
+    final naturalW = overallW + _gap + monthW + _padding * 2;
+    final naturalH =
+        (overallH > monthH ? overallH : monthH) + _padding * 2;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 4.0,
+            boundaryMargin: const EdgeInsets.all(double.infinity),
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.contain,
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: naturalW,
+                  height: naturalH,
+                  child: _buildContent(
+                    context,
+                    overallW,
+                    overallH,
+                    monthW,
+                    monthH,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 8,
+            right: 12,
+            child: _SnapshotCloseButton(
+              onTap: () => Navigator.of(context).pop(),
+            ),
+          ),
+
+          Positioned(
+            bottom: MediaQuery.paddingOf(context).bottom + 12,
+            left: 0,
+            right: 0,
+            child: const Center(
+              child: Text(
+                'Pinch to zoom · tap ✕ to close',
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 12,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    double overallW,
+    double overallH,
+    double monthW,
+    double monthH,
+  ) {
+    final theme = Theme.of(context);
+
+    return Container(
+      color: theme.colorScheme.surface,
+      padding: const EdgeInsets.all(_padding),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: overallW,
+            height: overallH,
+            child: _PointsTable(
+              service: service,
+              roundNumbers: null,
+              title: "Overall Championship",
+              scrollable: false,
+            ),
+          ),
+          const SizedBox(width: _gap),
+          SizedBox(
+            width: monthW,
+            height: monthH,
+            child: _PointsTable(
+              service: service,
+              roundNumbers: service.roundNumbersForSeries(selectedSeries),
+              title: "$selectedSeries · Monthly Medal",
+              scrollable: false,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SnapshotCloseButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _SnapshotCloseButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade900.withOpacity(0.85),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white24),
+        ),
+        child: const Icon(
+          Icons.close,
+          color: Colors.white,
+          size: 18,
+        ),
       ),
     );
   }
