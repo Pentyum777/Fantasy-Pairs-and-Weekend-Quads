@@ -2285,7 +2285,41 @@ Future<void> _forceApplyStats() async {
     final players = _seasonPlayers ?? [];
     list.sort((a, b) => b.avgScore(players).compareTo(a.avgScore(players)));
   } else {
-    list.sort((a, b) => b.totalScore.compareTo(a.totalScore));
+    list.sort((a, b) {
+      // Primary: total score descending
+      final totalCmp = b.totalScore.compareTo(a.totalScore);
+      if (totalCmp != 0) return totalCmp;
+
+      // Tiebreaker: compare individual pick scores highest-to-lowest,
+      // same rule as championship_service.calculateRoundPoints, so the
+      // displayed rank always matches the punter with the best individual
+      // scorer when totals are level.
+      final aScores = a.picks
+          .where((p) => p.player != null)
+          .map((p) => p.fantasyPoints ?? 0)
+          .toList()
+        ..sort((x, y) => y.compareTo(x));
+
+      final bScores = b.picks
+          .where((p) => p.player != null)
+          .map((p) => p.fantasyPoints ?? 0)
+          .toList()
+        ..sort((x, y) => y.compareTo(x));
+
+      final maxLen = aScores.length > bScores.length
+          ? aScores.length
+          : bScores.length;
+
+      for (int i = 0; i < maxLen; i++) {
+        final aVal = i < aScores.length ? aScores[i] : 0;
+        final bVal = i < bScores.length ? bScores[i] : 0;
+        final cmp = bVal.compareTo(aVal);
+        if (cmp != 0) return cmp;
+      }
+
+      // Fully tied — stable alphabetical fallback
+      return a.punterName.compareTo(b.punterName);
+    });
   }
   return list;
 }
