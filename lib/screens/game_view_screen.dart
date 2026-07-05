@@ -1766,6 +1766,16 @@ Future<void> _forceApplyStats() async {
     final rowsB = stats.where((s) => s.player?.club == awayTeam).map(_mapStats).toList();
     _enrichStatsWithPlayerData(rowsA);
     _enrichStatsWithPlayerData(rowsB);
+
+    // ⭐ Sort by AF descending. Completed rounds only *looked* sorted
+    // because the backend's DB query (ORDER BY fantasy_points DESC) did it
+    // for us — live rounds come straight from the DFS scrape feed with no
+    // inherent order, so we sort here explicitly for both cases.
+    int byAfDesc(Map<String, dynamic> a, Map<String, dynamic> b) =>
+        ((b["AF"] as num?) ?? 0).compareTo((a["AF"] as num?) ?? 0);
+    rowsA.sort(byAfDesc);
+    rowsB.sort(byAfDesc);
+
     return (left: rowsA, right: rowsB);
   }
 
