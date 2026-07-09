@@ -1,10 +1,25 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 
 import '../repositories/fixture_repository.dart';
 import '../repositories/player_repository.dart';
 import '../services/scout_service.dart';
+
+// Allows click-and-drag horizontal scrolling with a mouse, in addition to
+// the default touch/stylus/trackpad support — needed for the stats table's
+// round columns on desktop, where there was previously no way to trigger
+// the scroll at all.
+class _HorizontalDragScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sort column enum
@@ -118,6 +133,18 @@ class _ScoutScreenState extends State<ScoutScreen> {
 
   final _searchCtrl = TextEditingController();
 
+  // ── Stats table scrolling ────────────────────────────────────────────────
+  // Single shared horizontal controller for the header + all rows (the
+  // rounds/stats columns), plus a synced pair of vertical controllers for
+  // the fixed (rank/name/team) column vs. the scrollable stats column.
+  // These must live on the State, not be recreated inside _buildTable() on
+  // every rebuild, or scroll position resets every time a filter changes.
+  final _tableHeaderHScroll = ScrollController();
+  final _tableBodyHScroll = ScrollController();
+  final _tableLeftVScroll = ScrollController();
+  final _tableRightVScroll = ScrollController();
+  bool _syncingTableV = false;
+
   // ── Per-user, per-game-type persistence key ────────────────────────────────
   /// Unique key that scopes all persisted scout prefs to the current user
   /// AND the active game type. Changing game type loads a fresh set of prefs.
@@ -170,12 +197,38 @@ class _ScoutScreenState extends State<ScoutScreen> {
     // Restore per-user, per-game-type sort/filter prefs and list selections
     // before kicking off the main data load so the UI is consistent.
     _loadUserPrefs().then((_) => _loadData());
+
+    _tableBodyHScroll.addListener(() {
+      if (_tableHeaderHScroll.hasClients) {
+        _tableHeaderHScroll.jumpTo(_tableBodyHScroll.offset);
+      }
+    });
+    _tableLeftVScroll.addListener(() {
+      if (_syncingTableV) return;
+      _syncingTableV = true;
+      if (_tableRightVScroll.hasClients) {
+        _tableRightVScroll.jumpTo(_tableLeftVScroll.offset);
+      }
+      _syncingTableV = false;
+    });
+    _tableRightVScroll.addListener(() {
+      if (_syncingTableV) return;
+      _syncingTableV = true;
+      if (_tableLeftVScroll.hasClients) {
+        _tableLeftVScroll.jumpTo(_tableRightVScroll.offset);
+      }
+      _syncingTableV = false;
+    });
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
     _draftedPollTimer?.cancel();
+    _tableHeaderHScroll.dispose();
+    _tableBodyHScroll.dispose();
+    _tableLeftVScroll.dispose();
+    _tableRightVScroll.dispose();
     super.dispose();
   }
 
@@ -1239,7 +1292,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
       return i.isEven ? cs.surface : cs.surfaceVariant;
     }
 
-    Widget buildRow(int i) {
+    ({Widget fixed, Widget scroll}) buildRowParts(int i) {
       final s = rows[i];
       final bg = rowBg(i, s);
       final flag = _flags[s.playerId];
@@ -1266,7 +1319,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
         decorationThickness: isDrafted ? 2.0 : null,
       );
 
-      return SizedBox(
+      final fixed = SizedBox(
         height: 30,
         child: Row(
           children: [
@@ -1320,11 +1373,13 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 style: nameStyle, bg: bg,
                 align: Alignment.centerLeft),
             dCell(s.team, teamW, bg: bg),
-            // Scrollable
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const NeverScrollableScrollPhysics(),
-              child: Row(children: [
+          ],
+        ),
+      );
+
+      final scroll = SizedBox(
+        height: 30,
+        child: Row(children: [
                 dCell('${s.games}', statW, bg: bg),
                 dCell('${s.afAvg}', statW,
                     style: cellStyle?.copyWith(fontWeight: FontWeight.w700),
@@ -1447,20 +1502,19 @@ class _ScoutScreenState extends State<ScoutScreen> {
                   ],
                 ),
               ]),
-            ),
-          ],
-        ),
       );
+
+      return (fixed: fixed, scroll: scroll);
     }
 
-    final headerScrollCtrl = ScrollController();
-    final bodyScrollCtrl   = ScrollController();
-
-    bodyScrollCtrl.addListener(() {
-      if (headerScrollCtrl.hasClients) {
-        headerScrollCtrl.jumpTo(bodyScrollCtrl.offset);
-      }
-    });
+    // Natural width of the scrollable stat columns, so the single shared
+    // horizontal scroll region knows its scrollable extent. Includes a
+    // buffer for the optional per-row note text, which can extend slightly
+    // past the last column for flagged players.
+    final double scrollWidth = statW * 11 +
+        (_upcomingOpponent.isNotEmpty ? (isPhone ? statW : statW + 10) : 0) +
+        (flagW + 28) +
+        120; // note buffer
 
     return Column(
       children: [
@@ -1478,7 +1532,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
               fixedHeader(),
               Expanded(
                 child: SingleChildScrollView(
-                  controller: headerScrollCtrl,
+                  controller: _tableHeaderHScroll,
                   scrollDirection: Axis.horizontal,
                   physics: const NeverScrollableScrollPhysics(),
                   child: scrollHeader(),
@@ -1489,18 +1543,49 @@ class _ScoutScreenState extends State<ScoutScreen> {
         ),
         // Body
         Expanded(
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (n) {
-              if (n is ScrollUpdateNotification &&
-                  n.metrics.axis == Axis.horizontal) {
-                bodyScrollCtrl.jumpTo(n.metrics.pixels);
-              }
-              return false;
-            },
-            child: ListView.builder(
-              itemCount: rows.length,
-              itemExtent: 30,
-              itemBuilder: (ctx, i) => buildRow(i),
+          child: ScrollConfiguration(
+            behavior: _HorizontalDragScrollBehavior(),
+            child: Row(
+              children: [
+                // Fixed rank/player/team column — its own vertical list,
+                // kept in sync with the scrollable column below.
+                SizedBox(
+                  width: 32 + numW + nameW + teamW,
+                  child: ListView.builder(
+                    controller: _tableLeftVScroll,
+                    itemCount: rows.length,
+                    itemExtent: 30,
+                    itemBuilder: (ctx, i) => buildRowParts(i).fixed,
+                  ),
+                ),
+                // Scrollable stats column — ONE horizontal scroll region
+                // covering every row at once. Previously each row had its
+                // own scroll view with dragging disabled entirely and no
+                // controller attached, so nothing could ever be scrolled,
+                // and taps near it could misbehave inside the dead
+                // gesture-arena participant.
+                Expanded(
+                  child: Scrollbar(
+                    controller: _tableBodyHScroll,
+                    thumbVisibility: true,
+                    trackVisibility: true,
+                    notificationPredicate: (_) => true,
+                    child: SingleChildScrollView(
+                      controller: _tableBodyHScroll,
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: scrollWidth,
+                        child: ListView.builder(
+                          controller: _tableRightVScroll,
+                          itemCount: rows.length,
+                          itemExtent: 30,
+                          itemBuilder: (ctx, i) => buildRowParts(i).scroll,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
