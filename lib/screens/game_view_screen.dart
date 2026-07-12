@@ -1771,8 +1771,11 @@ Future<void> _forceApplyStats() async {
     // because the backend's DB query (ORDER BY fantasy_points DESC) did it
     // for us — live rounds come straight from the DFS scrape feed with no
     // inherent order, so we sort here explicitly for both cases.
-    int byAfDesc(Map<String, dynamic> a, Map<String, dynamic> b) =>
-        ((b["AF"] as num?) ?? 0).compareTo((a["AF"] as num?) ?? 0);
+    int byAfDesc(Map<String, dynamic> a, Map<String, dynamic> b) {
+      final bAf = num.tryParse(b["AF"]?.toString() ?? "") ?? 0;
+      final aAf = num.tryParse(a["AF"]?.toString() ?? "") ?? 0;
+      return bAf.compareTo(aAf);
+    }
     rowsA.sort(byAfDesc);
     rowsB.sort(byAfDesc);
 
@@ -2290,7 +2293,9 @@ Future<void> _forceApplyStats() async {
 
   // ─────────────────────────────────────────────────────────────────────────
   List<PunterSelection> _sortedSelections() {
-  final list = List<PunterSelection>.from(_selections);
+  final list = _selections.where((p) {
+    return p.punterName.trim().isNotEmpty || p.picks.any((pick) => pick.player != null);
+  }).toList();
   if (_showAveragePreview) {
     final players = _seasonPlayers ?? [];
     list.sort((a, b) => b.avgScore(players).compareTo(a.avgScore(players)));
