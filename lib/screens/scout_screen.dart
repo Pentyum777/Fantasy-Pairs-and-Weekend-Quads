@@ -245,32 +245,56 @@ class _ScoutScreenState extends State<ScoutScreen> {
     };
 
     final emergencySections = {'emergencies', 'emergency'};
+    final interchangeSections = {'interchanges', 'interchange'};
     // Sections that signal a new team has started — reset emergency flag
     final teamStartSections = {
       'full backs', 'half backs', 'centres', 'half forwards',
       'full forwards', 'followers',
     };
     bool inEmergency = false;
+    bool inInterchange = false;
+    int interchangeCount = 0;
 
     final candidateNames = <String>[];
     final emergencyNames = <String>[];
 
     for (final line in lines) {
-      // Blank line = team boundary — reset emergency flag
-      if (line.isEmpty) { inEmergency = false; continue; }
+      // Blank line = team boundary — reset flags
+      if (line.isEmpty) { inEmergency = false; inInterchange = false; interchangeCount = 0; continue; }
       if (RegExp(r'^\d+$').hasMatch(line)) continue;
       if (sectionLabels.contains(line.toLowerCase())) {
         if (teamStartSections.contains(line.toLowerCase())) {
           inEmergency = false;
+          inInterchange = false;
+          interchangeCount = 0;
+        } else if (interchangeSections.contains(line.toLowerCase())) {
+          inEmergency = false;
+          inInterchange = true;
+          interchangeCount = 0;
         } else {
+          inInterchange = false;
           inEmergency = emergencySections.contains(line.toLowerCase());
         }
         continue;
       }
       if (RegExp(r'^[A-Z][a-z]').hasMatch(line) ||
           RegExp(r'^[A-Z]\. [A-Z]').hasMatch(line)) {
-        if (inEmergency) emergencyNames.add(line);
-        else candidateNames.add(line);
+        if (inEmergency) {
+          emergencyNames.add(line);
+        } else if (inInterchange) {
+          // Only the first 4 interchange players are named squad —
+          // the AFL teamsheet lists 8 in the interchange section but
+          // the last 3 are emergencies printed before the "Emergencies"
+          // header (they appear as interchange slots 6-8 in the paste).
+          if (interchangeCount < 5) {
+            candidateNames.add(line);
+            interchangeCount++;
+          } else {
+            emergencyNames.add(line);
+          }
+        } else {
+          candidateNames.add(line);
+        }
       }
     }
 
