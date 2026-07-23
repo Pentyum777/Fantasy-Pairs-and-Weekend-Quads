@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'services/msal_service.dart';
 import 'repositories/fixture_repository.dart';
@@ -48,12 +49,29 @@ class _MyAppState extends State<MyApp> {
 
     playerRepo.loadAllPlayers();
 
+    // ── Restore saved login ──────────────────────────────────────────────────
+    // Check SharedPreferences for a previously saved email. If found, skip
+    // the login screen entirely and go straight to the app.
+    SharedPreferences.getInstance().then((prefs) {
+      final savedEmail = prefs.getString('logged_in_email');
+      if (savedEmail != null && savedEmail.isNotEmpty && mounted) {
+        userRoleService.setUser(savedEmail);
+        setState(() {
+          _token             = 'restored-session';
+          _fixtureLoadFuture = _loadAllFixtures();
+        });
+      }
+    });
+
     if (kIsWeb) {
       MsalService.listenForToken((token, account) {
         if (!mounted) return;
         final email = account.username;
         print('MSAL(Dart): Logged in as $email');
         userRoleService.setUser(email);
+        // Persist so next launch skips login
+        SharedPreferences.getInstance()
+            .then((prefs) => prefs.setString('logged_in_email', email));
         setState(() {
           _token             = token;
           _fixtureLoadFuture = _loadAllFixtures();
@@ -83,7 +101,10 @@ class _MyAppState extends State<MyApp> {
             if (kIsWeb) {
               Future.microtask(() => MsalService.startLogin(['User.Read']));
             } else {
-              userRoleService.setUser('wpenfold@bigpond.net.au');
+              final email = 'wpenfold@bigpond.net.au';
+              userRoleService.setUser(email);
+              SharedPreferences.getInstance()
+                  .then((prefs) => prefs.setString('logged_in_email', email));
               setState(() {
                 _token             = 'local-login';
                 _fixtureLoadFuture = _loadAllFixtures();
