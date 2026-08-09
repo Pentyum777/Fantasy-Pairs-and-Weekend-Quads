@@ -1,7 +1,7 @@
 class UIDimensions {
   // Leaderboard + Punter table layout
   static const double rankColumnWidth = 32;
-  static const double punterNameColumnWidth = 88;  // ~12 chars + deficit
+  static const double punterNameColumnWidth = 100;  // name + deficit slot
   static const double totalColumnWidth = 40;       // 3-digit total
 
   // NEW: Separate widths for pick and score columns

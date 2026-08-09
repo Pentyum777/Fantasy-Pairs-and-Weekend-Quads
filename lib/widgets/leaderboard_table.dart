@@ -80,7 +80,6 @@ class LeaderboardTable extends StatelessWidget {
   Widget buildBodyRow(BuildContext context, int index) {
     final p = punters[index];
 
-    // Points needed to reach the leader (0 for the leader themselves)
     final leaderScore = punters.isEmpty
         ? 0
         : (punters.first.picks.isEmpty
@@ -142,34 +141,39 @@ class LeaderboardTable extends StatelessWidget {
     final color = textColorOverride ??
         Theme.of(context).textTheme.bodySmall?.color;
 
-    return Container(
+    return SizedBox(
       width: UIDimensions.punterNameColumnWidth,
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(
-            child: Text(
-              p.punterName,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: color,
-                    fontSize: 11,
-                  ),
+          // Name takes all remaining space — never clips due to deficit
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 2),
+              child: Text(
+                p.punterName,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: color,
+                      fontSize: 11,
+                    ),
+              ),
             ),
           ),
-          if (deficit > 0) ...[
-            const SizedBox(width: 2),
-            Text(
-              '-$deficit',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.red,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w500,
-                  ),
-            ),
-          ],
+          // Fixed-width slot — always reserved so name width is stable
+          SizedBox(
+            width: 32,
+            child: deficit > 0
+                ? Text(
+                    '-$deficit',
+                    textAlign: TextAlign.left,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.red,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  )
+                : null,
+          ),
         ],
       ),
     );
