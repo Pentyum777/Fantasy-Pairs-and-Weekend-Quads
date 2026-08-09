@@ -1111,8 +1111,8 @@ Widget build(BuildContext context) {
           widget.showAveragePreview
               ? "${row.avgScore(widget.allPlayers)}"
               : "${row.totalScore}",
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
         ),

@@ -80,12 +80,23 @@ class LeaderboardTable extends StatelessWidget {
   Widget buildBodyRow(BuildContext context, int index) {
     final p = punters[index];
 
+    // Points needed to reach the leader (0 for the leader themselves)
+    final leaderScore = punters.isEmpty
+        ? 0
+        : (punters.first.picks.isEmpty
+            ? punters.first.liveScore
+            : punters.first.totalScore);
+    final thisScore = p.picks.isEmpty ? p.liveScore : p.totalScore;
+    final deficit = (index > 0 && leaderScore > thisScore)
+        ? leaderScore - thisScore
+        : 0;
+
     return SizedBox(
       height: rowHeight,
       child: Row(
         children: [
           _rankCell(context, index),
-          _punterNameCell(context, p),
+          _punterNameCell(context, p, deficit: deficit),
           _scoreCell(context, p),
         ],
       ),
@@ -127,7 +138,7 @@ class LeaderboardTable extends StatelessWidget {
     );
   }
 
-  Widget _punterNameCell(BuildContext context, PunterSelection p) {
+  Widget _punterNameCell(BuildContext context, PunterSelection p, {int deficit = 0}) {
     final color = textColorOverride ??
         Theme.of(context).textTheme.bodySmall?.color;
 
@@ -135,13 +146,31 @@ class LeaderboardTable extends StatelessWidget {
       width: UIDimensions.punterNameColumnWidth,
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Text(
-        p.punterName,
-        overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: color,
-              fontSize: 11,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              p.punterName,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: color,
+                    fontSize: 11,
+                  ),
             ),
+          ),
+          if (deficit > 0) ...[
+            const SizedBox(width: 2),
+            Text(
+              '-$deficit',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.red,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w500,
+                  ),
+            ),
+          ],
+        ],
       ),
     );
   }
