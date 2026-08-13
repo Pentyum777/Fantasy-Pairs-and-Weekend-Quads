@@ -228,10 +228,7 @@ void initState() {
     _currentStatsByPlayerId = cache.getStats(cacheKey);
   }
 
-  // Restore cached players immediately (skips the async load / avoids a flash
-  // of "loading"), then silently refresh from the players_2026.json asset in
-  // the background so newly added/edited players (e.g. a roster addition)
-  // show up without requiring a full app restart to clear the session cache.
+  // Restore cached players immediately (skips the async load)
   if (cache != null && cache.hasPlayers(widget.season)) {
     _seasonPlayers = cache.getPlayers(widget.season);
     _loadingPlayers = false;
@@ -243,22 +240,6 @@ void initState() {
     if (_seasonPlayers!.every((p) => p.fantasyScore == 0)) {
       _enrichPlayerFantasyScores(_seasonPlayers!);
     }
-
-    // ⭐ Background refresh: re-read players_$season.json and update both
-    // the cache and the visible list if anything changed (e.g. new player
-    // added to the roster file). This is a local asset read, so it's cheap.
-    widget.playerRepo.reloadSeason(widget.season).then((fresh) {
-      if (!mounted) return;
-      final freshIds = fresh.map((p) => p.id).toSet();
-      final cachedIds = _seasonPlayers!.map((p) => p.id).toSet();
-      if (freshIds.length != cachedIds.length || !freshIds.containsAll(cachedIds)) {
-        cache.setPlayers(widget.season, fresh);
-        setState(() {
-          _seasonPlayers = fresh;
-        });
-        _enrichPlayerFantasyScores(fresh);
-      }
-    });
 
     // Only fetch fresh snapshot from network if we have no prior data
     // Exclude placeholder names like P1, P2... from hasData check
@@ -1224,6 +1205,19 @@ void _finaliseFridayPairsWinner() {
   String _timeLabel(AflFixture f) {
     if (f.complete) return "FT";
     if (f.timeText.isNotEmpty) return f.timeText;
+
+    // Pre-game: convert the stored UTC time (parsed from AEST spreadsheet)
+    // to the device's local timezone so punters in WA, SA etc see local time.
+    if (f.date != null) {
+      final local = f.date!.toLocal();
+      final h = local.hour;
+      final m = local.minute;
+      final hour12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+      final ampm = h < 12 ? 'am' : 'pm';
+      final minStr = m.toString().padLeft(2, '0');
+      return '$hour12.${minStr}$ampm';
+    }
+
     if ((f.time ?? '').isNotEmpty) return f.time!;
     return "--:--";
   }
@@ -1766,19 +1760,6 @@ Future<void> _forceApplyStats() async {
     final rowsB = stats.where((s) => s.player?.club == awayTeam).map(_mapStats).toList();
     _enrichStatsWithPlayerData(rowsA);
     _enrichStatsWithPlayerData(rowsB);
-
-    // ⭐ Sort by AF descending. Completed rounds only *looked* sorted
-    // because the backend's DB query (ORDER BY fantasy_points DESC) did it
-    // for us — live rounds come straight from the DFS scrape feed with no
-    // inherent order, so we sort here explicitly for both cases.
-    int byAfDesc(Map<String, dynamic> a, Map<String, dynamic> b) {
-      final bAf = num.tryParse(b["AF"]?.toString() ?? "") ?? 0;
-      final aAf = num.tryParse(a["AF"]?.toString() ?? "") ?? 0;
-      return bAf.compareTo(aAf);
-    }
-    rowsA.sort(byAfDesc);
-    rowsB.sort(byAfDesc);
-
     return (left: rowsA, right: rowsB);
   }
 
@@ -2293,48 +2274,12 @@ Future<void> _forceApplyStats() async {
 
   // ─────────────────────────────────────────────────────────────────────────
   List<PunterSelection> _sortedSelections() {
-  final list = _selections.where((p) {
-    return p.punterName.trim().isNotEmpty || p.picks.any((pick) => pick.player != null);
-  }).toList();
+  final list = List<PunterSelection>.from(_selections);
   if (_showAveragePreview) {
     final players = _seasonPlayers ?? [];
     list.sort((a, b) => b.avgScore(players).compareTo(a.avgScore(players)));
   } else {
-    list.sort((a, b) {
-      // Primary: total score descending
-      final totalCmp = b.totalScore.compareTo(a.totalScore);
-      if (totalCmp != 0) return totalCmp;
-
-      // Tiebreaker: compare individual pick scores highest-to-lowest,
-      // same rule as championship_service.calculateRoundPoints, so the
-      // displayed rank always matches the punter with the best individual
-      // scorer when totals are level.
-      final aScores = a.picks
-          .where((p) => p.player != null)
-          .map((p) => p.fantasyPoints ?? 0)
-          .toList()
-        ..sort((x, y) => y.compareTo(x));
-
-      final bScores = b.picks
-          .where((p) => p.player != null)
-          .map((p) => p.fantasyPoints ?? 0)
-          .toList()
-        ..sort((x, y) => y.compareTo(x));
-
-      final maxLen = aScores.length > bScores.length
-          ? aScores.length
-          : bScores.length;
-
-      for (int i = 0; i < maxLen; i++) {
-        final aVal = i < aScores.length ? aScores[i] : 0;
-        final bVal = i < bScores.length ? bScores[i] : 0;
-        final cmp = bVal.compareTo(aVal);
-        if (cmp != 0) return cmp;
-      }
-
-      // Fully tied — stable alphabetical fallback
-      return a.punterName.compareTo(b.punterName);
-    });
+    list.sort((a, b) => b.totalScore.compareTo(a.totalScore));
   }
   return list;
 }
