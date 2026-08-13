@@ -98,13 +98,7 @@ class FixtureRepository {
 
     return fixtures
         .where((f) => !f.isPreseason && f.round == round)
-        .toList()
-        ..sort((a, b) {
-          if (a.date == null && b.date == null) return 0;
-          if (a.date == null) return 1;
-          if (b.date == null) return -1;
-          return a.date!.compareTo(b.date!);
-        });
+        .toList();
   }
 
   List<AflFixture> preseasonFixturesForSeason(int season) {
