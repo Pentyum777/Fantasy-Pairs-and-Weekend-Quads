@@ -10,7 +10,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Fantasy Pairs & Weekend Quads</title>
+    <title>Fantasy Pairs &amp; Weekend Quads</title>
 
     <!-- MSAL -->
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
@@ -23,9 +23,6 @@
     <!-- MSAL interop -->
     <script src="msal_interop.js"></script>
 
-    <!-- Flutter Web JS loader -->
-    <script src="flutter.js" defer></script>
-
     <!-- Disable caching -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
@@ -34,17 +31,23 @@
 
   <body>
     <script>
-      // Load Flutter app
-      window.addEventListener("load", function () {
+      // Dynamically load flutter.js then immediately start the app.
+      // Appending ?v= to both files busts iOS Safari's aggressive cache
+      // so every deploy is picked up without users needing to clear data.
+      var _v = new Date().getTime();
+      var _s = document.createElement("script");
+      _s.src = "flutter.js?v=" + _v;
+      _s.onload = function () {
         _flutter.loader.loadEntrypoint({
-          entrypointUrl: "main.dart.js",
+          entrypointUrl: "main.dart.js?v=" + _v,
           onEntrypointLoaded: function (engineInitializer) {
             engineInitializer.initializeEngine().then(function (appRunner) {
               appRunner.runApp();
             });
           },
         });
-      });
+      };
+      document.head.appendChild(_s);
     </script>
   </body>
 </html>
