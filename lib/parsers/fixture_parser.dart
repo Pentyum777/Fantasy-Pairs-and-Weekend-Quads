@@ -224,11 +224,27 @@ class FixtureParser {
     return overrides[base.toUpperCase()] ?? base;
   }
 
+  // Finals rounds are entered in the spreadsheet as short codes rather than
+  // numbers (WF/QE/SF/PF/GF). Map them to dedicated round numbers so they
+  // never collide with Opening Round (0) or Rounds 1–24.
+  static const Map<String, int> _finalsRoundCodes = {
+    "WF": 25, // Wild Card Finals
+    "QE": 26, // Qualifying & Elimination Finals
+    "SF": 27, // Semi Finals
+    "PF": 28, // Preliminary Finals
+    "GF": 29, // Grand Final
+  };
+
   int _parseRound(String roundLabel) {
     final trimmed = roundLabel.trim().toUpperCase();
 
     if (trimmed == "0" || trimmed == "OPENING ROUND" || trimmed == "OR") {
       return 0;
+    }
+
+    final finalsRound = _finalsRoundCodes[trimmed];
+    if (finalsRound != null) {
+      return finalsRound;
     }
 
     final digitMatch = RegExp(r'(\d+)').firstMatch(trimmed);
