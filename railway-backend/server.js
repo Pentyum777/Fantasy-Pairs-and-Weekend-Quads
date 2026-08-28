@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import cors from "cors";
 import { fileURLToPath } from "url";
-import { scrapeDFS } from "./dfs_scraper.js";
+import { scrapeDFS, fetchDfsFixtureMeta } from "./dfs_scraper.js";
 import { startRoundCompletionScheduler } from "./round_completion_scheduler.js";
 import pkg from "pg";
 const { Pool } = pkg;
@@ -2206,9 +2206,15 @@ app.get("/fantasy/:matchId", async (req, res) => {
     // 1. Live DFS feed
     let dfsPlayers = await scrapeDFS(dfsId);
 
-    // 2. Fetch live scores from FootyInfo round_summary API.
-    // Derive the FootyInfo round_id from the CD match ID:
-    //   CD_M20260140702 → round part = CD_R202601407 → footyInfoRoundMap lookup
+    // 2. Fixture status/scores.
+    // Prefer the DFS live feed's own "fixtures" entry — it's keyed by our
+    // Champion Data matchId directly (providerId) and carries its own
+    // status ("SCHEDULED", "Q1".."Q4", "FT", etc.), so it works for any
+    // round without needing a static round-id map and, crucially, tells
+    // us the TRUE live/final state instead of us having to guess it.
+    // Fall back to FootyInfo's round_summary API (needs footyInfoRoundMap
+    // to have an entry for this round) when DFS doesn't have this fixture
+    // — e.g. older completed rounds that have dropped out of the live feed.
     let meta = {
       homeScore: 0,
       awayScore: 0,
@@ -2216,23 +2222,45 @@ app.get("/fantasy/:matchId", async (req, res) => {
       clock: "",
       status: "",
     };
+    let haveAuthoritativeStatus = false;
 
     try {
-      const roundProviderId = cdMatchId.replace(/CD_M(\d{9})\d{2}$/, "CD_R$1");
-      const fiRoundId = footyInfoRoundMap[roundProviderId];
-      const fixture = FIXTURES_2026[cdMatchId];
-      if (fiRoundId && fixture) {
-        const fiMeta = await fetchFootyInfoMeta(fiRoundId, fixture.home, fixture.away);
-        meta = { ...meta, ...fiMeta };
+      const dfsFixture = await fetchDfsFixtureMeta(cdMatchId);
+      if (dfsFixture) {
+        let quarter = dfsFixture.status || "";
+        if (quarter.toUpperCase() === "SCHEDULED") quarter = "";
+        meta = {
+          homeScore: dfsFixture.homeScore,
+          awayScore: dfsFixture.awayScore,
+          quarter,
+          clock: dfsFixture.timeRemaining,
+          status: quarter,
+        };
+        haveAuthoritativeStatus = true;
       }
     } catch (err) {
-      console.error("FootyInfo metadata error:", err.message);
+      console.error("DFS fixture metadata error:", err.message);
+    }
+
+    if (!haveAuthoritativeStatus) {
+      try {
+        const roundProviderId = cdMatchId.replace(/CD_M(\d{9})\d{2}$/, "CD_R$1");
+        const fiRoundId = footyInfoRoundMap[roundProviderId];
+        const fixture = FIXTURES_2026[cdMatchId];
+        if (fiRoundId && fixture) {
+          const fiMeta = await fetchFootyInfoMeta(fiRoundId, fixture.home, fixture.away);
+          meta = { ...meta, ...fiMeta };
+        }
+      } catch (err) {
+        console.error("FootyInfo metadata error:", err.message);
+      }
     }
 
     // 3. No DFS data → try match_stats DB for completed rounds
     if (!dfsPlayers || dfsPlayers.length === 0) {
-      // If Squiggle didn't give us scores, calculate from match_stats goals/behinds
-      if (meta.homeScore === 0 && meta.awayScore === 0) {
+      // If we don't already have an authoritative status and no score was
+      // found yet, calculate from match_stats goals/behinds as a last resort.
+      if (!haveAuthoritativeStatus && meta.homeScore === 0 && meta.awayScore === 0) {
         try {
           const fixture = FIXTURES_2026[cdMatchId];
           if (fixture) {
@@ -2277,10 +2305,12 @@ app.get("/fantasy/:matchId", async (req, res) => {
       af: calculateFantasyPoints(p),
     }));
 
-    // 4b. If Squiggle gave no scores, calculate from DFS player goals/behinds.
-    // Only do this when Squiggle truly returned nothing — if Squiggle gave us
-    // live scores we must keep them and not let DFS override the status.
-    if (meta.homeScore === 0 && meta.awayScore === 0 && players.length > 0) {
+    // 4b. If we don't already have an authoritative status (DFS fixture
+    // entry) and FootyInfo gave no scores either, fall back to estimating
+    // from DFS player goals/behinds. This is a last resort — it can only
+    // guess "Final", so skip it entirely once we have DFS's own fixture
+    // status, which already told us the real state in step 2.
+    if (!haveAuthoritativeStatus && meta.homeScore === 0 && meta.awayScore === 0 && players.length > 0) {
       const fixture = FIXTURES_2026[cdMatchId];
       if (fixture) {
         // Normalise DFS teamAbbr to our internal codes before comparing

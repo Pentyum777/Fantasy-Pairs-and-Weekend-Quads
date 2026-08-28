@@ -219,6 +219,44 @@ export async function scrapeDFS(dfsId) {
 }
 
 // ------------------------------------------------------------
+// FIXTURE-LEVEL STATUS (authoritative live/scheduled/final state)
+// The live feed's "fixtures" array carries its own status/score per
+// game, keyed by "providerId" — which is our Champion Data matchId
+// (e.g. "CD_M20260142502"). This doesn't depend on any static round
+// map, so it works for rounds (like finals) that haven't been added
+// to footyInfoRoundMap yet, and it's the ground truth for whether a
+// game is actually live vs finished — unlike inferring "Final" just
+// because player stats exist.
+// ------------------------------------------------------------
+function _lookupFixture(json, providerId) {
+  const fixtures = json?.fixtures;
+  if (!Array.isArray(fixtures)) return null;
+  const fx = fixtures.find((f) => f.providerId === providerId);
+  if (!fx) return null;
+  return {
+    status: fx.status || "",
+    homeScore: Number(fx.homeScore ?? 0),
+    awayScore: Number(fx.awayScore ?? 0),
+    timeRemaining: fx.timeRemaining || "",
+  };
+}
+
+export async function fetchDfsFixtureMeta(providerId) {
+  try {
+    const json = await fetchDfsWithRetry();
+    updateCache(json);
+    return _lookupFixture(json, providerId);
+  } catch (err) {
+    recordError(err);
+    if (lastGoodJson) {
+      console.warn("⚠ Using cached DFS live data for fixture status");
+      return _lookupFixture(lastGoodJson, providerId);
+    }
+    return null;
+  }
+}
+
+// ------------------------------------------------------------
 // HEALTH CHECK
 // ------------------------------------------------------------
 export function dfsHealth() {
