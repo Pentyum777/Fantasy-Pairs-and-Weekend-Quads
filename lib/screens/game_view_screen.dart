@@ -863,6 +863,29 @@ Future<void> _saveSnapshot() async {
       widget.gameDataCache!.setFixtureIds(cacheKey, widget.selectedFixtureIds!);
     }
 
+    // Also persist to the backend so Custom Game and Scout can find this
+    // fixture selection from any device/session — the in-memory cache above
+    // only survives as long as this app instance stays open.
+    if (widget.selectedFixtureIds != null &&
+        widget.selectedFixtureIds!.isNotEmpty) {
+      try {
+        final fixtureUrl = Uri(
+          scheme: "https",
+          host: "fantasy-pairs-and-weekend-quads-production.up.railway.app",
+          pathSegments: [
+            "customGameFixtures",
+            widget.season.toString(),
+            safeRound2.toString(),
+          ],
+        );
+        await http.post(
+          fixtureUrl,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({"fixtureIds": widget.selectedFixtureIds}),
+        );
+      } catch (_) {}
+    }
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(

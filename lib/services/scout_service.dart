@@ -531,6 +531,54 @@ class ScoutService {
     } catch (_) {}
   }
 
+  // ── Custom game fixture selection ────────────────────────────────────────────
+
+  /// Fetches the fixture (match) IDs that make up "Custom Game" for a given
+  /// season/round, as published by whoever last built it. Returns an empty
+  /// list if no custom game has been published for that round yet.
+  Future<List<String>> fetchCustomGameFixtureIds({
+    required int season,
+    required int round,
+  }) async {
+    try {
+      final url = Uri(
+        scheme: 'https',
+        host: 'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        pathSegments: ['customGameFixtures', season.toString(), round.toString()],
+      );
+      final res = await http.get(url);
+      if (res.statusCode != 200) return [];
+      final json = jsonDecode(res.body);
+      final ids = json['fixtureIds'] as List<dynamic>? ?? [];
+      return ids.map((e) => e.toString()).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Persists the fixture IDs selected for "Custom Game" so that Scout and
+  /// the Custom Game tile can find them again from any device/session, not
+  /// just the one that built them (the in-memory cache doesn't survive an
+  /// app restart).
+  Future<void> saveCustomGameFixtureIds({
+    required int season,
+    required int round,
+    required List<String> fixtureIds,
+  }) async {
+    try {
+      final url = Uri(
+        scheme: 'https',
+        host: 'fantasy-pairs-and-weekend-quads-production.up.railway.app',
+        pathSegments: ['customGameFixtures', season.toString(), round.toString()],
+      );
+      await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'fixtureIds': fixtureIds}),
+      );
+    } catch (_) {}
+  }
+
   // ── Per-user scout preferences ───────────────────────────────────────────────
 
   /// Persists sort order, filter toggles, and the ordered "Generate List"

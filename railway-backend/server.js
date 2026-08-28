@@ -2160,6 +2160,101 @@ app.delete("/namedSquadIds/:season/:round/:gameType", async (req, res) => {
   }
 });
 
+// ── Custom game fixture selection persistence ────────────────────────────────
+// Which fixtures make up "Custom Game" for a given season/round. Published
+// once by whoever builds the custom game (CustomPairsBuilderScreen →
+// GameViewScreen's publish step), then read back by any device/session that
+// opens Custom Game or Scout for that round afterwards — including after an
+// app restart, when the in-memory GameDataCache is empty.
+
+// GET /customGameFixtures/:season/:round
+// Returns the persisted fixture (match) IDs for the custom game.
+app.get("/customGameFixtures/:season/:round", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { season, round } = req.params;
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS custom_game_fixtures (
+        id SERIAL PRIMARY KEY,
+        season INT NOT NULL,
+        round INT NOT NULL,
+        fixture_ids TEXT[] NOT NULL DEFAULT '{}',
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(season, round)
+      )
+    `);
+
+    const result = await pool.query(
+      `SELECT fixture_ids FROM custom_game_fixtures
+       WHERE season = $1 AND round = $2`,
+      [parseInt(season), parseInt(round)]
+    );
+
+    const ids = result.rows[0]?.fixture_ids ?? [];
+    res.json({ ok: true, fixtureIds: ids });
+  } catch (err) {
+    console.error("customGameFixtures GET error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// POST /customGameFixtures/:season/:round
+// Replaces the persisted fixture ID set (the custom game's fixture list is
+// a single point-in-time selection, not something that accumulates like a
+// named squad, so this overwrites rather than merges).
+app.post("/customGameFixtures/:season/:round", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { season, round } = req.params;
+    const { fixtureIds } = req.body;
+
+    if (!Array.isArray(fixtureIds)) {
+      return res.status(400).json({ error: "fixtureIds must be an array" });
+    }
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS custom_game_fixtures (
+        id SERIAL PRIMARY KEY,
+        season INT NOT NULL,
+        round INT NOT NULL,
+        fixture_ids TEXT[] NOT NULL DEFAULT '{}',
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(season, round)
+      )
+    `);
+
+    await pool.query(`
+      INSERT INTO custom_game_fixtures (season, round, fixture_ids, updated_at)
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (season, round) DO UPDATE SET
+        fixture_ids = EXCLUDED.fixture_ids,
+        updated_at = NOW()
+    `, [parseInt(season), parseInt(round), fixtureIds]);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("customGameFixtures POST error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// DELETE /customGameFixtures/:season/:round
+app.delete("/customGameFixtures/:season/:round", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  try {
+    const { season, round } = req.params;
+    await pool.query(
+      `DELETE FROM custom_game_fixtures WHERE season = $1 AND round = $2`,
+      [parseInt(season), parseInt(round)]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("customGameFixtures DELETE error:", err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
 // Selection timestamp — lightweight poll for live sync
 // Returns just the updated_at timestamp for a game
 // Used by non-editing admins to detect changes

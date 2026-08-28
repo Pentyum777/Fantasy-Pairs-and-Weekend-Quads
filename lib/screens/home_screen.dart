@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../helpers/round_helper.dart';
 import '../models/punter_selection.dart';
 import '../models/player_pick.dart';
+import '../models/afl_player.dart';
 import '../repositories/fixture_repository.dart';
 import '../repositories/player_repository.dart';
 import '../services/punter_score_service.dart';
@@ -137,7 +138,53 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Game-type actions ──────────────────────────────────────────────────────
 
-  void _openGame(String type) {
+  /// Resolves the fixture IDs that make up "Custom Game" for the current
+  /// season/round. Checks the in-memory cache first (instant, survives
+  /// navigating away and back within this app session); if that's empty —
+  /// e.g. the app was just restarted, or this device didn't build the
+  /// custom game itself — falls back to whatever was last published to the
+  /// backend by whoever did build it, and warms the cache with the result.
+  /// Returns null (or empty) when no custom game has been set up yet.
+  Future<List<String>?> _resolveCustomGameFixtureIds() async {
+    final cacheKey = '$_season-${_round ?? 0}-custom_game';
+    if (_gameDataCache.hasFixtureIds(cacheKey)) {
+      return _gameDataCache.getFixtureIds(cacheKey);
+    }
+    final fetched = await _scoutService.fetchCustomGameFixtureIds(
+      season: _season,
+      round: _round ?? 0,
+    );
+    if (fetched.isEmpty) return null;
+    _gameDataCache.setFixtureIds(cacheKey, fetched);
+    return fetched;
+  }
+
+  /// Rebuilds the player pool for Custom Game from the clubs playing in
+  /// [fixtureIds] — mirrors how CustomPairsBuilderScreen derives it when the
+  /// game is first built, so reopening Custom Game later (or opening Scout
+  /// scoped to it) shows the same eligible players.
+  Future<List<AflPlayer>> _playersForCustomGameFixtures(
+    List<String> fixtureIds,
+  ) async {
+    final fixtures = widget.fixtureRepo
+        .fixturesForSeasonRound(_season, _round)
+        .where((f) => f.matchId != null && fixtureIds.contains(f.matchId))
+        .toList();
+    final clubs = <String>{};
+    for (final f in fixtures) {
+      clubs.add(f.homeTeam);
+      clubs.add(f.awayTeam);
+    }
+    final seasonPlayers = _gameDataCache.hasPlayers(_season)
+        ? _gameDataCache.getPlayers(_season)
+        : await widget.playerRepo.playersForSeason(_season);
+    if (!_gameDataCache.hasPlayers(_season)) {
+      _gameDataCache.setPlayers(_season, seasonPlayers);
+    }
+    return seasonPlayers.where((p) => clubs.contains(p.club)).toList();
+  }
+
+  void _openGame(String type) async {
     if (type == 'custom_builder') {
       if (!widget.userRoleService.isAdmin) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -162,10 +209,21 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (type == 'custom_game') {
-      final cacheKey   = '$_season-${_round ?? 0}-custom_game';
-      final fixtureIds = _gameDataCache.hasFixtureIds(cacheKey)
-          ? _gameDataCache.getFixtureIds(cacheKey)
-          : null;
+      final fixtureIds = await _resolveCustomGameFixtureIds();
+      if (!mounted) return;
+      if (fixtureIds == null || fixtureIds.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No Custom Game has been set up for this round yet — '
+              'build one from Custom Builder first.',
+            ),
+          ),
+        );
+        return;
+      }
+      final overridePlayers = await _playersForCustomGameFixtures(fixtureIds);
+      if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(
         builder: (_) => GameViewScreen(
           season:                _season,
@@ -180,6 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
           userRoleService:       widget.userRoleService,
           gameDataCache:         _gameDataCache,
           selectedFixtureIds:    fixtureIds,
+          overridePlayers:       overridePlayers,
         ),
       ));
       return;
@@ -203,20 +262,27 @@ class _HomeScreenState extends State<HomeScreen> {
     ));
   }
 
-  void _openScout() {
-    final gameType = _round == null ? 'weekend_quads' : _defaultGameTypeForRound();
-    final drafted  = <String>{};
+  void _openScout() async {
+    // If a Custom Game has been published for this round, Scout should land
+    // scoped to it by default (mirrors ScoutScreen's own logic of defaulting
+    // its filter to 'custom_game' whenever selectedFixtureIds is non-empty).
+    // This now checks the backend, not just the in-memory cache, so it works
+    // even if this device didn't build the custom game itself.
+    final scoutFixtureIds = await _resolveCustomGameFixtureIds();
+    final hasCustomGame = scoutFixtureIds != null && scoutFixtureIds.isNotEmpty;
+    final gameType = hasCustomGame
+        ? 'custom_game'
+        : (_round == null ? 'weekend_quads' : _defaultGameTypeForRound());
+
+    final drafted = <String>{};
     for (final sel in _selectionsFor(gameType)) {
       for (final pick in sel.picks) {
         final pid = pick.player?.id;
         if (pid != null && pid.isNotEmpty) drafted.add(pid);
       }
     }
-    final customKey      = '$_season-${_round ?? 0}-custom_game';
-    final scoutFixtureIds = _gameDataCache.hasFixtureIds(customKey)
-        ? _gameDataCache.getFixtureIds(customKey)
-        : null;
 
+    if (!mounted) return;
     Navigator.push(context, MaterialPageRoute(
       builder: (_) => ScoutScreen(
         season:             _season,
