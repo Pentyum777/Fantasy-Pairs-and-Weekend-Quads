@@ -657,6 +657,17 @@ app.get("/matchStats/:matchId", async (req, res) => {
 // 2026 fixture map: matchId -> {home, away, round}
 const FIXTURES_2026 = {"CD_M20260140001": {"home": "SYD", "away": "CAR", "round": 0}, "CD_M20260140002": {"home": "GCS", "away": "GEE", "round": 0}, "CD_M20260140003": {"home": "GWS", "away": "HAW", "round": 0}, "CD_M20260140004": {"home": "BRL", "away": "WBD", "round": 0}, "CD_M20260140005": {"home": "STK", "away": "COL", "round": 0}, "CD_M20260140101": {"home": "CAR", "away": "RIC", "round": 1}, "CD_M20260140102": {"home": "ESS", "away": "HAW", "round": 1}, "CD_M20260140103": {"home": "WBD", "away": "GWS", "round": 1}, "CD_M20260140104": {"home": "GEE", "away": "FRE", "round": 1}, "CD_M20260140105": {"home": "SYD", "away": "BRL", "round": 1}, "CD_M20260140106": {"home": "COL", "away": "ADE", "round": 1}, "CD_M20260140107": {"home": "NTH", "away": "PTA", "round": 1}, "CD_M20260140108": {"home": "MELB", "away": "STK", "round": 1}, "CD_M20260140109": {"home": "GCS", "away": "WCE", "round": 1}, "CD_M20260140201": {"home": "HAW", "away": "SYD", "round": 2}, "CD_M20260140202": {"home": "ADE", "away": "WBD", "round": 2}, "CD_M20260140203": {"home": "RIC", "away": "GCS", "round": 2}, "CD_M20260140204": {"home": "GWS", "away": "STK", "round": 2}, "CD_M20260140205": {"home": "FRE", "away": "MELB", "round": 2}, "CD_M20260140206": {"home": "PTA", "away": "ESS", "round": 2}, "CD_M20260140207": {"home": "WCE", "away": "NTH", "round": 2}, "CD_M20260140301": {"home": "GEE", "away": "ADE", "round": 3}, "CD_M20260140302": {"home": "COL", "away": "GWS", "round": 3}, "CD_M20260140303": {"home": "STK", "away": "BRL", "round": 3}, "CD_M20260140304": {"home": "FRE", "away": "RIC", "round": 3}, "CD_M20260140305": {"home": "ESS", "away": "NTH", "round": 3}, "CD_M20260140306": {"home": "PTA", "away": "WCE", "round": 3}, "CD_M20260140307": {"home": "CAR", "away": "MELB", "round": 3}, "CD_M20260140401": {"home": "BRL", "away": "COL", "round": 4}, "CD_M20260140402": {"home": "NTH", "away": "CAR", "round": 4}, "CD_M20260140403": {"home": "ADE", "away": "FRE", "round": 4}, "CD_M20260140404": {"home": "RIC", "away": "PTA", "round": 4}, "CD_M20260140405": {"home": "WCE", "away": "SYD", "round": 4}, "CD_M20260140406": {"home": "MELB", "away": "GCS", "round": 4}, "CD_M20260140407": {"home": "WBD", "away": "ESS", "round": 4}, "CD_M20260140408": {"home": "HAW", "away": "GEE", "round": 4}, "CD_M20260140501": {"home": "ADE", "away": "CAR", "round": 5}, "CD_M20260140502": {"home": "COL", "away": "FRE", "round": 5}, "CD_M20260140503": {"home": "NTH", "away": "BRL", "round": 5}, "CD_M20260140504": {"home": "ESS", "away": "MELB", "round": 5}, "CD_M20260140505": {"home": "SYD", "away": "GCS", "round": 5}, "CD_M20260140506": {"home": "HAW", "away": "WBD", "round": 5}, "CD_M20260140507": {"home": "GEE", "away": "WCE", "round": 5}, "CD_M20260140508": {"home": "GWS", "away": "RIC", "round": 5}, "CD_M20260140509": {"home": "PTA", "away": "STK", "round": 5}, "CD_M20260140601": {"home": "CAR", "away": "COL", "round": 6}, "CD_M20260140602": {"home": "GEE", "away": "WBD", "round": 6}, "CD_M20260140603": {"home": "SYD", "away": "GWS", "round": 6}, "CD_M20260140604": {"home": "GCS", "away": "ESS", "round": 6}, "CD_M20260140605": {"home": "HAW", "away": "PTA", "round": 6}, "CD_M20260140606": {"home": "ADE", "away": "STK", "round": 6}, "CD_M20260140607": {"home": "NTH", "away": "RIC", "round": 6}, "CD_M20260140608": {"home": "MELB", "away": "BRL", "round": 6}, "CD_M20260140609": {"home": "WCE", "away": "FRE", "round": 6}, "CD_M20260140701": {"home": "WBD", "away": "SYD", "round": 7}, "CD_M20260140702": {"home": "RIC", "away": "MELB", "round": 7}, "CD_M20260140703": {"home": "HAW", "away": "GCS", "round": 7}, "CD_M20260140704": {"home": "ESS", "away": "COL", "round": 7}, "CD_M20260140705": {"home": "PTA", "away": "GEE", "round": 7}, "CD_M20260140706": {"home": "FRE", "away": "CAR", "round": 7}, "CD_M20260140707": {"home": "STK", "away": "WCE", "round": 7}, "CD_M20260140708": {"home": "BRL", "away": "ADE", "round": 7}, "CD_M20260140709": {"home": "GWS", "away": "NTH", "round": 7}, "CD_M20260140801": {"home": "COL", "away": "HAW", "round": 8}, "CD_M20260140802": {"home": "WBD", "away": "FRE", "round": 8}, "CD_M20260140803": {"home": "ADE", "away": "PTA", "round": 8}, "CD_M20260140804": {"home": "ESS", "away": "BRL", "round": 8}, "CD_M20260140805": {"home": "WCE", "away": "RIC", "round": 8}, "CD_M20260140806": {"home": "GEE", "away": "NTH", "round": 8}, "CD_M20260140807": {"home": "CAR", "away": "STK", "round": 8}, "CD_M20260140808": {"home": "SYD", "away": "MELB", "round": 8}, "CD_M20260140809": {"home": "GCS", "away": "GWS", "round": 8}, "CD_M20260140901": {"home": "FRE", "away": "HAW", "round": 9}, "CD_M20260140902": {"home": "BRL", "away": "CAR", "round": 9}, "CD_M20260140903": {"home": "PTA", "away": "WBD", "round": 9}, "CD_M20260140904": {"home": "NTH", "away": "SYD", "round": 9}, "CD_M20260140905": {"home": "GWS", "away": "ESS", "round": 9}, "CD_M20260140906": {"home": "GCS", "away": "STK", "round": 9}, "CD_M20260140907": {"home": "GEE", "away": "COL", "round": 9}, "CD_M20260140908": {"home": "MELB", "away": "WCE", "round": 9}, "CD_M20260140909": {"home": "RIC", "away": "ADE", "round": 9}, "CD_M20260141001": {"home": "BRL", "away": "GEE", "round": 10}, "CD_M20260141002": {"home": "SYD", "away": "COL", "round": 10}, "CD_M20260141003": {"home": "GCS", "away": "PTA", "round": 10}, "CD_M20260141004": {"home": "ADE", "away": "NTH", "round": 10}, "CD_M20260141005": {"home": "MELB", "away": "HAW", "round": 10}, "CD_M20260141006": {"home": "CAR", "away": "WBD", "round": 10}, "CD_M20260141007": {"home": "ESS", "away": "FRE", "round": 10}, "CD_M20260141008": {"home": "STK", "away": "RIC", "round": 10}, "CD_M20260141009": {"home": "WCE", "away": "GWS", "round": 10}, "CD_M20260141101": {"home": "HAW", "away": "ADE", "round": 11}, "CD_M20260141102": {"home": "RIC", "away": "ESS", "round": 11}, "CD_M20260141103": {"home": "FRE", "away": "STK", "round": 11}, "CD_M20260141104": {"home": "NTH", "away": "GCS", "round": 11}, "CD_M20260141105": {"home": "GEE", "away": "SYD", "round": 11}, "CD_M20260141106": {"home": "COL", "away": "WCE", "round": 11}, "CD_M20260141107": {"home": "PTA", "away": "CAR", "round": 11}, "CD_M20260141108": {"home": "GWS", "away": "BRL", "round": 11}, "CD_M20260141109": {"home": "WBD", "away": "MELB", "round": 11}, "CD_M20260141201": {"home": "STK", "away": "HAW", "round": 12}, "CD_M20260141202": {"home": "CAR", "away": "GEE", "round": 12}, "CD_M20260141203": {"home": "SYD", "away": "RIC", "round": 12}, "CD_M20260141204": {"home": "BRL", "away": "FRE", "round": 12}, "CD_M20260141205": {"home": "WBD", "away": "COL", "round": 12}, "CD_M20260141206": {"home": "MELB", "away": "GWS", "round": 12}, "CD_M20260141207": {"home": "WCE", "away": "ESS", "round": 12}, "CD_M20260141301": {"home": "ADE", "away": "GEE", "round": 13}, "CD_M20260141302": {"home": "HAW", "away": "WBD", "round": 13}, "CD_M20260141303": {"home": "NTH", "away": "FRE", "round": 13}, "CD_M20260141304": {"home": "GCS", "away": "BRL", "round": 13}, "CD_M20260141305": {"home": "WCE", "away": "PTA", "round": 13}, "CD_M20260141306": {"home": "SYD", "away": "STK", "round": 13}, "CD_M20260141307": {"home": "ESS", "away": "CAR", "round": 13}, "CD_M20260141308": {"home": "COL", "away": "MELB", "round": 13}, "CD_M20260141401": {"home": "WBD", "away": "ADE", "round": 14}, "CD_M20260141402": {"home": "GEE", "away": "GCS", "round": 14}, "CD_M20260141403": {"home": "MELB", "away": "ESS", "round": 14}, "CD_M20260141404": {"home": "NTH", "away": "WCE", "round": 14}, "CD_M20260141405": {"home": "PTA", "away": "SYD", "round": 14}, "CD_M20260141406": {"home": "RIC", "away": "BRL", "round": 14}, "CD_M20260141407": {"home": "STK", "away": "GWS", "round": 14}, "CD_M20260141501": {"home": "FRE", "away": "GEE", "round": 15}, "CD_M20260141502": {"home": "GCS", "away": "HAW", "round": 15}, "CD_M20260141503": {"home": "ADE", "away": "MELB", "round": 15}, "CD_M20260141504": {"home": "GWS", "away": "CAR", "round": 15}, "CD_M20260141505": {"home": "COL", "away": "PTA", "round": 15}, "CD_M20260141506": {"home": "RIC", "away": "NTH", "round": 15}, "CD_M20260141507": {"home": "STK", "away": "WBD", "round": 15}, "CD_M20260141601": {"home": "BRL", "away": "SYD", "round": 16}, "CD_M20260141602": {"home": "CAR", "away": "WCE", "round": 16}, "CD_M20260141603": {"home": "COL", "away": "RIC", "round": 16}, "CD_M20260141605": {"home": "HAW", "away": "GWS", "round": 16}, "CD_M20260141606": {"home": "NTH", "away": "ESS", "round": 16}, "CD_M20260141607": {"home": "PTA", "away": "ADE", "round": 16}, "CD_M20260141604": {"home": "FRE", "away": "GCS", "round": 16}, "CD_M20260141701": {"home": "ESS", "away": "STK", "round": 17}, "CD_M20260141702": {"home": "GEE", "away": "BRL", "round": 17}, "CD_M20260141703": {"home": "GCS", "away": "COL", "round": 17}, "CD_M20260141704": {"home": "GWS", "away": "FRE", "round": 17}, "CD_M20260141705": {"home": "HAW", "away": "MELB", "round": 17}, "CD_M20260141707": {"home": "RIC", "away": "CAR", "round": 17}, "CD_M20260141708": {"home": "SYD", "away": "WBD", "round": 17}, "CD_M20260141706": {"home": "PTA", "away": "NTH", "round": 17}, "CD_M20260141709": {"home": "WCE", "away": "ADE", "round": 17}, "CD_M20260141802": {"home": "BRL", "away": "ESS", "round": 18}, "CD_M20260141803": {"home": "CAR", "away": "HAW", "round": 18}, "CD_M20260141804": {"home": "COL", "away": "NTH", "round": 18}, "CD_M20260141806": {"home": "GWS", "away": "GEE", "round": 18}, "CD_M20260141807": {"home": "MELB", "away": "RIC", "round": 18}, "CD_M20260141808": {"home": "STK", "away": "PTA", "round": 18}, "CD_M20260141809": {"home": "WBD", "away": "WCE", "round": 18}, "CD_M20260141801": {"home": "ADE", "away": "GCS", "round": 18}, "CD_M20260141805": {"home": "FRE", "away": "SYD", "round": 18}, "CD_M20260141901": {"home": "COL", "away": "CAR", "round": 19}, "CD_M20260141902": {"home": "ESS", "away": "GWS", "round": 19}, "CD_M20260141903": {"home": "GEE", "away": "STK", "round": 19}, "CD_M20260141904": {"home": "GCS", "away": "WBD", "round": 19}, "CD_M20260141905": {"home": "NTH", "away": "MELB", "round": 19}, "CD_M20260141907": {"home": "RIC", "away": "HAW", "round": 19}, "CD_M20260141908": {"home": "SYD", "away": "ADE", "round": 19}, "CD_M20260141906": {"home": "PTA", "away": "FRE", "round": 19}, "CD_M20260141909": {"home": "WCE", "away": "BRL", "round": 19}, "CD_M20260142002": {"home": "BRL", "away": "PTA", "round": 20}, "CD_M20260142003": {"home": "CAR", "away": "GCS", "round": 20}, "CD_M20260142005": {"home": "GWS", "away": "SYD", "round": 20}, "CD_M20260142006": {"home": "HAW", "away": "ESS", "round": 20}, "CD_M20260142007": {"home": "NTH", "away": "STK", "round": 20}, "CD_M20260142008": {"home": "MELB", "away": "GEE", "round": 20}, "CD_M20260142009": {"home": "WBD", "away": "RIC", "round": 20}, "CD_M20260142001": {"home": "ADE", "away": "COL", "round": 20}, "CD_M20260142004": {"home": "FRE", "away": "WCE", "round": 20}, "CD_M20260142101": {"home": "CAR", "away": "BRL", "round": 21}, "CD_M20260142102": {"home": "COL", "away": "GEE", "round": 21}, "CD_M20260142103": {"home": "ESS", "away": "ADE", "round": 21}, "CD_M20260142105": {"home": "GCS", "away": "MELB", "round": 21}, "CD_M20260142106": {"home": "HAW", "away": "NTH", "round": 21}, "CD_M20260142108": {"home": "RIC", "away": "WCE", "round": 21}, "CD_M20260142109": {"home": "STK", "away": "SYD", "round": 21}, "CD_M20260142107": {"home": "PTA", "away": "GWS", "round": 21}, "CD_M20260142104": {"home": "FRE", "away": "WBD", "round": 21}, "CD_M20260142202": {"home": "BRL", "away": "HAW", "round": 22}, "CD_M20260142203": {"home": "GEE", "away": "ESS", "round": 22}, "CD_M20260142204": {"home": "GWS", "away": "GCS", "round": 22}, "CD_M20260142205": {"home": "MELB", "away": "FRE", "round": 22}, "CD_M20260142206": {"home": "STK", "away": "CAR", "round": 22}, "CD_M20260142207": {"home": "SYD", "away": "PTA", "round": 22}, "CD_M20260142209": {"home": "WBD", "away": "NTH", "round": 22}, "CD_M20260142201": {"home": "ADE", "away": "RIC", "round": 22}, "CD_M20260142208": {"home": "WCE", "away": "COL", "round": 22}, "CD_M20260142301": {"home": "BRL", "away": "GCS", "round": 23}, "CD_M20260142302": {"home": "ESS", "away": "SYD", "round": 23}, "CD_M20260142304": {"home": "GWS", "away": "WCE", "round": 23}, "CD_M20260142305": {"home": "HAW", "away": "COL", "round": 23}, "CD_M20260142306": {"home": "NTH", "away": "GEE", "round": 23}, "CD_M20260142308": {"home": "RIC", "away": "STK", "round": 23}, "CD_M20260142309": {"home": "WBD", "away": "CAR", "round": 23}, "CD_M20260142307": {"home": "PTA", "away": "MELB", "round": 23}, "CD_M20260142303": {"home": "FRE", "away": "ADE", "round": 23}, "CD_M20260142402": {"home": "COL", "away": "BRL", "round": 24}, "CD_M20260142403": {"home": "CAR", "away": "FRE", "round": 24}, "CD_M20260142404": {"home": "ESS", "away": "PTA", "round": 24}, "CD_M20260142405": {"home": "GEE", "away": "RIC", "round": 24}, "CD_M20260142406": {"home": "MELB", "away": "WBD", "round": 24}, "CD_M20260142407": {"home": "STK", "away": "GCS", "round": 24}, "CD_M20260142408": {"home": "SYD", "away": "NTH", "round": 24}, "CD_M20260142401": {"home": "ADE", "away": "GWS", "round": 24}, "CD_M20260142409": {"home": "WCE", "away": "HAW", "round": 24}, "CD_M20260142501": {"home": "MELB", "away": "CAR", "round": 25}, "CD_M20260142502": {"home": "WBD", "away": "COL", "round": 25}};
 
+// Flat {match_id, home, away, round} rows derived from FIXTURES_2026, used to
+// look up the opponent for a given match_stats row without a second table.
+// Recomputed once at startup — stays in sync with FIXTURES_2026 automatically
+// whenever new rounds (finals included) are added to that object above.
+const FIXTURES_2026_ROWS = Object.entries(FIXTURES_2026).map(([matchId, f]) => ({
+  match_id: matchId,
+  home: f.home,
+  away: f.away,
+  round: f.round,
+}));
+
 // ============================================================
 // SCOUT FEATURE — player stats, access control, flags
 // ============================================================
@@ -1606,8 +1617,20 @@ app.get("/vsOpponentStats", async (req, res) => {
     // across sources: "Brad Hill" vs "Bradley Hill", "N Daicos" vs "Nick Daicos".
     // Don't filter by team on historical_scores — traded players (e.g. Petracca
     // MELB→GCS) need their full career history vs the opponent.
+    //
+    // 2026 games are folded in from match_stats (the live table the DFS
+    // scraper keeps writing to every round) rather than only from
+    // historical_scores, which is a one-off scrape that stops updating once
+    // the season is underway. Matched here by player_id — exact, no name
+    // fuzziness needed — so this stays correct and "ongoing": every newly
+    // completed 2026 round is picked up automatically the next time this
+    // endpoint is called, with no separate backfill step required.
     const result = await pool.query(`
-      WITH current_teams AS (
+      WITH fixture_lookup AS (
+        SELECT * FROM jsonb_to_recordset($3::jsonb)
+          AS x(match_id text, home text, away text, round int)
+      ),
+      current_teams AS (
         SELECT DISTINCT ON (player_id)
           player_id,
           player_name,
@@ -1617,24 +1640,49 @@ app.get("/vsOpponentStats", async (req, res) => {
           AND team <> ''
           AND player_name <> ''
         ORDER BY player_id, match_id DESC
+      ),
+      season2026_scores AS (
+        SELECT
+          ms.player_id,
+          CASE WHEN (CASE WHEN ms.team = fl.home THEN fl.away ELSE fl.home END) = 'MELB'
+               THEN 'MEL'
+               ELSE (CASE WHEN ms.team = fl.home THEN fl.away ELSE fl.home END)
+          END AS opponent,
+          ms.fantasy_points AS score
+        FROM match_stats ms
+        JOIN fixture_lookup fl ON fl.match_id = ms.match_id
+        WHERE ms.match_id LIKE 'CD_M2026%'
+          AND ms.fantasy_points > 0
       )
       SELECT
         ct.player_name,
         ct.current_team AS team,
         $1::jsonb->>ct.current_team AS upcoming_opponent,
         COUNT(*) AS games_vs,
-        ROUND(AVG(hs.score))::int AS avg_vs_opponent
+        ROUND(AVG(combined.score))::int AS avg_vs_opponent
       FROM current_teams ct
-      JOIN historical_scores hs
-        ON SPLIT_PART(hs.player_name, ' ', -1) = SPLIT_PART(ct.player_name, ' ', -1)
-        AND LEFT(hs.player_name, 1) = LEFT(ct.player_name, 1)
-      WHERE hs.opponent = ($2::jsonb->>ct.current_team)
-        AND hs.score > 0
+      JOIN (
+        SELECT s2.player_id AS player_id, NULL::text AS player_name, s2.opponent, s2.score
+        FROM season2026_scores s2
+        UNION ALL
+        SELECT NULL::text AS player_id, hs.player_name, hs.opponent, hs.score
+        FROM historical_scores hs
+        WHERE hs.score > 0
+      ) combined
+        ON (combined.player_id = ct.player_id)
+        OR (combined.player_id IS NULL
+            AND SPLIT_PART(combined.player_name, ' ', -1) = SPLIT_PART(ct.player_name, ' ', -1)
+            AND LEFT(combined.player_name, 1) = LEFT(ct.player_name, 1))
+      WHERE combined.opponent = ($2::jsonb->>ct.current_team)
         AND ($2::jsonb->>ct.current_team) IS NOT NULL
       GROUP BY ct.player_name, ct.current_team
       HAVING COUNT(*) >= 1
       ORDER BY avg_vs_opponent DESC
-    `, [JSON.stringify(teamOpponentMap), JSON.stringify(histOpponentMap)]);
+    `, [
+      JSON.stringify(teamOpponentMap),
+      JSON.stringify(histOpponentMap),
+      JSON.stringify(FIXTURES_2026_ROWS),
+    ]);
 
     res.json({ ok: true, stats: result.rows });
   } catch (err) {
@@ -1949,14 +1997,41 @@ app.get("/vsOpponentScores", async (req, res) => {
     // Normalise for historical_scores which uses 'MEL' not 'MELB'
     const histOpponent = opponent === 'MELB' ? 'MEL' : opponent;
 
-    // Pull every historical game by this player against that opponent.
-    // Match by last name + first initial to handle name variations.
-    // Don't filter by team — traded players need full career history.
+    // Pull every historical game by this player against that opponent, plus
+    // every 2026 game already recorded in match_stats (the live table the
+    // DFS scraper keeps writing to as each round completes — no separate
+    // backfill needed for this season's games to show up here).
+    // Historical rows are matched by last name + first initial to handle
+    // name variations across sources; 2026 rows are matched by player_id,
+    // which we already resolved above — exact, no fuzziness needed.
     let scores = [];
     const lastName = playerName.split(' ').slice(-1)[0];
     const firstInitial = playerName.charAt(0);
     try {
       const result = await pool.query(`
+        WITH fixture_lookup AS (
+          SELECT * FROM jsonb_to_recordset($5::jsonb)
+            AS x(match_id text, home text, away text, round int)
+        ),
+        season2026 AS (
+          SELECT
+            2026 AS season,
+            fl.round AS round,
+            ms.fantasy_points AS score,
+            ms.team AS team
+          FROM match_stats ms
+          JOIN fixture_lookup fl ON fl.match_id = ms.match_id
+          WHERE ms.match_id LIKE 'CD_M2026%'
+            AND ms.player_id = $4
+            AND ms.fantasy_points > 0
+            AND (CASE
+                   WHEN (CASE WHEN ms.team = fl.home THEN fl.away ELSE fl.home END) = 'MELB'
+                   THEN 'MEL'
+                   ELSE (CASE WHEN ms.team = fl.home THEN fl.away ELSE fl.home END)
+                 END) = $3
+        )
+        SELECT season, round, score, team FROM season2026
+        UNION ALL
         SELECT season, round, score, team
         FROM historical_scores
         WHERE SPLIT_PART(player_name, ' ', -1) = $1
@@ -1964,7 +2039,7 @@ app.get("/vsOpponentScores", async (req, res) => {
           AND opponent = $3
           AND score > 0
         ORDER BY season DESC, round DESC
-      `, [lastName, firstInitial, histOpponent]);
+      `, [lastName, firstInitial, histOpponent, playerId, JSON.stringify(FIXTURES_2026_ROWS)]);
       scores = result.rows;
     } catch (err) {
       const result = await pool.query(`
