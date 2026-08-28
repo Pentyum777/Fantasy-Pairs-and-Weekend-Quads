@@ -137,7 +137,10 @@ bool _isPlayerFromCompletedFixture(AflPlayerMatchStats s) {
   for (final f in fixtures) {
     final home = AflClubCodes.normalize(f.homeTeam);
     final away = AflClubCodes.normalize(f.awayTeam);
-    if ((f.quarterText ?? "").toLowerCase().contains("final") && (team == home || team == away)) {
+    // Delegate to AflFixture.complete rather than re-checking quarterText
+    // here with a narrower vocabulary — it recognises every terminal status
+    // word we know a live-data source to use (Final, FT, Concluded, ...).
+    if (f.complete && (team == home || team == away)) {
       return true;
     }
   }
@@ -167,12 +170,9 @@ bool _isPlayerInLiveFixture(AflPlayerMatchStats s) {
 }
 
 bool _isFixtureLive(AflFixture f) {
-  final q = (f.quarterText ?? "").toLowerCase().trim();
-
-  if (q.isEmpty) return false;
-  if (q.contains("final") || q == "ft") return false;
-
-  return true; // any other quarterText = LIVE
+  // Delegate to AflFixture.isLive — same reasoning as _isPlayerFromCompletedFixture
+  // above: one shared definition of "terminal" for every quarterText source.
+  return f.isLive;
 }
 
 

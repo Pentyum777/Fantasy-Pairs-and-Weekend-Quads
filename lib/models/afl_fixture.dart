@@ -93,14 +93,28 @@ DateTime? get startDateTime {
   }
 }
 
+  /// Words/phrases different live-data sources use to mean "this game has
+  /// finished". The backend normalises DFS's own status to "Final" now, but
+  /// this stays generous (rather than just "final"/"ft") as a safety net —
+  /// e.g. for data cached before that normalisation existed, or if a source
+  /// ever sends a different terminal word we haven't seen yet.
+  static const List<String> _terminalQuarterTokens = [
+    "final", "ft", "full time", "concluded", "complete", "completed",
+  ];
+
+  bool get _quarterTextIsTerminal {
+    final q = (quarterText ?? "").toLowerCase().trim();
+    if (q.isEmpty) return false;
+    return _terminalQuarterTokens.any((t) => q == t || q.contains(t));
+  }
+
   /// Backwards‑compatible flag used by GameViewScreen
   bool get complete {
-    final q = (quarterText ?? "").toLowerCase();
     final s = status.toLowerCase();
-    // Only complete if quarter/timeText explicitly says Final/FT
+    // Only complete if quarter/timeText explicitly says the game is done.
     // "In Progress" status means the game is live even if quarter looks odd
     if (s == "in progress") return false;
-    return q.contains("final") || q == "ft";
+    return _quarterTextIsTerminal;
   }
 
   /// True when the game is currently in progress (live)
@@ -109,8 +123,8 @@ DateTime? get startDateTime {
     final q = (quarterText ?? "").toLowerCase();
     if (s == "in progress") return true;
     // Quarter text like "Q1", "Q2", "Q3", "Q4", "1/2 Time", "3/4 Time"
-    // but NOT "Final" or "Full Time"
-    if (q.isNotEmpty && !q.contains("final") && q != "ft" && q != "full time") {
+    // but NOT a terminal/finished token
+    if (q.isNotEmpty && !_quarterTextIsTerminal) {
       return true;
     }
     return false;

@@ -2398,7 +2398,20 @@ app.get("/fantasy/:matchId", async (req, res) => {
       const dfsFixture = await fetchDfsFixtureMeta(cdMatchId);
       if (dfsFixture) {
         let quarter = dfsFixture.status || "";
-        if (quarter.toUpperCase() === "SCHEDULED") quarter = "";
+        const upperQuarter = quarter.toUpperCase();
+        if (upperQuarter === "SCHEDULED") {
+          quarter = "";
+        } else if (
+          ["CONCLUDED", "FINAL", "FULL TIME", "COMPLETE", "COMPLETED"].includes(upperQuarter)
+        ) {
+          // DFS uses more than one terminal-state word across matches (we've
+          // seen "CONCLUDED" as well as "FT"/"Final"). The app's complete/
+          // isLive checks only recognise "final"/"ft", so normalise every
+          // terminal DFS status to "Final" here — otherwise a finished game
+          // whose DFS status happens to say "CONCLUDED" gets misread as still
+          // live (wrong colour on the fixture card, punters not greyed out).
+          quarter = "Final";
+        }
         meta = {
           homeScore: dfsFixture.homeScore,
           awayScore: dfsFixture.awayScore,
