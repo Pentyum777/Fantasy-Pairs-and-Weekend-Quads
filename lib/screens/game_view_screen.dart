@@ -1760,6 +1760,16 @@ Future<void> _forceApplyStats() async {
     final rowsB = stats.where((s) => s.player?.club == awayTeam).map(_mapStats).toList();
     _enrichStatsWithPlayerData(rowsA);
     _enrichStatsWithPlayerData(rowsB);
+
+    // Historical rows already come back AF-sorted from the backend
+    // (ORDER BY fantasy_points DESC), but live rows are whatever order
+    // _currentStatsByPlayerId iterates in — sort both explicitly so the
+    // overlay always reads highest-AF-first.
+    int byAfDesc(Map<String, dynamic> a, Map<String, dynamic> b) =>
+        (b["AF"] as num).compareTo(a["AF"] as num);
+    rowsA.sort(byAfDesc);
+    rowsB.sort(byAfDesc);
+
     return (left: rowsA, right: rowsB);
   }
 
