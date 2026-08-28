@@ -411,8 +411,11 @@ Widget build(BuildContext context) {
     final isStriped = index.isOdd;
 
     final isRowCompleted = row.isCompletedPunter == true;
+    // Completed punters are greyed out, not green — green is reserved for
+    // the individual live-score cell (_pickScoreCell) so it actually means
+    // "this pick is scoring right now", not "this row is done".
     final bg = isRowCompleted
-        ? Colors.green.shade900.withOpacity(0.55)
+        ? Colors.grey.shade800.withOpacity(0.55)
         : (isStriped
             ? Colors.white.withOpacity(0.07)
             : Colors.black.withOpacity(0.25));
