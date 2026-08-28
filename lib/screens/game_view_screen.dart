@@ -482,8 +482,13 @@ void _buildStatsFromSnapshot() {
         timeOnGroundPercentage: asInt("TOG"),
         fantasyPoints: asInt("AF"),
       );
-      s.isCompletedGame = (asInt("AF") > 0);
-      s.isLiveGame = false;
+      // Derive completion/live status from the actual fixture, same as
+      // _applyLiveStats does — NOT from whether the pick has scored yet.
+      // "AF > 0" was wrongly being treated as "game finished", which
+      // marked a punter's whole row as completed (green) the moment
+      // their pick got a single stat, even mid-game.
+      s.isCompletedGame = _isPlayerFromCompletedFixture(s);
+      s.isLiveGame = _isPlayerInLiveFixture(s);
       statsMap[player.id] = s;
     }
   }
