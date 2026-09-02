@@ -7,6 +7,103 @@ import '../repositories/player_repository.dart';
 import '../services/scout_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Linked horizontal scrolling for the stats table
+//
+// The stats table freezes the tick/#/Player/Team columns and lets the rest
+// (G, AF, Best, K, HB, D, M, T, TOG%, Last, L3, vs Opp, Status) scroll
+// horizontally — this is what lets the table work in portrait on a phone,
+// where all those columns don't fit on screen at once. The header and every
+// row need to scroll together as one unit. Because rows are built by a
+// virtualised ListView (rows are created/destroyed as they scroll in and out
+// of view), a single shared ScrollController can't be attached to the header
+// and every visible row at the same time — Flutter only allows one attached
+// position per controller once you read its offset. This small group class
+// is the standard workaround: each scrollable gets its own controller from
+// the group, and dragging any one of them fans the new offset out to all the
+// others, so header and rows always stay in sync however many rows are
+// currently mounted.
+// ─────────────────────────────────────────────────────────────────────────────
+class _LinkedScrollControllerGroup {
+  final List<_LinkedScrollController> _controllers = [];
+  bool _isSyncing = false;
+
+  _LinkedScrollController addAndGet() {
+    final controller = _LinkedScrollController(this);
+    _controllers.add(controller);
+    return controller;
+  }
+
+  void _remove(_LinkedScrollController controller) {
+    _controllers.remove(controller);
+  }
+
+  void _onScroll(_LinkedScrollController source) {
+    if (_isSyncing || !source.hasClients) return;
+    _isSyncing = true;
+    final offset = source.offset;
+    for (final c in _controllers) {
+      if (identical(c, source) || !c.hasClients) continue;
+      c.jumpTo(offset);
+    }
+    _isSyncing = false;
+  }
+}
+
+class _LinkedScrollController extends ScrollController {
+  final _LinkedScrollControllerGroup _group;
+  _LinkedScrollController(this._group) {
+    addListener(_notify);
+  }
+
+  void _notify() => _group._onScroll(this);
+
+  @override
+  void dispose() {
+    removeListener(_notify);
+    _group._remove(this);
+    super.dispose();
+  }
+}
+
+/// Wraps [child] in a horizontally-scrolling view whose controller comes
+/// from [group] — created in [initState] and disposed in [dispose] so the
+/// linked group always reflects exactly the scrollables currently on
+/// screen (the header, plus whichever rows the ListView has mounted).
+class _LinkedHScroll extends StatefulWidget {
+  final _LinkedScrollControllerGroup group;
+  final Widget child;
+  const _LinkedHScroll({required this.group, required this.child});
+
+  @override
+  State<_LinkedHScroll> createState() => _LinkedHScrollState();
+}
+
+class _LinkedHScrollState extends State<_LinkedHScroll> {
+  late final _LinkedScrollController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = widget.group.addAndGet();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      controller: _controller,
+      scrollDirection: Axis.horizontal,
+      child: widget.child,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Sort column enum
 // ─────────────────────────────────────────────────────────────────────────────
 enum ScoutSort { af, best, k, hb, d, m, t, tog, last, l3, vsOpp }
@@ -86,6 +183,12 @@ class ScoutScreen extends StatefulWidget {
 }
 
 class _ScoutScreenState extends State<ScoutScreen> {
+
+  // Keeps the stats table's header and every row's horizontal scroll in
+  // sync — see _LinkedScrollControllerGroup above. One instance for the
+  // lifetime of this screen so it survives rows being rebuilt as the list
+  // scrolls and as filters/sort change.
+  final _tableScrollGroup = _LinkedScrollControllerGroup();
 
   // ── State ──────────────────────────────────────────────────────────────────
   bool _loading = true;
@@ -1328,10 +1431,10 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 style: nameStyle, bg: bg,
                 align: Alignment.centerLeft),
             dCell(s.team, teamW, bg: bg),
-            // Scrollable
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const NeverScrollableScrollPhysics(),
+            // Scrollable — linked to the header and every other row so they
+            // all move together (see _LinkedScrollControllerGroup above).
+            _LinkedHScroll(
+              group: _tableScrollGroup,
               child: Row(children: [
                 dCell('${s.games}', statW, bg: bg),
                 dCell('${s.afAvg}', statW,
@@ -1461,15 +1564,6 @@ class _ScoutScreenState extends State<ScoutScreen> {
       );
     }
 
-    final headerScrollCtrl = ScrollController();
-    final bodyScrollCtrl   = ScrollController();
-
-    bodyScrollCtrl.addListener(() {
-      if (headerScrollCtrl.hasClients) {
-        headerScrollCtrl.jumpTo(bodyScrollCtrl.offset);
-      }
-    });
-
     return Column(
       children: [
         // Header
@@ -1485,10 +1579,10 @@ class _ScoutScreenState extends State<ScoutScreen> {
             children: [
               fixedHeader(),
               Expanded(
-                child: SingleChildScrollView(
-                  controller: headerScrollCtrl,
-                  scrollDirection: Axis.horizontal,
-                  physics: const NeverScrollableScrollPhysics(),
+                // Linked to every row's scroll view below, so dragging
+                // either the header or any row moves them all together.
+                child: _LinkedHScroll(
+                  group: _tableScrollGroup,
                   child: scrollHeader(),
                 ),
               ),
@@ -1497,19 +1591,10 @@ class _ScoutScreenState extends State<ScoutScreen> {
         ),
         // Body
         Expanded(
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (n) {
-              if (n is ScrollUpdateNotification &&
-                  n.metrics.axis == Axis.horizontal) {
-                bodyScrollCtrl.jumpTo(n.metrics.pixels);
-              }
-              return false;
-            },
-            child: ListView.builder(
-              itemCount: rows.length,
-              itemExtent: 30,
-              itemBuilder: (ctx, i) => buildRow(i),
-            ),
+          child: ListView.builder(
+            itemCount: rows.length,
+            itemExtent: 30,
+            itemBuilder: (ctx, i) => buildRow(i),
           ),
         ),
       ],
