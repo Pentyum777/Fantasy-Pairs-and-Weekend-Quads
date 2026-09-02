@@ -7,103 +7,6 @@ import '../repositories/player_repository.dart';
 import '../services/scout_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Linked horizontal scrolling for the stats table
-//
-// The stats table freezes the tick/#/Player/Team columns and lets the rest
-// (G, AF, Best, K, HB, D, M, T, TOG%, Last, L3, vs Opp, Status) scroll
-// horizontally — this is what lets the table work in portrait on a phone,
-// where all those columns don't fit on screen at once. The header and every
-// row need to scroll together as one unit. Because rows are built by a
-// virtualised ListView (rows are created/destroyed as they scroll in and out
-// of view), a single shared ScrollController can't be attached to the header
-// and every visible row at the same time — Flutter only allows one attached
-// position per controller once you read its offset. This small group class
-// is the standard workaround: each scrollable gets its own controller from
-// the group, and dragging any one of them fans the new offset out to all the
-// others, so header and rows always stay in sync however many rows are
-// currently mounted.
-// ─────────────────────────────────────────────────────────────────────────────
-class _LinkedScrollControllerGroup {
-  final List<_LinkedScrollController> _controllers = [];
-  bool _isSyncing = false;
-
-  _LinkedScrollController addAndGet() {
-    final controller = _LinkedScrollController(this);
-    _controllers.add(controller);
-    return controller;
-  }
-
-  void _remove(_LinkedScrollController controller) {
-    _controllers.remove(controller);
-  }
-
-  void _onScroll(_LinkedScrollController source) {
-    if (_isSyncing || !source.hasClients) return;
-    _isSyncing = true;
-    final offset = source.offset;
-    for (final c in _controllers) {
-      if (identical(c, source) || !c.hasClients) continue;
-      c.jumpTo(offset);
-    }
-    _isSyncing = false;
-  }
-}
-
-class _LinkedScrollController extends ScrollController {
-  final _LinkedScrollControllerGroup _group;
-  _LinkedScrollController(this._group) {
-    addListener(_notify);
-  }
-
-  void _notify() => _group._onScroll(this);
-
-  @override
-  void dispose() {
-    removeListener(_notify);
-    _group._remove(this);
-    super.dispose();
-  }
-}
-
-/// Wraps [child] in a horizontally-scrolling view whose controller comes
-/// from [group] — created in [initState] and disposed in [dispose] so the
-/// linked group always reflects exactly the scrollables currently on
-/// screen (the header, plus whichever rows the ListView has mounted).
-class _LinkedHScroll extends StatefulWidget {
-  final _LinkedScrollControllerGroup group;
-  final Widget child;
-  const _LinkedHScroll({required this.group, required this.child});
-
-  @override
-  State<_LinkedHScroll> createState() => _LinkedHScrollState();
-}
-
-class _LinkedHScrollState extends State<_LinkedHScroll> {
-  late final _LinkedScrollController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = widget.group.addAndGet();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      controller: _controller,
-      scrollDirection: Axis.horizontal,
-      child: widget.child,
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Sort column enum
 // ─────────────────────────────────────────────────────────────────────────────
 enum ScoutSort { af, best, k, hb, d, m, t, tog, last, l3, vsOpp }
@@ -184,11 +87,47 @@ class ScoutScreen extends StatefulWidget {
 
 class _ScoutScreenState extends State<ScoutScreen> {
 
-  // Keeps the stats table's header and every row's horizontal scroll in
-  // sync — see _LinkedScrollControllerGroup above. One instance for the
-  // lifetime of this screen so it survives rows being rebuilt as the list
-  // scrolls and as filters/sort change.
-  final _tableScrollGroup = _LinkedScrollControllerGroup();
+  // ── Stats table scroll controllers ────────────────────────────────────────
+  // The table freezes the tick/#/Player/Team columns on the left and lets
+  // the rest (G, AF, Best, K, ..., Status) scroll horizontally as one unit —
+  // this is what makes the table usable in portrait on a phone, where all
+  // those columns can't fit on screen at once. The header and every row of
+  // that scrollable region live inside a SINGLE SingleChildScrollView (see
+  // _buildTable), so one controller drives all of them together — dragging
+  // anywhere in that region, header or any row, scrolls the same view, and
+  // there's nothing to fall out of sync or "bounce back" to.
+  //
+  // A vertical ListView.builder is nested inside that horizontal scroll
+  // view for the rows (so rows still virtualise), and a second, separate
+  // ListView.builder draws the frozen left-hand columns; the two are kept
+  // in lock-step vertically via the small sync in _syncTableVScroll below.
+  // All three controllers are created once here (not per-build) so scroll
+  // position survives rebuilds — e.g. the 5s drafted-players poll.
+  final ScrollController _tableHController = ScrollController();
+  final ScrollController _fixedVController = ScrollController();
+  final ScrollController _scrollableVController = ScrollController();
+  bool _syncingTableVScroll = false;
+
+  void _syncTableVScroll(ScrollController source, ScrollController target) {
+    if (_syncingTableVScroll) return;
+    if (!source.hasClients || !target.hasClients) return;
+    if (source.offset == target.offset) return;
+    _syncingTableVScroll = true;
+    target.jumpTo(source.offset);
+    _syncingTableVScroll = false;
+  }
+
+  // A short, wide viewport (phone rotated to landscape) leaves very little
+  // vertical space — the AppBar, filter bar and vs-Opp legend can eat up
+  // most of it, squeezing (or in bad cases pushing negative constraints
+  // into) the stats table below and making the screen feel "locked" —
+  // controls are technically there but unreachable/overlapping. Same
+  // pattern/name as game_view_screen.dart's isLandscapePhone; used here to
+  // compact the chrome above the table so the table always keeps room.
+  bool get isLandscapePhone {
+    final size = MediaQuery.of(context).size;
+    return size.width > size.height && size.width < 900;
+  }
 
   // ── State ──────────────────────────────────────────────────────────────────
   bool _loading = true;
@@ -273,12 +212,23 @@ class _ScoutScreenState extends State<ScoutScreen> {
     // Restore per-user, per-game-type sort/filter prefs and list selections
     // before kicking off the main data load so the UI is consistent.
     _loadUserPrefs().then((_) => _loadData());
+
+    // Keep the frozen left columns and the scrollable right columns of the
+    // stats table moving together vertically (see the controller fields
+    // above for why there are two separate vertical ListViews).
+    _fixedVController.addListener(
+        () => _syncTableVScroll(_fixedVController, _scrollableVController));
+    _scrollableVController.addListener(
+        () => _syncTableVScroll(_scrollableVController, _fixedVController));
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
     _draftedPollTimer?.cancel();
+    _tableHController.dispose();
+    _fixedVController.dispose();
+    _scrollableVController.dispose();
     super.dispose();
   }
 
@@ -995,6 +945,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
       backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: cs.surface,
+        toolbarHeight: isLandscapePhone ? 40 : kToolbarHeight,
         title: const Text('Scout'),
         actions: [
           // Paste named squad
@@ -1028,7 +979,11 @@ class _ScoutScreenState extends State<ScoutScreen> {
               children: [
                 _buildFilters(theme, cs, gameTeams),
                 const Divider(height: 1),
-                _buildVsLegend(theme, cs),
+                // The legend is purely informational — drop it in landscape
+                // on a phone so its row of vertical space goes to the table
+                // (and to keeping the filter chips above it reachable)
+                // instead.
+                if (!isLandscapePhone) _buildVsLegend(theme, cs),
                 Expanded(child: _buildTable(theme, cs)),
               ],
             ),
@@ -1069,17 +1024,11 @@ class _ScoutScreenState extends State<ScoutScreen> {
   }
 
   Widget _buildFilters(ThemeData theme, ColorScheme cs, List<String> gameTeams) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: MediaQuery.of(context).size.shortestSide < 600 ? 8 : 12,
-        vertical:   MediaQuery.of(context).size.shortestSide < 600 ? 4 : 8,
-      ),
-      color: cs.surfaceVariant.withOpacity(0.5),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 6,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
+    // In landscape on a phone, height is scarce — a Wrap that spills onto a
+    // second/third line eats into it and can push the stats table (and the
+    // filter chips beneath the first line) out of reach. Keep the chips to
+    // a single, horizontally-scrollable row there instead of wrapping.
+    final filterChildren = <Widget>[
 
           // Game type dropdown
           _FilterChipDrop<String>(
@@ -1229,8 +1178,35 @@ class _ScoutScreenState extends State<ScoutScreen> {
                       .withOpacity(0.6),
                 ),
           ),
-        ],
+    ];
+
+    final landscape = isLandscapePhone;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.shortestSide < 600 ? 8 : 12,
+        vertical:   landscape ? 2 : (MediaQuery.of(context).size.shortestSide < 600 ? 4 : 8),
       ),
+      color: cs.surfaceVariant.withOpacity(0.5),
+      child: landscape
+          ? SizedBox(
+              height: 32,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    for (final w in filterChildren) ...[w, const SizedBox(width: 8)],
+                  ],
+                ),
+              ),
+            )
+          : Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: filterChildren,
+            ),
     );
   }
 
@@ -1350,31 +1326,29 @@ class _ScoutScreenState extends State<ScoutScreen> {
       return i.isEven ? cs.surface : cs.surfaceVariant;
     }
 
-    Widget buildRow(int i) {
+    // Total width of the scrollable (right-hand) columns region — used to
+    // size the SizedBox inside the horizontal SingleChildScrollView so the
+    // header and every row line up under the same fixed-width canvas.
+    final double scrollableWidth =
+        (statW * 11) +
+        (_upcomingOpponent.isNotEmpty ? (isPhone ? statW : statW + 10) : 0) +
+        flagW + 28 + 120;
+
+    Widget buildFixedRow(int i) {
       final s = rows[i];
       final bg = rowBg(i, s);
-      final flag = _flags[s.playerId];
-      // Only include locally-passed drafted IDs when the active filter
-      // matches the game type this Scout was opened for — prevents quads
-      // picks bleeding into friday pairs view and vice versa.
-      final activeFilter = _gameTypeFilter.isNotEmpty
-          ? _gameTypeFilter
-          : widget.gameType;
-      final localDrafted = activeFilter == widget.gameType
-          ? widget.draftedPlayerIds
-          : <String>{};
-      final allDraftedRow = {...localDrafted, ..._fetchedDraftedIds};
-      final isDrafted   = allDraftedRow.contains(s.playerId);
-      final isNamed     = _teamsAnnounced && _namedSquadIds.contains(s.playerId);
-      final isEmergency = _teamsAnnounced && _emergencySquadIds.contains(s.playerId);
-      final nameStyle = cellStyle?.copyWith(
+      final nameStyleFixed = cellStyle?.copyWith(
         fontWeight: FontWeight.w600,
-        color: isDrafted
-            ? (flag != null ? flag.flag.colour : Colors.white54)
-            : (flag != null ? flag.flag.colour : null),
-        decoration: isDrafted ? TextDecoration.lineThrough : null,
-        decorationColor: isDrafted ? Colors.white54 : null,
-        decorationThickness: isDrafted ? 2.0 : null,
+        color: (widget.draftedPlayerIds.contains(s.playerId) ||
+                _fetchedDraftedIds.contains(s.playerId))
+            ? (_flags[s.playerId] != null ? _flags[s.playerId]!.flag.colour : Colors.white54)
+            : (_flags[s.playerId] != null ? _flags[s.playerId]!.flag.colour : null),
+        decoration: (widget.draftedPlayerIds.contains(s.playerId) ||
+                _fetchedDraftedIds.contains(s.playerId))
+            ? TextDecoration.lineThrough
+            : null,
+        decorationColor: Colors.white54,
+        decorationThickness: 2.0,
       );
 
       return SizedBox(
@@ -1425,17 +1399,38 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 );
               }),
             ),
-            // Fixed
             dCell('${i + 1}', numW, bg: bg),
             dCell(s.playerName, nameW,
-                style: nameStyle, bg: bg,
+                style: nameStyleFixed, bg: bg,
                 align: Alignment.centerLeft),
             dCell(s.team, teamW, bg: bg),
-            // Scrollable — linked to the header and every other row so they
-            // all move together (see _LinkedScrollControllerGroup above).
-            _LinkedHScroll(
-              group: _tableScrollGroup,
-              child: Row(children: [
+          ],
+        ),
+      );
+    }
+
+    Widget buildScrollableRow(int i) {
+      final s = rows[i];
+      final bg = rowBg(i, s);
+      final flag = _flags[s.playerId];
+      // Only include locally-passed drafted IDs when the active filter
+      // matches the game type this Scout was opened for — prevents quads
+      // picks bleeding into friday pairs view and vice versa.
+      final activeFilter = _gameTypeFilter.isNotEmpty
+          ? _gameTypeFilter
+          : widget.gameType;
+      final localDrafted = activeFilter == widget.gameType
+          ? widget.draftedPlayerIds
+          : <String>{};
+      final allDraftedRow = {...localDrafted, ..._fetchedDraftedIds};
+      final isDrafted   = allDraftedRow.contains(s.playerId);
+      final isNamed     = _teamsAnnounced && _namedSquadIds.contains(s.playerId);
+      final isEmergency = _teamsAnnounced && _emergencySquadIds.contains(s.playerId);
+      return SizedBox(
+        height: 30,
+        width: scrollableWidth,
+        child: Row(
+              children: [
                 dCell('${s.games}', statW, bg: bg),
                 dCell('${s.afAvg}', statW,
                     style: cellStyle?.copyWith(fontWeight: FontWeight.w700),
@@ -1557,44 +1552,62 @@ class _ScoutScreenState extends State<ScoutScreen> {
                       ),
                   ],
                 ),
-              ]),
-            ),
-          ],
+              ],
         ),
       );
     }
 
-    return Column(
+    final headerDecoration = BoxDecoration(
+      color: cs.surfaceVariant,
+      border: Border(
+        bottom: BorderSide(color: cs.primary.withOpacity(0.4), width: 1),
+      ),
+    );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
-        Container(
-          height: 26,
-          decoration: BoxDecoration(
-            color: cs.surfaceVariant,
-            border: Border(
-              bottom: BorderSide(color: cs.primary.withOpacity(0.4), width: 1),
-            ),
-          ),
-          child: Row(
-            children: [
-              fixedHeader(),
-              Expanded(
-                // Linked to every row's scroll view below, so dragging
-                // either the header or any row moves them all together.
-                child: _LinkedHScroll(
-                  group: _tableScrollGroup,
-                  child: scrollHeader(),
-                ),
+        // Frozen left-hand columns (tick / # / Player / Team). Own vertical
+        // scroller (_fixedVController), kept in lock-step with the
+        // scrollable columns' vertical scroller via _syncTableVScroll.
+        Column(
+          children: [
+            Container(height: 26, decoration: headerDecoration, child: fixedHeader()),
+            Expanded(
+              child: ListView.builder(
+                controller: _fixedVController,
+                itemCount: rows.length,
+                itemExtent: 30,
+                itemBuilder: (ctx, i) => buildFixedRow(i),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        // Body
+        // Scrollable stat columns. The header and every row live inside
+        // ONE horizontal SingleChildScrollView (_tableHController), so
+        // dragging anywhere in this region — header or any row — scrolls
+        // everything together with nothing to fall out of sync or bounce
+        // back to.
         Expanded(
-          child: ListView.builder(
-            itemCount: rows.length,
-            itemExtent: 30,
-            itemBuilder: (ctx, i) => buildRow(i),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            controller: _tableHController,
+            child: SizedBox(
+              width: scrollableWidth,
+              child: Column(
+                children: [
+                  Container(height: 26, decoration: headerDecoration, child: scrollHeader()),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollableVController,
+                      itemCount: rows.length,
+                      itemExtent: 30,
+                      itemBuilder: (ctx, i) => buildScrollableRow(i),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ],
