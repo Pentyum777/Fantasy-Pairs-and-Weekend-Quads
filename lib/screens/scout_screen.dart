@@ -1564,24 +1564,33 @@ class _ScoutScreenState extends State<ScoutScreen> {
       ),
     );
 
+    // Width of the frozen left-hand block (checkbox + # + Player + Team) —
+    // must be given explicitly: a ListView can't report an intrinsic width,
+    // so without this the surrounding Column has nothing to size itself by
+    // and the whole left side (and the table with it) renders as nothing.
+    final double fixedWidth = 32 + numW + nameW + teamW;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Frozen left-hand columns (tick / # / Player / Team). Own vertical
         // scroller (_fixedVController), kept in lock-step with the
         // scrollable columns' vertical scroller via _syncTableVScroll.
-        Column(
-          children: [
-            Container(height: 26, decoration: headerDecoration, child: fixedHeader()),
-            Expanded(
-              child: ListView.builder(
-                controller: _fixedVController,
-                itemCount: rows.length,
-                itemExtent: 30,
-                itemBuilder: (ctx, i) => buildFixedRow(i),
+        SizedBox(
+          width: fixedWidth,
+          child: Column(
+            children: [
+              Container(height: 26, decoration: headerDecoration, child: fixedHeader()),
+              Expanded(
+                child: ListView.builder(
+                  controller: _fixedVController,
+                  itemCount: rows.length,
+                  itemExtent: 30,
+                  itemBuilder: (ctx, i) => buildFixedRow(i),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         // Scrollable stat columns. The header and every row live inside
         // ONE horizontal SingleChildScrollView (_tableHController), so
