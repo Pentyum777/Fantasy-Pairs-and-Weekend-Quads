@@ -58,6 +58,12 @@ function normalizePlayer(p) {
   const hitouts = Number(p.hitouts ?? p.ho ?? 0);
   const goals = Number(p.goals ?? p.g ?? 0);
   const behinds = Number(p.behinds ?? p.b ?? 0);
+  // Time-on-ground %, e.g. 78 for 78% — DFS's live feed field is
+  // "timeOnGroundPercentage"; fall back to a couple of plausible aliases
+  // in case the feed ever renames it.
+  const timeOnGroundPercentage = Number(
+    p.timeOnGroundPercentage ?? p.tog ?? p.TOG ?? 0
+  );
 
   const normalized = {
     id: p.id ?? "",
@@ -77,6 +83,8 @@ function normalizePlayer(p) {
 
     goals,
     behinds,
+
+    timeOnGroundPercentage,
   };
 
   normalized.fantasyPoints = calculateFantasyPoints(normalized);

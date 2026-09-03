@@ -134,6 +134,27 @@ final ScrollController _horizontalController = ScrollController();
   
   final Map<String, FocusNode> _searchFocusNodes = {};
 
+  // Recomputed once per build() (see _refreshPlayerUsage) instead of being
+  // rescanned from scratch inside every individual pick cell.
+  Set<String> _takenPlayerIds = {};
+  Set<String> _duplicatePlayerIds = {};
+
+  void _refreshPlayerUsage() {
+    final counts = <String, int>{};
+    for (final r in widget.selections) {
+      for (final p in r.picks) {
+        final id = p.player?.id;
+        if (id == null) continue;
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
+    }
+    _takenPlayerIds = counts.keys.toSet();
+    _duplicatePlayerIds = {
+      for (final entry in counts.entries)
+        if (entry.value > 1) entry.key,
+    };
+  }
+
   int? _lastUpdated;
 
   String get lastUpdatedLabel {
@@ -178,93 +199,6 @@ void dispose() {
     _punterFocusNodes[row.punterNumber] ??= FocusNode();
   }
 }
-
-  // ---------------------------------------------------------------------------
-  // BUILD BODY
-  // ---------------------------------------------------------------------------
-
-  Widget _buildBody(
-    ThemeData theme,
-    ColorScheme cs,
-    List<PunterSelection> visible,
-    int pickCount,
-    double tableWidth,
-    double fontSize,
-  ) {
-    return ListView.builder(
-      controller: ScrollController(),
-      itemCount: visible.length,
-      itemBuilder: (context, index) {
-        try {
-          final row = visible[index];
-          final isStriped = index.isOdd;
-          final invalid = _hasAnyGlobalDuplicate();
-
-          final bg = invalid
-              ? Colors.red.withOpacity(0.10)
-              : isStriped
-                  ? Colors.black.withOpacity(0.08)
-                  : Colors.black.withOpacity(0.04);
-
-          return Container(
-            height: UIDimensions.rowHeight,
-            decoration: BoxDecoration(
-              color: bg,
-                          ),
-            child: Row(
-              children: [
-                // Punter column
-                Container(
-                  width: kPunterColumnWidth,
-                  decoration: BoxDecoration(
-                    
-                  ),
-                  child: _punterCell(context, row),
-                ),
-
-                // Picks + Scores
-                for (int i = 0; i < pickCount; i++) ...[
-                  // Pick column
-                  Container(
-                    width: kPickColumnWidth,
-                    decoration: BoxDecoration(
-                                          ),
-                    child: i < row.picks.length
-                        ? _buildPickCell(context, row, row.picks[i])
-                        : const SizedBox(),
-                  ),
-
-                  // Score column
-                  Container(
-                    width: kPickScoreColumnWidth,
-                    decoration: BoxDecoration(
-                      
-                    ),
-                    child: i < row.picks.length
-                        ? _pickScoreCell(row.picks[i])
-                        : const SizedBox(),
-                  ),
-                ],
-
-                // Total column
-                Container(
-                  width: kTotalColumnWidth,
-                  decoration: BoxDecoration(
-                    
-                  ),
-                  child: _totalCell(context, row),
-                ),
-              ],
-            ),
-          );
-        } catch (e, st) {
-          print("❌ TABLE ROW ERROR at index $index → $e");
-          print(st);
-          return const SizedBox.shrink();
-        }
-      },
-    );
-  }
 
   // ---------------------------------------------------------------------------
   // HEADER
@@ -332,6 +266,10 @@ void dispose() {
 Widget build(BuildContext context) {
   final theme = Theme.of(context);
   final cs = theme.colorScheme;
+
+  // Compute which players are taken / duplicated exactly once per build,
+  // instead of every pick cell rescanning all selections itself.
+  _refreshPlayerUsage();
 
   final pickCount = widget.playersPerPunter;
   final minWidth = _minTableWidth(pickCount);
@@ -411,14 +349,25 @@ Widget build(BuildContext context) {
     final isStriped = index.isOdd;
 
     final isRowCompleted = row.isCompletedPunter == true;
-    // Completed punters are greyed out, not green — green is reserved for
-    // the individual live-score cell (_pickScoreCell) so it actually means
-    // "this pick is scoring right now", not "this row is done".
-    final bg = isRowCompleted
-        ? Colors.grey.shade800.withOpacity(0.55)
-        : (isStriped
-            ? Colors.white.withOpacity(0.07)
-            : Colors.black.withOpacity(0.25));
+
+    // A row is flagged when one of its picks is also picked elsewhere in
+    // the table — this used to be computed but never actually rendered
+    // (it lived in a dead code path), so duplicate picks went unnoticed.
+    final hasDuplicatePick = row.picks.any(
+      (p) => p.player != null && _duplicatePlayerIds.contains(p.player!.id),
+    );
+
+    // Duplicate takes priority (it's a data problem an admin needs to fix)
+    // over the "completed" grey and the plain stripe. Green is reserved for
+    // the individual live-score cell (_pickScoreCell), so it means "this
+    // pick is scoring right now", not "this row is done".
+    final bg = hasDuplicatePick
+        ? Colors.red.withOpacity(0.18)
+        : isRowCompleted
+            ? Colors.grey.shade800.withOpacity(0.55)
+            : (isStriped
+                ? Colors.white.withOpacity(0.07)
+                : Colors.black.withOpacity(0.25));
 
     return Container(
       height: UIDimensions.rowHeight,
@@ -716,23 +665,14 @@ Widget build(BuildContext context) {
   // ⭐ OUTER background (full cell) - no shading
   const Color bgColor = Colors.transparent;
 
-  // Build globalTaken set
-  final globalTaken = <String>{};
-  for (final r in widget.selections) {
-    for (int i = 0; i < r.picks.length; i++) {
-      final p = r.picks[i].player;
-      if (p == null) continue;
-      if (identical(r, owner) && i == colIndex) continue;
-      globalTaken.add(p.id);
-    }
-  }
-
   final selectedPlayer = owner.picks[colIndex].player;
   final allPlayers = widget.availablePlayers;
 
+  // _takenPlayerIds is computed once per build() (see _refreshPlayerUsage),
+  // not rescanned across every selection/pick for every single cell.
   final filteredPlayers = allPlayers
       .where((p) {
-        final isTaken = globalTaken.contains(p.id);
+        final isTaken = _takenPlayerIds.contains(p.id);
         final isCurrent = p == selectedPlayer;
         return !isTaken || isCurrent;
       })
@@ -1169,20 +1109,8 @@ Widget build(BuildContext context) {
     }
   }
 
-  bool _hasAnyGlobalDuplicate() {
-    final seen = <String>{};
-
-    for (final row in widget.selections) {
-      for (final pick in row.picks) {
-        final p = pick.player;
-        if (p == null) continue;
-
-        if (seen.contains(p.id)) return true;
-        seen.add(p.id);
-      }
-    }
-    return false;
-  }
+  // (Duplicate detection now lives in _refreshPlayerUsage/_duplicatePlayerIds,
+  // computed once per build and used directly by _buildRow.)
 
   // ---------------------------------------------------------------------------
   // SNAKE DRAFT LOGIC
