@@ -1441,7 +1441,11 @@ class _ScoutScreenState extends State<ScoutScreen> {
                 dCell('${s.dAvg}', statW, bg: bg),
                 dCell('${s.mAvg}', statW, bg: bg),
                 dCell('${s.tAvg}', statW, bg: bg),
-                dCell('${s.togAvg}%', statW, bg: bg),
+                // TOG% — the backend only averages games where DFS's live
+                // feed actually gave us a real reading (see server.js);
+                // 0 here means "no real TOG captured yet" rather than an
+                // actual 0%, so show '–' like Last/L3 do for the same case.
+                dCell(s.togAvg > 0 ? '${s.togAvg}%' : '–', statW, bg: bg),
                 // Last game
                 dCell(
                   s.lastGame > 0 ? '${s.lastGame}' : '–',
@@ -1685,7 +1689,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
                             '${g.disposals}',
                             '${g.marks}',
                             '${g.tackles}',
-                            '${g.tog}%',
+                            g.tog > 0 ? '${g.tog}%' : '–',
                             highlight: g.score,
                             avgScore: s.afAvg,
                           )).toList(),
@@ -1703,7 +1707,7 @@ class _ScoutScreenState extends State<ScoutScreen> {
                       '${s.dAvg}',
                       '${s.mAvg}',
                       '${s.tAvg}',
-                      '${s.togAvg}%',
+                      s.togAvg > 0 ? '${s.togAvg}%' : '–',
                       isHeader: true,
                     ),
                     const SizedBox(height: 4),

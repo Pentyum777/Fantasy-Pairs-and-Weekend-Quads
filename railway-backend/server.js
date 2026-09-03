@@ -799,7 +799,16 @@ app.get("/playerSeasonStats/:season", async (req, res) => {
           ROUND(AVG(marks))::int                    AS m_avg,
           ROUND(AVG(tackles))::int                  AS t_avg,
           ROUND(AVG(goals)::numeric, 1)::float      AS g_avg,
-          ROUND(AVG(tog))::int                      AS tog_avg,
+          -- Only average TOG% over games where we actually captured a real
+          -- (non-zero) value. DFS's live feed only exposes TOG while a
+          -- round is in progress and zeroes it out once the round's gone
+          -- from their live JSON, so most already-completed 2026 games in
+          -- this table were recorded before/without a real TOG figure —
+          -- averaging those in as 0 would silently understate everyone's
+          -- TOG%. This shows "–" (0 games) instead of a wrong, deflated
+          -- number until more rounds get captured with real data.
+          ROUND(AVG(tog) FILTER (WHERE tog > 0))::int AS tog_avg,
+          COUNT(*) FILTER (WHERE tog > 0)::int         AS tog_games,
           -- Last game score (highest match_id = most recent)
           (array_agg(fantasy_points ORDER BY match_id DESC))[1] AS last_game,
           -- Last 3 games average

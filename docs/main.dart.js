@@ -100763,7 +100763,8 @@ h=a6.$3$bg(""+a3.w,a7,a4)
 g=a6.$3$bg(""+a3.x,a7,a4)
 f=a6.$3$bg(""+a3.y,a7,a4)
 e=a6.$3$bg(""+a3.z,a7,a4)
-d=a6.$3$bg(""+a3.as+"%",a7,a4)
+d=a3.as
+d=a6.$3$bg(d>0?""+d+"%":"\u2013",a7,a4)
 c=a3.at
 b=c>0
 a=b?""+c:"\u2013"
@@ -100840,14 +100841,20 @@ if(l.ga3(m))p=B.RE
 else{s=this.a
 r=s.R0("Rd","Opp","AF","K","HB","D","M","T","TOG",!0)
 m=l.f4(m,new A.aBL(s,p),t.Q)
-p=A.bu(A.b([r,B.bS,new A.dS(B.nd,A.ln(A.bu(A.U(m,!0,A.n(m).i("aj.E")),B.n,B.k,B.m),q,B.z,q,q,B.a3),q),B.bS,s.R0("Avg","",""+p.e,""+p.r,""+p.w,""+p.x,""+p.y,""+p.z,""+p.as+"%",!0),B.B4],o),B.n,B.k,B.as)}p=A.b6(p,q,340)
+m=A.ln(A.bu(A.U(m,!0,A.n(m).i("aj.E")),B.n,B.k,B.m),q,B.z,q,q,B.a3)
+l=p.as
+l=l>0?""+l+"%":"\u2013"
+l=A.bu(A.b([r,B.bS,new A.dS(B.nd,m,q),B.bS,s.R0("Avg","",""+p.e,""+p.r,""+p.w,""+p.x,""+p.y,""+p.z,l,!0),B.B4],o),B.n,B.k,B.as)
+p=l}p=A.b6(p,q,340)
 return A.nK(A.b([A.ho(B.fW,new A.aBM(a),q)],o),q,q,q,q,q,q,q,q,B.h,p,B.oG,q,B.c6,q,q,n)},
 $S:37}
 A.aBL.prototype={
-$1(a){var s,r=a.y
-r=r.length!==0?r:"?"
+$1(a){var s,r,q=a.y
+q=q.length!==0?q:"?"
 s=a.b
-return this.a.acw("R"+a.a,r,""+s,""+a.c,""+a.d,""+a.e,""+a.f,""+a.r,""+a.x+"%",this.b.e,s)},
+r=a.x
+r=r>0?""+r+"%":"\u2013"
+return this.a.acw("R"+a.a,q,""+s,""+a.c,""+a.d,""+a.e,""+a.f,""+a.r,r,this.b.e,s)},
 $S:641}
 A.aBM.prototype={
 $0(){A.c3(this.a,!1).em(null)
